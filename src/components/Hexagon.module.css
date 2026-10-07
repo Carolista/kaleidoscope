@@ -1,0 +1,5 @@
+.hexagon {
+  stroke: var(--hex-grout, #fff);
+  stroke-width: 1;
+  stroke-linejoin: round;
+}
