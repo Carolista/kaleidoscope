@@ -1,14 +1,16 @@
-# LC-DOM-Kaleidoscope
+# React + Vite
 
-To get my OWN practice with the DOM - I created an interactive page for users to create beautiful kaleidoscope imagery! 
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-Students - if you're ready to dive into the somewhat-less-shallow end, FORK this to your own account and then clone down to your local machine.
+Currently, two official plugins are available:
 
-Demo: https://carolista.github.io/LC-DOM-Kaleidoscope/
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-This was inspired by the practice exercises and examples I've been making for students of LaunchCode's Web Development course (unit 1). 
-See this document for the full list of repls, respositories, etc. https://tinyurl.com/y3bn6st4
+## React Compiler
 
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-UPDATES:
-10/23/20 - Adjusted layout and scale to accommodate non-OLED displays
+## Expanding the ESLint configuration
+
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
