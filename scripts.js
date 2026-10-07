@@ -45,7 +45,7 @@ function init() {
     let base = "#ffffff";
     let accent = "#222222";
     let borderDefault = "#eeeeee";
-    darkMode = false;
+    let darkMode = false;
 
     let currentScheme = schemes[Math.floor(Math.random() * schemes.length)]; // randomized default on page load
     let currentColor = currentScheme.colors[0]; // default to first color of scheme
