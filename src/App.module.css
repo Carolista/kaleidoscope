@@ -10,3 +10,18 @@
   text-transform: uppercase;
   margin: 0;
 }
+
+.layout {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 2rem;
+  width: 100%;
+}
+
+.display {
+  flex: 1 1 auto;
+  min-width: 300px;
+  max-width: 600px;
+}
