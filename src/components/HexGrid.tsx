@@ -2,6 +2,8 @@ import { useMemo } from 'react'
 import { HEX_GRID_RADIUS, generateHexCells } from '../utils/hexGrid'
 import { axialToPixel, boundingBox, hexCorners } from '../utils/hexLayout'
 import type { HexLayout } from '../utils/hexLayout'
+import { useAppState } from '../state/useAppState'
+import { getThemeColors } from '../state/theme'
 import Hexagon from './Hexagon'
 import styles from './HexGrid.module.css'
 
@@ -9,8 +11,6 @@ export interface HexGridProps {
   readonly radius?: number
   /** Circumradius of each hexagon, in SVG user units. */
   readonly hexSize?: number
-  /** Fill color used for every cell. Will become per-cell state in a later step. */
-  readonly defaultFill?: string
 }
 
 const DEFAULT_HEX_SIZE = 16
@@ -19,8 +19,10 @@ const DEFAULT_HEX_SIZE = 16
 function HexGrid({
   radius = HEX_GRID_RADIUS,
   hexSize = DEFAULT_HEX_SIZE,
-  defaultFill = '#222222',
 }: HexGridProps) {
+  const { state } = useAppState()
+  const { accent } = getThemeColors(state.darkMode)
+
   const layout: HexLayout = useMemo(
     () => ({ orientation: 'flat', size: hexSize }),
     [hexSize],
@@ -34,6 +36,7 @@ function HexGrid({
     return {
       polygons: cells.map((cell, i) => ({
         key: `${cell.q},${cell.r}`,
+        groupId: cell.groupId,
         corners: hexCorners(centers[i], layout),
       })),
       viewBox: `${minX} ${minY} ${maxX - minX} ${maxY - minY}`,
@@ -47,8 +50,12 @@ function HexGrid({
       role="img"
       aria-label="Kaleidoscope hex grid"
     >
-      {polygons.map(({ key, corners }) => (
-        <Hexagon key={key} corners={corners} fill={defaultFill} />
+      {polygons.map(({ key, groupId, corners }) => (
+        <Hexagon
+          key={key}
+          corners={corners}
+          fill={state.hexGroupColors[groupId] ?? accent}
+        />
       ))}
     </svg>
   )
