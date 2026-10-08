@@ -1,8 +1,15 @@
 .hexagon {
-  stroke: var(--hex-grout, #fff);
+  /* Grout color matches the page background, so painted tiles read as
+     colored shapes separated by a thin gap rather than outlined. --base
+     is set on the app root (App.tsx) and inherits down via CSS custom
+     property cascade. */
+  stroke: var(--base, #fff);
   stroke-width: 1;
   stroke-linejoin: round;
-  transition: opacity 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    stroke 0.2s ease,
+    fill 0.1s ease;
 }
 
 .clickable {
@@ -10,7 +17,10 @@
 }
 
 .clickable:hover {
-  opacity: 0.7;
+  /* --hover-fill is computed per-cell in JS (colorMath.ts) from its own
+     fill color, so this only ever changes `fill` — the stroke is
+     completely untouched, keeping the grout line crisp. */
+  fill: var(--hover-fill);
 }
 
 .dimmed {

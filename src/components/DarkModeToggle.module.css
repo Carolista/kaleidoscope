@@ -1,0 +1,13 @@
+.toggle {
+  font-size: 1rem;
+  text-transform: uppercase;
+  padding: 0.5rem 1rem;
+  border: 2px solid var(--base, #fff);
+  color: var(--accent, #222);
+  background: transparent;
+  cursor: pointer;
+}
+
+.toggle:hover {
+  border-color: var(--accent, #222);
+}

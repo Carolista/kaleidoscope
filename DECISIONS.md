@@ -79,6 +79,38 @@ This led to a clean, computed (not hand-coded) grid design, implemented in
     works functionally on touch today (click events fire independent of
     hover state); only the discoverability/affordance is deferred.
 
+## Hover feedback on painted hexagons
+
+The hover-highlight effect on a clickable hex went through a few iterations:
+
+1. `opacity: 0.7` on hover — blends with the page background, so it's
+   invisible when the hex is painted the same color as the background
+   (e.g. the Base swatch).
+2. `filter: brightness()` on hover — fixes #1 (darkens actual pixels
+   regardless of background), but filters apply to the whole rendered
+   element, so it also muddied the stroke/grout line.
+3. Two-polygon layering (base polygon + a `pointer-events: none` overlay
+   polygon that fades in on hover) — isolated the darken effect to a
+   layer on top of the fill only, leaving the stroke untouched. Worked,
+   but added structural complexity (a `<g>` wrapping two polygons per
+   cell).
+4. **Current approach**: compute the hover fill color in JS per-cell
+   (`src/utils/colorMath.ts`), comparing the cell's current fill to the
+   active `base`/`accent` theme colors:
+   - If it matches either, hover shows a fixed neutral gray (`#808080`),
+     since there's no hue to brighten in that case.
+   - Otherwise, hover brightens and saturates the cell's own color via
+     HSL (preferred over darkening, since darkening felt "muddy").
+   - The computed color is passed down as a `--hover-fill` CSS custom
+     property on the polygon's inline `style`, and a single CSS rule
+     (`.clickable:hover { fill: var(--hover-fill); }`) applies it. SVG
+     presentation attributes (like `fill="..."`) have very low cascade
+     priority, so this CSS rule overrides them without needing
+     `!important`.
+   - This let us revert to a single `<polygon>` per hex (no more
+     `<g>`/overlay structure), since only `fill` changes on hover and
+     `stroke` is a separate property the rule never touches.
+
 ## Process
 
 - Work proceeds one Phase 1 step at a time (see project plan); the user

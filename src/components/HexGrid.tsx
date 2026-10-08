@@ -21,7 +21,7 @@ function HexGrid({
   hexSize = DEFAULT_HEX_SIZE,
 }: HexGridProps) {
   const { state, paintHexGroup } = useAppState()
-  const { accent } = getThemeColors(state.darkMode)
+  const { base, accent } = getThemeColors(state.darkMode)
   const [isHovering, setIsHovering] = useState(false)
 
   const layout: HexLayout = useMemo(
@@ -63,6 +63,8 @@ function HexGrid({
           fill={state.hexGroupColors[groupId] ?? accent}
           isClickable={isClickable}
           dimmed={isHovering && !isClickable}
+          base={base}
+          accent={accent}
           onClick={() => paintHexGroup(groupId)}
         />
       ))}

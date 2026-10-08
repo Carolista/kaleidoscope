@@ -4,11 +4,15 @@
   align-items: center;
   gap: 1.5rem;
   padding: 2rem;
+  min-height: 100vh;
+  background-color: var(--base, #fff);
+  transition: background-color 0.2s ease;
 }
 
 .title {
   text-transform: uppercase;
   margin: 0;
+  color: var(--accent, #222);
 }
 
 .layout {
@@ -24,6 +28,12 @@
   flex: 1 1 auto;
   min-width: 300px;
   max-width: 600px;
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .controlsRow {
