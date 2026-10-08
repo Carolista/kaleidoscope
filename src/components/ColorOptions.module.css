@@ -1,0 +1,25 @@
+.options {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.swatch {
+  width: 40px;
+  height: 40px;
+  margin: 9px;
+  padding: 0;
+  border: 2px solid #eee;
+  cursor: pointer;
+}
+
+.swatch:hover {
+  border-color: var(--swatch-selected-border);
+}
+
+.swatch[aria-pressed='true'] {
+  border-width: 4px;
+  margin: 7px;
+  border-color: var(--swatch-selected-border);
+}

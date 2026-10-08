@@ -25,3 +25,9 @@
   min-width: 300px;
   max-width: 600px;
 }
+
+.controlsRow {
+  display: flex;
+  flex-direction: row;
+  gap: 1.5rem;
+}
