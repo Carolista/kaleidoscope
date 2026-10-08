@@ -126,6 +126,22 @@ native `<dialog>` element rather than a hand-rolled modal:
   component takes generic `title`/`message`/`confirmLabel`/`cancelLabel`
   props for future confirmations if needed.
 
+## Styling / responsive pass (Step 11)
+
+- **Fonts**: self-hosted via `@fontsource/righteous` and `@fontsource/roboto`
+  (weights 400/900) rather than the original's Google Fonts CDN `<link>` —
+  no external network request, works offline, matches the original's font
+  choices exactly (Righteous for the title/buttons, Roboto for body text).
+- **Layout**: kept the rewrite's simpler centered/stacked layout (rather
+  than recreating the original's absolute-positioned two-column design) —
+  polished its spacing, max-width, and typography instead. `App.module.css`
+  now constrains overall width (`max-width: 1100px`, centered) and the
+  controls/hex-grid area wraps responsively down to mobile widths with no
+  horizontal overflow (verified at 1100px/390px/312px viewports).
+- Added subtle modern touches not in the original (rounded corners on
+  buttons/swatches/dialog, hover background tints, smoother transitions)
+  while keeping all functional behavior identical to Phase 1 scope.
+
 ## Process
 
 - Work proceeds one Phase 1 step at a time (see project plan); the user
