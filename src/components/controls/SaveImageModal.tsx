@@ -2,6 +2,7 @@ import type { RefObject } from 'react'
 import { useAppState } from '../../state/useAppState'
 import { getThemeColors } from '../../state/theme'
 import { useImageExport } from '../../hooks/useImageExport'
+import { computeGridAspectRatio } from '../../utils/hexGrid'
 import Button from '../shared/Button'
 import CloseButton from '../shared/CloseButton'
 import Modal from '../shared/Modal'
@@ -12,6 +13,11 @@ export interface SaveImageModalProps {
 	readonly svgRef: RefObject<SVGSVGElement | null>
 	readonly onClose: () => void
 }
+
+// Computed once, not per render: reflects the grid's fixed shape, which
+// the export service also rasterizes from, so the preview box is already
+// sized correctly before the image exists.
+const PREVIEW_ASPECT_RATIO = computeGridAspectRatio()
 
 function SaveImageModal({ open, svgRef, onClose }: SaveImageModalProps) {
 	const { state } = useAppState()
@@ -33,7 +39,10 @@ function SaveImageModal({ open, svgRef, onClose }: SaveImageModalProps) {
 				<CloseButton label="Close" onClick={onClose} />
 			</div>
 
-			<div className={styles.preview}>
+			<div
+				className={styles.preview}
+				style={{ aspectRatio: PREVIEW_ASPECT_RATIO }}
+			>
 				{exportState.status === 'generating' && (
 					<p>Generating image…</p>
 				)}
