@@ -20,7 +20,7 @@ export function createInitialAppState(): AppState {
 	return {
 		currentScheme,
 		currentColor: currentScheme.colors[0],
-		darkMode: false,
+		darkMode: true,
 		hexGroupColors: {},
 	}
 }

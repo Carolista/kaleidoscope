@@ -12,7 +12,7 @@ describe('createInitialAppState / pickRandomScheme', () => {
 		const state = createInitialAppState()
 		expect(colorSchemes).toContain(state.currentScheme)
 		expect(state.currentColor).toBe(state.currentScheme.colors[0])
-		expect(state.darkMode).toBe(false)
+		expect(state.darkMode).toBe(true)
 		expect(state.hexGroupColors).toEqual({})
 	})
 

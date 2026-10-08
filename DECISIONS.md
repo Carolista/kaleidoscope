@@ -262,6 +262,56 @@ Other smaller fixes made in this pass:
   true`, `tabWidth: 4`) instead of spaces — already reflected across the
   codebase via `npm run format`.
 
+## Testing & polish (Step 13)
+
+Discussed two tiers of UI-level testing beyond the existing pure-logic
+Vitest suite:
+- **Component tests** (React Testing Library + jsdom, same Vitest
+  runner): fast, no real browser, renders actual components and queries
+  them the way a screen reader/keyboard user would (`getByRole`, etc.) —
+  catches logic/wiring regressions but not real CSS/layout/paint issues.
+- **True end-to-end tests** (Playwright, real browser): would catch real
+  rendering bugs (like the dark-mode background and outline-clipping
+  issues we fixed by hand this session) but is heavier to maintain.
+
+**Decision**: component tests only (RTL + jsdom) for the committed suite.
+Playwright remains a manual/ad-hoc verification tool (used throughout
+this project to visually confirm changes) rather than a maintained test
+suite — reasonable for a personal-scale app. Can revisit adding a small
+Playwright smoke suite later, e.g. right before a Step 14 deploy, if
+stronger pre-release confidence is ever wanted.
+
+Implementation notes:
+- Added `@testing-library/react`, `@testing-library/jest-dom`,
+  `@testing-library/user-event`, and `jsdom` as dev dependencies; switched
+  Vitest's `environment` from `node` to `jsdom` and added a
+  `src/test/setup.ts` setup file.
+- `setup.ts` explicitly registers `afterEach(cleanup)` — Vitest doesn't
+  expose a Jest-style global `afterEach` unless `test.globals` is
+  enabled (we didn't enable it), so React Testing Library's usual
+  auto-cleanup-on-import never registers without this. Skipping it causes
+  leftover DOM from earlier tests in the same file to leak into later
+  ones (a real bug we hit and fixed during this pass — tests were
+  querying across multiple stacked, un-unmounted render trees).
+- `setup.ts` also polyfills `HTMLDialogElement`'s `showModal`/`close`
+  (jsdom doesn't implement them), since `Modal` depends on them.
+- Added `src/test/renderWithProvider.tsx`, a small helper that wraps
+  `render()` with the real `AppStateProvider`, since nearly every
+  component reads from app state via context.
+- New test files, one per component with non-trivial behavior:
+  `ColorOptions`, `SchemePicker`, `DarkModeToggle`, `ResetButton` (covers
+  the `ConfirmDialog`/`Modal` flow), `HexGrid` (covers `Hexagon`,
+  including the keyboard-paint path added in the accessibility pass), and
+  `SettingsButton` (covers `SettingsModal` + nested components). 12 new
+  tests, 43 total.
+- Since `createInitialAppState` picks a random starting color scheme,
+  tests that need to select "a different scheme than the current one"
+  pick dynamically (first button that isn't already pressed) rather than
+  hardcoding a scheme name — otherwise the test is flaky roughly 1-in-11
+  runs, whenever the random initial scheme happens to match the
+  hardcoded target. Caught this via a 30-run repeat-test loop, not a
+  single run.
+
 ## Process
 
 - Work proceeds one Phase 1 step at a time (see project plan); the user
