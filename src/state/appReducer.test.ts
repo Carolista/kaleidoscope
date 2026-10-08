@@ -44,6 +44,34 @@ describe('appReducer', () => {
     expect(next.currentColor).toBe(colorSchemes[3].colors[0])
   })
 
+  it('SELECT_SCHEME remaps hex groups painted with an old-scheme color to the new scheme color at the same position', () => {
+    const oldScheme = colorSchemes[0]
+    const newScheme = colorSchemes[1]
+    const state = baseState({
+      currentScheme: oldScheme,
+      hexGroupColors: {
+        a: oldScheme.colors[0],
+        b: oldScheme.colors[2],
+      },
+    })
+    const next = appReducer(state, { type: 'SELECT_SCHEME', scheme: newScheme })
+    expect(next.hexGroupColors).toEqual({
+      a: newScheme.colors[0],
+      b: newScheme.colors[2],
+    })
+  })
+
+  it('SELECT_SCHEME leaves hex groups painted base/accent (or any non-scheme color) untouched', () => {
+    const oldScheme = colorSchemes[0]
+    const newScheme = colorSchemes[1]
+    const state = baseState({
+      currentScheme: oldScheme,
+      hexGroupColors: { a: '#222222', b: '#ffffff' },
+    })
+    const next = appReducer(state, { type: 'SELECT_SCHEME', scheme: newScheme })
+    expect(next.hexGroupColors).toEqual({ a: '#222222', b: '#ffffff' })
+  })
+
   it('SELECT_COLOR sets the current color directly', () => {
     const state = baseState()
     const next = appReducer(state, { type: 'SELECT_COLOR', color: '#123456' })

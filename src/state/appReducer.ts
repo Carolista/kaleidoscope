@@ -27,12 +27,26 @@ export function createInitialAppState(): AppState {
 
 export function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
-    case 'SELECT_SCHEME':
+    case 'SELECT_SCHEME': {
+      const oldColors = state.currentScheme.colors
+      const newColors = action.scheme.colors
+      // Remap any hex painted with one of the old scheme's colors to the
+      // color at the same position in the new scheme, so the design's
+      // pattern carries over. Hexes painted base/accent are left as-is.
+      const hexGroupColors = Object.fromEntries(
+        Object.entries(state.hexGroupColors).map(([groupId, color]) => {
+          const colorIndex = oldColors.indexOf(color)
+          if (colorIndex === -1) return [groupId, color]
+          return [groupId, newColors[colorIndex]]
+        }),
+      )
       return {
         ...state,
         currentScheme: action.scheme,
-        currentColor: action.scheme.colors[0],
+        currentColor: newColors[0],
+        hexGroupColors,
       }
+    }
 
     case 'SELECT_COLOR':
       return { ...state, currentColor: action.color }
