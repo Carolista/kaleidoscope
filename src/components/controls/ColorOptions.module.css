@@ -17,18 +17,18 @@
 	height: var(--swatch-size);
 	margin: var(--swatch-margin);
 	padding: 0;
-	border: 2px solid #eee;
+	border: 1px solid #ddd;
 	border-radius: 4px;
 	cursor: pointer;
 	transition: border-color 0.15s ease;
 }
 
 .swatch:hover {
-	border-color: var(--swatch-selected-border);
+	transform: scale(1.2);
 }
 
 .swatch[aria-pressed='true'] {
-	border-width: 4px;
-	margin: calc(var(--swatch-margin) - 2px);
+	border-width: 2px;
+	margin: calc(var(--swatch-margin) - 1px);
 	border-color: var(--swatch-selected-border);
 }
