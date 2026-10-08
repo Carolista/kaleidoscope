@@ -7,4 +7,5 @@ body {
 	min-height: 100vh;
 	font-family: 'Roboto', system-ui, 'Segoe UI', sans-serif;
 	font-weight: 400;
+	transition: background-color 0.2s ease;
 }

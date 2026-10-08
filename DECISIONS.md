@@ -238,6 +238,30 @@ Other smaller fixes made in this pass:
   hex grid, if sequential tab order through 30 cells ever feels tedious
   in practice.
 
+## Small fixes (between Steps 12 and 13)
+
+- Removed a stray empty, untracked `src/styles/` directory left over from
+  earlier scaffolding.
+- **Dark mode background bug**: `--base`/`--accent` are set inline on
+  `<main>`, so they only cascade to descendants — they never reached
+  `<body>`, leaving the viewport outside the centered content column
+  white even in dark mode. Fixed with a small `useEffect` in `App.tsx`
+  that mirrors `base` onto `document.body.style.backgroundColor`
+  directly, so the whole page follows the theme, not just the content
+  column.
+- **Clickable wedge repositioned**: the single contiguous 30-degree wedge
+  of clickable hexes (one representative per of the 30 mirror groups)
+  sat at the 9-10 o'clock position, chosen by `groupIdFor` picking the
+  lexicographically-smallest (q, r) coordinate per orbit. Rotated the
+  selection by one more 60-degree step (`rotate60`) so the wedge now
+  lands at 11-12 o'clock, directly under the controls row. Verified by
+  temporarily highlighting all `isClickable` cells and confirming the
+  wedge position; no persisted state references the old group-id scheme
+  (state is in-memory only), so this was a safe, non-breaking change.
+- **Formatting**: user switched `.prettierrc.json` to tabs (`useTabs:
+  true`, `tabWidth: 4`) instead of spaces — already reflected across the
+  codebase via `npm run format`.
+
 ## Process
 
 - Work proceeds one Phase 1 step at a time (see project plan); the user

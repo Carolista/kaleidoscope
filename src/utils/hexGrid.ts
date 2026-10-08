@@ -53,23 +53,28 @@ function symmetryOrbit(coord: AxialCoord): CubeCoord[] {
 
 /**
  * Deterministic id for a coordinate's symmetry group: the
- * lexicographically-smallest (q, r) coordinate in its orbit. Every cell in
- * the same mirror group resolves to the same id.
+ * lexicographically-smallest (q, r) coordinate in its orbit, rotated one
+ * more 60-degree step. The un-rotated lexicographic minimum lands the
+ * clickable wedge at the 9-10 o'clock position; rotating it once moves
+ * the wedge to 11-12 o'clock, where the controls above the grid are
+ * positioned, without disturbing the underlying symmetry math. Every cell
+ * in the same mirror group resolves to the same id.
  */
 function groupIdFor(coord: AxialCoord): string {
-	const canonical = symmetryOrbit(coord).reduce((min, c) =>
+	const lexMin = symmetryOrbit(coord).reduce((min, c) =>
 		c.q < min.q || (c.q === min.q && c.r < min.r) ? c : min,
 	)
+	const canonical = rotate60(lexMin)
 	return `${canonical.q},${canonical.r}`
 }
 
 /**
  * Generates every hex cell in the kaleidoscope: a filled hexagon of the
  * given radius, each cell tagged with its mirror-symmetry group id and
- * whether it's the clickable representative for that group (the
- * lexicographically-smallest coordinate in the orbit — which, thanks to
- * the symmetry, always lands in the same contiguous 30-degree wedge of
- * the grid, just like the "editable slice" in the original app).
+ * whether it's the clickable representative for that group (see
+ * `groupIdFor` — thanks to the symmetry, the representative always lands
+ * in the same contiguous 30-degree wedge of the grid, just like the
+ * "editable slice" in the original app).
  */
 export function generateHexCells(radius: number = HEX_GRID_RADIUS): HexCell[] {
 	const cells: HexCell[] = []
