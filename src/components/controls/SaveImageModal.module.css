@@ -1,0 +1,47 @@
+.dialog {
+	/* Fixed (not just max-) width, so the dialog doesn't start narrow for
+	   the "Generating image…" text and then jump wider once the image
+	   appears. */
+	width: 26rem;
+	max-width: calc(100vw - 2rem);
+}
+
+.header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 1rem;
+}
+
+.title {
+	margin: 0;
+	font-family: 'Righteous', sans-serif;
+	text-transform: uppercase;
+	font-size: 1.1rem;
+}
+
+.preview {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	/* `aspect-ratio` is set inline, computed from the hex grid's actual
+	   viewBox, so this box is already the image's final shape while
+	   generating — the <img> then just fills it, with no resize once it
+	   loads. */
+	width: 100%;
+	margin-bottom: 1.5rem;
+	text-align: center;
+}
+
+.image {
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+	border-radius: 4px;
+}
+
+.actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 0.75rem;
+}

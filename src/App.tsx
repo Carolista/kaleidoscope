@@ -1,51 +1,92 @@
-import { useEffect, useRef } from 'react'
 import type { CSSProperties } from 'react'
-import HexGrid from './components/HexGrid'
-import ColorOptions from './components/ColorOptions'
-import ColorThemeButton from './components/ColorThemeButton'
-import DarkModeToggle from './components/DarkModeToggle'
-import ResetButton from './components/ResetButton'
-import SaveImageButton from './components/SaveImageButton'
-import UndoRedoButtons from './components/UndoRedoButtons'
-import { useAppState } from './state/useAppState'
-import { getThemeColors } from './state/theme'
+import { useLayoutEffect, useRef, useState } from 'react'
 import styles from './App.module.css'
+import Header from './components/layout/Header'
+import HexGrid from './components/grid/HexGrid'
+import ColorOptions from './components/controls/ColorOptions'
+import ColorThemeButton from './components/controls/ColorThemeButton'
+import DarkModeToggle from './components/controls/DarkModeToggle'
+import EditableAreaToggle from './components/controls/EditableAreaToggle'
+import ResetDesignButton from './components/controls/ResetDesignButton'
+import SaveImageButton from './components/controls/SaveImageButton'
+import TouchIntroModal from './components/controls/TouchIntroModal'
+import UndoRedoButtons from './components/controls/UndoRedoButtons'
+import { hasPersistedDesign } from './services/storageService'
+import { getThemeColors } from './state/theme'
+import { useAppState } from './state/useAppState'
+import { useIsTouchDevice } from './utils/useIsTouchDevice'
 
 function App() {
 	const { state } = useAppState()
 	const { base, accent } = getThemeColors(state.darkMode)
 	const svgRef = useRef<SVGSVGElement>(null)
+	const isTouch = useIsTouchDevice()
+	// Captured once, before the autosave effect in AppContext can run, so
+	// this reflects whether a design already existed when the app loaded
+	// (i.e. this device's first-ever visit) rather than the current state.
+	const [hadPersistedDesign] = useState(hasPersistedDesign)
+	const [introOpen, setIntroOpen] = useState(
+		() => isTouch && !hadPersistedDesign,
+	)
 
-	useEffect(() => {
+	useLayoutEffect(() => {
 		// `--base`/`--accent` are set inline below, but CSS custom properties
-		// only cascade to descendants, not up to <body>/<html>. Set the page
-		// background directly so the whole viewport follows the theme, not
-		// just the centered app column.
+		// only cascade to descendants, not up to <body>/<html>, so we set
+		// their background directly here instead — covering the viewport
+		// outside the centered `.page` column and the mobile overscroll
+		// area. A literal color (not `var(--base)`) matches index.html's
+		// bootstrap script, which sets this same property the same way
+		// before React even mounts — one consistent mechanism, rather than
+		// an inline style here racing a CSS rule there. useLayoutEffect
+		// (not useEffect) runs synchronously before the browser paints, so
+		// html/body update in the same frame as `.page` instead of one
+		// frame later, which previously caused a visible flash/mismatch
+		// when toggling dark mode.
+		document.documentElement.style.backgroundColor = base
 		document.body.style.backgroundColor = base
 	}, [base])
 
 	return (
-		<main
-			className={styles.app}
-			style={{ '--base': base, '--accent': accent } as CSSProperties}
+		<div
+			className={styles.page}
+			style={
+				{
+					'--base': base,
+					'--accent': accent,
+					backgroundColor: base,
+				} as CSSProperties
+			}
 		>
-			<h1 className={styles.title}>Kaleidoscope</h1>
-			<HexGrid svgRef={svgRef} />
-			<div
-				className={styles.colorRow}
-				role="group"
-				aria-label="Color controls"
-			>
-				<ColorOptions />
-			</div>
-			<div className={styles.bottomRow}>
-				<DarkModeToggle />
-				<ColorThemeButton />
-				<UndoRedoButtons />
-				<ResetButton />
-				<SaveImageButton svgRef={svgRef} />
-			</div>
-		</main>
+			<Header />
+			<main className={styles.app}>
+				<HexGrid svgRef={svgRef} />
+				<div
+					role="group"
+					aria-label="Controls"
+					className={styles.controlRows}
+				>
+					<div className={styles.colorRow}>
+						<ColorOptions />
+					</div>
+					<UndoRedoButtons />
+					<div
+						role="group"
+						aria-label="Settings and Actions"
+						className={styles.buttonGroup}
+					>
+						<DarkModeToggle />
+						<ColorThemeButton />
+						<EditableAreaToggle />
+						<ResetDesignButton />
+						<SaveImageButton svgRef={svgRef} />
+					</div>
+				</div>
+			</main>
+			<TouchIntroModal
+				open={introOpen}
+				onClose={() => setIntroOpen(false)}
+			/>
+		</div>
 	)
 }
 

@@ -223,6 +223,187 @@ With more features, the earlier arrangement felt cluttered:
 The user chose dark mode as the default (the original started in light) and
 updated the three tests that assumed otherwise.
 
+### Touchscreen wedge discoverability
+
+Touch devices have no hover, so there was no way to discover which 30 hexes
+are paintable without tapping around (the hover-driven dimming in `HexGrid`
+is mouse-only). Three options were discussed: a permanent highlight for
+everyone, a `(hover: none)` fallback shown by default, or a user-toggled
+"show editable area" button. The user chose the toggle for a cleaner look,
+with these refinements decided along the way:
+
+- **Touch-only**: desktop/mouse keeps relying on hover, unchanged. The
+  toggle button itself is only rendered on touch devices (detected via a
+  `(hover: none), (pointer: coarse)` media query hook,
+  `useIsTouchDevice`), and `showEditableArea` is ignored outside of touch
+  even though it's always present in state.
+- **Defaults on**: a touch user sees the highlight immediately on first
+  visit, rather than needing to find the toggle first.
+- **Persisted** like dark mode/scheme, so a user's choice carries across
+  sessions.
+- **Same visual treatment as hover**: reuses the existing dim-the-rest
+  effect rather than a new outline/glow.
+- **Icon**: `fa-eye`/`fa-eye-slash`, following the existing convention that
+  a toggle's icon/label describe the destination of a click, not the
+  current state.
+
+A one-time `TouchIntroModal` was added on top of this, shown only when a
+touch device is detected **and** no design has ever been saved on that
+device (`hasPersistedDesign()` in `storageService.ts`, checked once at
+startup before the autosave effect can write anything). The user explicitly
+chose the simplest version of this rule over a separate "seen it" flag: if
+a touch user dismisses the modal without painting and reloads, it reappears
+until they actually paint something and a design gets saved.
+
+Also decided: the export pipeline (`exportSvgAsPngBlob`) must always
+produce a fully opaque image regardless of whether the editable-area
+highlight is on, since that dimming is a view-only aid, not part of the
+design. `buildExportClone` now forces every cloned polygon's opacity to `1`
+before rasterizing.
+
+### Smaller grid for all devices
+
+The grid's radius-9 size (271 cells) felt too cramped to paint comfortably
+on small touchscreens. Rather than a responsive/device-conditional grid
+size (more complexity, and a separate set of visual proportions to
+maintain), the user chose to permanently drop the radius to 7 (169 cells,
+20 clickable tiles instead of 30) for every device, as a simpler first cut.
+`HEX_GRID_RADIUS` in `hexGrid.ts` is the only production code change — the
+symmetry/grouping math is already radius-agnostic. A secondary, larger grid
+for tablets/desktop may be reconsidered later (tracked as an idea in
+CONTEXT.md) once the smaller size has been lived with for a while.
+
+### Control grouping and sizing for small touchscreens
+
+With the shrunken grid freeing up vertical space (see "Smaller grid for all
+devices" above), the controls below it were reorganized to fit comfortably
+within a ~550px-tall viewport without scrolling, and to read as clearer
+groups instead of one long wrapped row:
+
+- The swatches, undo/redo, and the remaining action buttons
+  (dark/light, color theme, show/hide editable area, reset, save image) are
+  each their own flex group, stacked in that order inside one outer
+  `role="group" aria-label="Controls"` wrapper. The two previously-separate
+  action clusters (toggles vs. destructive/export actions) were merged into
+  a single `"Settings and Actions"` group, since splitting them no longer
+  added clarity once undo/redo had its own row.
+- The color picker swatches use `clamp()` sizing so they can shrink on
+  narrow screens without ever dropping below a usable minimum, and stay on
+  one row instead of wrapping.
+- **Undo/redo icons were intentionally sized down** (`fa-xl` instead of
+  `fa-2x`) to de-emphasize them relative to the five primary action
+  buttons. Their button boxes were shrunk from 2.5rem to 1.875rem to match
+  — preserving the same ~0.67 icon-to-box fill ratio the other buttons
+  use, rather than leaving the icon adrift in an oversized box. This pushes
+  undo/redo's touch target below the usual 2.5rem used elsewhere; given
+  they're secondary/occasional actions (not core painting or settings), the
+  smaller target was judged an acceptable tradeoff for the tighter layout.
+  (Superseded by `IconButton`'s `size="sm"` prop, below — the smaller
+  box/icon ratio itself didn't change.)
+
+### Reusable components, file organization, and services
+
+The `components/` folder had six nearly-identical icon-button CSS modules
+and three modals with duplicated text-button/close-button styles. Rather
+than top-level feature folders (rejected: there's only one real "epic",
+coloring, right now — revisit if a genuinely separate major feature like
+puzzles is ever added), the user chose to keep `components/` as a single
+parent folder with subfolders:
+
+- `components/layout/` — page chrome (`Header`, holding the title in a
+  proper `<header>` outside `<main>`; a future `Footer`/`NavMenu` would
+  live here too).
+- `components/grid/` — `HexGrid`, `Hexagon`.
+- `components/controls/` — the palette and everything below the grid.
+- `components/shared/` — generic, reusable pieces: `IconButton`, `Button`,
+  `CloseButton`, `Modal`, `ConfirmDialog`. `ConfirmDialog` and `Modal`
+  moved here after the fact, once it was clear they have no
+  `controls`-specific dependencies and are plausible to reuse elsewhere.
+
+`IconButton` is driven by a single `--icon-button-size` custom property
+(`font-size: calc(var(--icon-button-size) * 0.667)` keeps the glyph
+proportional to the box), replacing Font Awesome's `fa-2x`/`fa-xl` utility
+classes entirely — undo/redo now just pass `size="sm"`. `CloseButton` is a
+thin wrapper around `IconButton` (`icon="xmark"`). `ResetButton` was
+renamed `ResetDesignButton` to be self-explanatory without reading the
+code, matching the existing "design" terminology (`resetDesign()`, "Reset
+design?").
+
+While restyling `IconButton` to match `CloseButton`'s borderless/subtle-
+hover look, discovered that a CSS rule combining
+`transition: background-color` with a `color-mix()` hover target reliably
+gets stuck fully transparent and never animates in at least one current
+Chromium build — true even though `:hover` is confirmed matched and
+applied. This bug predated the refactor (the original modal buttons had
+the same pattern) but was directly in scope since it was being
+consolidated into shared CSS. Fix: drop the `transition` so the hover
+background snaps instantly instead of silently never appearing.
+
+Two non-React modules used outside their original neighborhood moved into
+a new `src/services/`: `state/persistence.ts` → `storageService.ts`
+(already called directly from both `AppContext` and `App.tsx`, not just
+internal to `state/`) and `utils/exportImage.ts` → `imageExportService.ts`.
+Finally, `SaveImageModal`'s image-generation/download/share logic (previously
+two `useEffect`s plus handler functions mixed into the component) was
+extracted into `src/hooks/useImageExport.ts`, leaving the component as
+pure markup driven by the hook's returned state/handlers.
+
+### Dark-mode flicker and modal resize jump
+
+Toggling dark mode, and reloading the page, both caused visible background
+flicker/flash, most noticeable at the viewport edges outside the centered
+`.page` column (and, on reload, the whole screen before React mounted).
+This took several rounds to fully pin down, since multiple plausible causes
+turned out to be partial or wrong:
+
+- **Reload flash**: Vite's dev server injects CSS via JS at runtime rather
+  than a blocking `<link rel="stylesheet">`, so a CSS-only default
+  background can't reliably win the race against first paint in dev (only
+  in production, where the built `index.html` has an actual blocking
+  `<link>`). Fixed with a synchronous inline `<script>` in `index.html`'s
+  `<head>` (before any other resource) that reads the persisted `darkMode`
+  flag from `localStorage` and sets `document.documentElement`'s
+  background directly to a literal color — independent of CSS/stylesheet
+  loading, so it behaves identically in dev and production.
+- **Toggle flicker/desync**: initially suspected to be a `useEffect`
+  (fires after paint) vs. `.page`'s synchronous inline style, fixed by
+  switching to `useLayoutEffect`. Then suspected to be `var(--base)` driving
+  an animated `background-color` (a pattern already known to get "stuck" in
+  one diagnostic, though that specific finding was later found to be a
+  testing-tool artifact — the browser tab being tested was backgrounded,
+  which pauses CSS transitions and made things look stuck that weren't).
+  The actual remaining cause: toggling dark mode also repaints every
+  hexagon's fill/stroke at the same instant (`TOGGLE_DARK_MODE` in the
+  reducer), and animating a full-viewport `background-color` transition at
+  the same moment as that large repaint caused an intermittent
+  compositor-timing flicker — worse, three elements (`.page`, `body`,
+  `html`) each had their own independent transition, so they could even
+  desync from each other by a frame.
+
+Final fix: background color is set as a **literal** value (not
+`var(--base)`) directly via inline style on all three elements, with **no
+CSS transition** anywhere — `.page` in render (`App.tsx`), `html`/`body` in
+a `useLayoutEffect` (runs before paint, closing the dev-only
+`useEffect`-after-paint gap) plus the `index.html` bootstrap script for the
+pre-mount case. Removing the animation entirely, rather than trying to
+keep multiple transitions in sync, is what actually made toggling
+flicker-free and perfectly in sync, every time. `--base`/`--accent` custom
+properties remain available for other descendants (buttons, modal, hex
+grout) that don't have this full-viewport/large-repaint collision.
+
+
+
+Separately, `SaveImageModal` visibly resized once its async-generated
+image loaded (narrow/short while "Generating image…" showed, then jumped
+wider/taller). Fixed by reserving the image's final layout space upfront:
+`.dialog` got a fixed `width` (not just `max-width`), and `.preview` gets
+an inline `aspect-ratio` computed from the grid's own shape (new
+`computeGridAspectRatio()` in `hexGrid.ts`, using the same
+`axialToPixel`/`boundingBox` math `HexGrid` and the export service rely
+on) rather than a hardcoded or ref-measured value — so the placeholder
+box is already the correct shape before the image exists, and the `<img>`
+(`object-fit: contain`) just fills it once ready.
+
 ## Process
 
 Work proceeds one logical step at a time. The user reviews and makes each

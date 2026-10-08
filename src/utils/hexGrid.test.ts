@@ -1,17 +1,22 @@
 import { describe, expect, it } from 'vitest'
-import { HEX_GRID_RADIUS, generateHexCells, groupHexCells } from './hexGrid'
+import {
+	HEX_GRID_RADIUS,
+	computeGridAspectRatio,
+	generateHexCells,
+	groupHexCells,
+} from './hexGrid'
 
 describe('generateHexCells', () => {
 	const cells = generateHexCells()
 
-	it('generates 271 cells at the default radius, matching the original hand-authored grid', () => {
-		expect(HEX_GRID_RADIUS).toBe(9)
-		expect(cells).toHaveLength(271)
+	it('generates 169 cells at the default radius (reduced from the original 271 for small touchscreens; see DECISIONS.md)', () => {
+		expect(HEX_GRID_RADIUS).toBe(7)
+		expect(cells).toHaveLength(169)
 	})
 
-	it('produces the same mirror-group orbit sizes measured from the original app (1 center, 13 sixes, 16 twelves)', () => {
+	it('produces the expected mirror-group orbit sizes at the default radius (1 center, 10 sixes, 9 twelves)', () => {
 		const groups = groupHexCells(cells)
-		expect(groups.size).toBe(30)
+		expect(groups.size).toBe(20)
 
 		const sizesByCount = new Map<number, number>()
 		for (const members of groups.values()) {
@@ -22,8 +27,8 @@ describe('generateHexCells', () => {
 		}
 
 		expect(sizesByCount.get(1)).toBe(1)
-		expect(sizesByCount.get(6)).toBe(13)
-		expect(sizesByCount.get(12)).toBe(16)
+		expect(sizesByCount.get(6)).toBe(10)
+		expect(sizesByCount.get(12)).toBe(9)
 	})
 
 	it('marks exactly one cell per group as clickable', () => {
@@ -45,5 +50,17 @@ describe('generateHexCells', () => {
 		const radius = 2
 		const small = generateHexCells(radius)
 		expect(small).toHaveLength(1 + 3 * radius * (radius + 1))
+	})
+})
+
+describe('computeGridAspectRatio', () => {
+	it('matches the known (width / height) ratio of the default flat-top grid', () => {
+		expect(computeGridAspectRatio()).toBeCloseTo(0.8762, 4)
+	})
+
+	it('returns a positive, finite ratio for other radii', () => {
+		const ratio = computeGridAspectRatio(3)
+		expect(ratio).toBeGreaterThan(0)
+		expect(Number.isFinite(ratio)).toBe(true)
 	})
 })

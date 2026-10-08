@@ -2,7 +2,10 @@ import { useCallback, useEffect, useMemo, useReducer } from 'react'
 import type { ReactNode } from 'react'
 import type { ColorScheme } from '../types/colorScheme'
 import { createInitialHistoryState, historyReducer } from './historyReducer'
-import { loadInitialAppState, savePersistedState } from './persistence'
+import {
+	loadInitialAppState,
+	savePersistedState,
+} from '../services/storageService'
 import { AppStateContext } from './appStateContext'
 
 export function AppStateProvider({
@@ -35,6 +38,10 @@ export function AppStateProvider({
 		() => dispatch({ type: 'TOGGLE_DARK_MODE' }),
 		[],
 	)
+	const toggleEditableArea = useCallback(
+		() => dispatch({ type: 'TOGGLE_EDITABLE_AREA' }),
+		[],
+	)
 	const resetDesign = useCallback(
 		() => dispatch({ type: 'RESET_DESIGN' }),
 		[],
@@ -49,6 +56,7 @@ export function AppStateProvider({
 			selectColor,
 			paintHexGroup,
 			toggleDarkMode,
+			toggleEditableArea,
 			resetDesign,
 			undo,
 			redo,
@@ -61,6 +69,7 @@ export function AppStateProvider({
 			selectColor,
 			paintHexGroup,
 			toggleDarkMode,
+			toggleEditableArea,
 			resetDesign,
 			undo,
 			redo,

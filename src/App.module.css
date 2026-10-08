@@ -1,4 +1,4 @@
-.app {
+.page {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
@@ -8,17 +8,28 @@
 	margin: 0 auto;
 	padding: 2.5rem 1.5rem;
 	min-height: 100vh;
-	background-color: var(--base, #fff);
-	transition: background-color 0.2s ease;
+	/* background-color is set inline (App.tsx). No transition: toggling
+     dark mode also repaints every hexagon's fill/stroke at the same
+     instant (see TOGGLE_DARK_MODE), and animating a full-viewport
+     background at the same time caused an intermittent compositor-timing
+     flicker. Snapping instantly here matches html/body (index.html,
+     App.tsx), so the whole background updates in one synced frame with
+     nothing left to animate out of sync. */
 }
 
-.title {
-	font-family: 'Righteous', sans-serif;
-	text-transform: uppercase;
-	font-size: clamp(1.75rem, 4vw, 2.5rem);
-	letter-spacing: 0.04em;
-	margin: 0;
-	color: var(--accent, #222);
+.app {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 1.5rem;
+	width: 100%;
+}
+
+.controlRows {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.75rem;
 }
 
 .colorRow {
@@ -26,14 +37,12 @@
 	flex-wrap: wrap;
 	justify-content: center;
 	align-items: center;
-	gap: 1rem;
 	width: 100%;
 }
 
-.bottomRow {
+.buttonGroup {
 	display: flex;
 	flex-wrap: wrap;
 	justify-content: center;
-	align-items: center;
-	gap: 1rem;
+	gap: 0.75rem;
 }

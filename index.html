@@ -2,6 +2,27 @@
 <html lang="en">
 	<head>
 		<meta charset="UTF-8" />
+		<!-- Runs synchronously, before anything paints, to avoid a flash of
+		     the wrong theme on a hard reload. In dev, Vite injects index.css
+		     via JS at runtime rather than a blocking stylesheet link, so a
+		     CSS-only default can't reliably win this race — setting the
+		     color directly here, independent of any stylesheet, is the only
+		     way that works in both dev and production. Duplicates
+		     storageService's storage key/shape by necessity — this has to
+		     be plain, un-bundled JS that runs before any module script. -->
+		<script>
+			try {
+				var design = JSON.parse(
+					localStorage.getItem('kaleidoscope:design'),
+				)
+				var dark = !design || design.darkMode !== false
+				document.documentElement.style.backgroundColor = dark
+					? '#222222'
+					: '#ffffff'
+			} catch (e) {
+				document.documentElement.style.backgroundColor = '#222222'
+			}
+		</script>
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<script

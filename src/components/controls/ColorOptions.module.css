@@ -1,0 +1,34 @@
+.options {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: nowrap;
+	justify-content: center;
+	align-items: center;
+	gap: 0;
+}
+
+.swatch {
+	/* Scales down on narrow screens so all 7 swatches always fit on one
+	   row (down to a 320px-wide viewport), without shrinking so much
+	   they're hard to tap. */
+	--swatch-size: clamp(26px, 7vw, 40px);
+	--swatch-margin: clamp(3px, 1.2vw, 9px);
+	width: var(--swatch-size);
+	height: var(--swatch-size);
+	margin: var(--swatch-margin);
+	padding: 0;
+	border: 1px solid #bbb;
+	border-radius: 4px;
+	cursor: pointer;
+	transition: border-color 0.15s ease;
+}
+
+.swatch:hover {
+	transform: scale(1.2);
+}
+
+.swatch[aria-pressed='true'] {
+	border-width: 2px;
+	margin: calc(var(--swatch-margin) - 1px);
+	border-color: var(--swatch-selected-border);
+}

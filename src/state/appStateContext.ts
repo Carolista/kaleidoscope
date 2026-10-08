@@ -8,6 +8,7 @@ export interface AppStateContextValue {
 	readonly selectColor: (color: string) => void
 	readonly paintHexGroup: (groupId: string) => void
 	readonly toggleDarkMode: () => void
+	readonly toggleEditableArea: () => void
 	readonly resetDesign: () => void
 	readonly undo: () => void
 	readonly redo: () => void

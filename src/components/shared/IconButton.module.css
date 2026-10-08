@@ -1,0 +1,39 @@
+.button {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: var(--icon-button-size, 2.5rem);
+	height: var(--icon-button-size, 2.5rem);
+	padding: 0;
+	border: none;
+	border-radius: 4px;
+	color: var(--accent, #222);
+	background: transparent;
+	cursor: pointer;
+}
+
+.button:hover,
+.button:focus-visible {
+	/* No transition here: animating background-color to/from a
+	   color-mix() result is buggy in at least one current Chromium build
+	   (the hover color never actually appears, stuck at the pre-transition
+	   value) — so this snaps instantly instead of fading. */
+	background-color: color-mix(in srgb, var(--accent, #222) 10%, transparent);
+}
+
+.button:disabled {
+	opacity: 0.4;
+	cursor: default;
+}
+
+.button:disabled:hover {
+	background-color: transparent;
+}
+
+/* Tied to --icon-button-size so the glyph always scales with its button
+   box, instead of snapping to a separate fa-2x/fa-xl utility class (whose
+   fixed em-multipliers can drift out of sync with the box, and whose
+   fa-xl has an unrelated line-height quirk in the Font Awesome kit). */
+.button i {
+	font-size: calc(var(--icon-button-size, 2.5rem) * 0.667);
+}

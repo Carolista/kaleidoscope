@@ -8,6 +8,7 @@ export type AppAction =
 	| { readonly type: 'SELECT_COLOR'; readonly color: string }
 	| { readonly type: 'PAINT_HEX_GROUP'; readonly groupId: string }
 	| { readonly type: 'TOGGLE_DARK_MODE' }
+	| { readonly type: 'TOGGLE_EDITABLE_AREA' }
 	| { readonly type: 'RESET_DESIGN' }
 
 // Matches the original app's randomized default scheme on page load.
@@ -21,6 +22,7 @@ export function createInitialAppState(): AppState {
 		currentScheme,
 		currentColor: currentScheme.colors[0],
 		darkMode: true,
+		showEditableArea: true,
 		hexGroupColors: {},
 	}
 }
@@ -82,6 +84,9 @@ export function appReducer(state: AppState, action: AppAction): AppState {
 			)
 			return { ...state, darkMode, hexGroupColors }
 		}
+
+		case 'TOGGLE_EDITABLE_AREA':
+			return { ...state, showEditableArea: !state.showEditableArea }
 
 		case 'RESET_DESIGN':
 			return { ...state, hexGroupColors: {} }
