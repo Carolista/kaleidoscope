@@ -1,6 +1,6 @@
 import type { AppState } from '../types/appState'
 import { colorSchemes } from '../data/colorSchemes'
-import { createInitialAppState } from './appReducer'
+import { createInitialAppState } from '../state/appReducer'
 
 const STORAGE_KEY = 'kaleidoscope:design'
 

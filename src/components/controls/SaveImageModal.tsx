@@ -1,11 +1,7 @@
-import { useEffect, useState } from 'react'
 import type { RefObject } from 'react'
 import { useAppState } from '../../state/useAppState'
 import { getThemeColors } from '../../state/theme'
-import {
-	buildExportFilename,
-	exportSvgAsPngBlob,
-} from '../../utils/exportImage'
+import { useImageExport } from '../../hooks/useImageExport'
 import Button from '../shared/Button'
 import CloseButton from '../shared/CloseButton'
 import Modal from '../shared/Modal'
@@ -17,102 +13,11 @@ export interface SaveImageModalProps {
 	readonly onClose: () => void
 }
 
-type ExportState =
-	| { readonly status: 'generating' }
-	| {
-			readonly status: 'ready'
-			readonly blob: Blob
-			readonly url: string
-			readonly filename: string
-	  }
-	| { readonly status: 'error' }
-
-function canShareFiles(file: File): boolean {
-	return (
-		typeof navigator.share === 'function' &&
-		typeof navigator.canShare === 'function' &&
-		navigator.canShare({ files: [file] })
-	)
-}
-
 function SaveImageModal({ open, svgRef, onClose }: SaveImageModalProps) {
 	const { state } = useAppState()
 	const { base } = getThemeColors(state.darkMode)
-	const [exportState, setExportState] = useState<ExportState>({
-		status: 'generating',
-	})
-
-	useEffect(() => {
-		if (!open) return
-		const svg = svgRef.current
-		if (!svg) return
-
-		let cancelled = false
-		setExportState({ status: 'generating' })
-
-		exportSvgAsPngBlob(svg, { backgroundColor: base })
-			.then(blob => {
-				if (cancelled) return
-				setExportState({
-					status: 'ready',
-					blob,
-					url: URL.createObjectURL(blob),
-					filename: buildExportFilename(),
-				})
-			})
-			.catch(() => {
-				if (!cancelled) setExportState({ status: 'error' })
-			})
-
-		return () => {
-			cancelled = true
-		}
-		// Only regenerate when the modal opens; the design underneath
-		// shouldn't change while this preview is up.
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [open])
-
-	useEffect(() => {
-		if (exportState.status !== 'ready') return
-		const { url } = exportState
-		return () => URL.revokeObjectURL(url)
-	}, [exportState])
-
-	function handleDownload() {
-		if (exportState.status !== 'ready') return
-		const link = document.createElement('a')
-		link.href = exportState.url
-		link.download = exportState.filename
-		// Some browsers only honor synthetic clicks on anchors that are
-		// actually attached to the document.
-		document.body.appendChild(link)
-		link.click()
-		link.remove()
-	}
-
-	async function handleShare() {
-		if (exportState.status !== 'ready') return
-		const file = new File([exportState.blob], exportState.filename, {
-			type: 'image/png',
-		})
-		try {
-			await navigator.share({
-				files: [file],
-				title: 'My Kaleidoscope design',
-			})
-		} catch (error) {
-			// AbortError just means the user cancelled the share sheet.
-			if ((error as Error).name !== 'AbortError') throw error
-		}
-	}
-
-	const canShare =
-		exportState.status === 'ready' &&
-		canShareFiles(
-			new File([exportState.blob], exportState.filename, {
-				type: 'image/png',
-			}),
-		)
+	const { exportState, canShare, handleDownload, handleShare } =
+		useImageExport(svgRef, open, base)
 
 	return (
 		<Modal

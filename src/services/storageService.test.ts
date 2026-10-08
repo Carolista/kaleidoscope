@@ -5,7 +5,7 @@ import {
 	loadInitialAppState,
 	savePersistedState,
 	hasPersistedDesign,
-} from './persistence'
+} from './storageService'
 
 const STORAGE_KEY = 'kaleidoscope:design'
 
@@ -20,7 +20,7 @@ function baseState(overrides: Partial<AppState> = {}): AppState {
 	}
 }
 
-describe('persistence', () => {
+describe('storageService', () => {
 	beforeEach(() => {
 		localStorage.clear()
 	})

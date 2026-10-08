@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildExportFilename, buildExportClone } from './exportImage'
+import { buildExportFilename, buildExportClone } from './imageExportService'
 
 describe('buildExportFilename', () => {
 	it('formats the date into a sortable timestamped filename', () => {

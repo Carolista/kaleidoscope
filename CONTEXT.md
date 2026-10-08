@@ -69,20 +69,40 @@ pass.
 - **Controls**: icon-only buttons (square, 2.5rem) with an `aria-label` and
   matching `title`. A toggle's label and icon describe the _action/destination_
   (e.g. the sun icon and "Switch to light mode" while in dark mode). Undo/redo
-  are a deliberate exception: smaller `fa-xl` icons in a 1.875rem box, to
-  read as secondary actions next to the five primary buttons.
-- **Modals**: use the shared `Modal` component (native `<dialog>`);
-  `ConfirmDialog`, `ColorThemeModal`, and `SaveImageModal` build on it.
+  are a deliberate exception: a smaller 1.875rem box (`IconButton`'s
+  `size="sm"`), to read as secondary actions next to the five primary
+  buttons.
+- **Shared components** (`src/components/shared/`): `IconButton` (icon-only,
+  sized via `--icon-button-size`, drives both the box and the icon's
+  `font-size` together so they can't drift out of sync — no Font Awesome
+  `fa-2x`/`fa-xl` utility classes), `Button` (text button,
+  `variant="solid"|"outline"`), `CloseButton` (a thin `IconButton` wrapper,
+  `icon="xmark"`), `Modal` (native `<dialog>` wrapper), and `ConfirmDialog`
+  (generic yes/no confirmation, built on `Modal` + `Button`). Hover
+  feedback on `IconButton`/`Button` intentionally has no `transition`: a
+  `background-color` transition whose target is a `color-mix()` value
+  reliably gets stuck fully transparent and never animates in at least one
+  current Chromium build, so the hover background snaps instantly instead.
 
 ## Architecture
 
+- **Folder structure**: `src/components/` is organized into subfolders —
+  `layout/` (page chrome, e.g. `Header`), `grid/` (`HexGrid`, `Hexagon`),
+  `controls/` (palette and everything below the grid), and `shared/`
+  (generic, reusable pieces like `IconButton`/`Button`/`Modal` used across
+  the others). One parent folder, not split into top-level feature
+  folders, since there's currently only one "epic" (coloring); revisit if
+  a genuinely separate major feature is added later. `src/services/` holds
+  non-React logic that's used outside a single component (`storageService`,
+  `imageExportService`); `src/hooks/` holds reusable React hooks
+  (`useImageExport`).
 - **State**: `useReducer` + Context, no external state library.
   - `appReducer` handles app actions.
   - `historyReducer` wraps it to provide undo/redo. Only painting, scheme
     changes, and reset are undoable (history is session-only, unlimited).
     Current color and dark mode are not.
-  - `persistence.ts` autosaves to `localStorage` (versioned payload, scheme
-    saved by name, defensive loading, all storage errors swallowed).
+  - `storageService.ts` autosaves to `localStorage` (versioned payload,
+    scheme saved by name, defensive loading, all storage errors swallowed).
 - **Grid** (`src/utils/hexGrid.ts`): axial `(q, r)` cells in a radius-7
   hexagon (169 cells; reduced from the original 271/radius-9 for small
   touchscreens, see DECISIONS.md), computed rather than hand-authored. Each
@@ -104,26 +124,28 @@ pass.
   explains the toggle; it opens only when touch is detected **and** no
   design was already persisted at load (captured once, before the autosave
   effect in `AppContext` can run, via `hasPersistedDesign()` in
-  `persistence.ts`) — so it reappears on reload until the user paints
+  `storageService.ts`) — so it reappears on reload until the user paints
   something, by design.
 - **Defaults**: starts in dark mode with a random color scheme (first
   visit).
 - **Scheme/theme switching** remaps painted hexes by palette position;
   toggling dark mode remaps hexes painted exactly base/accent.
-- **Image export** (`src/utils/exportImage.ts`): clones the live SVG, bakes
-  computed stroke styles onto it, forces every polygon fully opaque
-  (overriding the editable-wedge dimming, which is for on-screen display
-  only), sets explicit width/height (max 1600px), and rasterizes to a PNG
-  with the theme base color as background. Share is shown only when
-  `navigator.share` supports files; Download is always available.
+- **Image export** (`src/services/imageExportService.ts`, wrapped by the
+  `useImageExport` hook for `SaveImageModal`'s generate/download/share
+  flow): clones the live SVG, bakes computed stroke styles onto it, forces
+  every polygon fully opaque (overriding the editable-wedge dimming, which
+  is for on-screen display only), sets explicit width/height (max 1600px),
+  and rasterizes to a PNG with the theme base color as background. Share
+  is shown only when `navigator.share` supports files; Download is always
+  available.
 
 ## Layout
 
-Single column at every width: title, hex grid, then a `"Controls"` group
-holding, in order: current-color swatches (clamp-sized to stay on one row),
-undo/redo, and a `"Settings and Actions"` row of icon buttons (dark/light,
-color theme, show/hide editable area (touch devices only), reset, save
-image).
+A `<header>` with the title, then `<main>`: hex grid, then a `"Controls"`
+group holding, in order: current-color swatches (clamp-sized to stay on
+one row), undo/redo, and a `"Settings and Actions"` row of icon buttons
+(dark/light, color theme, show/hide editable area (touch devices only),
+reset, save image). Single column at every width.
 
 ## Accessibility standards
 
@@ -139,9 +161,10 @@ image).
 ## Testing
 
 - Component and logic tests only (Vitest + RTL + jsdom); one test file per
-  component with meaningful behavior, plus logic tests for state and
-  utilities. Playwright is used ad hoc for manual verification, not as a
-  maintained suite.
+  component with meaningful behavior, plus logic tests for state,
+  utilities, services, and hooks. Hooks use `@testing-library/react`'s
+  `renderHook`. Playwright is used ad hoc for manual verification, not as
+  a maintained suite (see Working agreements for when to reach for it).
 - `src/test/setup.ts` registers `cleanup` after each test and polyfills
   `<dialog>`'s `showModal`/`close`. `renderWithProvider` wraps components
   in `AppStateProvider`.

@@ -2,7 +2,10 @@ import { useCallback, useEffect, useMemo, useReducer } from 'react'
 import type { ReactNode } from 'react'
 import type { ColorScheme } from '../types/colorScheme'
 import { createInitialHistoryState, historyReducer } from './historyReducer'
-import { loadInitialAppState, savePersistedState } from './persistence'
+import {
+	loadInitialAppState,
+	savePersistedState,
+} from '../services/storageService'
 import { AppStateContext } from './appStateContext'
 
 export function AppStateProvider({

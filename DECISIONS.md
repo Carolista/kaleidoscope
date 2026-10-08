@@ -249,7 +249,7 @@ with these refinements decided along the way:
 
 A one-time `TouchIntroModal` was added on top of this, shown only when a
 touch device is detected **and** no design has ever been saved on that
-device (`hasPersistedDesign()` in `persistence.ts`, checked once at
+device (`hasPersistedDesign()` in `storageService.ts`, checked once at
 startup before the autosave effect can write anything). The user explicitly
 chose the simplest version of this rule over a separate "seen it" flag: if
 a touch user dismisses the modal without painting and reloads, it reappears
@@ -298,6 +298,55 @@ groups instead of one long wrapped row:
   undo/redo's touch target below the usual 2.5rem used elsewhere; given
   they're secondary/occasional actions (not core painting or settings), the
   smaller target was judged an acceptable tradeoff for the tighter layout.
+  (Superseded by `IconButton`'s `size="sm"` prop, below — the smaller
+  box/icon ratio itself didn't change.)
+
+### Reusable components, file organization, and services
+
+The `components/` folder had six nearly-identical icon-button CSS modules
+and three modals with duplicated text-button/close-button styles. Rather
+than top-level feature folders (rejected: there's only one real "epic",
+coloring, right now — revisit if a genuinely separate major feature like
+puzzles is ever added), the user chose to keep `components/` as a single
+parent folder with subfolders:
+
+- `components/layout/` — page chrome (`Header`, holding the title in a
+  proper `<header>` outside `<main>`; a future `Footer`/`NavMenu` would
+  live here too).
+- `components/grid/` — `HexGrid`, `Hexagon`.
+- `components/controls/` — the palette and everything below the grid.
+- `components/shared/` — generic, reusable pieces: `IconButton`, `Button`,
+  `CloseButton`, `Modal`, `ConfirmDialog`. `ConfirmDialog` and `Modal`
+  moved here after the fact, once it was clear they have no
+  `controls`-specific dependencies and are plausible to reuse elsewhere.
+
+`IconButton` is driven by a single `--icon-button-size` custom property
+(`font-size: calc(var(--icon-button-size) * 0.667)` keeps the glyph
+proportional to the box), replacing Font Awesome's `fa-2x`/`fa-xl` utility
+classes entirely — undo/redo now just pass `size="sm"`. `CloseButton` is a
+thin wrapper around `IconButton` (`icon="xmark"`). `ResetButton` was
+renamed `ResetDesignButton` to be self-explanatory without reading the
+code, matching the existing "design" terminology (`resetDesign()`, "Reset
+design?").
+
+While restyling `IconButton` to match `CloseButton`'s borderless/subtle-
+hover look, discovered that a CSS rule combining
+`transition: background-color` with a `color-mix()` hover target reliably
+gets stuck fully transparent and never animates in at least one current
+Chromium build — true even though `:hover` is confirmed matched and
+applied. This bug predated the refactor (the original modal buttons had
+the same pattern) but was directly in scope since it was being
+consolidated into shared CSS. Fix: drop the `transition` so the hover
+background snaps instantly instead of silently never appearing.
+
+Two non-React modules used outside their original neighborhood moved into
+a new `src/services/`: `state/persistence.ts` → `storageService.ts`
+(already called directly from both `AppContext` and `App.tsx`, not just
+internal to `state/`) and `utils/exportImage.ts` → `imageExportService.ts`.
+Finally, `SaveImageModal`'s image-generation/download/share logic (previously
+two `useEffect`s plus handler functions mixed into the component) was
+extracted into `src/hooks/useImageExport.ts`, leaving the component as
+pure markup driven by the hook's returned state/handlers.
 
 ## Process
 
