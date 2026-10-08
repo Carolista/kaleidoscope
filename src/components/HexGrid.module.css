@@ -1,0 +1,22 @@
+.hexGrid {
+	display: block;
+	width: 100%;
+	max-width: 560px;
+	height: auto;
+	margin: 0 auto;
+}
+
+/* Visually hides content while keeping it available to screen readers
+   (the standard "sr-only" clip pattern: display:none would remove it
+   from the accessibility tree too, so we clip it instead). */
+.visuallyHidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
