@@ -68,7 +68,16 @@ This led to a clean, computed (not hand-coded) grid design, implemented in
   - Undo/redo history
   - Custom color picker beyond the 11 preset schemes
   - Animation/transition polish
-  - Mobile/touch refinements
+  - Mobile/touch refinements, specifically: a touch-friendly way to
+    discover which hexagon "slice" is editable, since the hover-based
+    emphasis effect (Step 7) has no equivalent on touch devices (same
+    gap the original 2020 app had — not a regression, but worth solving
+    properly). Options considered and deferred: a permanent subtle
+    highlight on the editable wedge, a `(hover: none)` media-query
+    fallback that shows the wedge highlighted by default on touch, or an
+    explicit "Show editable area" toggle button. Tapping to paint already
+    works functionally on touch today (click events fire independent of
+    hover state); only the discoverability/affordance is deferred.
 
 ## Process
 

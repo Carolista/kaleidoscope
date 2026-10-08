@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { HEX_GRID_RADIUS, generateHexCells } from '../utils/hexGrid'
 import { axialToPixel, boundingBox, hexCorners } from '../utils/hexLayout'
 import type { HexLayout } from '../utils/hexLayout'
@@ -20,8 +20,9 @@ function HexGrid({
   radius = HEX_GRID_RADIUS,
   hexSize = DEFAULT_HEX_SIZE,
 }: HexGridProps) {
-  const { state } = useAppState()
+  const { state, paintHexGroup } = useAppState()
   const { accent } = getThemeColors(state.darkMode)
+  const [isHovering, setIsHovering] = useState(false)
 
   const layout: HexLayout = useMemo(
     () => ({ orientation: 'flat', size: hexSize }),
@@ -37,6 +38,7 @@ function HexGrid({
       polygons: cells.map((cell, i) => ({
         key: `${cell.q},${cell.r}`,
         groupId: cell.groupId,
+        isClickable: cell.isClickable,
         corners: hexCorners(centers[i], layout),
       })),
       viewBox: `${minX} ${minY} ${maxX - minX} ${maxY - minY}`,
@@ -49,12 +51,19 @@ function HexGrid({
       viewBox={viewBox}
       role="img"
       aria-label="Kaleidoscope hex grid"
+      onPointerMove={(event) =>
+        setIsHovering((event.target as Element).tagName === 'polygon')
+      }
+      onPointerLeave={() => setIsHovering(false)}
     >
-      {polygons.map(({ key, groupId, corners }) => (
+      {polygons.map(({ key, groupId, isClickable, corners }) => (
         <Hexagon
           key={key}
           corners={corners}
           fill={state.hexGroupColors[groupId] ?? accent}
+          isClickable={isClickable}
+          dimmed={isHovering && !isClickable}
+          onClick={() => paintHexGroup(groupId)}
         />
       ))}
     </svg>
