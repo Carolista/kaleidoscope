@@ -18,21 +18,3 @@
 	display: flex;
 	justify-content: flex-end;
 }
-
-.confirm {
-	font-family: 'Righteous', sans-serif;
-	font-size: 1rem;
-	text-transform: uppercase;
-	letter-spacing: 0.03em;
-	padding: 0.5rem 1rem;
-	border: 2px solid var(--accent, #222);
-	border-radius: 4px;
-	background: var(--accent, #222);
-	color: var(--base, #fff);
-	cursor: pointer;
-	transition: background-color 0.15s ease;
-}
-
-.confirm:hover {
-	background: color-mix(in srgb, var(--accent, #222) 80%, transparent);
-}

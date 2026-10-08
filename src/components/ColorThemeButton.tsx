@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import styles from './ColorThemeButton.module.css'
+import IconButton from './shared/IconButton'
 import ColorThemeModal from './ColorThemeModal'
 
 function ColorThemeButton() {
@@ -7,15 +7,11 @@ function ColorThemeButton() {
 
 	return (
 		<>
-			<button
-				type="button"
-				className={styles.button}
-				aria-label="Open color theme picker"
-				title="Open color theme picker"
+			<IconButton
+				icon="palette"
+				label="Open color theme picker"
 				onClick={() => setOpen(true)}
-			>
-				<i className="fa-solid fa-palette fa-2x" aria-hidden="true"></i>
-			</button>
+			/>
 			<ColorThemeModal open={open} onClose={() => setOpen(false)} />
 		</>
 	)

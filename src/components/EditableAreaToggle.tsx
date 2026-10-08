@@ -1,6 +1,6 @@
 import { useAppState } from '../state/useAppState'
 import { useIsTouchDevice } from '../utils/useIsTouchDevice'
-import styles from './EditableAreaToggle.module.css'
+import IconButton from './shared/IconButton'
 
 // Touch devices have no hover, so there's no way to discover the editable
 // wedge the way mouse users can (see HexGrid's hover-driven dimming). This
@@ -17,19 +17,12 @@ function EditableAreaToggle() {
 		: 'Show editable area'
 
 	return (
-		<button
-			type="button"
-			className={styles.toggle}
-			aria-label={label}
-			title={label}
+		// Icon shows the state a click leads to, matching the label.
+		<IconButton
+			icon={state.showEditableArea ? 'eye-slash' : 'eye'}
+			label={label}
 			onClick={toggleEditableArea}
-		>
-			{/* Icon shows the state a click leads to, matching the label. */}
-			<i
-				className={`fa-solid ${state.showEditableArea ? 'fa-eye-slash' : 'fa-eye'} fa-2x`}
-				aria-hidden="true"
-			></i>
-		</button>
+		/>
 	)
 }
 

@@ -3,6 +3,8 @@ import type { RefObject } from 'react'
 import { useAppState } from '../state/useAppState'
 import { getThemeColors } from '../state/theme'
 import { buildExportFilename, exportSvgAsPngBlob } from '../utils/exportImage'
+import Button from './shared/Button'
+import CloseButton from './shared/CloseButton'
 import Modal from './Modal'
 import styles from './SaveImageModal.module.css'
 
@@ -120,14 +122,7 @@ function SaveImageModal({ open, svgRef, onClose }: SaveImageModalProps) {
 				<h2 id="save-image-modal-title" className={styles.title}>
 					Save Image
 				</h2>
-				<button
-					type="button"
-					className={styles.closeButton}
-					aria-label="Close"
-					onClick={onClose}
-				>
-					×
-				</button>
+				<CloseButton label="Close" onClick={onClose} />
 			</div>
 
 			<div className={styles.preview}>
@@ -147,23 +142,13 @@ function SaveImageModal({ open, svgRef, onClose }: SaveImageModalProps) {
 			</div>
 
 			<div className={styles.actions}>
-				{canShare && (
-					<button
-						type="button"
-						className={styles.action}
-						onClick={handleShare}
-					>
-						Share
-					</button>
-				)}
-				<button
-					type="button"
-					className={styles.action}
+				{canShare && <Button onClick={handleShare}>Share</Button>}
+				<Button
 					disabled={exportState.status !== 'ready'}
 					onClick={handleDownload}
 				>
 					Download
-				</button>
+				</Button>
 			</div>
 		</Modal>
 	)

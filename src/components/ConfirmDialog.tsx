@@ -1,3 +1,4 @@
+import Button from './shared/Button'
 import Modal from './Modal'
 import styles from './ConfirmDialog.module.css'
 
@@ -32,20 +33,10 @@ function ConfirmDialog({
 			</h2>
 			<p className={styles.message}>{message}</p>
 			<div className={styles.actions}>
-				<button
-					type="button"
-					className={styles.cancel}
-					onClick={onCancel}
-				>
+				<Button variant="outline" onClick={onCancel}>
 					{cancelLabel}
-				</button>
-				<button
-					type="button"
-					className={styles.confirm}
-					onClick={onConfirm}
-				>
-					{confirmLabel}
-				</button>
+				</Button>
+				<Button onClick={onConfirm}>{confirmLabel}</Button>
 			</div>
 		</Modal>
 	)

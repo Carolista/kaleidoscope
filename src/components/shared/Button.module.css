@@ -1,0 +1,36 @@
+.button {
+	font-family: 'Righteous', sans-serif;
+	font-size: 1rem;
+	text-transform: uppercase;
+	letter-spacing: 0.03em;
+	padding: 0.5rem 1rem;
+	border: 2px solid var(--accent, #222);
+	border-radius: 4px;
+	cursor: pointer;
+}
+
+.button:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.solid {
+	background: var(--accent, #222);
+	color: var(--base, #fff);
+}
+
+/* No transition: animating background to/from a color-mix() result is
+   buggy in at least one current Chromium build (the hover color never
+   actually appears), so this snaps instantly instead of fading. */
+.solid:hover {
+	background: color-mix(in srgb, var(--accent, #222) 80%, transparent);
+}
+
+.outline {
+	background: transparent;
+	color: var(--accent, #222);
+}
+
+.outline:hover {
+	background: color-mix(in srgb, var(--accent, #222) 10%, transparent);
+}

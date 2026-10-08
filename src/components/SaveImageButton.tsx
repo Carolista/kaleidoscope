@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { RefObject } from 'react'
-import styles from './SaveImageButton.module.css'
+import IconButton from './shared/IconButton'
 import SaveImageModal from './SaveImageModal'
 
 export interface SaveImageButtonProps {
@@ -12,15 +12,11 @@ function SaveImageButton({ svgRef }: SaveImageButtonProps) {
 
 	return (
 		<>
-			<button
-				type="button"
-				className={styles.button}
-				aria-label="Save design as image"
-				title="Save design as image"
+			<IconButton
+				icon="image"
+				label="Save design as image"
 				onClick={() => setOpen(true)}
-			>
-				<i className="fa-solid fa-image fa-2x" aria-hidden="true"></i>
-			</button>
+			/>
 			<SaveImageModal
 				open={open}
 				svgRef={svgRef}

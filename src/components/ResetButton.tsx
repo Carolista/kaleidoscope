@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useAppState } from '../state/useAppState'
 import ConfirmDialog from './ConfirmDialog'
-import styles from './ResetButton.module.css'
+import IconButton from './shared/IconButton'
 
 function ResetButton() {
 	const { resetDesign } = useAppState()
@@ -9,15 +9,11 @@ function ResetButton() {
 
 	return (
 		<>
-			<button
-				type="button"
-				className={styles.reset}
-				aria-label="Reset design"
-				title="Reset design"
+			<IconButton
+				icon="eraser"
+				label="Reset design"
 				onClick={() => setConfirming(true)}
-			>
-				<i className="fa-solid fa-eraser fa-2x" aria-hidden="true"></i>
-			</button>
+			/>
 			<ConfirmDialog
 				open={confirming}
 				title="Reset design?"

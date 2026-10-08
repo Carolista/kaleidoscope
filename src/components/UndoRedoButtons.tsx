@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useAppState } from '../state/useAppState'
+import IconButton from './shared/IconButton'
 import styles from './UndoRedoButtons.module.css'
 
 function UndoRedoButtons() {
@@ -24,32 +25,22 @@ function UndoRedoButtons() {
 
 	return (
 		<div className={styles.group}>
-			<button
-				type="button"
-				className={styles.button}
-				aria-label="Undo"
+			<IconButton
+				icon="rotate-left"
+				label="Undo"
 				title="Undo (Ctrl/Cmd+Z)"
+				size="sm"
 				disabled={!canUndo}
 				onClick={undo}
-			>
-				<i
-					className="fa-solid fa-rotate-left fa-xl"
-					aria-hidden="true"
-				></i>
-			</button>
-			<button
-				type="button"
-				className={styles.button}
-				aria-label="Redo"
+			/>
+			<IconButton
+				icon="rotate-right"
+				label="Redo"
 				title="Redo (Ctrl/Cmd+Shift+Z)"
+				size="sm"
 				disabled={!canRedo}
 				onClick={redo}
-			>
-				<i
-					className="fa-solid fa-rotate-right fa-xl"
-					aria-hidden="true"
-				></i>
-			</button>
+			/>
 		</div>
 	)
 }

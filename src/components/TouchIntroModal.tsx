@@ -1,3 +1,4 @@
+import Button from './shared/Button'
 import Modal from './Modal'
 import styles from './TouchIntroModal.module.css'
 
@@ -29,13 +30,7 @@ function TouchIntroModal({ open, onClose }: TouchIntroModalProps) {
 				show the full kaleidoscope.
 			</p>
 			<div className={styles.actions}>
-				<button
-					type="button"
-					className={styles.confirm}
-					onClick={onClose}
-				>
-					Got It
-				</button>
+				<Button onClick={onClose}>Got It</Button>
 			</div>
 		</Modal>
 	)
