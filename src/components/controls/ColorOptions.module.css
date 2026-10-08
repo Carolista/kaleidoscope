@@ -17,7 +17,7 @@
 	height: var(--swatch-size);
 	margin: var(--swatch-margin);
 	padding: 0;
-	border: 1px solid #ddd;
+	border: 1px solid #bbb;
 	border-radius: 4px;
 	cursor: pointer;
 	transition: border-color 0.15s ease;

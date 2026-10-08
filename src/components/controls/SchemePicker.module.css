@@ -22,14 +22,14 @@
 }
 
 .schemeButton:hover {
-	background-color: rgb(128 128 128 / 10%);
+	background-color: rgb(128 128 128 / 20%);
 }
 
 .swatch {
 	display: inline-block;
-	width: 16px;
-	height: 16px;
+	width: 20px;
+	height: 20px;
 	margin: 0 2px;
-	border: 1px solid #eee;
+	border: 1px solid #bbb;
 	border-radius: 2px;
 }
