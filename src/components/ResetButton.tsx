@@ -3,7 +3,6 @@ import { useAppState } from '../state/useAppState'
 import ConfirmDialog from './ConfirmDialog'
 import styles from './ResetButton.module.css'
 
-/** Opens a confirmation dialog, then clears every painted hex back to the current scheme's default. */
 function ResetButton() {
 	const { resetDesign } = useAppState()
 	const [confirming, setConfirming] = useState(false)
@@ -13,14 +12,16 @@ function ResetButton() {
 			<button
 				type="button"
 				className={styles.reset}
+				aria-label="Reset design"
+				title="Reset design"
 				onClick={() => setConfirming(true)}
 			>
-				Reset Design
+				<i className="fa-solid fa-eraser fa-2x" aria-hidden="true"></i>
 			</button>
 			<ConfirmDialog
 				open={confirming}
 				title="Reset design?"
-				message="Are you sure you want to reset your design? This cannot be undone."
+				message="Are you sure you want to reset your design? You can undo this afterward if you change your mind."
 				confirmLabel="Reset"
 				cancelLabel="Cancel"
 				onConfirm={() => {

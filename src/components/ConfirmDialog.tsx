@@ -11,7 +11,6 @@ export interface ConfirmDialogProps {
 	readonly onCancel: () => void
 }
 
-/** A yes/no confirmation modal, built on the shared `Modal`. */
 function ConfirmDialog({
 	open,
 	title,

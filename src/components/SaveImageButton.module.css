@@ -1,4 +1,4 @@
-.toggle {
+.button {
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -13,7 +13,7 @@
 	transition: border-color 0.15s ease;
 }
 
-.toggle:hover,
-.toggle:focus-visible {
+.button:hover,
+.button:focus-visible {
 	border-color: var(--accent, #222);
 }

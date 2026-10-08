@@ -1,4 +1,4 @@
-.toggle {
+.button {
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -13,7 +13,21 @@
 	transition: border-color 0.15s ease;
 }
 
-.toggle:hover,
-.toggle:focus-visible {
+.button:hover,
+.button:focus-visible {
 	border-color: var(--accent, #222);
+}
+
+.button:disabled {
+	opacity: 0.4;
+	cursor: default;
+}
+
+.button:disabled:hover {
+	border-color: var(--base, #fff);
+}
+
+.group {
+	display: flex;
+	gap: 0.5rem;
 }

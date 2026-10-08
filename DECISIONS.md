@@ -22,6 +22,12 @@ The original vanilla JS/HTML/CSS app is preserved in [old-dom-app-2020/](/Users/
   alongside `npm run lint`.
 - **Deployment**: GitHub Pages via GitHub Actions (same target as the
   original app), added in Phase 1 Step 14.
+- **Comments**: minimal, on purpose. No JSDoc on TypeScript code (types
+  already document params/returns — JSDoc on top is redundant clutter).
+  Only comment non-obvious logic or a significant abstraction/workaround
+  (e.g. the hex symmetry math, the CSS-variable-inheritance workaround for
+  dark mode) — never restate what the code already makes obvious. Code
+  should speak for itself as much as possible.
 
 ## Grid symmetry analysis & implementation (Step 2)
 
@@ -59,7 +65,8 @@ This led to a clean, computed (not hand-coded) grid design, implemented in
 
 - **Phase 1** = rebuild to full feature parity with the original app only
   (color schemes, color picker, mirrored hex painting, scheme-switch
-  recoloring, dark mode, reset). No new features in this phase.
+  recoloring, dark mode, reset). No new features in this phase. **Done**
+  as of Step 14 (deployed to GitHub Pages via Actions).
 - **Phase 2+** = future feature branches, scoped individually later. Ideas
   raised during the original analysis, not yet committed to:
   - Persist current design (localStorage autosave)
@@ -87,6 +94,34 @@ This led to a clean, computed (not hand-coded) grid design, implemented in
     explicit "Show editable area" toggle button. Tapping to paint already
     works functionally on touch today (click events fire independent of
     hover state); only the discoverability/affordance is deferred.
+  - A robust README (replacing the default Vite scaffold one): what the
+    app is/does, live demo link, screenshots, local dev setup, scripts,
+    tech stack. User has example READMEs from other projects to use as a
+    style reference, but wants to hold off until there's more built
+    feature-wise to write about — keep "warm" on the list, not scheduled.
+  - Cleaning out excessive/outdated comments across `src/` and settling
+    on a going-forward comment-style guideline (left over from iterative
+    dev sessions; much of it over-explains obvious code).
+
+### Phase 2 priority order (as of Step 14 wrap-up)
+
+User's chosen sequence for the above, most to least immediate:
+1. **Comment cleanup** — also establishes the comment-style guideline to
+   follow for everything after.
+2. **localStorage persistence**
+3. **Quick features**: export/download, shareable URL, undo/redo (no
+   sub-order specified yet — will ask when we get there). Update: after
+   building export/download, the user clarified they'd misread
+   "shareable" as image-sharing, not URL-sharing, and were skeptical of
+   the URL idea anyway ("people don't share links to images these days,
+   they just share the images") — the shareable-URL item was dropped
+   from the backlog entirely. Order became: export/download/share image,
+   then undo/redo.
+4. **Touchscreen/mobile wedge discoverability**
+
+README stays on the backlog but deliberately unscheduled — revisit only
+when the user asks, likely once more of the above has landed and there's
+more to document.
 
 ## Hover feedback on painted hexagons
 
@@ -359,6 +394,190 @@ Implementation:
     `main` gets pushed to again before a deploy finishes.
 - No SPA routing/404-fallback trick needed — this is a single-page app
   with no client-side routes.
+
+### Comment cleanup + comment style guideline (Phase 2)
+
+Audited every comment in `src/` and trimmed anything that just restated
+what a function/type/component name and its TypeScript signature already
+made obvious (e.g. a component named `ResetButton` doesn't need a comment
+saying it resets the design). Converted all remaining `/** */` JSDoc-style
+comments to plain `//` — decided against JSDoc entirely, even for
+exported functions, since TypeScript types already document
+params/shapes and JSDoc on top is redundant clutter. Kept comments only
+for non-obvious logic or a significant abstraction/workaround (hex
+symmetry math, the CSS-variable-inheritance dark-mode workaround, native
+`<dialog>` quirks, etc.) — this is now the standing guideline for all
+future work, not just a one-time cleanup.
+
+### localStorage persistence (Phase 2)
+
+Autosaves the current design (scheme, current paint color, dark mode,
+painted hex groups) to `localStorage` on every state change, and restores
+it on load — so refreshing the page (or closing/reopening the tab) no
+longer loses a design, which was the original app's behavior too (no
+persistence at all).
+
+Implementation (`src/state/persistence.ts`):
+- The color **scheme is persisted by name**, not as the full scheme
+  object, and re-linked to the live `colorSchemes` data on load. This
+  means a saved design keeps working even if a scheme's colors are
+  tweaked later — it just picks up the current colors for that name,
+  consistent with how `SELECT_SCHEME` already remaps painted hexes by
+  palette position rather than storing absolute colors long-term.
+- The persisted payload includes a `version` number (currently `1`).
+  There's no migration logic yet since this is the first version, but
+  having it from the start means a future schema change can detect and
+  migrate (or safely discard) old saved data instead of crashing on it.
+- Loading is defensive end-to-end: missing key, corrupted JSON, an
+  unrecognized version, a scheme name that no longer exists, or malformed
+  `hexGroupColors` values all fall back to a fresh state (the same
+  random-scheme default as a first-ever visit) rather than throwing.
+  Both load and save also swallow any `localStorage` access error (e.g.
+  disabled storage in a private-browsing mode) so a storage problem can
+  never crash the app — it just means autosave silently doesn't work for
+  that session.
+- Wired in via `useReducer`'s lazy-init third argument
+  (`loadInitialAppState`) in `AppContext.tsx`, plus a `useEffect` that
+  calls `savePersistedState(state)` whenever `state` changes. No
+  debouncing — state only changes on deliberate user actions (paint,
+  pick scheme/color, toggle dark mode, reset), not at a rate where
+  `localStorage` writes are a concern.
+- Verified in-browser via Playwright: painted hexes, confirmed the save
+  fired, reloaded and confirmed the scheme/color/painted-hex state all
+  came back, then used Reset Design and confirmed the persisted
+  `hexGroupColors` cleared along with it.
+
+### Save design as image: PNG export, Share, and Download (Phase 2)
+
+Added a "Save design as image" button next to Reset Design, which opens a
+preview modal with Download (always) and Share (only when supported)
+buttons. Decisions made with the user up front:
+- **Format**: PNG only, no other formats offered.
+- **Background**: baked in as the current theme's base color, so the
+  exported image matches what's on screen (including unpainted hexes)
+  rather than exporting a transparent background.
+- **Flow**: a single icon button opens a modal that generates and
+  previews the image, then offers Share and/or Download from there,
+  rather than instant-downloading or separate Share/Download buttons on
+  the main screen.
+- **Share fallback**: the Share button is hidden entirely (not shown
+  disabled, not shown and erroring) when `navigator.share`/
+  `navigator.canShare` for files isn't supported — confirmed this path
+  works correctly, since the Playwright/headless-Chromium test
+  environment itself lacks `navigator.share` and correctly shows
+  Download-only.
+- Explicitly **not** doing a shareable-URL feature — the user felt
+  that's not how people share images today ("they just share the
+  images"), so this stays off the roadmap unless revisited later.
+
+Implementation (`src/utils/exportImage.ts`, `src/components/SaveImageModal.tsx`):
+- The hex grid's "grout" stroke lines are a CSS Module rule
+  (`stroke: var(--base)` in `Hexagon.module.css`), not an inline SVG
+  attribute. A naive clone-and-serialize of the live SVG would silently
+  lose all stroke rendering, since a standalone serialized SVG has no
+  access to the page's bundled stylesheet. Fixed by reading the computed
+  stroke style once from a single live `<polygon>` and baking it onto
+  every polygon in the detached clone as a plain attribute before
+  serializing — robust to future CSS tweaks since it reads real computed
+  values instead of hardcoding them.
+- The live SVG only has a `viewBox` (no explicit `width`/`height`,
+  for responsive on-screen sizing), which would otherwise rasterize to
+  the default 300×150 "replaced element" size when loaded via `Image`.
+  Fixed by setting explicit `width`/`height` on the cloned SVG (scaled
+  from its `viewBox` aspect ratio up to a 1600px max dimension) before
+  serializing, so the browser rasterizes directly at full resolution.
+  The original on-screen SVG is never touched, only the clone.
+- Verified end-to-end in-browser via Playwright: generated image
+  visually matches the on-screen design (dark/light background, painted
+  hex colors, crisp grout lines), confirmed actual output is a
+  1399×1600 PNG (no blur from upscaling a low-res raster), confirmed the
+  Download button triggers (anchor is appended to the document before
+  `.click()`, since some browsers only honor synthetic clicks on
+  attached anchors), and confirmed Share is correctly hidden in this
+  test environment (no `navigator.share` support there).
+- Note: the Playwright test harness doesn't surface a `download` event
+  for blob-URL anchor downloads at all (confirmed with a minimal
+  reproduction unrelated to this app's code), so the actual
+  browser-level file-save couldn't be directly observed in this
+  environment — this is a known harness limitation, not a sign of a bug.
+
+### Undo/redo (Phase 2)
+
+Added Undo/Redo icon buttons (next to Reset Design, in the bottom row)
+plus Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z keyboard shortcuts. Decisions made
+with the user up front:
+- **Scope**: only painting, scheme changes, and Reset Design are
+  undoable — these are the actual design content. Picking a new
+  "current color" (the color about to be painted with, not yet applied
+  to any hex) and toggling dark mode are left out of the undo stack,
+  since they're tool/viewing choices rather than steps in the design
+  itself.
+- **History depth**: unlimited for the session (resets on reload, since
+  it isn't persisted — only the current design is persisted, same as
+  before).
+- Reset Design's confirm-dialog copy was updated (it previously said
+  "This cannot be undone," which stopped being true).
+
+Implementation (`src/state/historyReducer.ts`):
+- Rather than reworking `appReducer`/`AppState` itself, undo/redo is a
+  wrapping reducer: `HistoryState` holds `{ present, past, future }`,
+  where `past`/`future` are stacks of lightweight design snapshots
+  (`{ currentScheme, hexGroupColors }` only — not full `AppState`, so a
+  snapshot doesn't capture a stale `currentColor`/`darkMode`). Every
+  action still flows through the real `appReducer` to compute the new
+  `present`; only actions in an explicit undoable-type allowlist
+  (`SELECT_SCHEME`, `PAINT_HEX_GROUP`, `RESET_DESIGN`) push the
+  *previous* present onto `past` and clear `future`. `UNDO`/`REDO` pop
+  between the stacks and splice the snapshot's fields onto the current
+  `present`, leaving `currentColor`/`darkMode` as they currently are.
+- This wrapping approach meant zero changes were needed to `appReducer`,
+  `AppState`, or any component that just reads `state`/calls the
+  existing action dispatchers — `AppContext.tsx` only needed to swap
+  which reducer `useReducer` runs, and add `undo`/`redo`/`canUndo`/
+  `canRedo` to the context value. All pre-existing tests passed
+  unchanged, which served as a regression check that the public API
+  surface didn't shift.
+- Known edge case, left as-is: dark mode toggling remaps any hex
+  painted exactly the old theme's base/accent color to the new theme's
+  base/accent (pre-existing behavior, unrelated to this feature). Since
+  that remap isn't itself undoable, undoing back across a dark-mode
+  toggle can restore a snapshot whose hex colors were accurate for the
+  *old* theme but are now stale relative to the current theme. This is
+  a pre-existing rare/cosmetic edge case, not introduced by undo/redo,
+  and wasn't worth blocking on.
+- Verified in-browser via Playwright: painted a hex → undo → redo
+  (confirmed via `localStorage`'s persisted `hexGroupColors`, not just
+  button disabled-state), changed color scheme → undo → redo via
+  keyboard shortcuts (confirmed via persisted `schemeName`), and
+  confirmed Reset Design is now undoable too.
+
+### Layout rework: grid-first, icon-only controls (Phase 2)
+
+Reorganized the page layout now that there are enough bottom-row
+features to make the earlier arrangement feel cluttered/buried:
+- **Hex grid moved above the color swatches**, directly under the
+  `<h1>` — it's the main attraction, so it should be the first thing
+  seen, not sandwiched between two rows of controls.
+- **Dark/light mode toggle moved out of the Settings modal** and into
+  the bottom row as a plain icon button (no more "Settings" modal
+  wrapping unrelated concerns together). It's now a sun/moon icon
+  instead of text, matching the icon-button style already used for
+  Reset/Save/Undo/Redo. The icon shows the mode a click leads to (sun
+  while currently in dark mode, moon while currently in light mode),
+  consistent with the label text's existing "describes the
+  destination, not the current state" convention.
+- **Settings modal (gear icon) renamed to a Color Theme modal
+  (palette icon)**, now solely responsible for picking a color scheme
+  — since dark mode moved out, there was no longer a reason for a
+  general "Settings" modal grouping two unrelated concerns. Renamed
+  `SettingsButton`/`SettingsModal` → `ColorThemeButton`/
+  `ColorThemeModal` throughout to match the narrower scope.
+- Bottom row order, left to right: Undo/Redo, Reset Design, Dark/Light
+  mode, Color Theme, Save Image.
+- Verified in-browser via Playwright: grid renders first under the
+  title, Color Theme modal opens showing only the scheme list, the
+  dark/light toggle flips the icon/label and the whole page's
+  base/accent colors on click, and no console errors across the flow.
 
 ## Process
 

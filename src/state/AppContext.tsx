@@ -1,7 +1,8 @@
-import { useCallback, useMemo, useReducer } from 'react'
+import { useCallback, useEffect, useMemo, useReducer } from 'react'
 import type { ReactNode } from 'react'
 import type { ColorScheme } from '../types/colorScheme'
-import { appReducer, createInitialAppState } from './appReducer'
+import { createInitialHistoryState, historyReducer } from './historyReducer'
+import { loadInitialAppState, savePersistedState } from './persistence'
 import { AppStateContext } from './appStateContext'
 
 export function AppStateProvider({
@@ -9,11 +10,14 @@ export function AppStateProvider({
 }: {
 	readonly children: ReactNode
 }) {
-	const [state, dispatch] = useReducer(
-		appReducer,
-		undefined,
-		createInitialAppState,
+	const [history, dispatch] = useReducer(historyReducer, undefined, () =>
+		createInitialHistoryState(loadInitialAppState()),
 	)
+	const { present: state } = history
+
+	useEffect(() => {
+		savePersistedState(state)
+	}, [state])
 
 	const selectScheme = useCallback(
 		(scheme: ColorScheme) => dispatch({ type: 'SELECT_SCHEME', scheme }),
@@ -35,6 +39,8 @@ export function AppStateProvider({
 		() => dispatch({ type: 'RESET_DESIGN' }),
 		[],
 	)
+	const undo = useCallback(() => dispatch({ type: 'UNDO' }), [])
+	const redo = useCallback(() => dispatch({ type: 'REDO' }), [])
 
 	const value = useMemo(
 		() => ({
@@ -44,6 +50,10 @@ export function AppStateProvider({
 			paintHexGroup,
 			toggleDarkMode,
 			resetDesign,
+			undo,
+			redo,
+			canUndo: history.past.length > 0,
+			canRedo: history.future.length > 0,
 		}),
 		[
 			state,
@@ -52,6 +62,10 @@ export function AppStateProvider({
 			paintHexGroup,
 			toggleDarkMode,
 			resetDesign,
+			undo,
+			redo,
+			history.past.length,
+			history.future.length,
 		],
 	)
 

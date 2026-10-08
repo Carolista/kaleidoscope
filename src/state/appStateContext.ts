@@ -9,6 +9,10 @@ export interface AppStateContextValue {
 	readonly paintHexGroup: (groupId: string) => void
 	readonly toggleDarkMode: () => void
 	readonly resetDesign: () => void
+	readonly undo: () => void
+	readonly redo: () => void
+	readonly canUndo: boolean
+	readonly canRedo: boolean
 }
 
 export const AppStateContext = createContext<AppStateContextValue | null>(null)

@@ -5,20 +5,18 @@ import styles from './Modal.module.css'
 export interface ModalProps {
 	readonly open: boolean
 	readonly onClose: () => void
-	/** id of the element (usually a heading) that labels this dialog for assistive tech. */
+	// id of the element (usually a heading) that labels this dialog for assistive tech.
 	readonly labelledBy: string
-	/** Extra class merged onto the `<dialog>` element, e.g. to set a max-width. */
+	// Extra class merged onto the `<dialog>` element, e.g. to set a max-width.
 	readonly className?: string
 	readonly children: ReactNode
 }
 
-/**
- * A reusable modal built on the native `<dialog>` element, which gives us a
- * backdrop, focus trapping, and Esc-to-cancel for free. `open` is
- * controlled by the parent; the dialog is imperatively shown/closed to
- * match, since `<dialog>` doesn't support a declarative `open` attribute
- * that also triggers modal (backdrop + focus trap) behavior.
- */
+// Built on the native `<dialog>` element, which gives us a backdrop, focus
+// trapping, and Esc-to-cancel for free. `open` is controlled by the
+// parent; the dialog is imperatively shown/closed to match, since
+// `<dialog>` doesn't support a declarative `open` attribute that also
+// triggers modal (backdrop + focus trap) behavior.
 function Modal({ open, onClose, labelledBy, className, children }: ModalProps) {
 	const dialogRef = useRef<HTMLDialogElement>(null)
 

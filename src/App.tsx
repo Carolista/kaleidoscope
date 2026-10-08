@@ -1,9 +1,12 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import type { CSSProperties } from 'react'
 import HexGrid from './components/HexGrid'
 import ColorOptions from './components/ColorOptions'
-import SettingsButton from './components/SettingsButton'
+import ColorThemeButton from './components/ColorThemeButton'
+import DarkModeToggle from './components/DarkModeToggle'
 import ResetButton from './components/ResetButton'
+import SaveImageButton from './components/SaveImageButton'
+import UndoRedoButtons from './components/UndoRedoButtons'
 import { useAppState } from './state/useAppState'
 import { getThemeColors } from './state/theme'
 import styles from './App.module.css'
@@ -11,6 +14,7 @@ import styles from './App.module.css'
 function App() {
 	const { state } = useAppState()
 	const { base, accent } = getThemeColors(state.darkMode)
+	const svgRef = useRef<SVGSVGElement>(null)
 
 	useEffect(() => {
 		// `--base`/`--accent` are set inline below, but CSS custom properties
@@ -26,16 +30,21 @@ function App() {
 			style={{ '--base': base, '--accent': accent } as CSSProperties}
 		>
 			<h1 className={styles.title}>Kaleidoscope</h1>
+			<HexGrid svgRef={svgRef} />
 			<div
-				className={styles.topRow}
+				className={styles.colorRow}
 				role="group"
 				aria-label="Color controls"
 			>
 				<ColorOptions />
-				<SettingsButton />
 			</div>
-			<HexGrid />
-			<ResetButton />
+			<div className={styles.bottomRow}>
+				<DarkModeToggle />
+				<ColorThemeButton />
+				<UndoRedoButtons />
+				<ResetButton />
+				<SaveImageButton svgRef={svgRef} />
+			</div>
 		</main>
 	)
 }

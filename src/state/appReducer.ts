@@ -10,7 +10,7 @@ export type AppAction =
 	| { readonly type: 'TOGGLE_DARK_MODE' }
 	| { readonly type: 'RESET_DESIGN' }
 
-/** Picks a random scheme, matching the original app's randomized default on page load. */
+// Matches the original app's randomized default scheme on page load.
 export function pickRandomScheme(): ColorScheme {
 	return colorSchemes[Math.floor(Math.random() * colorSchemes.length)]
 }

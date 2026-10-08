@@ -2,11 +2,9 @@ import { colorSchemes } from '../data/colorSchemes'
 import { useAppState } from '../state/useAppState'
 import styles from './SchemePicker.module.css'
 
-/**
- * One row per color scheme, each showing its 5 swatches. Clicking a row
- * selects that scheme as current (which also resets the current paint
- * color to the scheme's first color — see the reducer's SELECT_SCHEME).
- */
+// Clicking a row selects it as the current scheme, which also resets the
+// current paint color to the scheme's first color (see the reducer's
+// SELECT_SCHEME).
 function SchemePicker() {
 	const { state, selectScheme } = useAppState()
 
