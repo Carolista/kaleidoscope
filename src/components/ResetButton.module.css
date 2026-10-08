@@ -14,6 +14,7 @@
     background-color 0.15s ease;
 }
 
-.reset:hover {
+.reset:hover,
+.reset:focus-visible {
   border-color: var(--accent, #222);
 }

@@ -16,6 +16,11 @@
   cursor: pointer;
 }
 
+.clickable:focus-visible {
+  outline: 3px solid var(--accent, #222);
+  outline-offset: -2px;
+}
+
 .clickable:hover {
   /* --hover-fill is computed per-cell in JS (colorMath.ts) from its own
      fill color, so this only ever changes `fill` — the stroke is

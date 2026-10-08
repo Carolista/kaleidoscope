@@ -6,12 +6,10 @@ function DarkModeToggle() {
   const { state, toggleDarkMode } = useAppState()
 
   return (
-    <button
-      type="button"
-      className={styles.toggle}
-      aria-pressed={state.darkMode}
-      onClick={toggleDarkMode}
-    >
+    <button type="button" className={styles.toggle} onClick={toggleDarkMode}>
+      {/* The label names the action's destination mode, not the current
+          state, so aria-pressed (which describes current state) would be
+          misleading here -- the label text alone fully conveys the action. */}
       {state.darkMode ? 'Light Mode' : 'Dark Mode'}
     </button>
   )

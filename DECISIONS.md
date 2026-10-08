@@ -167,8 +167,76 @@ Further simplified the layout to a single column that works at all widths
   mechanics as the original `ConfirmDialog`) that `ConfirmDialog` and the
   new `SettingsModal` both use, instead of duplicating the show/close/
   cancel/backdrop-click logic.
-- The settings gear icon is adapted from the open-source Feather Icons
-  "settings" glyph (MIT licensed).
+
+## Icons
+
+The user has a Font Awesome Kit subscription, loaded via a `<script>` tag
+in `index.html` (`https://kit.fontawesome.com/...`). Icons are used as
+plain `<i className="fa-solid fa-<name> fa-<size>">` elements (e.g. the
+settings gear button) rather than an npm/React icon package — use this
+same pattern for any future icons rather than inline SVGs or another icon
+library.
+
+## Accessibility pass (Step 12)
+
+Audited every component; the single biggest gap was that the hex grid's
+`<svg role="img">` wrapper told assistive tech to treat the whole grid as
+a flat, non-interactive image, which suppresses *all* descendant
+interactive elements from the accessibility tree — meaning none of the 30
+paintable hex cells were reachable by keyboard or screen reader at all,
+despite working fine with a mouse. Fixed by:
+
+- Removing `role="img"` from the `<svg>`; it's now `role="group"` with
+  `aria-describedby` pointing to a visually-hidden instructions paragraph
+  ("Tab to move between hexagons. Press Enter or Space...").
+- Each clickable hex `<polygon>` now gets `tabIndex={0}`, `role="button"`,
+  an `aria-label` of the form "Paint hex tile N of 30" (cells are numbered
+  in rendering order among only the 30 clickable mirror-group
+  representatives — there's no other meaningful identity to expose, since
+  `groupId` is an internal axial-coordinate string), and an `onKeyDown`
+  handler so Enter/Space paints exactly like a click.
+- Non-clickable mirror/reflection polygons get `aria-hidden="true"` (they
+  were already non-interactive and only exist as visual decoration).
+- Added a visually-hidden (`sr-only`-style clip, not `display: none`, so
+  it's still in the accessibility tree) `role="status" aria-live="polite"`
+  region in `HexGrid` that announces "Painted hex tile N of 30." after
+  each paint, since there's otherwise no non-visual feedback that the
+  action succeeded.
+- Added a `:focus-visible` outline style to clickable hexagons (SVG shapes
+  don't get a default browser focus ring the way HTML buttons do), and
+  added matching `:focus-visible` rules (mirroring the existing `:hover`
+  styles) to the Settings/Reset/Dark-mode buttons for consistent keyboard
+  focus visibility across the app.
+- Scope note: tab order visits all 30 cells sequentially (like a toolbar),
+  not a full 2D roving-tabindex ARIA grid with arrow-key navigation — that
+  richer widget pattern is logged below as a Phase 2 idea if ever needed.
+
+Other smaller fixes made in this pass:
+- `DarkModeToggle` had `aria-pressed={state.darkMode}` paired with a label
+  that describes the *destination* mode ("Dark Mode" while currently
+  light), which is a mismatch — `aria-pressed` conventionally describes
+  the *current* state the label names, so a screen reader would announce
+  something backwards-sounding. Removed `aria-pressed`; the changing label
+  text alone already fully conveys the action (same pattern as a
+  "Follow"/"Unfollow" button).
+- The Font Awesome gear `<i>` icon in `SettingsButton` is now
+  `aria-hidden="true"` — the button already has `aria-label="Open
+  settings"`, so the icon itself is purely decorative.
+- The `.topRow` wrapper div in `App.tsx` had an `aria-label` with no role,
+  which is ignored by assistive tech on a plain `<div>`; added
+  `role="group"` so the label is actually exposed.
+- Confirmed already-good patterns needed no changes: `ColorOptions` and
+  `SchemePicker` (real `<button>`s, `aria-pressed`, `aria-label`,
+  `role="group"`, `aria-hidden` on decorative swatch spans), and `Modal`
+  (native `<dialog>` + `showModal()` gives focus trapping, `aria-modal`,
+  and Esc-to-cancel for free — used by both `ConfirmDialog` and
+  `SettingsModal`). No `outline: none` anywhere suppressing focus rings.
+
+### Phase 2 ideas (new, from this pass)
+
+- Full ARIA grid pattern (roving tabindex + arrow-key navigation) for the
+  hex grid, if sequential tab order through 30 cells ever feels tedious
+  in practice.
 
 ## Process
 

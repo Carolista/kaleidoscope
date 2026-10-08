@@ -17,7 +17,7 @@ function App() {
       style={{ '--base': base, '--accent': accent } as CSSProperties}
     >
       <h1 className={styles.title}>Kaleidoscope</h1>
-      <div className={styles.topRow} aria-label="Color controls">
+      <div className={styles.topRow} role="group" aria-label="Color controls">
         <ColorOptions />
         <SettingsButton />
       </div>

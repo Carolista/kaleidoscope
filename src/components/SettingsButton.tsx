@@ -15,7 +15,7 @@ function SettingsButton() {
         title="Open settings"
         onClick={() => setOpen(true)}
       >
-        <i className="fa-solid fa-gear fa-2x"></i>
+        <i className="fa-solid fa-gear fa-2x" aria-hidden="true"></i>
       </button>
       <SettingsModal open={open} onClose={() => setOpen(false)} />
     </>

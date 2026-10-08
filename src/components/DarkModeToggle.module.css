@@ -14,6 +14,7 @@
     background-color 0.15s ease;
 }
 
-.toggle:hover {
+.toggle:hover,
+.toggle:focus-visible {
   border-color: var(--accent, #222);
 }

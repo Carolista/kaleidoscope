@@ -31,44 +31,67 @@ function HexGrid({
 
   const cells = useMemo(() => generateHexCells(radius), [radius])
 
-  const { polygons, viewBox } = useMemo(() => {
+  const { polygons, viewBox, tileCount } = useMemo(() => {
     const centers = cells.map((cell) => axialToPixel(cell, layout))
     const { minX, minY, maxX, maxY } = boundingBox(centers, layout)
+    let clickableIndex = 0
+    const polygons = cells.map((cell, i) => ({
+      key: `${cell.q},${cell.r}`,
+      groupId: cell.groupId,
+      isClickable: cell.isClickable,
+      tileNumber: cell.isClickable ? ++clickableIndex : undefined,
+      corners: hexCorners(centers[i], layout),
+    }))
     return {
-      polygons: cells.map((cell, i) => ({
-        key: `${cell.q},${cell.r}`,
-        groupId: cell.groupId,
-        isClickable: cell.isClickable,
-        corners: hexCorners(centers[i], layout),
-      })),
+      polygons,
       viewBox: `${minX} ${minY} ${maxX - minX} ${maxY - minY}`,
+      tileCount: clickableIndex,
     }
   }, [cells, layout])
 
+  const [announcement, setAnnouncement] = useState('')
+
+  function handlePaint(groupId: string, tileNumber: number | undefined) {
+    paintHexGroup(groupId)
+    setAnnouncement(`Painted hex tile ${tileNumber} of ${tileCount}.`)
+  }
+
   return (
-    <svg
-      className={styles.hexGrid}
-      viewBox={viewBox}
-      role="img"
-      aria-label="Kaleidoscope hex grid"
-      onPointerMove={(event) =>
-        setIsHovering((event.target as Element).tagName === 'polygon')
-      }
-      onPointerLeave={() => setIsHovering(false)}
-    >
-      {polygons.map(({ key, groupId, isClickable, corners }) => (
-        <Hexagon
-          key={key}
-          corners={corners}
-          fill={state.hexGroupColors[groupId] ?? accent}
-          isClickable={isClickable}
-          dimmed={isHovering && !isClickable}
-          base={base}
-          accent={accent}
-          onClick={() => paintHexGroup(groupId)}
-        />
-      ))}
-    </svg>
+    <>
+      <p id="hex-grid-instructions" className={styles.visuallyHidden}>
+        Tab to move between hexagons. Press Enter or Space to paint the focused
+        hexagon with the current color.
+      </p>
+      <svg
+        className={styles.hexGrid}
+        viewBox={viewBox}
+        role="group"
+        aria-label="Kaleidoscope hex grid"
+        aria-describedby="hex-grid-instructions"
+        onPointerMove={(event) =>
+          setIsHovering((event.target as Element).tagName === 'polygon')
+        }
+        onPointerLeave={() => setIsHovering(false)}
+      >
+        {polygons.map(({ key, groupId, isClickable, tileNumber, corners }) => (
+          <Hexagon
+            key={key}
+            corners={corners}
+            fill={state.hexGroupColors[groupId] ?? accent}
+            isClickable={isClickable}
+            dimmed={isHovering && !isClickable}
+            base={base}
+            accent={accent}
+            tileNumber={tileNumber}
+            tileCount={tileCount}
+            onClick={() => handlePaint(groupId, tileNumber)}
+          />
+        ))}
+      </svg>
+      <p role="status" aria-live="polite" className={styles.visuallyHidden}>
+        {announcement}
+      </p>
+    </>
   )
 }
 
