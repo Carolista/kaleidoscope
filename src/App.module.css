@@ -2,9 +2,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2rem;
+  gap: 1.5rem;
   width: 100%;
-  max-width: 1100px;
+  max-width: 640px;
   margin: 0 auto;
   padding: 2.5rem 1.5rem;
   min-height: 100vh;
@@ -21,32 +21,11 @@
   color: var(--accent, #222);
 }
 
-.layout {
+.topRow {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  align-items: flex-start;
-  gap: 2.5rem;
-  width: 100%;
-}
-
-.display {
-  flex: 1 1 auto;
-  min-width: 280px;
-  max-width: 600px;
-}
-
-.controls {
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 1.25rem;
-}
-
-.controlsRow {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 1.5rem;
+  gap: 1rem;
+  width: 100%;
 }

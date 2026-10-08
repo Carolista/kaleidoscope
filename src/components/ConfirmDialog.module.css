@@ -1,14 +1,5 @@
 .dialog {
-  border: 2px solid var(--accent, #222);
-  border-radius: 6px;
-  padding: 1.5rem;
   max-width: 24rem;
-  background: var(--base, #fff);
-  color: var(--accent, #222);
-}
-
-.dialog::backdrop {
-  background: rgb(0 0 0 / 50%);
 }
 
 .title {

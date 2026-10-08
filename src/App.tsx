@@ -1,8 +1,7 @@
 import type { CSSProperties } from 'react'
 import HexGrid from './components/HexGrid'
-import SchemePicker from './components/SchemePicker'
 import ColorOptions from './components/ColorOptions'
-import DarkModeToggle from './components/DarkModeToggle'
+import SettingsButton from './components/SettingsButton'
 import ResetButton from './components/ResetButton'
 import { useAppState } from './state/useAppState'
 import { getThemeColors } from './state/theme'
@@ -18,21 +17,12 @@ function App() {
       style={{ '--base': base, '--accent': accent } as CSSProperties}
     >
       <h1 className={styles.title}>Kaleidoscope</h1>
-      <div className={styles.layout}>
-        <section className={styles.controls} aria-label="Color controls">
-          <div className={styles.controlsRow}>
-            <SchemePicker />
-            <ColorOptions />
-          </div>
-          <div className={styles.controlsRow}>
-            <DarkModeToggle />
-            <ResetButton />
-          </div>
-        </section>
-        <section className={styles.display}>
-          <HexGrid />
-        </section>
+      <div className={styles.topRow} aria-label="Color controls">
+        <ColorOptions />
+        <SettingsButton />
       </div>
+      <HexGrid />
+      <ResetButton />
     </main>
   )
 }

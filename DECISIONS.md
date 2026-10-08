@@ -68,6 +68,15 @@ This led to a clean, computed (not hand-coded) grid design, implemented in
   - Undo/redo history
   - Custom color picker beyond the 11 preset schemes
   - Animation/transition polish
+  - Releasing new color themes/schemes over time (the Settings modal's
+    "Color Theme" list is structured as a simple data-driven list
+    specifically so new schemes can be added later without UI changes).
+  - A simplified/lower-density hex grid (fewer perimeter rings) for small
+    screens, since the full 271-cell grid may be too visually complex on
+    narrow viewports. Not implemented yet — current grid just scales down
+    to fit via the SVG's responsive `viewBox`.
+  - Supporting alternative shapes/tile maps beyond hexagons (e.g. square,
+    triangular, or other tessellations) as a user-selectable grid style.
   - Mobile/touch refinements, specifically: a touch-friendly way to
     discover which hexagon "slice" is editable, since the hover-based
     emphasis effect (Step 7) has no equivalent on touch devices (same
@@ -141,6 +150,25 @@ native `<dialog>` element rather than a hand-rolled modal:
 - Added subtle modern touches not in the original (rounded corners on
   buttons/swatches/dialog, hover background tints, smoother transitions)
   while keeping all functional behavior identical to Phase 1 scope.
+
+## Layout simplification (revision after Step 11)
+
+Further simplified the layout to a single column that works at all widths
+(no multi-column design needed, even on wide screens):
+- **Current color options** (the 7 paintable swatches) moved to a
+  horizontal row directly under the `<h1>`, always visible.
+- **Color theme picker** (the 11 preset schemes) and the **dark/light mode
+  toggle** were moved into a new Settings modal, opened via a cog icon next
+  to the color options row. The page updates live as soon as a theme is
+  picked — no need to close the modal first, though closing it is the
+  natural way to return to painting.
+- **Reset Design** moved below the hex grid.
+- Built a generic `Modal` component (native `<dialog>`-based, same
+  mechanics as the original `ConfirmDialog`) that `ConfirmDialog` and the
+  new `SettingsModal` both use, instead of duplicating the show/close/
+  cancel/backdrop-click logic.
+- The settings gear icon is adapted from the open-source Feather Icons
+  "settings" glyph (MIT licensed).
 
 ## Process
 

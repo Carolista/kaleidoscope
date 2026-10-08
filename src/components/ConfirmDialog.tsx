@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import Modal from './Modal'
 import styles from './ConfirmDialog.module.css'
 
 export interface ConfirmDialogProps {
@@ -11,13 +11,7 @@ export interface ConfirmDialogProps {
   readonly onCancel: () => void
 }
 
-/**
- * A reusable modal confirmation dialog built on the native `<dialog>`
- * element, which gives us a backdrop, focus trapping, and Esc-to-cancel
- * for free. `open` is controlled by the parent; the dialog is imperatively
- * shown/closed to match, since `<dialog>` doesn't support a declarative
- * `open` attribute that also triggers modal (backdrop + focus trap) behavior.
- */
+/** A yes/no confirmation modal, built on the shared `Modal`. */
 function ConfirmDialog({
   open,
   title,
@@ -27,37 +21,12 @@ function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
-  const dialogRef = useRef<HTMLDialogElement>(null)
-
-  useEffect(() => {
-    const dialog = dialogRef.current
-    if (!dialog) return
-
-    if (open && !dialog.open) {
-      dialog.showModal()
-    } else if (!open && dialog.open) {
-      dialog.close()
-    }
-  }, [open])
-
   return (
-    <dialog
-      ref={dialogRef}
+    <Modal
+      open={open}
+      onClose={onCancel}
+      labelledBy="confirm-dialog-title"
       className={styles.dialog}
-      aria-labelledby="confirm-dialog-title"
-      onCancel={(event) => {
-        // Native Esc-to-cancel; prevent the default close so our effect
-        // (driven by the parent flipping `open`) stays the single source
-        // of truth for when the dialog actually closes.
-        event.preventDefault()
-        onCancel()
-      }}
-      onClick={(event) => {
-        // The <dialog> element itself fills the viewport when shown as a
-        // modal, so a click landing directly on it (not its content) is a
-        // click on the backdrop area.
-        if (event.target === dialogRef.current) onCancel()
-      }}
     >
       <h2 id="confirm-dialog-title" className={styles.title}>
         {title}
@@ -71,7 +40,7 @@ function ConfirmDialog({
           {confirmLabel}
         </button>
       </div>
-    </dialog>
+    </Modal>
   )
 }
 
