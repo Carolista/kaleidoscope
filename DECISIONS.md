@@ -501,6 +501,56 @@ Implementation (`src/utils/exportImage.ts`, `src/components/SaveImageModal.tsx`)
   browser-level file-save couldn't be directly observed in this
   environment — this is a known harness limitation, not a sign of a bug.
 
+### Undo/redo (Phase 2)
+
+Added Undo/Redo icon buttons (next to Reset Design, in the bottom row)
+plus Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z keyboard shortcuts. Decisions made
+with the user up front:
+- **Scope**: only painting, scheme changes, and Reset Design are
+  undoable — these are the actual design content. Picking a new
+  "current color" (the color about to be painted with, not yet applied
+  to any hex) and toggling dark mode are left out of the undo stack,
+  since they're tool/viewing choices rather than steps in the design
+  itself.
+- **History depth**: unlimited for the session (resets on reload, since
+  it isn't persisted — only the current design is persisted, same as
+  before).
+- Reset Design's confirm-dialog copy was updated (it previously said
+  "This cannot be undone," which stopped being true).
+
+Implementation (`src/state/historyReducer.ts`):
+- Rather than reworking `appReducer`/`AppState` itself, undo/redo is a
+  wrapping reducer: `HistoryState` holds `{ present, past, future }`,
+  where `past`/`future` are stacks of lightweight design snapshots
+  (`{ currentScheme, hexGroupColors }` only — not full `AppState`, so a
+  snapshot doesn't capture a stale `currentColor`/`darkMode`). Every
+  action still flows through the real `appReducer` to compute the new
+  `present`; only actions in an explicit undoable-type allowlist
+  (`SELECT_SCHEME`, `PAINT_HEX_GROUP`, `RESET_DESIGN`) push the
+  *previous* present onto `past` and clear `future`. `UNDO`/`REDO` pop
+  between the stacks and splice the snapshot's fields onto the current
+  `present`, leaving `currentColor`/`darkMode` as they currently are.
+- This wrapping approach meant zero changes were needed to `appReducer`,
+  `AppState`, or any component that just reads `state`/calls the
+  existing action dispatchers — `AppContext.tsx` only needed to swap
+  which reducer `useReducer` runs, and add `undo`/`redo`/`canUndo`/
+  `canRedo` to the context value. All pre-existing tests passed
+  unchanged, which served as a regression check that the public API
+  surface didn't shift.
+- Known edge case, left as-is: dark mode toggling remaps any hex
+  painted exactly the old theme's base/accent color to the new theme's
+  base/accent (pre-existing behavior, unrelated to this feature). Since
+  that remap isn't itself undoable, undoing back across a dark-mode
+  toggle can restore a snapshot whose hex colors were accurate for the
+  *old* theme but are now stale relative to the current theme. This is
+  a pre-existing rare/cosmetic edge case, not introduced by undo/redo,
+  and wasn't worth blocking on.
+- Verified in-browser via Playwright: painted a hex → undo → redo
+  (confirmed via `localStorage`'s persisted `hexGroupColors`, not just
+  button disabled-state), changed color scheme → undo → redo via
+  keyboard shortcuts (confirmed via persisted `schemeName`), and
+  confirmed Reset Design is now undoable too.
+
 ## Process
 
 - Work proceeds one Phase 1 step at a time (see project plan); the user

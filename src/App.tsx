@@ -5,6 +5,7 @@ import ColorOptions from './components/ColorOptions'
 import SettingsButton from './components/SettingsButton'
 import ResetButton from './components/ResetButton'
 import SaveImageButton from './components/SaveImageButton'
+import UndoRedoButtons from './components/UndoRedoButtons'
 import { useAppState } from './state/useAppState'
 import { getThemeColors } from './state/theme'
 import styles from './App.module.css'
@@ -38,6 +39,7 @@ function App() {
 			</div>
 			<HexGrid svgRef={svgRef} />
 			<div className={styles.bottomRow}>
+				<UndoRedoButtons />
 				<ResetButton />
 				<SaveImageButton svgRef={svgRef} />
 			</div>

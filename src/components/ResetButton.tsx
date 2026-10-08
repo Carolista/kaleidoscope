@@ -19,7 +19,7 @@ function ResetButton() {
 			<ConfirmDialog
 				open={confirming}
 				title="Reset design?"
-				message="Are you sure you want to reset your design? This cannot be undone."
+				message="Are you sure you want to reset your design? You can undo this afterward if you change your mind."
 				confirmLabel="Reset"
 				cancelLabel="Cancel"
 				onConfirm={() => {
