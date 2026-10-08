@@ -1,7 +1,12 @@
 .hexGrid {
 	display: block;
-	width: 100%;
-	max-width: 560px;
+	/* Scales with viewport width as before (capped at 560px), but also
+	   caps itself by available viewport height so short viewports (e.g.
+	   a phone with a visible browser toolbar) never need scrolling to see
+	   the grid, color picker, and buttons together, just the header. The
+	   220px and 0.8763 constants are the other UI's approximate height
+	   and the grid's own width:height ratio; see DECISIONS.md. */
+	width: min(100%, 560px, calc((100vh - 226px) * 0.8763));
 	height: auto;
 	margin: 0 auto;
 }

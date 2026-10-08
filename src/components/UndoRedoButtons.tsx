@@ -32,7 +32,10 @@ function UndoRedoButtons() {
 				disabled={!canUndo}
 				onClick={undo}
 			>
-				<i className="fa-solid fa-rotate-left" aria-hidden="true"></i>
+				<i
+					className="fa-solid fa-rotate-left fa-xl"
+					aria-hidden="true"
+				></i>
 			</button>
 			<button
 				type="button"
@@ -42,7 +45,10 @@ function UndoRedoButtons() {
 				disabled={!canRedo}
 				onClick={redo}
 			>
-				<i className="fa-solid fa-rotate-right" aria-hidden="true"></i>
+				<i
+					className="fa-solid fa-rotate-right fa-xl"
+					aria-hidden="true"
+				></i>
 			</button>
 		</div>
 	)

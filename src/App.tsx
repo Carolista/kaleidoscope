@@ -1,19 +1,19 @@
-import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
-import HexGrid from './components/HexGrid'
+import { useEffect, useRef, useState } from 'react'
+import styles from './App.module.css'
 import ColorOptions from './components/ColorOptions'
 import ColorThemeButton from './components/ColorThemeButton'
 import DarkModeToggle from './components/DarkModeToggle'
 import EditableAreaToggle from './components/EditableAreaToggle'
+import HexGrid from './components/HexGrid'
 import ResetButton from './components/ResetButton'
 import SaveImageButton from './components/SaveImageButton'
 import TouchIntroModal from './components/TouchIntroModal'
 import UndoRedoButtons from './components/UndoRedoButtons'
-import { useAppState } from './state/useAppState'
-import { getThemeColors } from './state/theme'
 import { hasPersistedDesign } from './state/persistence'
+import { getThemeColors } from './state/theme'
+import { useAppState } from './state/useAppState'
 import { useIsTouchDevice } from './utils/useIsTouchDevice'
-import styles from './App.module.css'
 
 function App() {
 	const { state } = useAppState()
@@ -43,20 +43,22 @@ function App() {
 		>
 			<h1 className={styles.title}>Kaleidoscope</h1>
 			<HexGrid svgRef={svgRef} />
-			<div
-				className={styles.colorRow}
-				role="group"
-				aria-label="Color controls"
-			>
-				<ColorOptions />
-			</div>
-			<div className={styles.bottomRow}>
-				<DarkModeToggle />
-				<ColorThemeButton />
-				<EditableAreaToggle />
+			<div className={styles.buttonRows}>
 				<UndoRedoButtons />
-				<ResetButton />
-				<SaveImageButton svgRef={svgRef} />
+				<div className={styles.colorRow}>
+					<ColorOptions />
+				</div>
+				<div
+					role="group"
+					aria-label="Settings"
+					className={styles.buttonGroup}
+				>
+					<DarkModeToggle />
+					<ColorThemeButton />
+					<EditableAreaToggle />
+					<ResetButton />
+					<SaveImageButton svgRef={svgRef} />
+				</div>
 			</div>
 			<TouchIntroModal
 				open={introOpen}
