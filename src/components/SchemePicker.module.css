@@ -10,7 +10,7 @@
 .schemeButton {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   width: 190px;
   height: 30px;
   padding: 0;

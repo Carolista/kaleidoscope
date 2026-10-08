@@ -1,6 +1,5 @@
 .dialog {
   max-width: 26rem;
-  width: 100%;
 }
 
 .header {
@@ -34,6 +33,7 @@
 }
 
 .section {
+    justify-self: center;
   margin-bottom: 1.5rem;
 }
 
@@ -42,8 +42,10 @@
 }
 
 .sectionTitle {
-  margin: 0 0 0.5rem;
-  font-size: 0.85rem;
+  justify-self: center;
+    margin: 0 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 400;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   opacity: 0.7;

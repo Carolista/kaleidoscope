@@ -31,12 +31,12 @@ function SettingsModal({ open, onClose }: SettingsModalProps) {
         </button>
       </div>
       <section className={styles.section}>
-        <h3 className={styles.sectionTitle}>Color Theme</h3>
-        <SchemePicker />
-      </section>
-      <section className={styles.section}>
         <h3 className={styles.sectionTitle}>Appearance</h3>
         <DarkModeToggle />
+      </section>
+      <section className={styles.section}>
+        <h3 className={styles.sectionTitle}>Color Theme</h3>
+        <SchemePicker />
       </section>
     </Modal>
   )
