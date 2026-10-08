@@ -312,6 +312,54 @@ Implementation notes:
   hardcoded target. Caught this via a 30-run repeat-test loop, not a
   single run.
 
+### Step 14 — CI & deploy to GitHub Pages
+
+Context: the legacy vanilla-JS app deployed directly from `main` (no build
+step, GitHub Pages "legacy"/deploy-from-branch mode). React needs a build
+step, so that mode no longer works as-is. The user wanted GitHub Actions
+CI and assumed Pages deploy would have to stay a manual step — that
+assumption turned out to be wrong.
+
+Decision: use GitHub's modern Actions-native Pages deployment, which
+fully automates build + deploy on every push to `main` with no manual
+trigger required. This needed one one-time infrastructure change (not a
+code change): switching the repo's Pages `build_type` from `"legacy"`
+to `"workflow"`. Did this via `gh api -X PUT repos/.../pages -f
+build_type=workflow` rather than the Settings UI — confirmed via a
+follow-up GET that it took effect. (The classic `gh-pages` npm-package
+CLI workflow, which the user may have been thinking of, *does* require a
+manual `npm run deploy` — but that's not the only option, and not what
+we used here.)
+
+Investigated an initially-confusing detail: `gh api repos/.../pages`
+showed `"cname": null` (no custom domain configured on this repo) but
+`"html_url": "http://codewithcarrie.com/kaleidoscope/"` (a custom
+domain, with a `/kaleidoscope/` subpath). Resolution: `codewithcarrie.com`
+is the custom domain on the account's root user/org Pages site (e.g. a
+`Carolista.github.io` repo with its own `CNAME` file); GitHub
+automatically also serves *every other* project-page repo on the same
+account under that custom domain at `<domain>/<repo-name>/`, with no
+per-project `CNAME` file needed. So no `CNAME` file was added here.
+
+Implementation:
+- `vite.config.ts`: `base` is now `/kaleidoscope/` for production builds
+  only (`command === 'build'`), left as `/` for `npm run dev` so the
+  local dev server keeps serving from the site root as before.
+- Added `.github/workflows/ci-deploy.yml`:
+  - `test` job (runs on every push and PR targeting `main`): `npm ci`,
+    lint, format:check, test, build; uploads `dist/` as a plain build
+    artifact.
+  - `deploy` job (runs only on `push` to `main`, after `test` passes):
+    downloads that artifact, then `actions/configure-pages` →
+    `actions/upload-pages-artifact` → `actions/deploy-pages` to publish
+    it, using the `github-pages` environment and the
+    `pages: write` / `id-token: write` permissions that deployment
+    requires.
+  - A `concurrency` group on the workflow prevents overlapping deploys if
+    `main` gets pushed to again before a deploy finishes.
+- No SPA routing/404-fallback trick needed — this is a single-page app
+  with no client-side routes.
+
 ## Process
 
 - Work proceeds one Phase 1 step at a time (see project plan); the user
