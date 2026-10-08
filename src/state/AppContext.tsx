@@ -1,7 +1,8 @@
-import { useCallback, useMemo, useReducer } from 'react'
+import { useCallback, useEffect, useMemo, useReducer } from 'react'
 import type { ReactNode } from 'react'
 import type { ColorScheme } from '../types/colorScheme'
-import { appReducer, createInitialAppState } from './appReducer'
+import { appReducer } from './appReducer'
+import { loadInitialAppState, savePersistedState } from './persistence'
 import { AppStateContext } from './appStateContext'
 
 export function AppStateProvider({
@@ -12,8 +13,12 @@ export function AppStateProvider({
 	const [state, dispatch] = useReducer(
 		appReducer,
 		undefined,
-		createInitialAppState,
+		loadInitialAppState,
 	)
+
+	useEffect(() => {
+		savePersistedState(state)
+	}, [state])
 
 	const selectScheme = useCallback(
 		(scheme: ColorScheme) => dispatch({ type: 'SELECT_SCHEME', scheme }),

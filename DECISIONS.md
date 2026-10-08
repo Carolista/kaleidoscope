@@ -389,6 +389,58 @@ Implementation:
 - No SPA routing/404-fallback trick needed — this is a single-page app
   with no client-side routes.
 
+### Comment cleanup + comment style guideline (Phase 2)
+
+Audited every comment in `src/` and trimmed anything that just restated
+what a function/type/component name and its TypeScript signature already
+made obvious (e.g. a component named `ResetButton` doesn't need a comment
+saying it resets the design). Converted all remaining `/** */` JSDoc-style
+comments to plain `//` — decided against JSDoc entirely, even for
+exported functions, since TypeScript types already document
+params/shapes and JSDoc on top is redundant clutter. Kept comments only
+for non-obvious logic or a significant abstraction/workaround (hex
+symmetry math, the CSS-variable-inheritance dark-mode workaround, native
+`<dialog>` quirks, etc.) — this is now the standing guideline for all
+future work, not just a one-time cleanup.
+
+### localStorage persistence (Phase 2)
+
+Autosaves the current design (scheme, current paint color, dark mode,
+painted hex groups) to `localStorage` on every state change, and restores
+it on load — so refreshing the page (or closing/reopening the tab) no
+longer loses a design, which was the original app's behavior too (no
+persistence at all).
+
+Implementation (`src/state/persistence.ts`):
+- The color **scheme is persisted by name**, not as the full scheme
+  object, and re-linked to the live `colorSchemes` data on load. This
+  means a saved design keeps working even if a scheme's colors are
+  tweaked later — it just picks up the current colors for that name,
+  consistent with how `SELECT_SCHEME` already remaps painted hexes by
+  palette position rather than storing absolute colors long-term.
+- The persisted payload includes a `version` number (currently `1`).
+  There's no migration logic yet since this is the first version, but
+  having it from the start means a future schema change can detect and
+  migrate (or safely discard) old saved data instead of crashing on it.
+- Loading is defensive end-to-end: missing key, corrupted JSON, an
+  unrecognized version, a scheme name that no longer exists, or malformed
+  `hexGroupColors` values all fall back to a fresh state (the same
+  random-scheme default as a first-ever visit) rather than throwing.
+  Both load and save also swallow any `localStorage` access error (e.g.
+  disabled storage in a private-browsing mode) so a storage problem can
+  never crash the app — it just means autosave silently doesn't work for
+  that session.
+- Wired in via `useReducer`'s lazy-init third argument
+  (`loadInitialAppState`) in `AppContext.tsx`, plus a `useEffect` that
+  calls `savePersistedState(state)` whenever `state` changes. No
+  debouncing — state only changes on deliberate user actions (paint,
+  pick scheme/color, toggle dark mode, reset), not at a rate where
+  `localStorage` writes are a concern.
+- Verified in-browser via Playwright: painted hexes, confirmed the save
+  fired, reloaded and confirmed the scheme/color/painted-hex state all
+  came back, then used Reset Design and confirmed the persisted
+  `hexGroupColors` cleared along with it.
+
 ## Process
 
 - Work proceeds one Phase 1 step at a time (see project plan); the user
