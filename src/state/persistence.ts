@@ -15,6 +15,10 @@ interface PersistedDesign {
 	readonly schemeName: string
 	readonly currentColor: string
 	readonly darkMode: boolean
+	// Optional so designs saved before this field existed still load
+	// (falls back to true in fromPersistedDesign) instead of being
+	// rejected outright.
+	readonly showEditableArea?: boolean
 	readonly hexGroupColors: Readonly<Record<string, string>>
 }
 
@@ -24,6 +28,7 @@ function toPersistedDesign(state: AppState): PersistedDesign {
 		schemeName: state.currentScheme.name,
 		currentColor: state.currentColor,
 		darkMode: state.darkMode,
+		showEditableArea: state.showEditableArea,
 		hexGroupColors: state.hexGroupColors,
 	}
 }
@@ -40,6 +45,7 @@ function fromPersistedDesign(data: PersistedDesign): AppState | null {
 		currentScheme: scheme,
 		currentColor: data.currentColor,
 		darkMode: data.darkMode,
+		showEditableArea: data.showEditableArea ?? true,
 		hexGroupColors: { ...data.hexGroupColors },
 	}
 }
@@ -52,6 +58,8 @@ function isPersistedDesign(value: unknown): value is PersistedDesign {
 		typeof data.schemeName === 'string' &&
 		typeof data.currentColor === 'string' &&
 		typeof data.darkMode === 'boolean' &&
+		(data.showEditableArea === undefined ||
+			typeof data.showEditableArea === 'boolean') &&
 		typeof data.hexGroupColors === 'object' &&
 		data.hexGroupColors !== null &&
 		Object.values(data.hexGroupColors).every(c => typeof c === 'string')
@@ -74,6 +82,17 @@ export function loadInitialAppState(): AppState {
 		return fromPersistedDesign(parsed) ?? createInitialAppState()
 	} catch {
 		return createInitialAppState()
+	}
+}
+
+// Used once, at startup (before the autosave effect can run), to decide
+// whether to show the touch intro modal: a design already existing means
+// this isn't the device's first visit.
+export function hasPersistedDesign(): boolean {
+	try {
+		return localStorage.getItem(STORAGE_KEY) !== null
+	} catch {
+		return false
 	}
 }
 

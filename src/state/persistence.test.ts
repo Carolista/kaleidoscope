@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { colorSchemes } from '../data/colorSchemes'
 import type { AppState } from '../types/appState'
-import { loadInitialAppState, savePersistedState } from './persistence'
+import {
+	loadInitialAppState,
+	savePersistedState,
+	hasPersistedDesign,
+} from './persistence'
 
 const STORAGE_KEY = 'kaleidoscope:design'
 
@@ -10,6 +14,7 @@ function baseState(overrides: Partial<AppState> = {}): AppState {
 		currentScheme: colorSchemes[0],
 		currentColor: colorSchemes[0].colors[0],
 		darkMode: false,
+		showEditableArea: true,
 		hexGroupColors: {},
 		...overrides,
 	}
@@ -91,6 +96,37 @@ describe('persistence', () => {
 		expect(state.hexGroupColors).toEqual({})
 	})
 
+	it('defaults showEditableArea to true when loading a design saved before that field existed', () => {
+		localStorage.setItem(
+			STORAGE_KEY,
+			JSON.stringify({
+				version: 1,
+				schemeName: colorSchemes[0].name,
+				currentColor: colorSchemes[0].colors[0],
+				darkMode: false,
+				hexGroupColors: {},
+			}),
+		)
+		const state = loadInitialAppState()
+		expect(state.showEditableArea).toBe(true)
+	})
+
+	it('falls back to a fresh random state when showEditableArea is present but not a boolean', () => {
+		localStorage.setItem(
+			STORAGE_KEY,
+			JSON.stringify({
+				version: 1,
+				schemeName: colorSchemes[0].name,
+				currentColor: colorSchemes[0].colors[0],
+				darkMode: false,
+				showEditableArea: 'yes',
+				hexGroupColors: {},
+			}),
+		)
+		const state = loadInitialAppState()
+		expect(colorSchemes).toContain(state.currentScheme)
+	})
+
 	it('savePersistedState swallows storage errors instead of throwing', () => {
 		const setItemSpy = vi
 			.spyOn(Storage.prototype, 'setItem')
@@ -108,6 +144,26 @@ describe('persistence', () => {
 				throw new Error('storage disabled')
 			})
 		expect(() => loadInitialAppState()).not.toThrow()
+		getItemSpy.mockRestore()
+	})
+
+	it('hasPersistedDesign is false when nothing has been saved', () => {
+		expect(hasPersistedDesign()).toBe(false)
+	})
+
+	it('hasPersistedDesign is true once a design has been saved', () => {
+		savePersistedState(baseState())
+		expect(hasPersistedDesign()).toBe(true)
+	})
+
+	it('hasPersistedDesign swallows storage access errors instead of throwing', () => {
+		const getItemSpy = vi
+			.spyOn(Storage.prototype, 'getItem')
+			.mockImplementation(() => {
+				throw new Error('storage disabled')
+			})
+		expect(() => hasPersistedDesign()).not.toThrow()
+		expect(hasPersistedDesign()).toBe(false)
 		getItemSpy.mockRestore()
 	})
 })

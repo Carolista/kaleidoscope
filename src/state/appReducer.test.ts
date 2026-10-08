@@ -13,6 +13,7 @@ describe('createInitialAppState / pickRandomScheme', () => {
 		expect(colorSchemes).toContain(state.currentScheme)
 		expect(state.currentColor).toBe(state.currentScheme.colors[0])
 		expect(state.darkMode).toBe(true)
+		expect(state.showEditableArea).toBe(true)
 		expect(state.hexGroupColors).toEqual({})
 	})
 
@@ -28,6 +29,7 @@ function baseState(overrides: Partial<AppState> = {}): AppState {
 		currentScheme: colorSchemes[0],
 		currentColor: colorSchemes[0].colors[0],
 		darkMode: false,
+		showEditableArea: true,
 		hexGroupColors: {},
 		...overrides,
 	}
@@ -146,5 +148,18 @@ describe('appReducer', () => {
 		})
 		const next = appReducer(state, { type: 'RESET_DESIGN' })
 		expect(next.hexGroupColors).toEqual({})
+	})
+
+	it('TOGGLE_EDITABLE_AREA flips the showEditableArea flag', () => {
+		const state = baseState({ showEditableArea: true })
+		expect(
+			appReducer(state, { type: 'TOGGLE_EDITABLE_AREA' })
+				.showEditableArea,
+		).toBe(false)
+		expect(
+			appReducer(baseState({ showEditableArea: false }), {
+				type: 'TOGGLE_EDITABLE_AREA',
+			}).showEditableArea,
+		).toBe(true)
 	})
 })

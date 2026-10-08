@@ -81,21 +81,35 @@ pass.
   (`src/utils/colorMath.ts`): neutral gray if the cell is base/accent,
   otherwise a brightened/saturated version of its own color. It is applied
   via a `--hover-fill` custom property.
+- **Touch wedge discoverability**: touch devices have no hover, so
+  `src/utils/useIsTouchDevice.ts` (a `(hover: none), (pointer: coarse)`
+  media query hook) gates a persistent alternative. `showEditableArea` in
+  `AppState` (default `true`, persisted, not undoable) drives the same
+  dimming HexGrid already uses for hover, but only applied when
+  `isTouch && showEditableArea`; desktop/mouse ignores the flag entirely and
+  keeps relying on hover. `EditableAreaToggle` (eye/eye-slash icon button)
+  renders only on touch devices to flip it. A one-time `TouchIntroModal`
+  explains the toggle; it opens only when touch is detected **and** no
+  design was already persisted at load (captured once, before the autosave
+  effect in `AppContext` can run, via `hasPersistedDesign()` in
+  `persistence.ts`) — so it reappears on reload until the user paints
+  something, by design.
 - **Defaults**: starts in dark mode with a random color scheme (first
   visit).
 - **Scheme/theme switching** remaps painted hexes by palette position;
   toggling dark mode remaps hexes painted exactly base/accent.
 - **Image export** (`src/utils/exportImage.ts`): clones the live SVG, bakes
-  computed stroke styles onto it, sets explicit width/height (max 1600px),
-  and rasterizes to a PNG with the theme base color as background. Share is
-  shown only when `navigator.share` supports files; Download is always
-  available.
+  computed stroke styles onto it, forces every polygon fully opaque
+  (overriding the editable-wedge dimming, which is for on-screen display
+  only), sets explicit width/height (max 1600px), and rasterizes to a PNG
+  with the theme base color as background. Share is shown only when
+  `navigator.share` supports files; Download is always available.
 
 ## Layout
 
 Single column at every width: title, hex grid, current-color swatches, then
 a bottom row of icon buttons (left to right): dark/light, color theme,
-undo/redo, reset, save image.
+show/hide editable area (touch devices only), undo/redo, reset, save image.
 
 ## Accessibility standards
 
@@ -131,16 +145,12 @@ automatically (Pages source is "GitHub Actions"). Vite `base` is
 ## Roadmap
 
 Done: Phase 1 (feature-parity rebuild), comment cleanup, localStorage,
-image export/share/download, undo/redo, layout rework.
+image export/share/download, undo/redo, layout rework, touchscreen wedge
+discoverability (eye toggle + intro modal).
 
 Next, in priority order:
 
-1. **Touchscreen/mobile wedge discoverability.** Hover emphasis of the
-   editable wedge has no touch equivalent (same gap as the 2020 app; tapping
-   to paint already works). Options considered: permanent subtle highlight,
-   a `(hover: none)` fallback that highlights by default, or a "Show
-   editable area" toggle.
-2. **README** (replace current): what it is, live link,
+1. **README** (replace current): what it is, live link,
    screenshots, setup, scripts, stack. Unscheduled until the user supplies
    examples and asks.
 

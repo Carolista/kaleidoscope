@@ -28,10 +28,7 @@ export async function exportSvgAsPngBlob(
 	const width = Math.round(viewBoxWidth * scale)
 	const height = Math.round(viewBoxHeight * scale)
 
-	const clone = svg.cloneNode(true) as SVGSVGElement
-	clone.setAttribute('width', String(width))
-	clone.setAttribute('height', String(height))
-	inlineHexagonStrokes(svg, clone)
+	const clone = buildExportClone(svg, width, height)
 
 	const svgUrl = URL.createObjectURL(
 		new Blob([new XMLSerializer().serializeToString(clone)], {
@@ -52,6 +49,33 @@ export async function exportSvgAsPngBlob(
 		return await canvasToPngBlob(canvas)
 	} finally {
 		URL.revokeObjectURL(svgUrl)
+	}
+}
+
+// Builds the clone that actually gets rasterized: sized to the target
+// export resolution, with styling baked in since none of the page's
+// stylesheets travel with a serialized, standalone SVG. Exported for
+// direct testing (jsdom can't exercise canvas/Image rasterization).
+export function buildExportClone(
+	svg: SVGSVGElement,
+	width: number,
+	height: number,
+): SVGSVGElement {
+	const clone = svg.cloneNode(true) as SVGSVGElement
+	clone.setAttribute('width', String(width))
+	clone.setAttribute('height', String(height))
+	inlineHexagonStrokes(svg, clone)
+	forceFullOpacity(clone)
+	return clone
+}
+
+// The editable-wedge highlight (hover, or the touch-only persistent
+// toggle) dims non-wedge cells via a CSS class for on-screen display only
+// — the exported image should always show the full, undimmed design, so
+// force every polygon fully opaque regardless of that class.
+function forceFullOpacity(clonedSvg: SVGSVGElement) {
+	for (const polygon of clonedSvg.querySelectorAll('polygon')) {
+		;(polygon as SVGPolygonElement).style.opacity = '1'
 	}
 }
 

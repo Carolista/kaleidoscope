@@ -223,6 +223,44 @@ With more features, the earlier arrangement felt cluttered:
 The user chose dark mode as the default (the original started in light) and
 updated the three tests that assumed otherwise.
 
+### Touchscreen wedge discoverability
+
+Touch devices have no hover, so there was no way to discover which 30 hexes
+are paintable without tapping around (the hover-driven dimming in `HexGrid`
+is mouse-only). Three options were discussed: a permanent highlight for
+everyone, a `(hover: none)` fallback shown by default, or a user-toggled
+"show editable area" button. The user chose the toggle for a cleaner look,
+with these refinements decided along the way:
+
+- **Touch-only**: desktop/mouse keeps relying on hover, unchanged. The
+  toggle button itself is only rendered on touch devices (detected via a
+  `(hover: none), (pointer: coarse)` media query hook,
+  `useIsTouchDevice`), and `showEditableArea` is ignored outside of touch
+  even though it's always present in state.
+- **Defaults on**: a touch user sees the highlight immediately on first
+  visit, rather than needing to find the toggle first.
+- **Persisted** like dark mode/scheme, so a user's choice carries across
+  sessions.
+- **Same visual treatment as hover**: reuses the existing dim-the-rest
+  effect rather than a new outline/glow.
+- **Icon**: `fa-eye`/`fa-eye-slash`, following the existing convention that
+  a toggle's icon/label describe the destination of a click, not the
+  current state.
+
+A one-time `TouchIntroModal` was added on top of this, shown only when a
+touch device is detected **and** no design has ever been saved on that
+device (`hasPersistedDesign()` in `persistence.ts`, checked once at
+startup before the autosave effect can write anything). The user explicitly
+chose the simplest version of this rule over a separate "seen it" flag: if
+a touch user dismisses the modal without painting and reloads, it reappears
+until they actually paint something and a design gets saved.
+
+Also decided: the export pipeline (`exportSvgAsPngBlob`) must always
+produce a fully opaque image regardless of whether the editable-area
+highlight is on, since that dimming is a view-only aid, not part of the
+design. `buildExportClone` now forces every cloned polygon's opacity to `1`
+before rasterizing.
+
 ## Process
 
 Work proceeds one logical step at a time. The user reviews and makes each

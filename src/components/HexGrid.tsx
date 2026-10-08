@@ -5,6 +5,7 @@ import { axialToPixel, boundingBox, hexCorners } from '../utils/hexLayout'
 import type { HexLayout } from '../utils/hexLayout'
 import { useAppState } from '../state/useAppState'
 import { getThemeColors } from '../state/theme'
+import { useIsTouchDevice } from '../utils/useIsTouchDevice'
 import Hexagon from './Hexagon'
 import styles from './HexGrid.module.css'
 
@@ -26,6 +27,11 @@ function HexGrid({
 	const { state, paintHexGroup } = useAppState()
 	const { base, accent } = getThemeColors(state.darkMode)
 	const [isHovering, setIsHovering] = useState(false)
+	const isTouch = useIsTouchDevice()
+	// Touch devices have no hover, so they get a persistent, user-toggled
+	// highlight instead (EditableAreaToggle); mouse/trackpad devices keep
+	// relying on hover and ignore showEditableArea entirely.
+	const showPersistentHighlight = isTouch && state.showEditableArea
 
 	const layout: HexLayout = useMemo(
 		() => ({ orientation: 'flat', size: hexSize }),
@@ -86,7 +92,10 @@ function HexGrid({
 							corners={corners}
 							fill={state.hexGroupColors[groupId] ?? accent}
 							isClickable={isClickable}
-							dimmed={isHovering && !isClickable}
+							dimmed={
+								(isHovering || showPersistentHighlight) &&
+								!isClickable
+							}
 							base={base}
 							accent={accent}
 							tileNumber={tileNumber}

@@ -1,20 +1,32 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import HexGrid from './components/HexGrid'
 import ColorOptions from './components/ColorOptions'
 import ColorThemeButton from './components/ColorThemeButton'
 import DarkModeToggle from './components/DarkModeToggle'
+import EditableAreaToggle from './components/EditableAreaToggle'
 import ResetButton from './components/ResetButton'
 import SaveImageButton from './components/SaveImageButton'
+import TouchIntroModal from './components/TouchIntroModal'
 import UndoRedoButtons from './components/UndoRedoButtons'
 import { useAppState } from './state/useAppState'
 import { getThemeColors } from './state/theme'
+import { hasPersistedDesign } from './state/persistence'
+import { useIsTouchDevice } from './utils/useIsTouchDevice'
 import styles from './App.module.css'
 
 function App() {
 	const { state } = useAppState()
 	const { base, accent } = getThemeColors(state.darkMode)
 	const svgRef = useRef<SVGSVGElement>(null)
+	const isTouch = useIsTouchDevice()
+	// Captured once, before the autosave effect in AppContext can run, so
+	// this reflects whether a design already existed when the app loaded
+	// (i.e. this device's first-ever visit) rather than the current state.
+	const [hadPersistedDesign] = useState(hasPersistedDesign)
+	const [introOpen, setIntroOpen] = useState(
+		() => isTouch && !hadPersistedDesign,
+	)
 
 	useEffect(() => {
 		// `--base`/`--accent` are set inline below, but CSS custom properties
@@ -41,10 +53,15 @@ function App() {
 			<div className={styles.bottomRow}>
 				<DarkModeToggle />
 				<ColorThemeButton />
+				<EditableAreaToggle />
 				<UndoRedoButtons />
 				<ResetButton />
 				<SaveImageButton svgRef={svgRef} />
 			</div>
+			<TouchIntroModal
+				open={introOpen}
+				onClose={() => setIntroOpen(false)}
+			/>
 		</main>
 	)
 }
