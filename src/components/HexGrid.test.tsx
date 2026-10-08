@@ -5,12 +5,12 @@ import { AppStateProvider } from '../state/AppContext'
 import HexGrid from './HexGrid'
 
 describe('HexGrid', () => {
-	it('exposes exactly 30 clickable tiles, each as an accessible, labeled button', () => {
+	it('exposes exactly 20 clickable tiles, each as an accessible, labeled button', () => {
 		render(<HexGrid />, { wrapper: AppStateProvider })
 		const tiles = screen.getAllByRole('button')
-		expect(tiles).toHaveLength(30)
-		expect(tiles[0]).toHaveAccessibleName('Paint hex tile 1 of 30')
-		expect(tiles[29]).toHaveAccessibleName('Paint hex tile 30 of 30')
+		expect(tiles).toHaveLength(20)
+		expect(tiles[0]).toHaveAccessibleName('Paint hex tile 1 of 20')
+		expect(tiles[19]).toHaveAccessibleName('Paint hex tile 20 of 20')
 	})
 
 	it('paints a tile on click and announces it via the live region', async () => {
@@ -18,7 +18,7 @@ describe('HexGrid', () => {
 		render(<HexGrid />, { wrapper: AppStateProvider })
 
 		const tile = screen.getByRole('button', {
-			name: 'Paint hex tile 1 of 30',
+			name: 'Paint hex tile 1 of 20',
 		})
 		const fillBefore = tile.getAttribute('fill')
 
@@ -26,7 +26,7 @@ describe('HexGrid', () => {
 
 		expect(tile.getAttribute('fill')).not.toBe(fillBefore)
 		expect(screen.getByRole('status')).toHaveTextContent(
-			'Painted hex tile 1 of 30.',
+			'Painted hex tile 1 of 20.',
 		)
 	})
 
@@ -35,7 +35,7 @@ describe('HexGrid', () => {
 		render(<HexGrid />, { wrapper: AppStateProvider })
 
 		const tile = screen.getByRole('button', {
-			name: 'Paint hex tile 2 of 30',
+			name: 'Paint hex tile 2 of 20',
 		})
 		tile.focus()
 		const fillBefore = tile.getAttribute('fill')

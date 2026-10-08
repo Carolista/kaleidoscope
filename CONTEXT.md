@@ -8,7 +8,7 @@ in [old-dom-app-2020/](./old-dom-app-2020) for reference only.
 ## What it is
 
 A coloring toy. The user paints a small wedge of hexagons and the app
-mirrors the work across a 271-cell hex grid with D6 symmetry (rotations plus
+mirrors the work across a 169-cell hex grid with D6 symmetry (rotations plus
 reflections), like a kaleidoscope. Includes preset color schemes, dark/light
 mode, undo/redo, autosave, and PNG export/share/download.
 
@@ -72,11 +72,12 @@ pass.
     Current color and dark mode are not.
   - `persistence.ts` autosaves to `localStorage` (versioned payload, scheme
     saved by name, defensive loading, all storage errors swallowed).
-- **Grid** (`src/utils/hexGrid.ts`): axial `(q, r)` cells in a radius-9
-  hexagon (271 cells), computed rather than hand-authored. Each cell's group
-  id is the lexicographically smallest coordinate in its D6 orbit. One cell
-  per group (30 total) is `isClickable`; these form a single wedge at
-  11-12 o'clock. Rendering is SVG polygons.
+- **Grid** (`src/utils/hexGrid.ts`): axial `(q, r)` cells in a radius-7
+  hexagon (169 cells; reduced from the original 271/radius-9 for small
+  touchscreens, see DECISIONS.md), computed rather than hand-authored. Each
+  cell's group id is the lexicographically smallest coordinate in its D6
+  orbit. One cell per group (20 total) is `isClickable`; these form a
+  single wedge at 11-12 o'clock. Rendering is SVG polygons.
 - **Hex hover**: the hover fill is computed per cell in JS
   (`src/utils/colorMath.ts`): neutral gray if the cell is base/accent,
   otherwise a brightened/saturated version of its own color. It is applied
@@ -114,7 +115,7 @@ show/hide editable area (touch devices only), undo/redo, reset, save image.
 ## Accessibility standards
 
 - Clickable hexes are `role="button"`, `tabIndex={0}`, labeled
-  "Paint hex tile N of 30", and paint on Enter/Space. The SVG is
+  "Paint hex tile N of 20", and paint on Enter/Space. The SVG is
   `role="group"` (never `role="img"`, which hides interactive children).
 - Non-clickable mirror polygons are `aria-hidden`.
 - A visually hidden `role="status"` live region announces each paint.
@@ -146,7 +147,8 @@ automatically (Pages source is "GitHub Actions"). Vite `base` is
 
 Done: Phase 1 (feature-parity rebuild), comment cleanup, localStorage,
 image export/share/download, undo/redo, layout rework, touchscreen wedge
-discoverability (eye toggle + intro modal).
+discoverability (eye toggle + intro modal), reduced grid to radius 7/169
+cells for all devices (was radius 9/271).
 
 Next, in priority order:
 
@@ -157,7 +159,9 @@ Next, in priority order:
 Ideas, unscheduled:
 
 - Sticky footer, transparent background, simple copyright statement with current full year
-- Simplified grid for small screens (for initial hex, 2-3 fewer rings); perhaps current larger grid would be a secondary option offered only on tablets and full size screens.
+- A larger grid (the original radius-9/271-cell size, or similar) offered
+  as a secondary option on tablets/full-size screens, now that the default
+  for all devices is the smaller radius-7/169-cell grid.
 - Alternative shapes/tilings beyond hexagons (diamonds and/or triangles in a 6-point star, for example).
 - New color themes released over time (the scheme list is data-driven in
   `src/data/colorSchemes.ts`).

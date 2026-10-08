@@ -261,6 +261,18 @@ highlight is on, since that dimming is a view-only aid, not part of the
 design. `buildExportClone` now forces every cloned polygon's opacity to `1`
 before rasterizing.
 
+### Smaller grid for all devices
+
+The grid's radius-9 size (271 cells) felt too cramped to paint comfortably
+on small touchscreens. Rather than a responsive/device-conditional grid
+size (more complexity, and a separate set of visual proportions to
+maintain), the user chose to permanently drop the radius to 7 (169 cells,
+20 clickable tiles instead of 30) for every device, as a simpler first cut.
+`HEX_GRID_RADIUS` in `hexGrid.ts` is the only production code change — the
+symmetry/grouping math is already radius-agnostic. A secondary, larger grid
+for tablets/desktop may be reconsidered later (tracked as an idea in
+CONTEXT.md) once the smaller size has been lived with for a while.
+
 ## Process
 
 Work proceeds one logical step at a time. The user reviews and makes each
