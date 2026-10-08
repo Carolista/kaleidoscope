@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { AppStateProvider } from '../state/AppContext'
-import { colorSchemes } from '../data/colorSchemes'
+import { AppStateProvider } from '../../state/AppContext'
+import { colorSchemes } from '../../data/colorSchemes'
 import SchemePicker from './SchemePicker'
 import ColorOptions from './ColorOptions'
 

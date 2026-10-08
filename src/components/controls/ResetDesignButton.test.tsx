@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { AppStateProvider } from '../state/AppContext'
-import { useAppState } from '../state/useAppState'
-import ResetButton from './ResetButton'
+import { AppStateProvider } from '../../state/AppContext'
+import { useAppState } from '../../state/useAppState'
+import ResetDesignButton from './ResetDesignButton'
 
 // Paints one hex group so we can observe whether reset actually clears it.
 function Harness() {
@@ -16,12 +16,12 @@ function Harness() {
 			<span data-testid="painted-count">
 				{Object.keys(state.hexGroupColors).length}
 			</span>
-			<ResetButton />
+			<ResetDesignButton />
 		</>
 	)
 }
 
-describe('ResetButton', () => {
+describe('ResetDesignButton', () => {
 	it('asks for confirmation before resetting, and does nothing on cancel', async () => {
 		const user = userEvent.setup()
 		render(<Harness />, { wrapper: AppStateProvider })

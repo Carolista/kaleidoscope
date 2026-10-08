@@ -1,4 +1,4 @@
-import Button from './shared/Button'
+import Button from './Button'
 import Modal from './Modal'
 import styles from './ConfirmDialog.module.css'
 

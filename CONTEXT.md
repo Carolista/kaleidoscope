@@ -21,6 +21,15 @@ Live at https://codewithcarrie.com/kaleidoscope/ (GitHub Pages).
 - Ask the user before making design decisions that affect behavior or scope.
 - Record significant decisions in DECISIONS.md and keep this file current
   when a standard changes.
+- After renaming or moving files while the dev server is already running,
+  stop and restart it (don't just reload the browser) before verifying in
+  a browser tool. Vite's HMR can't hot-swap an import specifier that no
+  longer resolves, so a running tab keeps requesting the old path and
+  404s until the server restarts — repeatedly debugging around this burns
+  time/credits for no reason.
+- Don't reach for a Playwright/browser tool to verify small in-progress
+  tweaks. Batch verification until the user says they're ready to test,
+  since there's often back-and-forth on details first.
 
 ## Tech stack & commands
 

@@ -1,6 +1,6 @@
-import { useAppState } from '../state/useAppState'
-import { useIsTouchDevice } from '../utils/useIsTouchDevice'
-import IconButton from './shared/IconButton'
+import { useAppState } from '../../state/useAppState'
+import { useIsTouchDevice } from '../../utils/useIsTouchDevice'
+import IconButton from '../shared/IconButton'
 
 // Touch devices have no hover, so there's no way to discover the editable
 // wedge the way mouse users can (see HexGrid's hover-driven dimming). This

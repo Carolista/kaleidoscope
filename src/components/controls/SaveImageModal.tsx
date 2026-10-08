@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
 import type { RefObject } from 'react'
-import { useAppState } from '../state/useAppState'
-import { getThemeColors } from '../state/theme'
-import { buildExportFilename, exportSvgAsPngBlob } from '../utils/exportImage'
-import Button from './shared/Button'
-import CloseButton from './shared/CloseButton'
-import Modal from './Modal'
+import { useAppState } from '../../state/useAppState'
+import { getThemeColors } from '../../state/theme'
+import {
+	buildExportFilename,
+	exportSvgAsPngBlob,
+} from '../../utils/exportImage'
+import Button from '../shared/Button'
+import CloseButton from '../shared/CloseButton'
+import Modal from '../shared/Modal'
 import styles from './SaveImageModal.module.css'
 
 export interface SaveImageModalProps {

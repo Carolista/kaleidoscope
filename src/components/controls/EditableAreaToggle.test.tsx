@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { AppStateProvider } from '../state/AppContext'
+import { AppStateProvider } from '../../state/AppContext'
 import EditableAreaToggle from './EditableAreaToggle'
-import { useIsTouchDevice } from '../utils/useIsTouchDevice'
+import { useIsTouchDevice } from '../../utils/useIsTouchDevice'
 
-vi.mock('../utils/useIsTouchDevice')
+vi.mock('../../utils/useIsTouchDevice')
 const mockUseIsTouchDevice = vi.mocked(useIsTouchDevice)
 
 describe('EditableAreaToggle', () => {

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { RefObject } from 'react'
-import IconButton from './shared/IconButton'
+import IconButton from '../shared/IconButton'
 import SaveImageModal from './SaveImageModal'
 
 export interface SaveImageButtonProps {

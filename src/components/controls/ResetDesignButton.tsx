@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { useAppState } from '../state/useAppState'
-import ConfirmDialog from './ConfirmDialog'
-import IconButton from './shared/IconButton'
+import { useAppState } from '../../state/useAppState'
+import ConfirmDialog from '../shared/ConfirmDialog'
+import IconButton from '../shared/IconButton'
 
-function ResetButton() {
+function ResetDesignButton() {
 	const { resetDesign } = useAppState()
 	const [confirming, setConfirming] = useState(false)
 
@@ -30,4 +30,4 @@ function ResetButton() {
 	)
 }
 
-export default ResetButton
+export default ResetDesignButton

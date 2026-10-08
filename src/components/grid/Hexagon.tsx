@@ -1,7 +1,7 @@
 import type { CSSProperties, KeyboardEvent } from 'react'
-import type { Point } from '../utils/hexLayout'
-import { pointsToSvgAttr } from '../utils/hexLayout'
-import { getHoverFill } from '../utils/colorMath'
+import type { Point } from '../../utils/hexLayout'
+import { pointsToSvgAttr } from '../../utils/hexLayout'
+import { getHoverFill } from '../../utils/colorMath'
 import styles from './Hexagon.module.css'
 
 export interface HexagonProps {

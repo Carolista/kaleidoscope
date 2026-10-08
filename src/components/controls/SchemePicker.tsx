@@ -1,5 +1,5 @@
-import { colorSchemes } from '../data/colorSchemes'
-import { useAppState } from '../state/useAppState'
+import { colorSchemes } from '../../data/colorSchemes'
+import { useAppState } from '../../state/useAppState'
 import styles from './SchemePicker.module.css'
 
 // Clicking a row selects it as the current scheme, which also resets the
