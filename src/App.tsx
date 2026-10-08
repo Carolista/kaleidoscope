@@ -1,9 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import type { CSSProperties } from 'react'
 import HexGrid from './components/HexGrid'
 import ColorOptions from './components/ColorOptions'
 import SettingsButton from './components/SettingsButton'
 import ResetButton from './components/ResetButton'
+import SaveImageButton from './components/SaveImageButton'
 import { useAppState } from './state/useAppState'
 import { getThemeColors } from './state/theme'
 import styles from './App.module.css'
@@ -11,6 +12,7 @@ import styles from './App.module.css'
 function App() {
 	const { state } = useAppState()
 	const { base, accent } = getThemeColors(state.darkMode)
+	const svgRef = useRef<SVGSVGElement>(null)
 
 	useEffect(() => {
 		// `--base`/`--accent` are set inline below, but CSS custom properties
@@ -34,8 +36,11 @@ function App() {
 				<ColorOptions />
 				<SettingsButton />
 			</div>
-			<HexGrid />
-			<ResetButton />
+			<HexGrid svgRef={svgRef} />
+			<div className={styles.bottomRow}>
+				<ResetButton />
+				<SaveImageButton svgRef={svgRef} />
+			</div>
 		</main>
 	)
 }

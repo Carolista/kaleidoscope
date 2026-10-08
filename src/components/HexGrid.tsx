@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import type { Ref } from 'react'
 import { HEX_GRID_RADIUS, generateHexCells } from '../utils/hexGrid'
 import { axialToPixel, boundingBox, hexCorners } from '../utils/hexLayout'
 import type { HexLayout } from '../utils/hexLayout'
@@ -11,6 +12,8 @@ export interface HexGridProps {
 	readonly radius?: number
 	// Circumradius of each hexagon, in SVG user units.
 	readonly hexSize?: number
+	// Exposes the rendered <svg> element, e.g. for image export.
+	readonly svgRef?: Ref<SVGSVGElement>
 }
 
 const DEFAULT_HEX_SIZE = 16
@@ -18,6 +21,7 @@ const DEFAULT_HEX_SIZE = 16
 function HexGrid({
 	radius = HEX_GRID_RADIUS,
 	hexSize = DEFAULT_HEX_SIZE,
+	svgRef,
 }: HexGridProps) {
 	const { state, paintHexGroup } = useAppState()
 	const { base, accent } = getThemeColors(state.darkMode)
@@ -62,6 +66,7 @@ function HexGrid({
 				focused hexagon with the current color.
 			</p>
 			<svg
+				ref={svgRef}
 				className={styles.hexGrid}
 				viewBox={viewBox}
 				role="group"

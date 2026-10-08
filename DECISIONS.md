@@ -110,7 +110,13 @@ User's chosen sequence for the above, most to least immediate:
    follow for everything after.
 2. **localStorage persistence**
 3. **Quick features**: export/download, shareable URL, undo/redo (no
-   sub-order specified yet — will ask when we get there).
+   sub-order specified yet — will ask when we get there). Update: after
+   building export/download, the user clarified they'd misread
+   "shareable" as image-sharing, not URL-sharing, and were skeptical of
+   the URL idea anyway ("people don't share links to images these days,
+   they just share the images") — the shareable-URL item was dropped
+   from the backlog entirely. Order became: export/download/share image,
+   then undo/redo.
 4. **Touchscreen/mobile wedge discoverability**
 
 README stays on the backlog but deliberately unscheduled — revisit only
@@ -440,6 +446,60 @@ Implementation (`src/state/persistence.ts`):
   fired, reloaded and confirmed the scheme/color/painted-hex state all
   came back, then used Reset Design and confirmed the persisted
   `hexGroupColors` cleared along with it.
+
+### Save design as image: PNG export, Share, and Download (Phase 2)
+
+Added a "Save design as image" button next to Reset Design, which opens a
+preview modal with Download (always) and Share (only when supported)
+buttons. Decisions made with the user up front:
+- **Format**: PNG only, no other formats offered.
+- **Background**: baked in as the current theme's base color, so the
+  exported image matches what's on screen (including unpainted hexes)
+  rather than exporting a transparent background.
+- **Flow**: a single icon button opens a modal that generates and
+  previews the image, then offers Share and/or Download from there,
+  rather than instant-downloading or separate Share/Download buttons on
+  the main screen.
+- **Share fallback**: the Share button is hidden entirely (not shown
+  disabled, not shown and erroring) when `navigator.share`/
+  `navigator.canShare` for files isn't supported — confirmed this path
+  works correctly, since the Playwright/headless-Chromium test
+  environment itself lacks `navigator.share` and correctly shows
+  Download-only.
+- Explicitly **not** doing a shareable-URL feature — the user felt
+  that's not how people share images today ("they just share the
+  images"), so this stays off the roadmap unless revisited later.
+
+Implementation (`src/utils/exportImage.ts`, `src/components/SaveImageModal.tsx`):
+- The hex grid's "grout" stroke lines are a CSS Module rule
+  (`stroke: var(--base)` in `Hexagon.module.css`), not an inline SVG
+  attribute. A naive clone-and-serialize of the live SVG would silently
+  lose all stroke rendering, since a standalone serialized SVG has no
+  access to the page's bundled stylesheet. Fixed by reading the computed
+  stroke style once from a single live `<polygon>` and baking it onto
+  every polygon in the detached clone as a plain attribute before
+  serializing — robust to future CSS tweaks since it reads real computed
+  values instead of hardcoding them.
+- The live SVG only has a `viewBox` (no explicit `width`/`height`,
+  for responsive on-screen sizing), which would otherwise rasterize to
+  the default 300×150 "replaced element" size when loaded via `Image`.
+  Fixed by setting explicit `width`/`height` on the cloned SVG (scaled
+  from its `viewBox` aspect ratio up to a 1600px max dimension) before
+  serializing, so the browser rasterizes directly at full resolution.
+  The original on-screen SVG is never touched, only the clone.
+- Verified end-to-end in-browser via Playwright: generated image
+  visually matches the on-screen design (dark/light background, painted
+  hex colors, crisp grout lines), confirmed actual output is a
+  1399×1600 PNG (no blur from upscaling a low-res raster), confirmed the
+  Download button triggers (anchor is appended to the document before
+  `.click()`, since some browsers only honor synthetic clicks on
+  attached anchors), and confirmed Share is correctly hidden in this
+  test environment (no `navigator.share` support there).
+- Note: the Playwright test harness doesn't surface a `download` event
+  for blob-URL anchor downloads at all (confirmed with a minimal
+  reproduction unrelated to this app's code), so the actual
+  browser-level file-save couldn't be directly observed in this
+  environment — this is a known harness limitation, not a sign of a bug.
 
 ## Process
 
