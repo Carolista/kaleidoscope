@@ -3,6 +3,7 @@ import HexGrid from './components/HexGrid'
 import SchemePicker from './components/SchemePicker'
 import ColorOptions from './components/ColorOptions'
 import DarkModeToggle from './components/DarkModeToggle'
+import ResetButton from './components/ResetButton'
 import { useAppState } from './state/useAppState'
 import { getThemeColors } from './state/theme'
 import styles from './App.module.css'
@@ -23,7 +24,10 @@ function App() {
             <SchemePicker />
             <ColorOptions />
           </div>
-          <DarkModeToggle />
+          <div className={styles.controlsRow}>
+            <DarkModeToggle />
+            <ResetButton />
+          </div>
         </section>
         <section className={styles.display}>
           <HexGrid />

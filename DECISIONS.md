@@ -111,6 +111,21 @@ The hover-highlight effect on a clickable hex went through a few iterations:
      `<g>`/overlay structure), since only `fill` changes on hover and
      `stroke` is a separate property the rule never touches.
 
+## Reset confirmation
+
+The original used a native `window.confirm(...)`. For the rewrite, built a
+custom `ConfirmDialog` component instead (user's preference), using the
+native `<dialog>` element rather than a hand-rolled modal:
+- Gives focus trapping, `::backdrop`, and Esc-to-cancel for free.
+- `open` is a controlled prop; a `useEffect` imperatively calls
+  `showModal()`/`close()` to match it, since `<dialog>` has no declarative
+  attribute that also triggers modal (backdrop + focus trap) behavior.
+- Backdrop click (clicking the `<dialog>` element itself, which fills the
+  viewport when shown modally, rather than its content) also cancels.
+- Reusable: `ResetButton` is the only current consumer, but the dialog
+  component takes generic `title`/`message`/`confirmLabel`/`cancelLabel`
+  props for future confirmations if needed.
+
 ## Process
 
 - Work proceeds one Phase 1 step at a time (see project plan); the user

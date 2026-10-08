@@ -1,0 +1,13 @@
+.reset {
+  font-size: 1rem;
+  text-transform: uppercase;
+  padding: 0.5rem 1rem;
+  border: 2px solid var(--base, #fff);
+  color: var(--accent, #222);
+  background: transparent;
+  cursor: pointer;
+}
+
+.reset:hover {
+  border-color: var(--accent, #222);
+}
