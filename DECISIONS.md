@@ -273,6 +273,32 @@ symmetry/grouping math is already radius-agnostic. A secondary, larger grid
 for tablets/desktop may be reconsidered later (tracked as an idea in
 CONTEXT.md) once the smaller size has been lived with for a while.
 
+### Control grouping and sizing for small touchscreens
+
+With the shrunken grid freeing up vertical space (see "Smaller grid for all
+devices" above), the controls below it were reorganized to fit comfortably
+within a ~550px-tall viewport without scrolling, and to read as clearer
+groups instead of one long wrapped row:
+
+- The swatches, undo/redo, and the remaining action buttons
+  (dark/light, color theme, show/hide editable area, reset, save image) are
+  each their own flex group, stacked in that order inside one outer
+  `role="group" aria-label="Controls"` wrapper. The two previously-separate
+  action clusters (toggles vs. destructive/export actions) were merged into
+  a single `"Settings and Actions"` group, since splitting them no longer
+  added clarity once undo/redo had its own row.
+- The color picker swatches use `clamp()` sizing so they can shrink on
+  narrow screens without ever dropping below a usable minimum, and stay on
+  one row instead of wrapping.
+- **Undo/redo icons were intentionally sized down** (`fa-xl` instead of
+  `fa-2x`) to de-emphasize them relative to the five primary action
+  buttons. Their button boxes were shrunk from 2.5rem to 1.875rem to match
+  — preserving the same ~0.67 icon-to-box fill ratio the other buttons
+  use, rather than leaving the icon adrift in an oversized box. This pushes
+  undo/redo's touch target below the usual 2.5rem used elsewhere; given
+  they're secondary/occasional actions (not core painting or settings), the
+  smaller target was judged an acceptable tradeoff for the tighter layout.
+
 ## Process
 
 Work proceeds one logical step at a time. The user reviews and makes each

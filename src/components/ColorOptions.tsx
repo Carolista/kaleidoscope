@@ -22,7 +22,7 @@ function ColorOptions() {
 		<div
 			className={styles.options}
 			role="group"
-			aria-label="Current color options"
+			aria-label="Current Color Options"
 			style={{ '--swatch-selected-border': accent } as CSSProperties}
 		>
 			{options.map(({ color, label }) => (

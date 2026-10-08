@@ -59,7 +59,9 @@ pass.
   Roboto for body).
 - **Controls**: icon-only buttons (square, 2.5rem) with an `aria-label` and
   matching `title`. A toggle's label and icon describe the _action/destination_
-  (e.g. the sun icon and "Switch to light mode" while in dark mode).
+  (e.g. the sun icon and "Switch to light mode" while in dark mode). Undo/redo
+  are a deliberate exception: smaller `fa-xl` icons in a 1.875rem box, to
+  read as secondary actions next to the five primary buttons.
 - **Modals**: use the shared `Modal` component (native `<dialog>`);
   `ConfirmDialog`, `ColorThemeModal`, and `SaveImageModal` build on it.
 
@@ -108,9 +110,11 @@ pass.
 
 ## Layout
 
-Single column at every width: title, hex grid, current-color swatches, then
-a bottom row of icon buttons (left to right): dark/light, color theme,
-show/hide editable area (touch devices only), undo/redo, reset, save image.
+Single column at every width: title, hex grid, then a `"Controls"` group
+holding, in order: current-color swatches (clamp-sized to stay on one row),
+undo/redo, and a `"Settings and Actions"` row of icon buttons (dark/light,
+color theme, show/hide editable area (touch devices only), reset, save
+image).
 
 ## Accessibility standards
 

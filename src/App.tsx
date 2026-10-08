@@ -43,14 +43,18 @@ function App() {
 		>
 			<h1 className={styles.title}>Kaleidoscope</h1>
 			<HexGrid svgRef={svgRef} />
-			<div className={styles.buttonRows}>
-				<UndoRedoButtons />
+			<div
+				role="group"
+				aria-label="Controls"
+				className={styles.controlRows}
+			>
 				<div className={styles.colorRow}>
 					<ColorOptions />
 				</div>
+				<UndoRedoButtons />
 				<div
 					role="group"
-					aria-label="Settings"
+					aria-label="Settings and Actions"
 					className={styles.buttonGroup}
 				>
 					<DarkModeToggle />
