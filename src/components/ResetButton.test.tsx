@@ -29,7 +29,7 @@ describe('ResetButton', () => {
 		await user.click(screen.getByText('Paint test group'))
 		expect(screen.getByTestId('painted-count')).toHaveTextContent('1')
 
-		await user.click(screen.getByRole('button', { name: 'Reset Design' }))
+		await user.click(screen.getByRole('button', { name: 'Reset design' }))
 		expect(
 			screen.getByRole('heading', { name: 'Reset design?' }),
 		).toBeInTheDocument()
@@ -48,7 +48,7 @@ describe('ResetButton', () => {
 		render(<Harness />, { wrapper: AppStateProvider })
 
 		await user.click(screen.getByText('Paint test group'))
-		await user.click(screen.getByRole('button', { name: 'Reset Design' }))
+		await user.click(screen.getByRole('button', { name: 'Reset design' }))
 		await user.click(screen.getByRole('button', { name: 'Reset' }))
 
 		await waitFor(() =>

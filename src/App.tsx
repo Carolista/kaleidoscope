@@ -2,7 +2,8 @@ import { useEffect, useRef } from 'react'
 import type { CSSProperties } from 'react'
 import HexGrid from './components/HexGrid'
 import ColorOptions from './components/ColorOptions'
-import SettingsButton from './components/SettingsButton'
+import ColorThemeButton from './components/ColorThemeButton'
+import DarkModeToggle from './components/DarkModeToggle'
 import ResetButton from './components/ResetButton'
 import SaveImageButton from './components/SaveImageButton'
 import UndoRedoButtons from './components/UndoRedoButtons'
@@ -29,16 +30,17 @@ function App() {
 			style={{ '--base': base, '--accent': accent } as CSSProperties}
 		>
 			<h1 className={styles.title}>Kaleidoscope</h1>
+			<HexGrid svgRef={svgRef} />
 			<div
-				className={styles.topRow}
+				className={styles.colorRow}
 				role="group"
 				aria-label="Color controls"
 			>
 				<ColorOptions />
-				<SettingsButton />
 			</div>
-			<HexGrid svgRef={svgRef} />
 			<div className={styles.bottomRow}>
+				<DarkModeToggle />
+				<ColorThemeButton />
 				<UndoRedoButtons />
 				<ResetButton />
 				<SaveImageButton svgRef={svgRef} />

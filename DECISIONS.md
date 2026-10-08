@@ -551,6 +551,34 @@ Implementation (`src/state/historyReducer.ts`):
   keyboard shortcuts (confirmed via persisted `schemeName`), and
   confirmed Reset Design is now undoable too.
 
+### Layout rework: grid-first, icon-only controls (Phase 2)
+
+Reorganized the page layout now that there are enough bottom-row
+features to make the earlier arrangement feel cluttered/buried:
+- **Hex grid moved above the color swatches**, directly under the
+  `<h1>` — it's the main attraction, so it should be the first thing
+  seen, not sandwiched between two rows of controls.
+- **Dark/light mode toggle moved out of the Settings modal** and into
+  the bottom row as a plain icon button (no more "Settings" modal
+  wrapping unrelated concerns together). It's now a sun/moon icon
+  instead of text, matching the icon-button style already used for
+  Reset/Save/Undo/Redo. The icon shows the mode a click leads to (sun
+  while currently in dark mode, moon while currently in light mode),
+  consistent with the label text's existing "describes the
+  destination, not the current state" convention.
+- **Settings modal (gear icon) renamed to a Color Theme modal
+  (palette icon)**, now solely responsible for picking a color scheme
+  — since dark mode moved out, there was no longer a reason for a
+  general "Settings" modal grouping two unrelated concerns. Renamed
+  `SettingsButton`/`SettingsModal` → `ColorThemeButton`/
+  `ColorThemeModal` throughout to match the narrower scope.
+- Bottom row order, left to right: Undo/Redo, Reset Design, Dark/Light
+  mode, Color Theme, Save Image.
+- Verified in-browser via Playwright: grid renders first under the
+  title, Color Theme modal opens showing only the scheme list, the
+  dark/light toggle flips the icon/label and the whole page's
+  base/accent colors on click, and no console errors across the flow.
+
 ## Process
 
 - Work proceeds one Phase 1 step at a time (see project plan); the user

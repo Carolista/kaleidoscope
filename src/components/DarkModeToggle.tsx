@@ -5,17 +5,24 @@ import styles from './DarkModeToggle.module.css'
 // TOGGLE_DARK_MODE in the reducer).
 function DarkModeToggle() {
 	const { state, toggleDarkMode } = useAppState()
+	const label = state.darkMode
+		? 'Switch to light mode'
+		: 'Switch to dark mode'
 
 	return (
 		<button
 			type="button"
 			className={styles.toggle}
+			aria-label={label}
+			title={label}
 			onClick={toggleDarkMode}
 		>
-			{/* The label names the action's destination mode, not the current
-          state, so aria-pressed (which describes current state) would be
-          misleading here -- the label text alone fully conveys the action. */}
-			{state.darkMode ? 'Light Mode' : 'Dark Mode'}
+			{/* Icon shows the mode a click leads to (sun/day while in dark
+          mode, moon/night while in light mode), matching the label. */}
+			<i
+				className={`fa-solid ${state.darkMode ? 'fa-sun' : 'fa-moon'} fa-2x`}
+				aria-hidden="true"
+			></i>
 		</button>
 	)
 }

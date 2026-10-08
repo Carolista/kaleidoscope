@@ -12,9 +12,11 @@ function ResetButton() {
 			<button
 				type="button"
 				className={styles.reset}
+				aria-label="Reset design"
+				title="Reset design"
 				onClick={() => setConfirming(true)}
 			>
-				Reset Design
+				<i className="fa-solid fa-eraser fa-2x" aria-hidden="true"></i>
 			</button>
 			<ConfirmDialog
 				open={confirming}
