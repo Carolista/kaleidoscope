@@ -3,8 +3,8 @@
  * cube third coordinate is always `s = -q - r`.
  */
 export interface AxialCoord {
-  readonly q: number
-  readonly r: number
+	readonly q: number
+	readonly r: number
 }
 
 /**
@@ -15,6 +15,6 @@ export interface AxialCoord {
  * with; the rest are its mirrored reflections.
  */
 export interface HexCell extends AxialCoord {
-  readonly groupId: string
-  readonly isClickable: boolean
+	readonly groupId: string
+	readonly isClickable: boolean
 }

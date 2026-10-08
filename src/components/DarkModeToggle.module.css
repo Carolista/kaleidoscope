@@ -1,20 +1,20 @@
 .toggle {
-  font-family: 'Righteous', sans-serif;
-  font-size: 1rem;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  padding: 0.6rem 1.25rem;
-  border: 2px solid var(--base, #fff);
-  border-radius: 4px;
-  color: var(--accent, #222);
-  background: transparent;
-  cursor: pointer;
-  transition:
-    border-color 0.15s ease,
-    background-color 0.15s ease;
+	font-family: 'Righteous', sans-serif;
+	font-size: 1rem;
+	text-transform: uppercase;
+	letter-spacing: 0.03em;
+	padding: 0.6rem 1.25rem;
+	border: 2px solid var(--base, #fff);
+	border-radius: 4px;
+	color: var(--accent, #222);
+	background: transparent;
+	cursor: pointer;
+	transition:
+		border-color 0.15s ease,
+		background-color 0.15s ease;
 }
 
 .toggle:hover,
 .toggle:focus-visible {
-  border-color: var(--accent, #222);
+	border-color: var(--accent, #222);
 }

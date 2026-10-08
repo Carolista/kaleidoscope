@@ -9,27 +9,27 @@ export const HEX_GRID_RADIUS = 9
 
 /** Axial coordinate plus its implied cube third coordinate. */
 interface CubeCoord {
-  readonly q: number
-  readonly r: number
-  readonly s: number
+	readonly q: number
+	readonly r: number
+	readonly s: number
 }
 
 function toCube({ q, r }: AxialCoord): CubeCoord {
-  return { q, r, s: -q - r }
+	return { q, r, s: -q - r }
 }
 
 function cubeDistance(c: CubeCoord): number {
-  return Math.max(Math.abs(c.q), Math.abs(c.r), Math.abs(c.s))
+	return Math.max(Math.abs(c.q), Math.abs(c.r), Math.abs(c.s))
 }
 
 /** Rotates a cube coordinate 60 degrees about the origin. */
 function rotate60(c: CubeCoord): CubeCoord {
-  return { q: -c.r, r: -c.s, s: -c.q }
+	return { q: -c.r, r: -c.s, s: -c.q }
 }
 
 /** Reflects a cube coordinate across one of the hexagon's 6 mirror axes. */
 function reflect(c: CubeCoord): CubeCoord {
-  return { q: c.q, r: c.s, s: c.r }
+	return { q: c.q, r: c.s, s: c.r }
 }
 
 /**
@@ -40,15 +40,15 @@ function reflect(c: CubeCoord): CubeCoord {
  * the 6 mirror axes, and 1 for the center cell.
  */
 function symmetryOrbit(coord: AxialCoord): CubeCoord[] {
-  const images = new Map<string, CubeCoord>()
-  let current = toCube(coord)
-  for (let i = 0; i < 6; i++) {
-    for (const candidate of [current, reflect(current)]) {
-      images.set(`${candidate.q},${candidate.r}`, candidate)
-    }
-    current = rotate60(current)
-  }
-  return [...images.values()]
+	const images = new Map<string, CubeCoord>()
+	let current = toCube(coord)
+	for (let i = 0; i < 6; i++) {
+		for (const candidate of [current, reflect(current)]) {
+			images.set(`${candidate.q},${candidate.r}`, candidate)
+		}
+		current = rotate60(current)
+	}
+	return [...images.values()]
 }
 
 /**
@@ -57,10 +57,10 @@ function symmetryOrbit(coord: AxialCoord): CubeCoord[] {
  * the same mirror group resolves to the same id.
  */
 function groupIdFor(coord: AxialCoord): string {
-  const canonical = symmetryOrbit(coord).reduce((min, c) =>
-    c.q < min.q || (c.q === min.q && c.r < min.r) ? c : min,
-  )
-  return `${canonical.q},${canonical.r}`
+	const canonical = symmetryOrbit(coord).reduce((min, c) =>
+		c.q < min.q || (c.q === min.q && c.r < min.r) ? c : min,
+	)
+	return `${canonical.q},${canonical.r}`
 }
 
 /**
@@ -72,30 +72,30 @@ function groupIdFor(coord: AxialCoord): string {
  * the grid, just like the "editable slice" in the original app).
  */
 export function generateHexCells(radius: number = HEX_GRID_RADIUS): HexCell[] {
-  const cells: HexCell[] = []
-  for (let q = -radius; q <= radius; q++) {
-    for (let r = -radius; r <= radius; r++) {
-      const cube = toCube({ q, r })
-      if (cubeDistance(cube) > radius) continue
-      const groupId = groupIdFor({ q, r })
-      cells.push({ q, r, groupId, isClickable: groupId === `${q},${r}` })
-    }
-  }
-  return cells
+	const cells: HexCell[] = []
+	for (let q = -radius; q <= radius; q++) {
+		for (let r = -radius; r <= radius; r++) {
+			const cube = toCube({ q, r })
+			if (cubeDistance(cube) > radius) continue
+			const groupId = groupIdFor({ q, r })
+			cells.push({ q, r, groupId, isClickable: groupId === `${q},${r}` })
+		}
+	}
+	return cells
 }
 
 /** Groups cells by their mirror-symmetry groupId, preserving insertion order. */
 export function groupHexCells(
-  cells: readonly HexCell[],
+	cells: readonly HexCell[],
 ): Map<string, HexCell[]> {
-  const groups = new Map<string, HexCell[]>()
-  for (const cell of cells) {
-    const list = groups.get(cell.groupId)
-    if (list) {
-      list.push(cell)
-    } else {
-      groups.set(cell.groupId, [cell])
-    }
-  }
-  return groups
+	const groups = new Map<string, HexCell[]>()
+	for (const cell of cells) {
+		const list = groups.get(cell.groupId)
+		if (list) {
+			list.push(cell)
+		} else {
+			groups.set(cell.groupId, [cell])
+		}
+	}
+	return groups
 }

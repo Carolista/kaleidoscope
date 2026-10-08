@@ -1,31 +1,31 @@
 .app {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.5rem;
-  width: 100%;
-  max-width: 640px;
-  margin: 0 auto;
-  padding: 2.5rem 1.5rem;
-  min-height: 100vh;
-  background-color: var(--base, #fff);
-  transition: background-color 0.2s ease;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 1.5rem;
+	width: 100%;
+	max-width: 640px;
+	margin: 0 auto;
+	padding: 2.5rem 1.5rem;
+	min-height: 100vh;
+	background-color: var(--base, #fff);
+	transition: background-color 0.2s ease;
 }
 
 .title {
-  font-family: 'Righteous', sans-serif;
-  text-transform: uppercase;
-  font-size: clamp(1.75rem, 4vw, 2.5rem);
-  letter-spacing: 0.04em;
-  margin: 0;
-  color: var(--accent, #222);
+	font-family: 'Righteous', sans-serif;
+	text-transform: uppercase;
+	font-size: clamp(1.75rem, 4vw, 2.5rem);
+	letter-spacing: 0.04em;
+	margin: 0;
+	color: var(--accent, #222);
 }
 
 .topRow {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  gap: 1rem;
-  width: 100%;
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	align-items: center;
+	gap: 1rem;
+	width: 100%;
 }

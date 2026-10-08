@@ -8,9 +8,9 @@ import App from './App.tsx'
 import { AppStateProvider } from './state/AppContext.tsx'
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <AppStateProvider>
-      <App />
-    </AppStateProvider>
-  </StrictMode>,
+	<StrictMode>
+		<AppStateProvider>
+			<App />
+		</AppStateProvider>
+	</StrictMode>,
 )

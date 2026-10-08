@@ -5,32 +5,32 @@ import styles from './ResetButton.module.css'
 
 /** Opens a confirmation dialog, then clears every painted hex back to the current scheme's default. */
 function ResetButton() {
-  const { resetDesign } = useAppState()
-  const [confirming, setConfirming] = useState(false)
+	const { resetDesign } = useAppState()
+	const [confirming, setConfirming] = useState(false)
 
-  return (
-    <>
-      <button
-        type="button"
-        className={styles.reset}
-        onClick={() => setConfirming(true)}
-      >
-        Reset Design
-      </button>
-      <ConfirmDialog
-        open={confirming}
-        title="Reset design?"
-        message="Are you sure you want to reset your design? This cannot be undone."
-        confirmLabel="Reset"
-        cancelLabel="Cancel"
-        onConfirm={() => {
-          resetDesign()
-          setConfirming(false)
-        }}
-        onCancel={() => setConfirming(false)}
-      />
-    </>
-  )
+	return (
+		<>
+			<button
+				type="button"
+				className={styles.reset}
+				onClick={() => setConfirming(true)}
+			>
+				Reset Design
+			</button>
+			<ConfirmDialog
+				open={confirming}
+				title="Reset design?"
+				message="Are you sure you want to reset your design? This cannot be undone."
+				confirmLabel="Reset"
+				cancelLabel="Cancel"
+				onConfirm={() => {
+					resetDesign()
+					setConfirming(false)
+				}}
+				onCancel={() => setConfirming(false)}
+			/>
+		</>
+	)
 }
 
 export default ResetButton
