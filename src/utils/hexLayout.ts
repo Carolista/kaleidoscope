@@ -4,7 +4,7 @@ export type HexOrientation = 'flat' | 'pointy'
 
 export interface HexLayout {
 	readonly orientation: HexOrientation
-	/** Circumradius: distance from a hex's center to each of its 6 corners, in px. */
+	// Circumradius: distance from a hex's center to each of its 6 corners, in px.
 	readonly size: number
 }
 
@@ -15,7 +15,6 @@ export interface Point {
 
 const SQRT3 = Math.sqrt(3)
 
-/** Converts an axial hex coordinate to a pixel center point. */
 export function axialToPixel({ q, r }: AxialCoord, layout: HexLayout): Point {
 	const { size, orientation } = layout
 	if (orientation === 'flat') {
@@ -30,7 +29,6 @@ export function axialToPixel({ q, r }: AxialCoord, layout: HexLayout): Point {
 	}
 }
 
-/** The 6 corner points of a hexagon centered at `center`, in SVG polygon-ready order. */
 export function hexCorners(center: Point, layout: HexLayout): Point[] {
 	const angleOffsetDeg = layout.orientation === 'flat' ? 0 : 30
 	return Array.from({ length: 6 }, (_, i) => {
@@ -42,12 +40,10 @@ export function hexCorners(center: Point, layout: HexLayout): Point[] {
 	})
 }
 
-/** Formats points as an SVG `points` attribute value, e.g. for a `<polygon>`. */
 export function pointsToSvgAttr(points: readonly Point[]): string {
 	return points.map(p => `${p.x},${p.y}`).join(' ')
 }
 
-/** Axis-aligned bounding box, in pixels, that fully contains the given hex centers. */
 export function boundingBox(
 	centers: readonly Point[],
 	layout: HexLayout,

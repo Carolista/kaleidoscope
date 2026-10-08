@@ -7,25 +7,20 @@ import styles from './Hexagon.module.css'
 export interface HexagonProps {
 	readonly corners: readonly Point[]
 	readonly fill: string
-	/** Whether this is the clickable representative of its mirror group. */
+	// Clickable representative of its mirror group; the rest are purely
+	// decorative reflections.
 	readonly isClickable: boolean
-	/** Whether the grid is being hovered and this cell should fade (it's a non-clickable mirror reflection). */
+	// True while the grid is hovered and this cell should fade.
 	readonly dimmed: boolean
-	/** Current theme colors, used to compute a sensible hover highlight for this cell's fill. */
 	readonly base: string
 	readonly accent: string
-	/** 1-based position among clickable tiles, used to build an accessible name. Only meaningful when isClickable. */
+	// 1-based position among clickable tiles, for the accessible name.
+	// Only meaningful when isClickable.
 	readonly tileNumber?: number
 	readonly tileCount?: number
 	readonly onClick?: () => void
 }
 
-/**
- * A single hexagon cell, rendered as an SVG polygon. Only the clickable
- * representative of each mirror group responds to clicks and hover
- * feedback; the rest are purely decorative reflections that fade while
- * hovering the grid, to emphasize the single editable "slice".
- */
 function Hexagon({
 	corners,
 	fill,

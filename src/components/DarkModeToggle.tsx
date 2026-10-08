@@ -1,7 +1,8 @@
 import { useAppState } from '../state/useAppState'
 import styles from './DarkModeToggle.module.css'
 
-/** Toggles between light and dark mode, flipping any hexes painted base/accent along with it. */
+// Flips any hexes painted base/accent along with the mode (see
+// TOGGLE_DARK_MODE in the reducer).
 function DarkModeToggle() {
 	const { state, toggleDarkMode } = useAppState()
 

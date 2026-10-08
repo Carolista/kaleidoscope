@@ -22,6 +22,12 @@ The original vanilla JS/HTML/CSS app is preserved in [old-dom-app-2020/](/Users/
   alongside `npm run lint`.
 - **Deployment**: GitHub Pages via GitHub Actions (same target as the
   original app), added in Phase 1 Step 14.
+- **Comments**: minimal, on purpose. No JSDoc on TypeScript code (types
+  already document params/returns — JSDoc on top is redundant clutter).
+  Only comment non-obvious logic or a significant abstraction/workaround
+  (e.g. the hex symmetry math, the CSS-variable-inheritance workaround for
+  dark mode) — never restate what the code already makes obvious. Code
+  should speak for itself as much as possible.
 
 ## Grid symmetry analysis & implementation (Step 2)
 
@@ -59,7 +65,8 @@ This led to a clean, computed (not hand-coded) grid design, implemented in
 
 - **Phase 1** = rebuild to full feature parity with the original app only
   (color schemes, color picker, mirrored hex painting, scheme-switch
-  recoloring, dark mode, reset). No new features in this phase.
+  recoloring, dark mode, reset). No new features in this phase. **Done**
+  as of Step 14 (deployed to GitHub Pages via Actions).
 - **Phase 2+** = future feature branches, scoped individually later. Ideas
   raised during the original analysis, not yet committed to:
   - Persist current design (localStorage autosave)
@@ -87,6 +94,28 @@ This led to a clean, computed (not hand-coded) grid design, implemented in
     explicit "Show editable area" toggle button. Tapping to paint already
     works functionally on touch today (click events fire independent of
     hover state); only the discoverability/affordance is deferred.
+  - A robust README (replacing the default Vite scaffold one): what the
+    app is/does, live demo link, screenshots, local dev setup, scripts,
+    tech stack. User has example READMEs from other projects to use as a
+    style reference, but wants to hold off until there's more built
+    feature-wise to write about — keep "warm" on the list, not scheduled.
+  - Cleaning out excessive/outdated comments across `src/` and settling
+    on a going-forward comment-style guideline (left over from iterative
+    dev sessions; much of it over-explains obvious code).
+
+### Phase 2 priority order (as of Step 14 wrap-up)
+
+User's chosen sequence for the above, most to least immediate:
+1. **Comment cleanup** — also establishes the comment-style guideline to
+   follow for everything after.
+2. **localStorage persistence**
+3. **Quick features**: export/download, shareable URL, undo/redo (no
+   sub-order specified yet — will ask when we get there).
+4. **Touchscreen/mobile wedge discoverability**
+
+README stays on the backlog but deliberately unscheduled — revisit only
+when the user asks, likely once more of the above has landed and there's
+more to document.
 
 ## Hover feedback on painted hexagons
 

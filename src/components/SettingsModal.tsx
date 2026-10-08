@@ -8,7 +8,6 @@ export interface SettingsModalProps {
 	readonly onClose: () => void
 }
 
-/** Houses the less-frequently-used controls: color theme selection and dark/light mode. */
 function SettingsModal({ open, onClose }: SettingsModalProps) {
 	return (
 		<Modal

@@ -5,7 +5,7 @@ import { AppStateProvider } from '../state/AppContext'
 import { useAppState } from '../state/useAppState'
 import ResetButton from './ResetButton'
 
-/** Paints one hex group so we can observe whether reset actually clears it. */
+// Paints one hex group so we can observe whether reset actually clears it.
 function Harness() {
 	const { state, paintHexGroup } = useAppState()
 	return (

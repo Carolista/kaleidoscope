@@ -2,7 +2,6 @@ import { useState } from 'react'
 import styles from './SettingsButton.module.css'
 import SettingsModal from './SettingsModal'
 
-/** Opens the settings modal (color theme + dark/light mode) via a gear icon. */
 function SettingsButton() {
 	const [open, setOpen] = useState(false)
 

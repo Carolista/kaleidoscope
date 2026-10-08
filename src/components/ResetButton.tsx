@@ -3,7 +3,6 @@ import { useAppState } from '../state/useAppState'
 import ConfirmDialog from './ConfirmDialog'
 import styles from './ResetButton.module.css'
 
-/** Opens a confirmation dialog, then clears every painted hex back to the current scheme's default. */
 function ResetButton() {
 	const { resetDesign } = useAppState()
 	const [confirming, setConfirming] = useState(false)

@@ -1,11 +1,9 @@
-/**
- * Small hex/HSL color helpers used to compute the hover-highlight color
- * for a painted hexagon: if it's already base or accent (and therefore
- * has no "color" to brighten), fall back to a fixed neutral gray;
- * otherwise brighten and saturate the hex's own color a bit, so the
- * hover feedback always reads as "this one, lit up" rather than muddying
- * the shape with a translucent overlay or darkening filter.
- */
+// Hex/HSL color helpers for the hover-highlight effect on a painted hexagon:
+// if it's already base or accent (and therefore has no "color" to
+// brighten), fall back to a fixed neutral gray; otherwise brighten and
+// saturate the hex's own color a bit, so the hover feedback always reads
+// as "this one, lit up" rather than muddying the shape with a translucent
+// overlay or darkening filter.
 
 interface Rgb {
 	readonly r: number
@@ -93,14 +91,13 @@ function hslToRgb({ h, s, l }: Hsl): Rgb {
 	}
 }
 
-/** Neutral hover color for hexes painted base/accent, which have no hue to brighten. */
+// Fixed fallback used when there's no hue to brighten (see above).
 export const NEUTRAL_HOVER_FILL = '#808080'
 
 const SATURATION_BOOST = 20
 const LIGHTNESS_BOOST = 12
 const MAX_LIGHTNESS = 92
 
-/** Brightens and saturates a hex color a bit, clamped short of pure white. */
 export function brightenAndSaturate(hex: string): string {
 	const hsl = rgbToHsl(hexToRgb(hex))
 	return rgbToHex(
@@ -112,11 +109,6 @@ export function brightenAndSaturate(hex: string): string {
 	)
 }
 
-/**
- * The fill color to show while hovering a clickable hexagon: a fixed
- * neutral gray if it's currently base or accent (no hue to work with),
- * otherwise its own color brightened and saturated a bit.
- */
 export function getHoverFill(
 	fill: string,
 	base: string,

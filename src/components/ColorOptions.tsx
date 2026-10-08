@@ -3,11 +3,8 @@ import { useAppState } from '../state/useAppState'
 import { getThemeColors } from '../state/theme'
 import styles from './ColorOptions.module.css'
 
-/**
- * The 7 colors the user can currently paint with: the active scheme's 5
- * colors, plus the always-available base and accent (which swap with dark
- * mode). Clicking a swatch sets it as the current paint color.
- */
+// The 7 colors the user can currently paint with: the active scheme's 5
+// colors, plus the always-available base and accent (swap with dark mode).
 function ColorOptions() {
 	const { state, selectColor } = useAppState()
 	const { base, accent } = getThemeColors(state.darkMode)
