@@ -1,4 +1,6 @@
 import type { AxialCoord, HexCell } from '../types/hex'
+import { axialToPixel, boundingBox } from './hexLayout'
+import type { HexLayout } from './hexLayout'
 
 // Radius 7 (rings out from the center hex) gives `1 + 3*7*8` = 169 cells.
 // The original app (and this app through phase 2) used radius 9 (271
@@ -94,4 +96,17 @@ export function groupHexCells(
 		}
 	}
 	return groups
+}
+
+// The grid's overall (width / height) ratio, independent of `hexSize` — a
+// uniform scale factor cancels out of the ratio — so this reflects the
+// same shape HexGrid renders (and the export service rasterizes from)
+// without needing a live DOM/SVG element to measure.
+export function computeGridAspectRatio(radius: number = HEX_GRID_RADIUS) {
+	const layout: HexLayout = { orientation: 'flat', size: 1 }
+	const centers = generateHexCells(radius).map(cell =>
+		axialToPixel(cell, layout),
+	)
+	const { minX, minY, maxX, maxY } = boundingBox(centers, layout)
+	return (maxX - minX) / (maxY - minY)
 }

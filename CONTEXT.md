@@ -57,9 +57,19 @@ pass.
   or a significant abstraction/workaround. Never restate what the code or
   its types already say. **No JSDoc** (use plain `//`).
 - **Styling**: CSS Modules and plain CSS. No Tailwind or CSS-in-JS. Theme
-  colors flow through `--base` / `--accent` CSS custom properties set on
-  `<main>`; `document.body` background is set separately in `App.tsx`
-  because custom properties don't cascade upward.
+  colors flow through `--base` / `--accent` CSS custom properties set
+  inline on `.page` (`App.tsx`) for descendants to consume. `.page`,
+  `<html>`, and `<body>` each get their `background-color` set as a
+  **literal** color directly via inline style (not `var(--base)`, and with
+  **no CSS transition**) — `.page` in render, `<html>`/`<body>` in a
+  `useLayoutEffect` (not `useEffect` — must run before paint) in `App.tsx`,
+  and `<html>` additionally in a synchronous bootstrap `<script>` in
+  `index.html` (reads the persisted `darkMode` flag before React even
+  mounts, so there's no flash on first paint/reload). See "Dark-mode
+  flicker" in `DECISIONS.md` for why: animating/var-driving this property
+  caused intermittent flicker and desync between elements, so background
+  color changes are instant and literal everywhere, with no animation left
+  to race or desync.
 - **Icons**: Font Awesome (the user has a subscription; Kit loaded via
   `<script>` in `index.html`). Use plain
   `<i className="fa-solid fa-<name> fa-2x" aria-hidden="true">`. No icon

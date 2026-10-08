@@ -348,6 +348,62 @@ two `useEffect`s plus handler functions mixed into the component) was
 extracted into `src/hooks/useImageExport.ts`, leaving the component as
 pure markup driven by the hook's returned state/handlers.
 
+### Dark-mode flicker and modal resize jump
+
+Toggling dark mode, and reloading the page, both caused visible background
+flicker/flash, most noticeable at the viewport edges outside the centered
+`.page` column (and, on reload, the whole screen before React mounted).
+This took several rounds to fully pin down, since multiple plausible causes
+turned out to be partial or wrong:
+
+- **Reload flash**: Vite's dev server injects CSS via JS at runtime rather
+  than a blocking `<link rel="stylesheet">`, so a CSS-only default
+  background can't reliably win the race against first paint in dev (only
+  in production, where the built `index.html` has an actual blocking
+  `<link>`). Fixed with a synchronous inline `<script>` in `index.html`'s
+  `<head>` (before any other resource) that reads the persisted `darkMode`
+  flag from `localStorage` and sets `document.documentElement`'s
+  background directly to a literal color — independent of CSS/stylesheet
+  loading, so it behaves identically in dev and production.
+- **Toggle flicker/desync**: initially suspected to be a `useEffect`
+  (fires after paint) vs. `.page`'s synchronous inline style, fixed by
+  switching to `useLayoutEffect`. Then suspected to be `var(--base)` driving
+  an animated `background-color` (a pattern already known to get "stuck" in
+  one diagnostic, though that specific finding was later found to be a
+  testing-tool artifact — the browser tab being tested was backgrounded,
+  which pauses CSS transitions and made things look stuck that weren't).
+  The actual remaining cause: toggling dark mode also repaints every
+  hexagon's fill/stroke at the same instant (`TOGGLE_DARK_MODE` in the
+  reducer), and animating a full-viewport `background-color` transition at
+  the same moment as that large repaint caused an intermittent
+  compositor-timing flicker — worse, three elements (`.page`, `body`,
+  `html`) each had their own independent transition, so they could even
+  desync from each other by a frame.
+
+Final fix: background color is set as a **literal** value (not
+`var(--base)`) directly via inline style on all three elements, with **no
+CSS transition** anywhere — `.page` in render (`App.tsx`), `html`/`body` in
+a `useLayoutEffect` (runs before paint, closing the dev-only
+`useEffect`-after-paint gap) plus the `index.html` bootstrap script for the
+pre-mount case. Removing the animation entirely, rather than trying to
+keep multiple transitions in sync, is what actually made toggling
+flicker-free and perfectly in sync, every time. `--base`/`--accent` custom
+properties remain available for other descendants (buttons, modal, hex
+grout) that don't have this full-viewport/large-repaint collision.
+
+
+
+Separately, `SaveImageModal` visibly resized once its async-generated
+image loaded (narrow/short while "Generating image…" showed, then jumped
+wider/taller). Fixed by reserving the image's final layout space upfront:
+`.dialog` got a fixed `width` (not just `max-width`), and `.preview` gets
+an inline `aspect-ratio` computed from the grid's own shape (new
+`computeGridAspectRatio()` in `hexGrid.ts`, using the same
+`axialToPixel`/`boundingBox` math `HexGrid` and the export service rely
+on) rather than a hardcoded or ref-measured value — so the placeholder
+box is already the correct shape before the image exists, and the `<img>`
+(`object-fit: contain`) just fills it once ready.
+
 ## Process
 
 Work proceeds one logical step at a time. The user reviews and makes each

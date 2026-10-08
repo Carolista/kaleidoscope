@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import { useEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import styles from './App.module.css'
 import Header from './components/layout/Header'
 import HexGrid from './components/grid/HexGrid'
@@ -29,18 +29,33 @@ function App() {
 		() => isTouch && !hadPersistedDesign,
 	)
 
-	useEffect(() => {
+	useLayoutEffect(() => {
 		// `--base`/`--accent` are set inline below, but CSS custom properties
-		// only cascade to descendants, not up to <body>/<html>. Set the page
-		// background directly so the whole viewport follows the theme, not
-		// just the centered app column.
+		// only cascade to descendants, not up to <body>/<html>, so we set
+		// their background directly here instead — covering the viewport
+		// outside the centered `.page` column and the mobile overscroll
+		// area. A literal color (not `var(--base)`) matches index.html's
+		// bootstrap script, which sets this same property the same way
+		// before React even mounts — one consistent mechanism, rather than
+		// an inline style here racing a CSS rule there. useLayoutEffect
+		// (not useEffect) runs synchronously before the browser paints, so
+		// html/body update in the same frame as `.page` instead of one
+		// frame later, which previously caused a visible flash/mismatch
+		// when toggling dark mode.
+		document.documentElement.style.backgroundColor = base
 		document.body.style.backgroundColor = base
 	}, [base])
 
 	return (
 		<div
 			className={styles.page}
-			style={{ '--base': base, '--accent': accent } as CSSProperties}
+			style={
+				{
+					'--base': base,
+					'--accent': accent,
+					backgroundColor: base,
+				} as CSSProperties
+			}
 		>
 			<Header />
 			<main className={styles.app}>

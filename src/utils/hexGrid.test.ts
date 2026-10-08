@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { HEX_GRID_RADIUS, generateHexCells, groupHexCells } from './hexGrid'
+import {
+	HEX_GRID_RADIUS,
+	computeGridAspectRatio,
+	generateHexCells,
+	groupHexCells,
+} from './hexGrid'
 
 describe('generateHexCells', () => {
 	const cells = generateHexCells()
@@ -45,5 +50,17 @@ describe('generateHexCells', () => {
 		const radius = 2
 		const small = generateHexCells(radius)
 		expect(small).toHaveLength(1 + 3 * radius * (radius + 1))
+	})
+})
+
+describe('computeGridAspectRatio', () => {
+	it('matches the known (width / height) ratio of the default flat-top grid', () => {
+		expect(computeGridAspectRatio()).toBeCloseTo(0.8762, 4)
+	})
+
+	it('returns a positive, finite ratio for other radii', () => {
+		const ratio = computeGridAspectRatio(3)
+		expect(ratio).toBeGreaterThan(0)
+		expect(Number.isFinite(ratio)).toBe(true)
 	})
 })
