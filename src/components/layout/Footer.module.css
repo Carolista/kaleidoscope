@@ -1,0 +1,15 @@
+.copyright {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.copyright p {
+	font-size: 0.9rem;
+	color: var(--accent, #222);
+	margin: 0.3rem 0 0;
+}
+
+.reserved {
+	font-style: italic;
+}

@@ -1,11 +1,6 @@
 import type { CSSProperties } from 'react'
 import { useLayoutEffect, useRef, useState } from 'react'
 import styles from './App.module.css'
-import Header from './components/layout/Header'
-import DiamondStarGrid from './components/grid/DiamondStarGrid'
-import HexagramGrid from './components/grid/HexagramGrid'
-import HexagonGrid from './components/grid/HexagonGrid'
-import TriangleGrid from './components/grid/TriangleGrid'
 import ColorOptions from './components/controls/ColorOptions'
 import ColorThemeButton from './components/controls/ColorThemeButton'
 import DarkModeToggle from './components/controls/DarkModeToggle'
@@ -16,6 +11,12 @@ import ResetDesignButton from './components/controls/ResetDesignButton'
 import SaveImageButton from './components/controls/SaveImageButton'
 import TouchIntroModal from './components/controls/TouchIntroModal'
 import UndoRedoButtons from './components/controls/UndoRedoButtons'
+import DiamondStarGrid from './components/grid/DiamondStarGrid'
+import HexagonGrid from './components/grid/HexagonGrid'
+import HexagramGrid from './components/grid/HexagramGrid'
+import TriangleGrid from './components/grid/TriangleGrid'
+import Footer from './components/layout/Footer'
+import Header from './components/layout/Header'
 import { hasPersistedDesign } from './services/storageService'
 import { getThemeColors } from './state/theme'
 import { useAppState } from './state/useAppState'
@@ -97,6 +98,7 @@ function App() {
 					</div>
 				</div>
 			</main>
+			<Footer />
 			<TouchIntroModal
 				open={introOpen}
 				onClose={() => setIntroOpen(false)}
