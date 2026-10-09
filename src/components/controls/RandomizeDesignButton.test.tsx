@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { AppStateProvider } from '../../state/AppContext'
-import { useAppState } from '../../state/useAppState'
+import { AppStateProvider } from '@state/AppContext'
+import { useAppState } from '@state/useAppState'
 import RandomizeDesignButton from './RandomizeDesignButton'
 
 function Harness() {
@@ -25,7 +25,7 @@ describe('RandomizeDesignButton', () => {
 		expect(screen.getByTestId('painted-count')).toHaveTextContent('0')
 
 		await user.click(
-			screen.getByRole('button', { name: 'Randomize design' }),
+			screen.getByRole('button', { name: 'Generate a random design' }),
 		)
 
 		await waitFor(() =>

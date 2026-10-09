@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import IconButton from '../shared/IconButton'
+import { IconButton } from '@shared'
 import ColorThemeModal from './ColorThemeModal'
 
 function ColorThemeButton() {
@@ -9,7 +9,7 @@ function ColorThemeButton() {
 		<>
 			<IconButton
 				icon="palette"
-				label="Open color theme picker"
+				label="Select a different color palette"
 				onClick={() => setOpen(true)}
 			/>
 			<ColorThemeModal open={open} onClose={() => setOpen(false)} />

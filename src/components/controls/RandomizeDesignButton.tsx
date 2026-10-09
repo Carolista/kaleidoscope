@@ -1,13 +1,13 @@
-import { useAppState } from '../../state/useAppState'
-import IconButton from '../shared/IconButton'
+import { useAppState } from '@state/useAppState'
+import { IconButton } from '@shared'
 
 function RandomizeDesignButton() {
 	const { randomizeDesign } = useAppState()
 
 	return (
 		<IconButton
-			icon="shuffle"
-			label="Randomize design"
+			icon="magic-wand-sparkles"
+			label="Generate a random design"
 			onClick={randomizeDesign}
 		/>
 	)

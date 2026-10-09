@@ -1,17 +1,11 @@
 import { useMemo, useState } from 'react'
 import type { Ref } from 'react'
-import {
-	TRIANGLE_GRID_SIZE,
-	generateTriangleCells,
-} from '../../utils/triangleGrid'
-import {
-	triangleCorners,
-	trianglesBoundingBox,
-} from '../../utils/triangleLayout'
-import type { TriangleLayout } from '../../utils/triangleLayout'
-import { useAppState } from '../../state/useAppState'
-import { getThemeColors } from '../../state/theme'
-import { useIsTouchDevice } from '../../utils/useIsTouchDevice'
+import { TRIANGLE_GRID_SIZE, generateTriangleCells } from '@utils/triangleGrid'
+import { triangleCorners, trianglesBoundingBox } from '@utils/triangleLayout'
+import type { TriangleLayout } from '@utils/triangleLayout'
+import { useAppState } from '@state/useAppState'
+import { getThemeColors } from '@state/theme'
+import { useIsTouchDevice } from '@utils/useIsTouchDevice'
 import PolygonCell from './PolygonCell'
 import styles from './TriangleGrid.module.css'
 

@@ -1,38 +1,27 @@
 import type { CSSProperties } from 'react'
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 import styles from './App.module.css'
+import { ColorOptions, ColorThemeButton } from '@color-schemes'
+import {
+	ControlsInfoButton,
+	DarkModeToggle,
+	EditableAreaToggle,
+	RandomizeDesignButton,
+	ResetDesignButton,
+	SaveImageButton,
+	UndoRedoButtons,
+} from '@controls'
+import { GridShapeButton } from '@shapes'
+import { DiamondStarGrid, HexagonGrid, HexagramGrid, TriangleGrid } from '@grid'
+import Footer from './components/layout/Footer'
 import Header from './components/layout/Header'
-import DiamondStarGrid from './components/grid/DiamondStarGrid'
-import HexagramGrid from './components/grid/HexagramGrid'
-import HexagonGrid from './components/grid/HexagonGrid'
-import TriangleGrid from './components/grid/TriangleGrid'
-import ColorOptions from './components/controls/ColorOptions'
-import ColorThemeButton from './components/controls/ColorThemeButton'
-import DarkModeToggle from './components/controls/DarkModeToggle'
-import EditableAreaToggle from './components/controls/EditableAreaToggle'
-import GridShapeButton from './components/controls/GridShapeButton'
-import RandomizeDesignButton from './components/controls/RandomizeDesignButton'
-import ResetDesignButton from './components/controls/ResetDesignButton'
-import SaveImageButton from './components/controls/SaveImageButton'
-import TouchIntroModal from './components/controls/TouchIntroModal'
-import UndoRedoButtons from './components/controls/UndoRedoButtons'
-import { hasPersistedDesign } from './services/storageService'
 import { getThemeColors } from './state/theme'
 import { useAppState } from './state/useAppState'
-import { useIsTouchDevice } from './utils/useIsTouchDevice'
 
 function App() {
 	const { state } = useAppState()
 	const { base, accent } = getThemeColors(state.darkMode)
 	const svgRef = useRef<SVGSVGElement>(null)
-	const isTouch = useIsTouchDevice()
-	// Captured once, before the autosave effect in AppContext can run, so
-	// this reflects whether a design already existed when the app loaded
-	// (i.e. this device's first-ever visit) rather than the current state.
-	const [hadPersistedDesign] = useState(hasPersistedDesign)
-	const [introOpen, setIntroOpen] = useState(
-		() => isTouch && !hadPersistedDesign,
-	)
 
 	useLayoutEffect(() => {
 		// `--base`/`--accent` are set inline below, but CSS custom properties
@@ -87,20 +76,18 @@ function App() {
 						aria-label="Settings and Actions"
 						className={styles.buttonGroup}
 					>
-						<DarkModeToggle />
-						<ColorThemeButton />
-						<GridShapeButton />
-						<RandomizeDesignButton />
 						<EditableAreaToggle />
+						<ColorThemeButton />
+						<RandomizeDesignButton />
 						<ResetDesignButton />
+						<GridShapeButton />
 						<SaveImageButton svgRef={svgRef} />
+						<DarkModeToggle />
+						<ControlsInfoButton />
 					</div>
 				</div>
 			</main>
-			<TouchIntroModal
-				open={introOpen}
-				onClose={() => setIntroOpen(false)}
-			/>
+			<Footer />
 		</div>
 	)
 }

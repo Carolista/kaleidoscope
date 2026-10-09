@@ -1,8 +1,7 @@
 import { useState } from 'react'
-import { isConfirmDialogDismissed } from '../../services/confirmDialogPreferences'
-import { useAppState } from '../../state/useAppState'
-import ConfirmDialog from '../shared/ConfirmDialog'
-import IconButton from '../shared/IconButton'
+import { isConfirmDialogDismissed } from '@services/confirmDialogPreferences'
+import { useAppState } from '@state/useAppState'
+import { ConfirmDialog, IconButton } from '@shared'
 
 const DONT_SHOW_AGAIN_KEY = 'reset-design'
 
@@ -13,8 +12,8 @@ function ResetDesignButton() {
 	return (
 		<>
 			<IconButton
-				icon="eraser"
-				label="Reset design"
+				icon="arrows-rotate"
+				label="Reset the design board"
 				onClick={() => {
 					if (isConfirmDialogDismissed(DONT_SHOW_AGAIN_KEY)) {
 						resetDesign()
@@ -25,7 +24,7 @@ function ResetDesignButton() {
 			/>
 			<ConfirmDialog
 				open={confirming}
-				title="Reset design?"
+				title="Confirm Reset"
 				message="Are you sure you want to reset your design? You can undo this afterward if you change your mind."
 				confirmLabel="Reset"
 				cancelLabel="Cancel"

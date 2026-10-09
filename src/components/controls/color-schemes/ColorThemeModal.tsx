@@ -1,5 +1,4 @@
-import CloseButton from '../shared/CloseButton'
-import Modal from '../shared/Modal'
+import { CloseButton, Modal } from '@shared'
 import SchemePicker from './SchemePicker'
 import styles from './ColorThemeModal.module.css'
 
@@ -21,7 +20,7 @@ function ColorThemeModal({ open, onClose }: ColorThemeModalProps) {
 					Color Theme
 				</h2>
 				<CloseButton
-					label="Close color theme picker"
+					label="Close color palette selector"
 					onClick={onClose}
 				/>
 			</div>

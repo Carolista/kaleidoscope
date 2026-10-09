@@ -101,8 +101,8 @@ export function loadInitialAppState(): AppState {
 }
 
 // Used once, at startup (before the autosave effect can run), to decide
-// whether to show the touch intro modal: a design already existing means
-// this isn't the device's first visit.
+// whether to show the controls modal automatically: a design already
+// existing means this isn't the device's first-ever visit.
 export function hasPersistedDesign(): boolean {
 	try {
 		return localStorage.getItem(STORAGE_KEY) !== null

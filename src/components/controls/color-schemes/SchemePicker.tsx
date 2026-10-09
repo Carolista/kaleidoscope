@@ -1,5 +1,5 @@
-import { colorSchemes } from '../../data/colorSchemes'
-import { useAppState } from '../../state/useAppState'
+import { colorSchemes } from '@data/colorSchemes'
+import { useAppState } from '@state/useAppState'
 import styles from './SchemePicker.module.css'
 
 export interface SchemePickerProps {

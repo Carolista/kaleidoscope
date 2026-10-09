@@ -7,7 +7,7 @@
 	max-width: 640px;
 	margin: 0 auto;
 	padding: 2.5rem 1.5rem;
-	min-height: 100vh;
+	min-height: 100dvh;
 	/* background-color is set inline (App.tsx). No transition: toggling
      dark mode also repaints every hexagon's fill/stroke at the same
      instant (see TOGGLE_DARK_MODE), and animating a full-viewport
@@ -23,6 +23,10 @@
 	align-items: center;
 	gap: 1.5rem;
 	width: 100%;
+}
+
+main {
+	flex-grow: 1;
 }
 
 .controlRows {

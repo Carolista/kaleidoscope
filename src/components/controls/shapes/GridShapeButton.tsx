@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import IconButton from '../shared/IconButton'
+import { IconButton } from '@shared'
 import GridShapeModal from './GridShapeModal'
 
 function GridShapeButton() {
@@ -9,7 +9,7 @@ function GridShapeButton() {
 		<>
 			<IconButton
 				icon="shapes"
-				label="Open grid shape picker"
+				label="Select a different shape"
 				onClick={() => setOpen(true)}
 			/>
 			<GridShapeModal open={open} onClose={() => setOpen(false)} />

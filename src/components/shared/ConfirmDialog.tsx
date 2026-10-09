@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { dismissConfirmDialog } from '../../services/confirmDialogPreferences'
+import { dismissConfirmDialog } from '@services/confirmDialogPreferences'
 import Button from './Button'
 import styles from './ConfirmDialog.module.css'
 import Modal from './Modal'

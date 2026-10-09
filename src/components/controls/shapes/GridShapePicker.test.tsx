@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { AppStateProvider } from '../../state/AppContext'
-import { useAppState } from '../../state/useAppState'
+import { AppStateProvider } from '@state/AppContext'
+import { useAppState } from '@state/useAppState'
 import GridShapePicker from './GridShapePicker'
 
 describe('GridShapePicker', () => {
@@ -24,7 +24,7 @@ describe('GridShapePicker', () => {
 		await user.click(screen.getByRole('button', { name: 'Triangle' }))
 
 		expect(
-			screen.getByRole('heading', { name: 'Switch grid shape?' }),
+			screen.getByRole('heading', { name: 'Confirm Shape Change' }),
 		).toBeInTheDocument()
 		// Not switched yet, since the dialog hasn't been confirmed.
 		expect(screen.getByRole('button', { name: 'Hexagon' })).toHaveAttribute(

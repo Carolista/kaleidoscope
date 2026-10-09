@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { gridShapes } from '../../data/gridShapes'
-import { isConfirmDialogDismissed } from '../../services/confirmDialogPreferences'
-import { useAppState } from '../../state/useAppState'
-import type { GridShapeId } from '../../types/gridShape'
-import ConfirmDialog from '../shared/ConfirmDialog'
+import { gridShapes } from '@data/gridShapes'
+import { isConfirmDialogDismissed } from '@services/confirmDialogPreferences'
+import { useAppState } from '@state/useAppState'
+import type { GridShapeId } from '@appTypes/gridShape'
+import { ConfirmDialog } from '@shared'
 import GridShapeIcon from './GridShapeIcon'
 import styles from './GridShapePicker.module.css'
 
@@ -58,7 +58,7 @@ function GridShapePicker({ onSelected }: GridShapePickerProps) {
 			</ul>
 			<ConfirmDialog
 				open={pendingOption !== undefined}
-				title="Switch grid shape?"
+				title="Confirm Shape Change"
 				message={`Switching to the ${pendingOption?.label ?? ''} grid will reset your current design. You can undo this afterward if you change your mind.`}
 				confirmLabel="Switch"
 				cancelLabel="Cancel"

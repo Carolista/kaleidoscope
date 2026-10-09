@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { renderWithProvider } from '../../test/renderWithProvider'
+import { renderWithProvider } from '@test/renderWithProvider'
 import ColorOptions from './ColorOptions'
 
 describe('ColorOptions', () => {

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { AppStateProvider } from '../../state/AppContext'
+import { AppStateProvider } from '@state/AppContext'
 import GridShapeButton from './GridShapeButton'
 
 describe('GridShapeButton', () => {
@@ -16,7 +16,7 @@ describe('GridShapeButton', () => {
 		expect(screen.queryByRole('heading', { name: 'Grid Shape' })).toBeNull()
 
 		await user.click(
-			screen.getByRole('button', { name: 'Open grid shape picker' }),
+			screen.getByRole('button', { name: 'Select a different shape' }),
 		)
 
 		expect(
@@ -30,7 +30,7 @@ describe('GridShapeButton', () => {
 		).toBeInTheDocument()
 
 		await user.click(
-			screen.getByRole('button', { name: 'Close grid shape picker' }),
+			screen.getByRole('button', { name: 'Close grid shape selector' }),
 		)
 
 		await waitFor(() =>
@@ -45,7 +45,7 @@ describe('GridShapeButton', () => {
 		render(<GridShapeButton />, { wrapper: AppStateProvider })
 
 		await user.click(
-			screen.getByRole('button', { name: 'Open grid shape picker' }),
+			screen.getByRole('button', { name: 'Select a different shape' }),
 		)
 		await user.click(screen.getByRole('button', { name: 'Triangle' }))
 		await user.click(screen.getByRole('button', { name: 'Switch' }))

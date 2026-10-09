@@ -1,12 +1,10 @@
 import type { RefObject } from 'react'
 import { useMemo } from 'react'
-import { useAppState } from '../../state/useAppState'
-import { getThemeColors } from '../../state/theme'
-import { useImageExport } from '../../hooks/useImageExport'
-import { computeAspectRatioForShape } from '../../utils/gridShapeRegistry'
-import Button from '../shared/Button'
-import CloseButton from '../shared/CloseButton'
-import Modal from '../shared/Modal'
+import { useAppState } from '@state/useAppState'
+import { getThemeColors } from '@state/theme'
+import { useImageExport } from '@hooks/useImageExport'
+import { computeAspectRatioForShape } from '@utils/gridShapeRegistry'
+import { Button, CloseButton, Modal } from '@shared'
 import styles from './SaveImageModal.module.css'
 
 export interface SaveImageModalProps {

@@ -15,6 +15,34 @@
 		"noEmit": true,
 		"jsx": "react-jsx",
 
+		/* Path aliases (keep in sync with vite.config.ts) */
+		"paths": {
+			"@controls": ["./src/components/controls"],
+			"@controls/*": ["./src/components/controls/*"],
+			"@color-schemes": ["./src/components/controls/color-schemes"],
+			"@color-schemes/*": ["./src/components/controls/color-schemes/*"],
+			"@shapes": ["./src/components/controls/shapes"],
+			"@shapes/*": ["./src/components/controls/shapes/*"],
+			"@grid": ["./src/components/grid"],
+			"@grid/*": ["./src/components/grid/*"],
+			"@shared": ["./src/components/shared"],
+			"@shared/*": ["./src/components/shared/*"],
+			"@data": ["./src/data"],
+			"@data/*": ["./src/data/*"],
+			"@hooks": ["./src/hooks"],
+			"@hooks/*": ["./src/hooks/*"],
+			"@services": ["./src/services"],
+			"@services/*": ["./src/services/*"],
+			"@state": ["./src/state"],
+			"@state/*": ["./src/state/*"],
+			"@test": ["./src/test"],
+			"@test/*": ["./src/test/*"],
+			"@appTypes": ["./src/types"],
+			"@appTypes/*": ["./src/types/*"],
+			"@utils": ["./src/utils"],
+			"@utils/*": ["./src/utils/*"]
+		},
+
 		/* Linting */
 		"strict": true,
 		"noUnusedLocals": true,

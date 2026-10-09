@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { RefObject } from 'react'
-import IconButton from '../shared/IconButton'
+import { IconButton } from '@shared'
 import SaveImageModal from './SaveImageModal'
 
 export interface SaveImageButtonProps {
@@ -13,8 +13,8 @@ function SaveImageButton({ svgRef }: SaveImageButtonProps) {
 	return (
 		<>
 			<IconButton
-				icon="image"
-				label="Save design as image"
+				icon="hexagon-image"
+				label="Download or share image of design"
 				onClick={() => setOpen(true)}
 			/>
 			<SaveImageModal

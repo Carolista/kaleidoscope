@@ -1,5 +1,4 @@
-import CloseButton from '../shared/CloseButton'
-import Modal from '../shared/Modal'
+import { CloseButton, Modal } from '@shared'
 import GridShapePicker from './GridShapePicker'
 import styles from './GridShapeModal.module.css'
 
@@ -21,7 +20,7 @@ function GridShapeModal({ open, onClose }: GridShapeModalProps) {
 					Grid Shape
 				</h2>
 				<CloseButton
-					label="Close grid shape picker"
+					label="Close grid shape selector"
 					onClick={onClose}
 				/>
 			</div>
