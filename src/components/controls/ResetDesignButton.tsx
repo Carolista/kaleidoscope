@@ -12,7 +12,7 @@ function ResetDesignButton() {
 	return (
 		<>
 			<IconButton
-				icon="eraser"
+				icon="arrows-rotate"
 				label="Reset design"
 				onClick={() => {
 					if (isConfirmDialogDismissed(DONT_SHOW_AGAIN_KEY)) {
