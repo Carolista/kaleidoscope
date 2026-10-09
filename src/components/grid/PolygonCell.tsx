@@ -1,7 +1,7 @@
 import type { CSSProperties, KeyboardEvent } from 'react'
-import type { Point } from '../../types/geometry'
-import { pointsToSvgAttr } from '../../utils/svgPoints'
-import { getHoverFill } from '../../utils/colorMath'
+import type { Point } from '@appTypes/geometry'
+import { pointsToSvgAttr } from '@utils/svgPoints'
+import { getHoverFill } from '@utils/colorMath'
 import styles from './PolygonCell.module.css'
 
 // A single clickable (or purely decorative/mirrored) cell in any

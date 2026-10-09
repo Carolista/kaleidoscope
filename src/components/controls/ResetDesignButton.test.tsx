@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { AppStateProvider } from '../../state/AppContext'
-import { useAppState } from '../../state/useAppState'
+import { AppStateProvider } from '@state/AppContext'
+import { useAppState } from '@state/useAppState'
 import ResetDesignButton from './ResetDesignButton'
 
 // Paints one group so we can observe whether reset actually clears it.

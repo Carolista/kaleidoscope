@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
-import { useAppState } from '../../state/useAppState'
-import IconButton from '../shared/IconButton'
+import { useAppState } from '@state/useAppState'
+import { IconButton } from '@shared'
 import styles from './UndoRedoButtons.module.css'
 
 function UndoRedoButtons() {

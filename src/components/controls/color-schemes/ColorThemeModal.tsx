@@ -1,5 +1,4 @@
-import CloseButton from '../../shared/CloseButton'
-import Modal from '../../shared/Modal'
+import { CloseButton, Modal } from '@shared'
 import SchemePicker from './SchemePicker'
 import styles from './ColorThemeModal.module.css'
 

@@ -1,20 +1,18 @@
 import type { CSSProperties } from 'react'
 import { useLayoutEffect, useRef, useState } from 'react'
 import styles from './App.module.css'
-import ColorOptions from './components/controls/color-schemes/ColorOptions'
-import ColorThemeButton from './components/controls/color-schemes/ColorThemeButton'
-import DarkModeToggle from './components/controls/DarkModeToggle'
-import EditableAreaToggle from './components/controls/EditableAreaToggle'
-import GridShapeButton from './components/controls/shapes/GridShapeButton'
-import RandomizeDesignButton from './components/controls/RandomizeDesignButton'
-import ResetDesignButton from './components/controls/ResetDesignButton'
-import SaveImageButton from './components/controls/SaveImageButton'
-import TouchIntroModal from './components/controls/TouchIntroModal'
-import UndoRedoButtons from './components/controls/UndoRedoButtons'
-import DiamondStarGrid from './components/grid/DiamondStarGrid'
-import HexagonGrid from './components/grid/HexagonGrid'
-import HexagramGrid from './components/grid/HexagramGrid'
-import TriangleGrid from './components/grid/TriangleGrid'
+import { ColorOptions, ColorThemeButton } from '@color-schemes'
+import {
+	DarkModeToggle,
+	EditableAreaToggle,
+	RandomizeDesignButton,
+	ResetDesignButton,
+	SaveImageButton,
+	TouchIntroModal,
+	UndoRedoButtons,
+} from '@controls'
+import { GridShapeButton } from '@shapes'
+import { DiamondStarGrid, HexagonGrid, HexagramGrid, TriangleGrid } from '@grid'
 import Footer from './components/layout/Footer'
 import Header from './components/layout/Header'
 import { hasPersistedDesign } from './services/storageService'

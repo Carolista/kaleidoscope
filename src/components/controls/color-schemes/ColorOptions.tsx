@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
-import { useAppState } from '../../../state/useAppState'
-import { getThemeColors } from '../../../state/theme'
+import { useAppState } from '@state/useAppState'
+import { getThemeColors } from '@state/theme'
 import styles from './ColorOptions.module.css'
 
 // The 7 colors the user can currently paint with: the active scheme's 5

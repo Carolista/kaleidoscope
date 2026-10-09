@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import IconButton from '../../shared/IconButton'
+import { IconButton } from '@shared'
 import GridShapeModal from './GridShapeModal'
 
 function GridShapeButton() {

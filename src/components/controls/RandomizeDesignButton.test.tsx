@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { AppStateProvider } from '../../state/AppContext'
-import { useAppState } from '../../state/useAppState'
+import { AppStateProvider } from '@state/AppContext'
+import { useAppState } from '@state/useAppState'
 import RandomizeDesignButton from './RandomizeDesignButton'
 
 function Harness() {

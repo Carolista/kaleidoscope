@@ -1,5 +1,5 @@
-import { useAppState } from '../../state/useAppState'
-import IconButton from '../shared/IconButton'
+import { useAppState } from '@state/useAppState'
+import { IconButton } from '@shared'
 
 function RandomizeDesignButton() {
 	const { randomizeDesign } = useAppState()

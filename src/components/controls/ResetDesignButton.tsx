@@ -1,8 +1,7 @@
 import { useState } from 'react'
-import { isConfirmDialogDismissed } from '../../services/confirmDialogPreferences'
-import { useAppState } from '../../state/useAppState'
-import ConfirmDialog from '../shared/ConfirmDialog'
-import IconButton from '../shared/IconButton'
+import { isConfirmDialogDismissed } from '@services/confirmDialogPreferences'
+import { useAppState } from '@state/useAppState'
+import { ConfirmDialog, IconButton } from '@shared'
 
 const DONT_SHOW_AGAIN_KEY = 'reset-design'
 

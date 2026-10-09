@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { render } from '@testing-library/react'
 import GridShapeIcon from './GridShapeIcon'
-import type { GridShapeId } from '../../../types/gridShape'
+import type { GridShapeId } from '@appTypes/gridShape'
 
 // Expected piece count for each shape's preview, matching the
 // un-subdivided version of its real grid-generation code: a hexagon of

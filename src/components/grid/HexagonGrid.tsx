@@ -1,18 +1,11 @@
 import { useMemo, useState } from 'react'
 import type { Ref } from 'react'
-import {
-	HEXAGON_GRID_RADIUS,
-	generateHexagonCells,
-} from '../../utils/hexagonGrid'
-import {
-	axialToPixel,
-	boundingBox,
-	hexagonCorners,
-} from '../../utils/hexagonLayout'
-import type { HexagonLayout } from '../../utils/hexagonLayout'
-import { useAppState } from '../../state/useAppState'
-import { getThemeColors } from '../../state/theme'
-import { useIsTouchDevice } from '../../utils/useIsTouchDevice'
+import { HEXAGON_GRID_RADIUS, generateHexagonCells } from '@utils/hexagonGrid'
+import { axialToPixel, boundingBox, hexagonCorners } from '@utils/hexagonLayout'
+import type { HexagonLayout } from '@utils/hexagonLayout'
+import { useAppState } from '@state/useAppState'
+import { getThemeColors } from '@state/theme'
+import { useIsTouchDevice } from '@utils/useIsTouchDevice'
 import PolygonCell from './PolygonCell'
 import styles from './HexagonGrid.module.css'
 

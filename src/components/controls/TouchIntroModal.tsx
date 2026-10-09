@@ -1,5 +1,4 @@
-import Button from '../shared/Button'
-import Modal from '../shared/Modal'
+import { Button, Modal } from '@shared'
 import styles from './TouchIntroModal.module.css'
 
 export interface TouchIntroModalProps {
