@@ -104,8 +104,8 @@ pass.
 
 - **Folder structure**: `src/components/` is organized into subfolders —
   `layout/` (page chrome, e.g. `Header`), `grid/` (`HexagonGrid`,
-  `TriangleGrid`, `DiamondStarGrid`, `HexagramGrid`, `PolygonCell`),
-  `controls/` (palette
+  `TriangleGrid`, `DiamondStarGrid`, `HexagramGrid`, `CircleRingsGrid`,
+  `PolygonCell`, `CircleCell`), `controls/` (palette
   and everything below the grid), and `shared/` (generic, reusable pieces
   like `IconButton`/`Button`/`Modal`/`ConfirmDialog` used across the
   others). One parent folder, not split into top-level feature folders,
@@ -122,9 +122,11 @@ pass.
     not.
   - `storageService.ts` autosaves to `localStorage` (versioned payload,
     scheme saved by name, defensive loading, all storage errors swallowed).
-- **Grid shapes**: 4 selectable shapes share one `shapeGroupColors`
-  paint-state map and `PolygonCell` rendering component — painting/undo/
-  redo only ever need a group id, never shape-specific geometry.
+- **Grid shapes**: 5 selectable shapes share one `shapeGroupColors`
+  paint-state map — painting/undo/
+  redo only ever need a group id, never shape-specific geometry. 4 of the
+  5 share `PolygonCell` for rendering; circle rings uses its own
+  `CircleCell` (a `<circle>`, not a `<polygon>`).
   `GridShapeId` (`src/types/gridShape.ts`) identifies the current shape;
   `GridShapePicker`/`GridShapeModal` let the user switch (behind a
   `ConfirmDialog`, since switching discards the current design); each
@@ -168,6 +170,26 @@ pass.
     applied to 2 differently-oriented equilateral triangles; replicated
     across the shape's 6 rotations and grouped via the same D6 symmetry
     engine into 20 clickable orbits.
+  - **Circle rings** (`src/utils/circleRingsLayout.ts` +
+    `circleRingsGrid.ts`): a lone center dot surrounded by 6 concentric
+    rings of evenly-spaced circles (ring `n` has `6n` circles, so outer
+    rings stay just as evenly spaced as inner ones instead of thinning
+    out), fed directly into the general symmetry engine below (D6) on
+    the full generated point set — unlike diamond star/hexagram, a
+    single 60-degree spoke of ring circles isn't internally
+    self-mirror-symmetric, so there's no cheaper rotate-and-replicate
+    shortcut (same approach as triangle). The center dot and ring 1
+    share a floor diameter (tuned, together with the grid's max on-screen
+    width, to stay above a ~30px comfortable touch target); every ring
+    beyond that grows the diameter by a fixed fraction per ring
+    (`GROWTH_STEP_RATIO`), with each ring's radius computed to be just
+    far enough out that neither its own same-ring neighbors nor the
+    previous ring's circles overlap (`RING_GAP`, a multiplier just over
+    1). 6 rings (127 cells, 16 clickable groups) was chosen over 7: more
+    rings forces either a thinner safety margin on that 30px floor or a
+    less visible size increase ring-to-ring, since each additional
+    ring's growing circle count demands more circumference to stay
+    non-overlapping.
   - **General symmetry engine** (`src/utils/symmetry.ts`): computes
     rotation/mirror orbits and clickable-wedge assignment via real
     geometric transforms applied to each cell's centroid (matched back to
@@ -276,18 +298,22 @@ image export/share/download, undo/redo, layout rework, touchscreen wedge
 discoverability (eye toggle), reduced grid to radius 7/169 cells for all
 devices (was radius 9/271), design randomizer (weighted toward the 5
 scheme colors over base; accent excluded), alternative grid shapes
-(triangle, 6-point diamond star, hexagram) alongside the original
-hexagon, selectable via a shape picker with SVG icon previews (one real
-piece of each shape's own geometry, rendered rather than hand-drawn), a
-codebase-wide rename clearing up "hex" ambiguity once hexagon and
-hexagram coexisted (`HexGrid`→`HexagonGrid`, `hexGroupColors`→
-`shapeGroupColors`, etc.), a controls modal with instructions on every
-clickable control (reworked from the earlier touch-only intro modal), a footer.
+(triangle, 6-point diamond star, hexagram, circle rings) alongside the
+original hexagon, selectable via a shape picker with SVG icon previews
+(one real piece of each shape's own geometry, rendered rather than
+hand-drawn), a codebase-wide rename clearing up "hex" ambiguity once
+hexagon and hexagram coexisted (`HexGrid`→`HexagonGrid`,
+`hexGroupColors`→ `shapeGroupColors`, etc.), a controls modal with
+instructions on every clickable control (reworked from the earlier
+touch-only intro modal), a footer.
 
 Next, in priority order:
-- More alternative shapes/tilings (e.g. a circle of concentric rings of
-  progressively larger circles; a pinwheel... anything designable as a wedge, then
-  mirrored/copied around).
+- More alternative shapes/tilings (e.g. a pinwheel — copied/rotated
+  around but not mirrored, so left- and right-handed wedges aren't
+  forced to match; could suit 8 spokes instead of 6, since it doesn't
+  need a fold that's also friendly to mirroring). Anything designable as
+  a wedge, then mirrored/copied around, or just copied around without
+  mirroring.
 - README (replace current): what it is, live link,
    screenshots, setup, scripts, stack. Unscheduled until the user supplies
    examples and asks.
