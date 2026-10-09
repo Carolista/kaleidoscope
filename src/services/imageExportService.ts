@@ -64,7 +64,7 @@ export function buildExportClone(
 	const clone = svg.cloneNode(true) as SVGSVGElement
 	clone.setAttribute('width', String(width))
 	clone.setAttribute('height', String(height))
-	inlineHexagonStrokes(svg, clone)
+	inlinePolygonStrokes(svg, clone)
 	forceFullOpacity(clone)
 	return clone
 }
@@ -79,11 +79,11 @@ function forceFullOpacity(clonedSvg: SVGSVGElement) {
 	}
 }
 
-// The hex "grout" lines are a CSS stroke from Hexagon.module.css, which
-// isn't available once the SVG is serialized on its own — so bake the
-// live computed stroke style into every cloned polygon as plain
+// The grid's "grout" lines are a CSS stroke from PolygonCell.module.css,
+// which isn't available once the SVG is serialized on its own — so bake
+// the live computed stroke style into every cloned polygon as plain
 // attributes instead of relying on a stylesheet that won't travel with it.
-function inlineHexagonStrokes(
+function inlinePolygonStrokes(
 	liveSvg: SVGSVGElement,
 	clonedSvg: SVGSVGElement,
 ) {

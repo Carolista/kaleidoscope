@@ -1,4 +1,7 @@
 import type { AxialCoord } from '../types/hex'
+import type { Point } from '../types/geometry'
+
+export type { Point }
 
 export type HexOrientation = 'flat' | 'pointy'
 
@@ -6,11 +9,6 @@ export interface HexLayout {
 	readonly orientation: HexOrientation
 	// Circumradius: distance from a hex's center to each of its 6 corners, in px.
 	readonly size: number
-}
-
-export interface Point {
-	readonly x: number
-	readonly y: number
 }
 
 const SQRT3 = Math.sqrt(3)

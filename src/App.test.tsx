@@ -73,4 +73,27 @@ describe('App', () => {
 			}),
 		).not.toBeInTheDocument()
 	})
+
+	it('renders the hex grid by default and switches to the triangle grid via the shape picker', async () => {
+		mockUseIsTouchDevice.mockReturnValue(false)
+		const user = userEvent.setup()
+		renderApp()
+
+		expect(
+			screen.getByRole('group', { name: 'Kaleidoscope hex grid' }),
+		).toBeInTheDocument()
+
+		await user.click(
+			screen.getByRole('button', { name: 'Open grid shape picker' }),
+		)
+		await user.click(screen.getByRole('button', { name: 'Triangle' }))
+		await user.click(screen.getByRole('button', { name: 'Switch' }))
+
+		expect(
+			screen.getByRole('group', { name: 'Kaleidoscope triangle grid' }),
+		).toBeInTheDocument()
+		expect(
+			screen.queryByRole('group', { name: 'Kaleidoscope hex grid' }),
+		).not.toBeInTheDocument()
+	})
 })

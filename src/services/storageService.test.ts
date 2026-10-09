@@ -15,6 +15,7 @@ function baseState(overrides: Partial<AppState> = {}): AppState {
 		currentColor: colorSchemes[0].colors[0],
 		darkMode: false,
 		showEditableArea: true,
+		gridShape: 'hexagon',
 		hexGroupColors: {},
 		...overrides,
 	}
@@ -36,6 +37,7 @@ describe('storageService', () => {
 			currentScheme: colorSchemes[2],
 			currentColor: colorSchemes[2].colors[1],
 			darkMode: true,
+			gridShape: 'triangle',
 			hexGroupColors: { '0,0': colorSchemes[2].colors[1] },
 		})
 		savePersistedState(saved)
@@ -120,6 +122,37 @@ describe('storageService', () => {
 				currentColor: colorSchemes[0].colors[0],
 				darkMode: false,
 				showEditableArea: 'yes',
+				hexGroupColors: {},
+			}),
+		)
+		const state = loadInitialAppState()
+		expect(colorSchemes).toContain(state.currentScheme)
+	})
+
+	it('defaults gridShape to hexagon when loading a design saved before that field existed', () => {
+		localStorage.setItem(
+			STORAGE_KEY,
+			JSON.stringify({
+				version: 1,
+				schemeName: colorSchemes[0].name,
+				currentColor: colorSchemes[0].colors[0],
+				darkMode: false,
+				hexGroupColors: {},
+			}),
+		)
+		const state = loadInitialAppState()
+		expect(state.gridShape).toBe('hexagon')
+	})
+
+	it('falls back to a fresh random state when gridShape is present but not a recognized shape', () => {
+		localStorage.setItem(
+			STORAGE_KEY,
+			JSON.stringify({
+				version: 1,
+				schemeName: colorSchemes[0].name,
+				currentColor: colorSchemes[0].colors[0],
+				darkMode: false,
+				gridShape: 'octagon',
 				hexGroupColors: {},
 			}),
 		)

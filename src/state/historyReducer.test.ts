@@ -9,6 +9,7 @@ function baseState(overrides: Partial<AppState> = {}): AppState {
 		currentColor: colorSchemes[0].colors[0],
 		darkMode: false,
 		showEditableArea: true,
+		gridShape: 'hexagon',
 		hexGroupColors: {},
 		...overrides,
 	}

@@ -1,4 +1,5 @@
 import type { ColorScheme } from './colorScheme'
+import type { GridShapeId } from './gridShape'
 
 export interface AppState {
 	readonly currentScheme: ColorScheme
@@ -9,7 +10,13 @@ export interface AppState {
 	// touch-only EditableAreaToggle; ignored on non-touch devices, which
 	// rely on hover instead.
 	readonly showEditableArea: boolean
-	// Keyed by `HexCell.groupId`; a group with no entry is shown in the
-	// default/accent color.
+	// Which grid shape is currently selected (hexagon, triangle, ...).
+	// Switching shapes resets `hexGroupColors`, since a group id from one
+	// shape's symmetry grouping has no meaning for another's.
+	readonly gridShape: GridShapeId
+	// Keyed by the current shape's cell `groupId`; a group with no entry
+	// is shown in the default/accent color. The name predates the
+	// multi-shape feature but the field itself has always just been a
+	// generic map keyed by group id, so it's reused as-is for every shape.
 	readonly hexGroupColors: Readonly<Record<string, string>>
 }

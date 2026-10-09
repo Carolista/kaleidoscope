@@ -1,55 +1,64 @@
 import { useMemo, useState } from 'react'
 import type { Ref } from 'react'
-import { HEX_GRID_RADIUS, generateHexCells } from '../../utils/hexGrid'
-import { axialToPixel, boundingBox, hexCorners } from '../../utils/hexLayout'
-import type { HexLayout } from '../../utils/hexLayout'
+import {
+	TRIANGLE_GRID_SIZE,
+	generateTriangleCells,
+} from '../../utils/triangleGrid'
+import {
+	triangleCorners,
+	trianglesBoundingBox,
+} from '../../utils/triangleLayout'
+import type { TriangleLayout } from '../../utils/triangleLayout'
 import { useAppState } from '../../state/useAppState'
 import { getThemeColors } from '../../state/theme'
 import { useIsTouchDevice } from '../../utils/useIsTouchDevice'
 import PolygonCell from './PolygonCell'
-import styles from './HexGrid.module.css'
+import styles from './TriangleGrid.module.css'
 
-export interface HexGridProps {
-	readonly radius?: number
-	// Circumradius of each hexagon, in SVG user units.
-	readonly hexSize?: number
+export interface TriangleGridProps {
+	readonly gridSize?: number
+	// Edge length of each small triangle, in SVG user units.
+	readonly triangleSize?: number
 	// Exposes the rendered <svg> element, e.g. for image export.
 	readonly svgRef?: Ref<SVGSVGElement>
 }
 
-const DEFAULT_HEX_SIZE = 16
+const DEFAULT_TRIANGLE_SIZE = 32
 
-function HexGrid({
-	radius = HEX_GRID_RADIUS,
-	hexSize = DEFAULT_HEX_SIZE,
+// The triangle-grid counterpart of HexGrid: same rendering/interaction
+// approach (PolygonCell, hover/touch dimming, keyboard support, live
+// region announcements), but built from the equilateral-triangle
+// subdivision in triangleGrid.ts instead of hex cells. Still reuses the
+// hex-named `hexGroupColors` state/`paintHexGroup` action, since both are
+// already shape-agnostic in practice (just a map keyed by group id).
+function TriangleGrid({
+	gridSize = TRIANGLE_GRID_SIZE,
+	triangleSize = DEFAULT_TRIANGLE_SIZE,
 	svgRef,
-}: HexGridProps) {
+}: TriangleGridProps) {
 	const { state, paintHexGroup } = useAppState()
 	const { base, accent } = getThemeColors(state.darkMode)
 	const [isHovering, setIsHovering] = useState(false)
 	const isTouch = useIsTouchDevice()
-	// Touch devices have no hover, so they get a persistent, user-toggled
-	// highlight instead (EditableAreaToggle); mouse/trackpad devices keep
-	// relying on hover and ignore showEditableArea entirely.
 	const showPersistentHighlight = isTouch && state.showEditableArea
 
-	const layout: HexLayout = useMemo(
-		() => ({ orientation: 'flat', size: hexSize }),
-		[hexSize],
+	const layout: TriangleLayout = useMemo(
+		() => ({ size: triangleSize }),
+		[triangleSize],
 	)
 
-	const cells = useMemo(() => generateHexCells(radius), [radius])
+	const cells = useMemo(() => generateTriangleCells(gridSize), [gridSize])
 
 	const { polygons, viewBox, tileCount } = useMemo(() => {
-		const centers = cells.map(cell => axialToPixel(cell, layout))
-		const { minX, minY, maxX, maxY } = boundingBox(centers, layout)
+		const corners = cells.map(cell => triangleCorners(cell, layout))
+		const { minX, minY, maxX, maxY } = trianglesBoundingBox(corners)
 		let clickableIndex = 0
 		const polygons = cells.map((cell, i) => ({
-			key: `${cell.q},${cell.r}`,
+			key: `${cell.row},${cell.col},${cell.direction}`,
 			groupId: cell.groupId,
 			isClickable: cell.isClickable,
 			tileNumber: cell.isClickable ? ++clickableIndex : undefined,
-			corners: hexCorners(centers[i], layout),
+			corners: corners[i],
 		}))
 		return {
 			polygons,
@@ -67,17 +76,20 @@ function HexGrid({
 
 	return (
 		<>
-			<p id="hex-grid-instructions" className={styles.visuallyHidden}>
-				Tab to move between hexagons. Press Enter or Space to paint the
-				focused hexagon with the current color.
+			<p
+				id="triangle-grid-instructions"
+				className={styles.visuallyHidden}
+			>
+				Tab to move between triangles. Press Enter or Space to paint the
+				focused triangle with the current color.
 			</p>
 			<svg
 				ref={svgRef}
-				className={styles.hexGrid}
+				className={styles.triangleGrid}
 				viewBox={viewBox}
 				role="group"
-				aria-label="Kaleidoscope hex grid"
-				aria-describedby="hex-grid-instructions"
+				aria-label="Kaleidoscope triangle grid"
+				aria-describedby="triangle-grid-instructions"
 				onPointerMove={event =>
 					setIsHovering(
 						(event.target as Element).tagName === 'polygon',
@@ -116,4 +128,4 @@ function HexGrid({
 	)
 }
 
-export default HexGrid
+export default TriangleGrid

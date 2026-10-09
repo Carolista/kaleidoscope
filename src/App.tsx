@@ -3,10 +3,12 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import styles from './App.module.css'
 import Header from './components/layout/Header'
 import HexGrid from './components/grid/HexGrid'
+import TriangleGrid from './components/grid/TriangleGrid'
 import ColorOptions from './components/controls/ColorOptions'
 import ColorThemeButton from './components/controls/ColorThemeButton'
 import DarkModeToggle from './components/controls/DarkModeToggle'
 import EditableAreaToggle from './components/controls/EditableAreaToggle'
+import GridShapeButton from './components/controls/GridShapeButton'
 import RandomizeDesignButton from './components/controls/RandomizeDesignButton'
 import ResetDesignButton from './components/controls/ResetDesignButton'
 import SaveImageButton from './components/controls/SaveImageButton'
@@ -60,7 +62,11 @@ function App() {
 		>
 			<Header />
 			<main className={styles.app}>
-				<HexGrid svgRef={svgRef} />
+				{state.gridShape === 'triangle' ? (
+					<TriangleGrid svgRef={svgRef} />
+				) : (
+					<HexGrid svgRef={svgRef} />
+				)}
 				<div
 					role="group"
 					aria-label="Controls"
@@ -77,6 +83,7 @@ function App() {
 					>
 						<DarkModeToggle />
 						<ColorThemeButton />
+						<GridShapeButton />
 						<RandomizeDesignButton />
 						<EditableAreaToggle />
 						<ResetDesignButton />

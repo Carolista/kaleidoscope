@@ -1,7 +1,8 @@
 import { colorSchemes } from '../data/colorSchemes'
 import type { AppState } from '../types/appState'
 import type { ColorScheme } from '../types/colorScheme'
-import { getGroupIds } from '../utils/hexGrid'
+import type { GridShapeId } from '../types/gridShape'
+import { getGroupIdsForShape } from '../utils/gridShapeRegistry'
 import { generateRandomHexGroupColors } from '../utils/randomDesign'
 import { getThemeColors } from './theme'
 
@@ -13,6 +14,7 @@ export type AppAction =
 	| { readonly type: 'TOGGLE_EDITABLE_AREA' }
 	| { readonly type: 'RESET_DESIGN' }
 	| { readonly type: 'RANDOMIZE_DESIGN' }
+	| { readonly type: 'SELECT_GRID_SHAPE'; readonly shape: GridShapeId }
 
 // Matches the original app's randomized default scheme on page load.
 export function pickRandomScheme(): ColorScheme {
@@ -26,6 +28,7 @@ export function createInitialAppState(): AppState {
 		currentColor: currentScheme.colors[0],
 		darkMode: true,
 		showEditableArea: true,
+		gridShape: 'hexagon',
 		hexGroupColors: {},
 	}
 }
@@ -97,11 +100,16 @@ export function appReducer(state: AppState, action: AppAction): AppState {
 		case 'RANDOMIZE_DESIGN': {
 			const { base } = getThemeColors(state.darkMode)
 			const hexGroupColors = generateRandomHexGroupColors(
-				getGroupIds(),
+				getGroupIdsForShape(state.gridShape),
 				state.currentScheme,
 				base,
 			)
 			return { ...state, hexGroupColors }
+		}
+
+		case 'SELECT_GRID_SHAPE': {
+			if (action.shape === state.gridShape) return state
+			return { ...state, gridShape: action.shape, hexGroupColors: {} }
 		}
 
 		default:

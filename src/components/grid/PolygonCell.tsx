@@ -1,10 +1,14 @@
 import type { CSSProperties, KeyboardEvent } from 'react'
-import type { Point } from '../../utils/hexLayout'
+import type { Point } from '../../types/geometry'
 import { pointsToSvgAttr } from '../../utils/hexLayout'
 import { getHoverFill } from '../../utils/colorMath'
-import styles from './Hexagon.module.css'
+import styles from './PolygonCell.module.css'
 
-export interface HexagonProps {
+// A single clickable (or purely decorative/mirrored) cell in any
+// polygon-based grid shape — hexagon, triangle, or future shapes built
+// from straight-edged cells. Operates only on raw corner points, so it
+// has no idea what shape it's rendering.
+export interface PolygonCellProps {
 	readonly corners: readonly Point[]
 	readonly fill: string
 	// Clickable representative of its mirror group; the rest are purely
@@ -21,7 +25,7 @@ export interface HexagonProps {
 	readonly onClick?: () => void
 }
 
-function Hexagon({
+function PolygonCell({
 	corners,
 	fill,
 	isClickable,
@@ -31,9 +35,9 @@ function Hexagon({
 	tileNumber,
 	tileCount,
 	onClick,
-}: HexagonProps) {
+}: PolygonCellProps) {
 	const className = [
-		styles.hexagon,
+		styles.cell,
 		isClickable && styles.clickable,
 		dimmed && styles.dimmed,
 	]
@@ -62,7 +66,7 @@ function Hexagon({
 			role={isClickable ? 'button' : undefined}
 			aria-label={
 				isClickable
-					? `Paint hex tile ${tileNumber} of ${tileCount}`
+					? `Paint tile ${tileNumber} of ${tileCount}`
 					: undefined
 			}
 			aria-hidden={isClickable ? undefined : true}
@@ -70,4 +74,4 @@ function Hexagon({
 	)
 }
 
-export default Hexagon
+export default PolygonCell

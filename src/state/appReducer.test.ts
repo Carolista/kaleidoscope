@@ -14,6 +14,7 @@ describe('createInitialAppState / pickRandomScheme', () => {
 		expect(state.currentColor).toBe(state.currentScheme.colors[0])
 		expect(state.darkMode).toBe(true)
 		expect(state.showEditableArea).toBe(true)
+		expect(state.gridShape).toBe('hexagon')
 		expect(state.hexGroupColors).toEqual({})
 	})
 
@@ -30,6 +31,7 @@ function baseState(overrides: Partial<AppState> = {}): AppState {
 		currentColor: colorSchemes[0].colors[0],
 		darkMode: false,
 		showEditableArea: true,
+		gridShape: 'hexagon',
 		hexGroupColors: {},
 		...overrides,
 	}
@@ -183,5 +185,30 @@ describe('appReducer', () => {
 				type: 'TOGGLE_EDITABLE_AREA',
 			}).showEditableArea,
 		).toBe(true)
+	})
+
+	it('SELECT_GRID_SHAPE switches shape and resets hexGroupColors', () => {
+		const state = baseState({
+			gridShape: 'hexagon',
+			hexGroupColors: { '0,0': '#ff0000' },
+		})
+		const next = appReducer(state, {
+			type: 'SELECT_GRID_SHAPE',
+			shape: 'triangle',
+		})
+		expect(next.gridShape).toBe('triangle')
+		expect(next.hexGroupColors).toEqual({})
+	})
+
+	it('SELECT_GRID_SHAPE is a no-op (same state reference) when selecting the already-current shape', () => {
+		const state = baseState({
+			gridShape: 'hexagon',
+			hexGroupColors: { '0,0': '#ff0000' },
+		})
+		const next = appReducer(state, {
+			type: 'SELECT_GRID_SHAPE',
+			shape: 'hexagon',
+		})
+		expect(next).toBe(state)
 	})
 })
