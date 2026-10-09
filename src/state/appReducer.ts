@@ -1,9 +1,9 @@
+import { colorSchemes } from '../data/colorSchemes'
 import type { AppState } from '../types/appState'
 import type { ColorScheme } from '../types/colorScheme'
-import { colorSchemes } from '../data/colorSchemes'
-import { getThemeColors } from './theme'
 import { getGroupIds } from '../utils/hexGrid'
 import { generateRandomHexGroupColors } from '../utils/randomDesign'
+import { getThemeColors } from './theme'
 
 export type AppAction =
 	| { readonly type: 'SELECT_SCHEME'; readonly scheme: ColorScheme }
@@ -95,12 +95,11 @@ export function appReducer(state: AppState, action: AppAction): AppState {
 			return { ...state, hexGroupColors: {} }
 
 		case 'RANDOMIZE_DESIGN': {
-			const { base, accent } = getThemeColors(state.darkMode)
+			const { base } = getThemeColors(state.darkMode)
 			const hexGroupColors = generateRandomHexGroupColors(
 				getGroupIds(),
 				state.currentScheme,
 				base,
-				accent,
 			)
 			return { ...state, hexGroupColors }
 		}

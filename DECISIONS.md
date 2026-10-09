@@ -411,13 +411,16 @@ hex to be painted by hand. `RANDOMIZE_DESIGN` (new reducer action,
 undoable like `RESET_DESIGN`) assigns every group id a color via
 `generateRandomHexGroupColors` (`src/utils/randomDesign.ts`): a weighted
 pool where each of the current scheme's 5 colors gets 18 "tickets" and
-base/accent get 5 each (90% scheme colors, 10% neutral overall), so a
-generated design still reads as a coherent pattern instead of a mostly
-gray/black/white one. The weighting function takes an injectable `random`
-parameter (defaults to `Math.random`) purely so tests can assert
-deterministic outcomes. `RandomizeDesignButton` (fa-shuffle icon) has no
-confirmation dialog, unlike `ResetDesignButton` — it's additive/generative
-rather than destructive, and undo is one click away regardless.
+base gets 10 (90% scheme colors, 10% base), so a generated design still
+reads as a coherent pattern instead of a mostly gray/black/white one.
+Accent was tried initially but dropped after testing — it's also the
+default fill `HexGrid` uses for an unpainted group, so a cell randomly
+assigned accent would look indistinguishable from one that was never
+painted at all, the likely reason it read as less satisfying in practice. The weighting function takes an injectable `random` parameter
+(defaults to `Math.random`) purely so tests can assert deterministic
+outcomes. `RandomizeDesignButton` (fa-shuffle icon) has no confirmation
+dialog, unlike `ResetDesignButton` — it's additive/generative rather than
+destructive, and undo is one click away regardless.
 
 ## Process
 

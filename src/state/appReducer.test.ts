@@ -150,13 +150,12 @@ describe('appReducer', () => {
 		expect(next.hexGroupColors).toEqual({})
 	})
 
-	it('RANDOMIZE_DESIGN assigns every group id a color from the current scheme or theme base/accent', () => {
+	it('RANDOMIZE_DESIGN assigns every group id a color from the current scheme or theme base (never accent)', () => {
 		const state = baseState({ darkMode: false })
 		const next = appReducer(state, { type: 'RANDOMIZE_DESIGN' })
 		const possible = new Set([
 			...state.currentScheme.colors,
 			'#ffffff', // light-mode base
-			'#222222', // light-mode accent
 		])
 		const groupIds = Object.keys(next.hexGroupColors)
 		expect(groupIds.length).toBeGreaterThan(0)

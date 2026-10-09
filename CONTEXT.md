@@ -151,12 +151,14 @@ pass.
 - **Randomizer** (`src/utils/randomDesign.ts`, `RANDOMIZE_DESIGN` in
   `appReducer.ts`, undoable): assigns every group id a random color drawn
   from a weighted pool — the current scheme's 5 colors are heavily
-  favored (18 "tickets" each) over the theme's base/accent (5 each), 90%
-  vs. 10% overall, so a generated design still reads as a coherent
-  pattern rather than a mostly-neutral one. `RandomizeDesignButton`
-  (fa-shuffle) sits right of the palette button; no confirmation dialog
-  (unlike reset) since it's a generative action and undo is one click
-  away.
+  favored (18 "tickets" each) over the theme's base (10), 90% vs. 10%
+  overall, so a generated design still reads as a coherent pattern
+  rather than a mostly-neutral one. Accent is excluded entirely: it
+  doubles as the default fill for an unpainted group (`HexGrid`'s
+  `?? accent`), so assigning it would look identical to leaving a cell
+  unpainted. `RandomizeDesignButton` (fa-shuffle) sits right of the
+  palette button; no confirmation dialog (unlike reset) since it's a
+  generative action and undo is one click away.
 
 ## Layout
 
@@ -204,7 +206,7 @@ Done: Phase 1 (feature-parity rebuild), comment cleanup, localStorage,
 image export/share/download, undo/redo, layout rework, touchscreen wedge
 discoverability (eye toggle + intro modal), reduced grid to radius 7/169
 cells for all devices (was radius 9/271), design randomizer (weighted
-toward the 5 scheme colors over base/accent).
+toward the 5 scheme colors over base; accent excluded).
 
 Next, in priority order:
 
