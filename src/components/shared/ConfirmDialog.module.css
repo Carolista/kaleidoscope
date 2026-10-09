@@ -86,3 +86,15 @@
 	justify-content: flex-end;
 	gap: 0.75rem;
 }
+
+@media screen and (max-width: 480px) {
+	.bottomRow {
+		flex-direction: column;
+		align-items: flex-end;
+		justify-content: flex-end;
+		gap: 1rem;
+	}
+	.dontShowAgain {
+		margin-bottom: 1.2rem;
+	}
+}
