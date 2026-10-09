@@ -13,8 +13,8 @@ function SaveImageButton({ svgRef }: SaveImageButtonProps) {
 	return (
 		<>
 			<IconButton
-				icon="image"
-				label="Create image from design"
+				icon="hexagon-image"
+				label="Download or share image of design"
 				onClick={() => setOpen(true)}
 			/>
 			<SaveImageModal

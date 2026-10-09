@@ -253,7 +253,10 @@ device (`hasPersistedDesign()` in `storageService.ts`, checked once at
 startup before the autosave effect can write anything). The user explicitly
 chose the simplest version of this rule over a separate "seen it" flag: if
 a touch user dismisses the modal without painting and reloads, it reappears
-until they actually paint something and a design gets saved.
+until they actually paint something and a design gets saved. (This was later
+reworked into the general `ControlsModal` — see "Controls modal" below —
+which keeps the same `hasPersistedDesign()` first-visit rule but shows for
+everyone, not just touch devices.)
 
 Also decided: the export pipeline (`exportSvgAsPngBlob`) must always
 produce a fully opaque image regardless of whether the editable-area
@@ -653,6 +656,40 @@ shape. Extracted it to `src/utils/svgPoints.ts` as part of the same pass.
 Deliberately left alone: `colorMath.ts`'s `hexToRgb` and
 `colorSchemes.ts`'s "Hex values" comment, which are about hex color
 codes, unrelated to the hexagon/hexagram naming collision.
+
+### Controls modal
+
+`TouchIntroModal` (see "Touchscreen wedge discoverability" above) only
+ever explained one control, to one audience (touch devices). The user
+asked for it to be reworked into a general `ControlsModal` that lists
+every clickable control below the grid — the color swatches, undo/redo,
+and each icon button in the Settings and Actions row — with a brief
+explanation of what it does, shown to everyone rather than touch devices
+only.
+
+- **Layout**: each control is a row with its icon(s) on the left and the
+  explanation on the right, `1fr`/`3fr` on larger screens; at 480px (the
+  same breakpoint `ConfirmDialog` already uses) it collapses to a single
+  stacked column, matching how the rest of the app degrades to one column
+  on small screens.
+- **Same first-visit rule, wider audience**: it still opens automatically
+  exactly once per device, via the same `hasPersistedDesign()` check
+  `TouchIntroModal` used (captured once at startup, before the autosave
+  effect can persist anything) — but now for every device, not just touch,
+  since the content is useful to everyone.
+- **Always reachable afterward**: a new `fa-circle-info` icon button
+  (`ControlsInfoButton`) sits last in the Settings and Actions row,
+  specifically to the right of the save-image icon, and reopens the same
+  modal on demand. The open/first-visit state is owned entirely by
+  `ControlsInfoButton` now (it renders both the button and the
+  `ControlsModal`), rather than living up in `App.tsx` the way
+  `TouchIntroModal`'s `introOpen` state did — nothing else in `App.tsx`
+  needs to know about it.
+- **Eye/eye-slash stays touch-only**: `EditableAreaToggle` itself still
+  only renders on touch devices, so the modal's "Show / Hide Editable
+  Area" row is filtered out on non-touch via the same `useIsTouchDevice`
+  hook, rather than describing a control that isn't even in the toolbar.
+  Every other row is identical for everyone.
 
 ## Process
 

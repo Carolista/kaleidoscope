@@ -17,30 +17,28 @@ describe('App', () => {
 		localStorage.clear()
 	})
 
-	it('shows the touch intro modal on a touch device with no saved design', () => {
-		mockUseIsTouchDevice.mockReturnValue(true)
+	it('shows the controls modal on first-ever load, regardless of touch', () => {
+		mockUseIsTouchDevice.mockReturnValue(false)
 		renderApp()
 		expect(
-			screen.getByRole('heading', {
-				name: 'How to Switch Your View',
-			}),
+			screen.getByRole('heading', { name: 'Controls' }),
 		).toBeInTheDocument()
 	})
 
-	it('dismisses the touch intro modal via its "Got It" button', async () => {
-		mockUseIsTouchDevice.mockReturnValue(true)
+	it('dismisses the controls modal via its close button', async () => {
+		mockUseIsTouchDevice.mockReturnValue(false)
 		const user = userEvent.setup()
 		renderApp()
 
-		await user.click(screen.getByRole('button', { name: 'Got It' }))
+		await user.click(
+			screen.getByRole('button', { name: 'Close controls help' }),
+		)
 		expect(
-			screen.queryByRole('heading', {
-				name: 'How to Switch Your View',
-			}),
+			screen.queryByRole('heading', { name: 'Controls' }),
 		).not.toBeInTheDocument()
 	})
 
-	it('does not show the touch intro modal on a touch device that already has a saved design', () => {
+	it('does not show the controls modal on load for a device that already has a saved design', () => {
 		// hasPersistedDesign only checks that the storage key exists, not
 		// that its contents are well-formed, so an arbitrary scheme name is
 		// fine here.
@@ -55,26 +53,70 @@ describe('App', () => {
 				shapeGroupColors: {},
 			}),
 		)
-		mockUseIsTouchDevice.mockReturnValue(true)
-		renderApp()
-		expect(
-			screen.queryByRole('heading', {
-				name: 'How to Switch Your View',
-			}),
-		).not.toBeInTheDocument()
-	})
-
-	it('does not show the touch intro modal on a non-touch device', () => {
 		mockUseIsTouchDevice.mockReturnValue(false)
 		renderApp()
 		expect(
-			screen.queryByRole('heading', {
-				name: 'How to Switch Your View',
-			}),
+			screen.queryByRole('heading', { name: 'Controls' }),
 		).not.toBeInTheDocument()
 	})
 
+	it('reopens the controls modal via its circle-info icon button', async () => {
+		localStorage.setItem(
+			'kaleidoscope:design',
+			JSON.stringify({
+				version: 1,
+				schemeName: 'does not matter for this check',
+				currentColor: '#000000',
+				darkMode: true,
+				showEditableArea: true,
+				shapeGroupColors: {},
+			}),
+		)
+		mockUseIsTouchDevice.mockReturnValue(false)
+		const user = userEvent.setup()
+		renderApp()
+
+		expect(
+			screen.queryByRole('heading', { name: 'Controls' }),
+		).not.toBeInTheDocument()
+		await user.click(
+			screen.getByRole('button', { name: 'Show controls help' }),
+		)
+		expect(
+			screen.getByRole('heading', { name: 'Controls' }),
+		).toBeInTheDocument()
+	})
+
+	it('only lists the editable-area toggle control on touch devices', () => {
+		mockUseIsTouchDevice.mockReturnValue(false)
+		renderApp()
+		expect(
+			screen.queryByText('Show / Hide Editable Area'),
+		).not.toBeInTheDocument()
+	})
+
+	it('lists the editable-area toggle control on touch devices', () => {
+		mockUseIsTouchDevice.mockReturnValue(true)
+		renderApp()
+		expect(
+			screen.getByText('Show / Hide Editable Area'),
+		).toBeInTheDocument()
+	})
+
 	it('renders the hexagon grid by default and switches to the triangle grid via the shape picker', async () => {
+		// Avoids the first-ever-load controls modal (see above tests) so it
+		// doesn't sit open over the shape picker this test interacts with.
+		localStorage.setItem(
+			'kaleidoscope:design',
+			JSON.stringify({
+				version: 1,
+				schemeName: 'does not matter for this check',
+				currentColor: '#000000',
+				darkMode: true,
+				showEditableArea: true,
+				shapeGroupColors: {},
+			}),
+		)
 		mockUseIsTouchDevice.mockReturnValue(false)
 		const user = userEvent.setup()
 		renderApp()

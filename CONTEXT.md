@@ -185,12 +185,21 @@ pass.
   dimming the grid components already use for hover, but only applied
   when `isTouch && showEditableArea`; desktop/mouse ignores the flag
   entirely and keeps relying on hover. `EditableAreaToggle` (eye/eye-slash
-  icon button) renders only on touch devices to flip it. A one-time
-  `TouchIntroModal` explains the toggle; it opens only when touch is
-  detected **and** no design was already persisted at load (captured once,
-  before the autosave effect in `AppContext` can run, via
-  `hasPersistedDesign()` in `storageService.ts`) — so it reappears on
-  reload until the user paints something, by design.
+  icon button) renders only on touch devices to flip it.
+- **Controls modal** (`ControlsModal`, opened via `ControlsInfoButton`'s
+  circle-info icon, last in the Settings and Actions row): lists every
+  clickable control below the grid (color swatches, undo/redo, and each
+  Settings and Actions icon button) with its icon and a brief explanation,
+  two columns (icon, then text) on larger screens collapsing to one
+  stacked column at 480px. The eye/eye-slash editable-area row is filtered
+  in via `useIsTouchDevice` — shown only on touch devices, since that's
+  the only audience `EditableAreaToggle` itself renders for — otherwise
+  the content is identical for everyone. It opens automatically once, for
+  everyone, the first time they play on a device (no design already
+  persisted at load, captured once before the autosave effect in
+  `AppContext` can run, via `hasPersistedDesign()` in
+  `storageService.ts`) and can be reopened any time afterward via its icon
+  button.
 - **Defaults**: starts in dark mode with a random color scheme (first
   visit).
 - **Scheme/theme switching** remaps painted cells by palette position;
@@ -222,7 +231,8 @@ A `<header>` with the title, then `<main>`: the grid, then a `"Controls"`
 group holding, in order: current-color swatches (clamp-sized to stay on
 one row), undo/redo, and a `"Settings and Actions"` row of icon buttons
 (dark/light, color theme, randomize design, show/hide editable area
-(touch devices only), reset, save image). Single column at every width.
+(touch devices only), reset, save image, controls help). Single column at
+every width.
 
 ## Accessibility standards
 
@@ -260,23 +270,23 @@ automatically (Pages source is "GitHub Actions"). Vite `base` is
 
 Done: Phase 1 (feature-parity rebuild), comment cleanup, localStorage,
 image export/share/download, undo/redo, layout rework, touchscreen wedge
-discoverability (eye toggle + intro modal), reduced grid to radius 7/169
-cells for all devices (was radius 9/271), design randomizer (weighted
-toward the 5 scheme colors over base; accent excluded), alternative grid
-shapes (triangle, 6-point diamond star, hexagram) alongside the original
+discoverability (eye toggle), reduced grid to radius 7/169 cells for all
+devices (was radius 9/271), design randomizer (weighted toward the 5
+scheme colors over base; accent excluded), alternative grid shapes
+(triangle, 6-point diamond star, hexagram) alongside the original
 hexagon, selectable via a shape picker with SVG icon previews (one real
 piece of each shape's own geometry, rendered rather than hand-drawn), a
 codebase-wide rename clearing up "hex" ambiguity once hexagon and
 hexagram coexisted (`HexGrid`→`HexagonGrid`, `hexGroupColors`→
-`shapeGroupColors`, etc.).
+`shapeGroupColors`, etc.), a controls modal with instructions on every
+clickable control (reworked from the earlier touch-only intro modal).
 
 Next, in priority order:
 
+- Sticky footer, transparent background, simple copyright statement with current full year (done)
 - More alternative shapes/tilings (e.g. a circle of concentric rings of
   progressively larger circles — anything designable as a wedge, then
   mirrored/copied around).
-- Sticky footer, transparent background, simple copyright statement with current full year
-- Info modal with instructions on everything (control button by control button)
 - README (replace current): what it is, live link,
    screenshots, setup, scripts, stack. Unscheduled until the user supplies
    examples and asks.

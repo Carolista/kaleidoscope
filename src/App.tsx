@@ -1,37 +1,27 @@
 import type { CSSProperties } from 'react'
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 import styles from './App.module.css'
 import { ColorOptions, ColorThemeButton } from '@color-schemes'
 import {
+	ControlsInfoButton,
 	DarkModeToggle,
 	EditableAreaToggle,
 	RandomizeDesignButton,
 	ResetDesignButton,
 	SaveImageButton,
-	TouchIntroModal,
 	UndoRedoButtons,
 } from '@controls'
 import { GridShapeButton } from '@shapes'
 import { DiamondStarGrid, HexagonGrid, HexagramGrid, TriangleGrid } from '@grid'
 import Footer from './components/layout/Footer'
 import Header from './components/layout/Header'
-import { hasPersistedDesign } from './services/storageService'
 import { getThemeColors } from './state/theme'
 import { useAppState } from './state/useAppState'
-import { useIsTouchDevice } from './utils/useIsTouchDevice'
 
 function App() {
 	const { state } = useAppState()
 	const { base, accent } = getThemeColors(state.darkMode)
 	const svgRef = useRef<SVGSVGElement>(null)
-	const isTouch = useIsTouchDevice()
-	// Captured once, before the autosave effect in AppContext can run, so
-	// this reflects whether a design already existed when the app loaded
-	// (i.e. this device's first-ever visit) rather than the current state.
-	const [hadPersistedDesign] = useState(hasPersistedDesign)
-	const [introOpen, setIntroOpen] = useState(
-		() => isTouch && !hadPersistedDesign,
-	)
 
 	useLayoutEffect(() => {
 		// `--base`/`--accent` are set inline below, but CSS custom properties
@@ -86,21 +76,18 @@ function App() {
 						aria-label="Settings and Actions"
 						className={styles.buttonGroup}
 					>
-						<DarkModeToggle />
-						<ColorThemeButton />
-						<GridShapeButton />
-						<RandomizeDesignButton />
 						<EditableAreaToggle />
+						<ColorThemeButton />
+						<RandomizeDesignButton />
 						<ResetDesignButton />
+						<GridShapeButton />
 						<SaveImageButton svgRef={svgRef} />
+						<DarkModeToggle />
+						<ControlsInfoButton />
 					</div>
 				</div>
 			</main>
 			<Footer />
-			<TouchIntroModal
-				open={introOpen}
-				onClose={() => setIntroOpen(false)}
-			/>
 		</div>
 	)
 }
