@@ -1,5 +1,6 @@
 .dialog {
-	max-width: 24rem;
+	width: 36rem;
+	max-width: calc(100vw - 2rem);
 }
 
 .title {
@@ -12,6 +13,72 @@
 .message {
 	margin: 0 0 1.5rem;
 	line-height: 1.4;
+}
+
+.bottomRow {
+	display: flex;
+	flex-direction: row;
+	align-items: flex-end;
+	justify-content: flex-end;
+	gap: 1rem;
+}
+
+.dontShowAgain {
+	display: flex;
+	align-items: center;
+	font-size: 0.85rem;
+	gap: 0.5rem;
+	/* Pushes .actions to the right regardless of whether this checkbox is
+       rendered at all — relying on `justify-content: space-between` here
+       would only work when both children are present, and would otherwise
+       misplace the lone .actions div at the start of the row instead of
+       the end. */
+	margin-right: auto;
+	cursor: pointer;
+}
+
+/* Replaces the browser's native checkbox appearance (particularly rough
+   on macOS) with a plain empty box when unchecked, and the fa-square-check
+   glyph at the same footprint when checked — rather than trying to tame
+   the native widget's look with `accent-color`/`appearance`, which still
+   leaves an inconsistent shape across browsers. */
+.checkboxBox {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1rem;
+	height: 1rem;
+	flex: none;
+	font-size: 1rem;
+	line-height: 1;
+	color: var(--accent, #222);
+}
+
+.checkboxBoxEmpty {
+	border: 1px solid var(--accent, #222);
+	border-radius: 3px;
+}
+
+/* The real checkbox stays in the document (so it's still keyboard-focusable
+   and announced correctly by screen readers), just stretched over the
+   visible box and made invisible — rather than `display: none`, which
+   would drop it from the accessibility tree entirely. */
+.checkboxInput {
+	position: absolute;
+	inset: 0;
+	margin: 0;
+	opacity: 0;
+	cursor: pointer;
+}
+
+.checkboxBox:has(.checkboxInput:focus-visible) {
+	outline: 2px solid var(--accent, #222);
+	outline-offset: 2px;
+}
+
+.checkboxBox i {
+	pointer-events: none;
 }
 
 .actions {

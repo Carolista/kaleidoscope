@@ -26,7 +26,7 @@ function ColorThemeModal({ open, onClose }: ColorThemeModalProps) {
 				/>
 			</div>
 			<div className={styles.content}>
-				<SchemePicker />
+				<SchemePicker onSelected={onClose} />
 			</div>
 		</Modal>
 	)

@@ -78,6 +78,43 @@ describe('GridShapePicker', () => {
 		).not.toBeInTheDocument()
 	})
 
+	it('calls onSelected once the switch is confirmed', async () => {
+		const user = userEvent.setup()
+		let selectedCount = 0
+		render(<GridShapePicker onSelected={() => selectedCount++} />, {
+			wrapper: AppStateProvider,
+		})
+
+		await user.click(screen.getByRole('button', { name: 'Triangle' }))
+		expect(selectedCount).toBe(0)
+		await user.click(screen.getByRole('button', { name: 'Switch' }))
+		expect(selectedCount).toBe(1)
+	})
+
+	it('skips the confirmation dialog on future clicks once "don\'t show this again" is checked and confirmed', async () => {
+		const user = userEvent.setup()
+		render(<GridShapePicker />, { wrapper: AppStateProvider })
+
+		await user.click(screen.getByRole('button', { name: 'Triangle' }))
+		await user.click(
+			screen.getByRole('checkbox', { name: "Don't show this again" }),
+		)
+		await user.click(screen.getByRole('button', { name: 'Switch' }))
+		expect(
+			screen.getByRole('button', { name: 'Triangle' }),
+		).toHaveAttribute('aria-pressed', 'true')
+
+		// Switch back to hexagon with no dialog this time.
+		await user.click(screen.getByRole('button', { name: 'Hexagon' }))
+		expect(
+			screen.queryByRole('heading', { name: 'Switch grid shape?' }),
+		).not.toBeInTheDocument()
+		expect(screen.getByRole('button', { name: 'Hexagon' })).toHaveAttribute(
+			'aria-pressed',
+			'true',
+		)
+	})
+
 	it('clicking the already-current shape does not open a confirmation dialog', async () => {
 		const user = userEvent.setup()
 		render(<GridShapePicker />, { wrapper: AppStateProvider })

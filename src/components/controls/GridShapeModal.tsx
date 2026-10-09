@@ -26,7 +26,7 @@ function GridShapeModal({ open, onClose }: GridShapeModalProps) {
 				/>
 			</div>
 			<div className={styles.content}>
-				<GridShapePicker />
+				<GridShapePicker onSelected={onClose} />
 			</div>
 		</Modal>
 	)

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AppStateProvider } from '../../state/AppContext'
@@ -22,6 +22,10 @@ function Harness() {
 }
 
 describe('ResetDesignButton', () => {
+	beforeEach(() => {
+		localStorage.clear()
+	})
+
 	it('asks for confirmation before resetting, and does nothing on cancel', async () => {
 		const user = userEvent.setup()
 		render(<Harness />, { wrapper: AppStateProvider })
@@ -51,6 +55,33 @@ describe('ResetDesignButton', () => {
 		await user.click(screen.getByRole('button', { name: 'Reset design' }))
 		await user.click(screen.getByRole('button', { name: 'Reset' }))
 
+		await waitFor(() =>
+			expect(screen.getByTestId('painted-count')).toHaveTextContent('0'),
+		)
+	})
+
+	it('skips the confirmation on future clicks once "don\'t show this again" is checked and confirmed', async () => {
+		const user = userEvent.setup()
+		render(<Harness />, { wrapper: AppStateProvider })
+
+		await user.click(screen.getByText('Paint test group'))
+		await user.click(screen.getByRole('button', { name: 'Reset design' }))
+		await user.click(
+			screen.getByRole('checkbox', { name: "Don't show this again" }),
+		)
+		await user.click(screen.getByRole('button', { name: 'Reset' }))
+
+		await waitFor(() =>
+			expect(screen.getByTestId('painted-count')).toHaveTextContent('0'),
+		)
+
+		await user.click(screen.getByText('Paint test group'))
+		await user.click(screen.getByRole('button', { name: 'Reset design' }))
+
+		// No dialog this time; the reset happens immediately.
+		expect(
+			screen.queryByRole('heading', { name: 'Reset design?' }),
+		).not.toBeInTheDocument()
 		await waitFor(() =>
 			expect(screen.getByTestId('painted-count')).toHaveTextContent('0'),
 		)

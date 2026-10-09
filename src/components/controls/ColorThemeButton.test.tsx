@@ -36,4 +36,24 @@ describe('ColorThemeButton', () => {
 			).not.toBeInTheDocument(),
 		)
 	})
+
+	it('closes automatically once a scheme is selected', async () => {
+		const user = userEvent.setup()
+		render(<ColorThemeButton />, { wrapper: AppStateProvider })
+
+		await user.click(
+			screen.getByRole('button', { name: 'Open color theme picker' }),
+		)
+		await user.click(
+			screen.getByRole('button', {
+				name: 'Select the Daytona color scheme',
+			}),
+		)
+
+		await waitFor(() =>
+			expect(
+				screen.queryByRole('heading', { name: 'Color Theme' }),
+			).not.toBeInTheDocument(),
+		)
+	})
 })

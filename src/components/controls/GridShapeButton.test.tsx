@@ -39,4 +39,21 @@ describe('GridShapeButton', () => {
 			).not.toBeInTheDocument(),
 		)
 	})
+
+	it('closes automatically once a shape switch is confirmed', async () => {
+		const user = userEvent.setup()
+		render(<GridShapeButton />, { wrapper: AppStateProvider })
+
+		await user.click(
+			screen.getByRole('button', { name: 'Open grid shape picker' }),
+		)
+		await user.click(screen.getByRole('button', { name: 'Triangle' }))
+		await user.click(screen.getByRole('button', { name: 'Switch' }))
+
+		await waitFor(() =>
+			expect(
+				screen.queryByRole('heading', { name: 'Grid Shape' }),
+			).not.toBeInTheDocument(),
+		)
+	})
 })
