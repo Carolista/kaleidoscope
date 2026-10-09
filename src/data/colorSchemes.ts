@@ -4,47 +4,79 @@ import type { ColorScheme } from '../types/colorScheme'
 // Ported from the original app's scripts.js.
 export const colorSchemes: readonly ColorScheme[] = [
 	{
-		name: 'Daytona',
-		colors: ['#b09e99', '#64b6ac', '#c0fdfb', '#fad4c0', '#fee9e1'],
+		name: 'Autumn',
+		colors: ['#bc6c25', '#dda15e', '#f1c780', '#6d7b42', '#3f5428'],
 	},
 	{
-		name: 'Tahoe',
-		colors: ['#bc4749', '#c17c74', '#7a6c5d', '#bcac9b', '#ddc9b4'],
-	},
-	{
-		name: 'Tahiti',
-		colors: ['#2ec4b6', '#ff9f1c', '#ffbf69', '#ffecb6', '#cbf3f0'],
+		name: 'Rose Gold',
+		colors: ['#744253', '#c78283', '#ebc9cd', '#e4b8b5', '#aa6e6b'],
 	},
 	{
 		name: 'Club Neon',
-		colors: ['#aa3e98', '#9368b7', '#9297c4', '#3599a7', '#75dddd'],
+		colors: ['#3599a7', '#75dddd', '#9297c4', '#9775b3', '#aa3e98'],
 	},
 	{
-		name: 'Wisteria',
-		colors: ['#360568', '#5b2a86', '#7785ac', '#9ac6c5', '#4eb870'],
+		name: 'Regatta',
+		colors: ['#791818', '#ae1f29', '#c9c2b3', '#2788a3', '#0a465c'],
 	},
 	{
-		name: 'Fresh Melon',
-		colors: ['#bc4749', '#386641', '#6a994e', '#a7c957', '#f2e8cf'],
+		name: 'Boho',
+		colors: ['#d1ab9b', '#eedcb8', '#acac7b', '#799277', '#4b7478'],
 	},
 	{
 		name: 'Lake House',
-		colors: ['#dd1c1a', '#086788', '#07a0c3', '#f0c808', '#fff1d0'],
+		colors: ['#ac211f', '#dbb80d', '#f3e5bf', '#239cb7', '#156783'],
+	},
+	{
+		name: 'Tahoe',
+		colors: ['#bc4749', '#c17c74', '#ddc9b4', '#bcac9b', '#7a6c5d'],
+	},
+	{
+		name: 'Wisteria',
+		colors: ['#6ab47e', '#96d3be', '#7785ac', '#683991', '#472469'],
+	},
+	{
+		name: 'Watermelon',
+		colors: ['#e34a6f', '#f7b2bd', '#d6e8d5', '#60a561', '#09482c'],
+	},
+	{
+		name: 'Sedona',
+		colors: ['#96431f', '#ae6451', '#cd905f', '#e2cfa1', '#3fa59a'],
+	},
+	{
+		name: 'Ocean',
+		colors: ['#5fa8d3', '#9ad5f2', '#bee9e8', '#62b6cb', '#24597a'],
+	},
+	{
+		name: 'Cabo',
+		colors: ['#a53f2b', '#f09f92', '#ffdccc', '#0f7173', '#124e5f'],
+	},
+	{
+		name: 'Tahiti',
+		colors: ['#ff9f1c', '#ffbf69', '#ffecb6', '#cbf3f0', '#2ec4b6'],
+	},
+	{
+		name: 'Salmon',
+		colors: ['#bc4749', '#f2e8cf', '#a7c957', '#6a994e', '#386641'],
+	},
+	{
+		name: 'Lilac Mist',
+		colors: ['#735d78', '#b392ac', '#d1b3c4', '#e8c2ca', '#f7d1cd'],
+	},
+	{
+		name: 'Daytona',
+		colors: ['#e29578', '#ffddd2', '#e6d5d0', '#83c5be', '#006d77'],
+	},
+	{
+		name: 'Dianthus',
+		colors: ['#cb607b', '#e07d96', '#e8a4b5', '#e9b0bf', '#e9d2d8'],
 	},
 	{
 		name: 'Sitka',
-		colors: ['#254441', '#43aa8b', '#db504a', '#ff6f59', '#b2b09b'],
+		colors: ['#b84743', '#d45b49', '#b2ae9b', '#42947b', '#3a625e'],
 	},
 	{
-		name: 'Flagstaff',
-		colors: ['#175e7a', '#2a9d8f', '#e76f51', '#f4a261', '#e9c46a'],
-	},
-	{
-		name: 'Lush Lipstick',
-		colors: ['#4f000b', '#720026', '#ce4257', '#ff7f51', '#ff9b54'],
-	},
-	{
-		name: 'Disco',
-		colors: ['#0f4c5c', '#5f0f40', '#9a031e', '#e36414', '#fb8b24'],
+		name: 'Grey Morning',
+		colors: ['#9e9898', '#c3baba', '#e9e3e6', '#b2b2b2', '#736f72'],
 	},
 ]
