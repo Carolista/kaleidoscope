@@ -11,7 +11,11 @@ const STORAGE_KEY = 'kaleidoscope:design'
 // first version.
 const STORAGE_VERSION = 1
 
-const VALID_GRID_SHAPES: readonly GridShapeId[] = ['hexagon', 'triangle']
+const VALID_GRID_SHAPES: readonly GridShapeId[] = [
+	'hexagon',
+	'triangle',
+	'diamondStar',
+]
 
 interface PersistedDesign {
 	readonly version: typeof STORAGE_VERSION

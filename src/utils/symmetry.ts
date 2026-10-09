@@ -34,7 +34,7 @@ function keyFor(point: Point): string {
 	return `${round(point.x)},${round(point.y)}`
 }
 
-function rotate(point: Point, center: Point, angle: number): Point {
+export function rotate(point: Point, center: Point, angle: number): Point {
 	const dx = point.x - center.x
 	const dy = point.y - center.y
 	const cos = Math.cos(angle)
@@ -46,7 +46,7 @@ function rotate(point: Point, center: Point, angle: number): Point {
 }
 
 // Reflects `point` across the line through `center` at angle `axisAngle`.
-function reflect(point: Point, center: Point, axisAngle: number): Point {
+export function reflect(point: Point, center: Point, axisAngle: number): Point {
 	const dx = point.x - center.x
 	const dy = point.y - center.y
 	const cos2 = Math.cos(2 * axisAngle)

@@ -97,28 +97,62 @@ pass.
 ## Architecture
 
 - **Folder structure**: `src/components/` is organized into subfolders —
-  `layout/` (page chrome, e.g. `Header`), `grid/` (`HexGrid`, `Hexagon`),
-  `controls/` (palette and everything below the grid), and `shared/`
-  (generic, reusable pieces like `IconButton`/`Button`/`Modal` used across
-  the others). One parent folder, not split into top-level feature
-  folders, since there's currently only one "epic" (coloring); revisit if
-  a genuinely separate major feature is added later. `src/services/` holds
+  `layout/` (page chrome, e.g. `Header`), `grid/` (`HexGrid`,
+  `TriangleGrid`, `DiamondStarGrid`, `PolygonCell`), `controls/` (palette
+  and everything below the grid), and `shared/` (generic, reusable pieces
+  like `IconButton`/`Button`/`Modal`/`ConfirmDialog` used across the
+  others). One parent folder, not split into top-level feature folders,
+  since there's currently only one "epic" (coloring); revisit if a
+  genuinely separate major feature is added later. `src/services/` holds
   non-React logic that's used outside a single component (`storageService`,
   `imageExportService`); `src/hooks/` holds reusable React hooks
   (`useImageExport`).
 - **State**: `useReducer` + Context, no external state library.
   - `appReducer` handles app actions.
   - `historyReducer` wraps it to provide undo/redo. Only painting, scheme
-    changes, and reset are undoable (history is session-only, unlimited).
-    Current color and dark mode are not.
+    changes, grid shape changes, randomizing, and reset are undoable
+    (history is session-only, unlimited). Current color and dark mode are
+    not.
   - `storageService.ts` autosaves to `localStorage` (versioned payload,
     scheme saved by name, defensive loading, all storage errors swallowed).
-- **Grid** (`src/utils/hexGrid.ts`): axial `(q, r)` cells in a radius-7
-  hexagon (169 cells; reduced from the original 271/radius-9 for small
-  touchscreens, see DECISIONS.md), computed rather than hand-authored. Each
-  cell's group id is the lexicographically smallest coordinate in its D6
-  orbit. One cell per group (20 total) is `isClickable`; these form a
-  single wedge at 11-12 o'clock. Rendering is SVG polygons.
+- **Grid shapes**: 3 selectable shapes share one `hexGroupColors`
+  paint-state map and `PolygonCell` rendering component — painting/undo/
+  redo only ever need a group id, never shape-specific geometry.
+  `GridShapeId` (`src/types/gridShape.ts`) identifies the current shape;
+  `GridShapePicker`/`GridShapeModal` let the user switch (behind a
+  `ConfirmDialog`, since switching discards the current design); each
+  shape's cell-generation/geometry lives in its own pair of modules, and
+  `src/utils/gridShapeRegistry.ts` dispatches shape-agnostic callers (the
+  design randomizer, the save-image aspect ratio) to the right one:
+  - **Hexagon** (`src/utils/hexGrid.ts`): axial `(q, r)` cells in a
+    radius-7 hexagon (169 cells; reduced from the original 271/radius-9
+    for small touchscreens, see DECISIONS.md), computed rather than
+    hand-authored. Each cell's group id is the lexicographically smallest
+    coordinate in its D6 orbit, using hex-specific cube-coordinate
+    rotation. One cell per group (20 total) is `isClickable`; these form
+    a single wedge at 11-12 o'clock.
+  - **Triangle** (`src/utils/triangleLayout.ts` + `triangleGrid.ts`): a
+    big equilateral triangle subdivided into a 10x10 lattice (100 small
+    triangles, 22 clickable groups), using the general-purpose symmetry
+    engine below (D3, since a triangular lattice has no simple
+    cube-coordinate trick like hexagons).
+  - **Diamond star** (`src/utils/diamondStarLayout.ts` +
+    `diamondStarGrid.ts`): a 6-point star of elongated (30-degree point
+    angle) diamonds, in the "Lone Star" quilt style. Only the fundamental
+    wedge — half of one diamond point, split along its long axis — is
+    subdivided (a 5x5 lattice, 25 small triangles) and replicated across
+    all 12 of the star's D6 symmetry positions (6 rotations x mirror),
+    using the same symmetry engine as the triangle grid (fold=6 instead
+    of fold=3). Because the wedge's own apex coincides with the star's
+    center of symmetry, every orbit is a full size-12 orbit — no
+    degenerate mirror-axis cases like the triangle grid has (see
+    DECISIONS.md).
+  - **General symmetry engine** (`src/utils/symmetry.ts`): computes
+    rotation/mirror orbits and clickable-wedge assignment via real
+    geometric transforms applied to each cell's centroid (matched back to
+    known cells by rounded-coordinate lookup), parametrized by `{ center,
+    fold, mirror, mirrorAxisAngle }` and a caller-supplied `isCanonical`
+    test — shared by any shape that isn't a simple hex grid.
 - **Hex hover**: the hover fill is computed per cell in JS
   (`src/utils/colorMath.ts`): neutral gray if the cell is base/accent,
   otherwise a brightened/saturated version of its own color. It is applied
@@ -127,19 +161,19 @@ pass.
   `src/utils/useIsTouchDevice.ts` (a `(hover: none), (pointer: coarse)`
   media query hook) gates a persistent alternative. `showEditableArea` in
   `AppState` (default `true`, persisted, not undoable) drives the same
-  dimming HexGrid already uses for hover, but only applied when
-  `isTouch && showEditableArea`; desktop/mouse ignores the flag entirely and
-  keeps relying on hover. `EditableAreaToggle` (eye/eye-slash icon button)
-  renders only on touch devices to flip it. A one-time `TouchIntroModal`
-  explains the toggle; it opens only when touch is detected **and** no
-  design was already persisted at load (captured once, before the autosave
-  effect in `AppContext` can run, via `hasPersistedDesign()` in
-  `storageService.ts`) — so it reappears on reload until the user paints
-  something, by design.
+  dimming the grid components already use for hover, but only applied
+  when `isTouch && showEditableArea`; desktop/mouse ignores the flag
+  entirely and keeps relying on hover. `EditableAreaToggle` (eye/eye-slash
+  icon button) renders only on touch devices to flip it. A one-time
+  `TouchIntroModal` explains the toggle; it opens only when touch is
+  detected **and** no design was already persisted at load (captured once,
+  before the autosave effect in `AppContext` can run, via
+  `hasPersistedDesign()` in `storageService.ts`) — so it reappears on
+  reload until the user paints something, by design.
 - **Defaults**: starts in dark mode with a random color scheme (first
   visit).
-- **Scheme/theme switching** remaps painted hexes by palette position;
-  toggling dark mode remaps hexes painted exactly base/accent.
+- **Scheme/theme switching** remaps painted cells by palette position;
+  toggling dark mode remaps cells painted exactly base/accent.
 - **Image export** (`src/services/imageExportService.ts`, wrapped by the
   `useImageExport` hook for `SaveImageModal`'s generate/download/share
   flow): clones the live SVG, bakes computed stroke styles onto it, forces
@@ -149,13 +183,14 @@ pass.
   is shown only when `navigator.share` supports files; Download is always
   available.
 - **Randomizer** (`src/utils/randomDesign.ts`, `RANDOMIZE_DESIGN` in
-  `appReducer.ts`, undoable): assigns every group id a random color drawn
-  from a weighted pool — the current scheme's 5 colors are heavily
-  favored (18 "tickets" each) over the theme's base (10), 90% vs. 10%
-  overall, so a generated design still reads as a coherent pattern
-  rather than a mostly-neutral one. Accent is excluded entirely: it
-  doubles as the default fill for an unpainted group (`HexGrid`'s
-  `?? accent`), so assigning it would look identical to leaving a cell
+  `appReducer.ts`, undoable): assigns every group id (for the current
+  grid shape, via `gridShapeRegistry.ts`) a random color drawn from a
+  weighted pool — the current scheme's 5 colors are heavily favored (18
+  "tickets" each) over the theme's base (10), 90% vs. 10% overall, so a
+  generated design still reads as a coherent pattern rather than a
+  mostly-neutral one. Accent is excluded entirely: it doubles as the
+  default fill for an unpainted group (`?? accent` in each grid
+  component), so assigning it would look identical to leaving a cell
   unpainted. `RandomizeDesignButton` (fa-shuffle) sits right of the
   palette button; no confirmation dialog (unlike reset) since it's a
   generative action and undo is one click away.
@@ -206,11 +241,15 @@ Done: Phase 1 (feature-parity rebuild), comment cleanup, localStorage,
 image export/share/download, undo/redo, layout rework, touchscreen wedge
 discoverability (eye toggle + intro modal), reduced grid to radius 7/169
 cells for all devices (was radius 9/271), design randomizer (weighted
-toward the 5 scheme colors over base; accent excluded).
+toward the 5 scheme colors over base; accent excluded), alternative grid
+shapes (triangle, 6-point diamond star) alongside the original hexagon,
+selectable via a shape picker.
 
 Next, in priority order:
 
-- Alternative shapes/tilings beyond hexagons (diamonds and/or triangles in a 6-point star, for example).
+- More alternative shapes/tilings (e.g. a 6-point star of equilateral
+  triangles, or a circle of concentric rings of progressively larger
+  circles — anything designable as a wedge, then mirrored/copied around).
 - Sticky footer, transparent background, simple copyright statement with current full year
 - Info modal with instructions on everything (control button by control button)
 - README (replace current): what it is, live link,

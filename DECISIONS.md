@@ -422,6 +422,126 @@ outcomes. `RandomizeDesignButton` (fa-shuffle icon) has no confirmation
 dialog, unlike `ResetDesignButton` — it's additive/generative rather than
 destructive, and undo is one click away regardless.
 
+## Phase 3: More grid shapes
+
+### General-purpose symmetry engine, and the triangle grid
+
+Adding a second shape (an equilateral triangle, subdivided into a 10x10
+lattice of 100 small triangles) meant the hex grid's cube-coordinate
+rotation trick (`hexGrid.ts`) no longer generalized — a triangular
+lattice has no equivalent simple coordinate algebra. Instead, built a
+shape-agnostic `src/utils/symmetry.ts`: `assignSymmetryGroups` computes
+every orbit via real geometric rotation/reflection transforms applied to
+each cell's centroid (not coordinate math), matching transformed points
+back to known cells by a rounded-coordinate lookup (`PRECISION = 1e-6`,
+to absorb trig rounding error). Callers describe their shape's symmetry
+declaratively — `{ center, fold, mirror, mirrorAxisAngle }` plus an
+`isCanonical(point)` test for which orbit member is the clickable
+wedge — rather than hand-deriving shape-specific rotation formulas each
+time. This is the same engine every non-hex shape since (triangle,
+diamond star) reuses.
+
+The triangle grid itself (`triangleLayout.ts`/`triangleGrid.ts`) uses D3
+(fold=3, mirror=true). Its mirror axis passes through one triangle
+corner and the midpoint of the opposite edge, which also passes directly
+through some small triangles' centroids — a genuine edge case (not a
+rounding artifact), producing degenerate orbits of size 1 (the one
+triangle centered exactly on an axis crossing the big triangle's own
+center) and size 3 (rather than the "generic" size-6 orbit) for cells
+that straddle an axis. `isCanonicalWedge`'s closed `[270, 330]` degree
+range (rather than a half-open one) was needed specifically to catch
+these axis-straddling points consistently; see `symmetry.test.ts` for
+the regression coverage.
+
+Selecting a shape discards the current design, since a group id from one
+shape's symmetry grouping has no meaning for another's. `GridShapeId`
+(`src/types/gridShape.ts`), a data-driven shape list
+(`src/data/gridShapes.ts`), `GridShapePicker`/`GridShapeModal`, and
+`src/utils/gridShapeRegistry.ts` (a small per-shape dispatch layer for
+group ids/aspect ratio, used by the randomizer and save-image preview)
+tie it all together. `SELECT_GRID_SHAPE` is undoable, like scheme
+changes, so switching is safe to try.
+
+### Confirmation dialog "don't show again" + custom checkbox
+
+`GridShapePicker` and `ResetDesignButton` both stage a destructive-ish
+action behind `ConfirmDialog`. Once there were two independent uses,
+added a per-component-use opt-out: `dontShowAgainKey` prop plus
+`src/services/confirmDialogPreferences.ts` (a small localStorage-backed
+set of dismissed keys) lets a user permanently skip the dialog for one
+specific use (e.g. "switch-grid-shape") without affecting the other.
+
+The checkbox itself is custom-styled (an empty box when unchecked, the
+`fa-square-check` icon at the same size when checked) rather than the
+browser's native checkbox appearance (inconsistent across
+platforms — notably ugly on macOS). A real `<input type="checkbox">`
+stays in the DOM for keyboard/focus/screen-reader behavior, but is
+visually hidden (`opacity: 0`, absolutely positioned) over a `<span>`
+that renders the actual visible box/icon; a `:has(.checkboxInput:focus-visible)`
+rule draws the focus ring on the visible span instead of the invisible
+input. The dialog's `.bottomRow` (checkbox + action buttons, since a user
+asked to fit both in the same row) uses `justify-content: flex-end` with
+`margin-right: auto` on the checkbox/label, rather than
+`space-between`, so the buttons stay right-aligned even when no
+checkbox renders (not every `ConfirmDialog` use has a
+`dontShowAgainKey`).
+
+Both the shape picker and color theme picker's modals now close
+immediately on selection (previously only on explicit confirm/cancel,
+which felt like an obstacle once dismissal preferences made most clicks
+skip the confirmation dialog entirely).
+
+### 6-point diamond star
+
+A third shape: 6 elongated-diamond "points" radiating from a shared
+center, Lone-Star-quilt style, each diamond narrower (30-degree point
+angle) than two equilateral triangles joined base-to-base (which would
+give a 60-degree hexagon-like diamond instead). Reuses the triangle
+grid's general approach — subdivide one "wedge" into a small-triangle
+lattice, then let the symmetry engine replicate and group it — but two
+things are genuinely new:
+
+- **A non-equilateral wedge.** The fundamental wedge here is half of one
+  diamond point, split along its own long axis: a 15/15/150-degree
+  triangle (apex at the star's center, tip at the point's outer vertex,
+  and a side vertex at the point's wide corner), not equilateral like
+  the triangle grid's. `src/utils/diamondStarLayout.ts`'s `latticePoint`
+  generalizes `triangleLayout.ts`'s lattice formula to affine
+  interpolation between the wedge's actual 3 vertices (`p0 + (row/N)(p1
+  - p0) + (col/N)(p2 - p1)`) — the equilateral formula is just a special
+  case of this, verified algebraically. Not extracted into a shared
+  utility used by both shapes (yet): still only 2 shapes need it, and
+  `triangleLayout.ts` is stable/tested code not worth touching for
+  unrelated churn; revisit if a 3rd shape needs this exact subdivision
+  pattern.
+- **A 1/12th (not 1/6th or 1/3rd) clickable wedge.** The star has D6
+  symmetry (fold=6, mirror=true) like a hexagon, but unlike the hex grid
+  (which operates directly on the full hexagon) or the triangle grid
+  (which subdivides the *entire* big triangle, one wedge per wedge of the
+  shape), this shape's single fundamental wedge is replicated across all
+  12 symmetry positions explicitly (`DIAMOND_STAR_TRANSFORMS`, the same
+  6 rotations + 6 reflections `assignSymmetryGroups` builds internally)
+  to generate the full star, rather than generating one shape-sized
+  region and letting symmetry fold it. Each cell stores which of the 12
+  transforms placed it (`transformIndex`) so `DiamondStarGrid.tsx` can
+  recompute its actual on-screen corners at render time, the same way
+  `TriangleGrid.tsx` recomputes corners fresh from `row`/`col`/`direction`.
+
+A nice simplification versus the triangle grid: because the wedge's own
+apex coincides exactly with the star's center of rotation, no small
+triangle's centroid can ever land exactly on a mirror axis (proof: the
+sum of a triangle's 3 corners' `(row - col)` values is always `3(row -
+col) ± 1`, never zero for integer row/col) — so every orbit here is a
+full size-12 orbit, with none of the triangle grid's size-1/size-3
+degenerate cases. `isCanonicalWedge`'s test range is correspondingly
+simpler too: a closed `[270, 285]` degree range exactly matching the
+canonical wedge's own 15-degree angular span (see
+`diamondStarGrid.test.ts`).
+
+`DIAMOND_STAR_GRID_SIZE = 5` (25 clickable cells total) was chosen to
+land close to the hex (20) and triangle (22) grids' density, after
+confirming the look with a quick prototype render.
+
 ## Process
 
 Work proceeds one logical step at a time. The user reviews and makes each

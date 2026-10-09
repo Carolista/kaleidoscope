@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react'
 import { useLayoutEffect, useRef, useState } from 'react'
 import styles from './App.module.css'
 import Header from './components/layout/Header'
+import DiamondStarGrid from './components/grid/DiamondStarGrid'
 import HexGrid from './components/grid/HexGrid'
 import TriangleGrid from './components/grid/TriangleGrid'
 import ColorOptions from './components/controls/ColorOptions'
@@ -64,6 +65,8 @@ function App() {
 			<main className={styles.app}>
 				{state.gridShape === 'triangle' ? (
 					<TriangleGrid svgRef={svgRef} />
+				) : state.gridShape === 'diamondStar' ? (
+					<DiamondStarGrid svgRef={svgRef} />
 				) : (
 					<HexGrid svgRef={svgRef} />
 				)}
