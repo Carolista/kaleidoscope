@@ -20,7 +20,7 @@ function ColorThemeModal({ open, onClose }: ColorThemeModalProps) {
 					Color Theme
 				</h2>
 				<CloseButton
-					label="Close color theme picker"
+					label="Close color palette selector"
 					onClick={onClose}
 				/>
 			</div>

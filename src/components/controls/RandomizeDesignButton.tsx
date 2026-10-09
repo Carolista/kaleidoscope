@@ -6,8 +6,8 @@ function RandomizeDesignButton() {
 
 	return (
 		<IconButton
-			icon="shuffle"
-			label="Randomize design"
+			icon="magic-wand-sparkles"
+			label="Generate a random design"
 			onClick={randomizeDesign}
 		/>
 	)

@@ -13,7 +13,7 @@ function ResetDesignButton() {
 		<>
 			<IconButton
 				icon="arrows-rotate"
-				label="Reset design"
+				label="Reset the design board"
 				onClick={() => {
 					if (isConfirmDialogDismissed(DONT_SHOW_AGAIN_KEY)) {
 						resetDesign()
@@ -24,7 +24,7 @@ function ResetDesignButton() {
 			/>
 			<ConfirmDialog
 				open={confirming}
-				title="Reset design?"
+				title="Confirm Reset"
 				message="Are you sure you want to reset your design? You can undo this afterward if you change your mind."
 				confirmLabel="Reset"
 				cancelLabel="Cancel"

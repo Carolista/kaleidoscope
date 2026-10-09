@@ -16,7 +16,7 @@ describe('GridShapeButton', () => {
 		expect(screen.queryByRole('heading', { name: 'Grid Shape' })).toBeNull()
 
 		await user.click(
-			screen.getByRole('button', { name: 'Open grid shape picker' }),
+			screen.getByRole('button', { name: 'Select a different shape' }),
 		)
 
 		expect(
@@ -30,7 +30,7 @@ describe('GridShapeButton', () => {
 		).toBeInTheDocument()
 
 		await user.click(
-			screen.getByRole('button', { name: 'Close grid shape picker' }),
+			screen.getByRole('button', { name: 'Close grid shape selector' }),
 		)
 
 		await waitFor(() =>
@@ -45,7 +45,7 @@ describe('GridShapeButton', () => {
 		render(<GridShapeButton />, { wrapper: AppStateProvider })
 
 		await user.click(
-			screen.getByRole('button', { name: 'Open grid shape picker' }),
+			screen.getByRole('button', { name: 'Select a different shape' }),
 		)
 		await user.click(screen.getByRole('button', { name: 'Triangle' }))
 		await user.click(screen.getByRole('button', { name: 'Switch' }))

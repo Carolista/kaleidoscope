@@ -58,7 +58,7 @@ function GridShapePicker({ onSelected }: GridShapePickerProps) {
 			</ul>
 			<ConfirmDialog
 				open={pendingOption !== undefined}
-				title="Switch grid shape?"
+				title="Confirm Shape Change"
 				message={`Switching to the ${pendingOption?.label ?? ''} grid will reset your current design. You can undo this afterward if you change your mind.`}
 				confirmLabel="Switch"
 				cancelLabel="Cancel"

@@ -33,15 +33,17 @@ describe('ResetDesignButton', () => {
 		await user.click(screen.getByText('Paint test group'))
 		expect(screen.getByTestId('painted-count')).toHaveTextContent('1')
 
-		await user.click(screen.getByRole('button', { name: 'Reset design' }))
+		await user.click(
+			screen.getByRole('button', { name: 'Reset the design board' }),
+		)
 		expect(
-			screen.getByRole('heading', { name: 'Reset design?' }),
+			screen.getByRole('heading', { name: 'Confirm Reset' }),
 		).toBeInTheDocument()
 
 		await user.click(screen.getByRole('button', { name: 'Cancel' }))
 		await waitFor(() =>
 			expect(
-				screen.queryByRole('heading', { name: 'Reset design?' }),
+				screen.queryByRole('heading', { name: 'Confirm Reset' }),
 			).not.toBeInTheDocument(),
 		)
 		expect(screen.getByTestId('painted-count')).toHaveTextContent('1')
@@ -52,7 +54,9 @@ describe('ResetDesignButton', () => {
 		render(<Harness />, { wrapper: AppStateProvider })
 
 		await user.click(screen.getByText('Paint test group'))
-		await user.click(screen.getByRole('button', { name: 'Reset design' }))
+		await user.click(
+			screen.getByRole('button', { name: 'Reset the design board' }),
+		)
 		await user.click(screen.getByRole('button', { name: 'Reset' }))
 
 		await waitFor(() =>
@@ -65,7 +69,9 @@ describe('ResetDesignButton', () => {
 		render(<Harness />, { wrapper: AppStateProvider })
 
 		await user.click(screen.getByText('Paint test group'))
-		await user.click(screen.getByRole('button', { name: 'Reset design' }))
+		await user.click(
+			screen.getByRole('button', { name: 'Reset the design board' }),
+		)
 		await user.click(
 			screen.getByRole('checkbox', { name: "Don't show this again" }),
 		)
@@ -76,11 +82,13 @@ describe('ResetDesignButton', () => {
 		)
 
 		await user.click(screen.getByText('Paint test group'))
-		await user.click(screen.getByRole('button', { name: 'Reset design' }))
+		await user.click(
+			screen.getByRole('button', { name: 'Reset the design board' }),
+		)
 
 		// No dialog this time; the reset happens immediately.
 		expect(
-			screen.queryByRole('heading', { name: 'Reset design?' }),
+			screen.queryByRole('heading', { name: 'Confirm Reset' }),
 		).not.toBeInTheDocument()
 		await waitFor(() =>
 			expect(screen.getByTestId('painted-count')).toHaveTextContent('0'),

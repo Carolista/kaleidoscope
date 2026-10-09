@@ -25,7 +25,7 @@ describe('RandomizeDesignButton', () => {
 		expect(screen.getByTestId('painted-count')).toHaveTextContent('0')
 
 		await user.click(
-			screen.getByRole('button', { name: 'Randomize design' }),
+			screen.getByRole('button', { name: 'Generate a random design' }),
 		)
 
 		await waitFor(() =>

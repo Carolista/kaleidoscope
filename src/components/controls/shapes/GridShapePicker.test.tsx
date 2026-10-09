@@ -24,7 +24,7 @@ describe('GridShapePicker', () => {
 		await user.click(screen.getByRole('button', { name: 'Triangle' }))
 
 		expect(
-			screen.getByRole('heading', { name: 'Switch grid shape?' }),
+			screen.getByRole('heading', { name: 'Confirm Shape Change' }),
 		).toBeInTheDocument()
 		// Not switched yet, since the dialog hasn't been confirmed.
 		expect(screen.getByRole('button', { name: 'Hexagon' })).toHaveAttribute(

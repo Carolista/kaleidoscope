@@ -9,7 +9,7 @@ function GridShapeButton() {
 		<>
 			<IconButton
 				icon="shapes"
-				label="Open grid shape picker"
+				label="Select a different shape"
 				onClick={() => setOpen(true)}
 			/>
 			<GridShapeModal open={open} onClose={() => setOpen(false)} />

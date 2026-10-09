@@ -84,7 +84,7 @@ describe('App', () => {
 		).toBeInTheDocument()
 
 		await user.click(
-			screen.getByRole('button', { name: 'Open grid shape picker' }),
+			screen.getByRole('button', { name: 'Select a different shape' }),
 		)
 		await user.click(screen.getByRole('button', { name: 'Triangle' }))
 		await user.click(screen.getByRole('button', { name: 'Switch' }))

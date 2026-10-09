@@ -14,7 +14,9 @@ describe('ColorThemeButton', () => {
 		).toBeNull()
 
 		await user.click(
-			screen.getByRole('button', { name: 'Open color theme picker' }),
+			screen.getByRole('button', {
+				name: 'Select a different color palette',
+			}),
 		)
 
 		expect(
@@ -27,7 +29,9 @@ describe('ColorThemeButton', () => {
 		).toBeInTheDocument()
 
 		await user.click(
-			screen.getByRole('button', { name: 'Close color theme picker' }),
+			screen.getByRole('button', {
+				name: 'Close color palette selector',
+			}),
 		)
 
 		await waitFor(() =>
@@ -42,7 +46,9 @@ describe('ColorThemeButton', () => {
 		render(<ColorThemeButton />, { wrapper: AppStateProvider })
 
 		await user.click(
-			screen.getByRole('button', { name: 'Open color theme picker' }),
+			screen.getByRole('button', {
+				name: 'Select a different color palette',
+			}),
 		)
 		await user.click(
 			screen.getByRole('button', {

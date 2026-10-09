@@ -8,11 +8,16 @@ describe('CloseButton', () => {
 		const user = userEvent.setup()
 		const onClick = vi.fn()
 		render(
-			<CloseButton label="Close color theme picker" onClick={onClick} />,
+			<CloseButton
+				label="Close color palette selector"
+				onClick={onClick}
+			/>,
 		)
 
 		await user.click(
-			screen.getByRole('button', { name: 'Close color theme picker' }),
+			screen.getByRole('button', {
+				name: 'Close color palette selector',
+			}),
 		)
 		expect(onClick).toHaveBeenCalledOnce()
 	})

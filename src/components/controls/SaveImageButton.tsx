@@ -14,7 +14,7 @@ function SaveImageButton({ svgRef }: SaveImageButtonProps) {
 		<>
 			<IconButton
 				icon="image"
-				label="Save design as image"
+				label="Create image from design"
 				onClick={() => setOpen(true)}
 			/>
 			<SaveImageModal
