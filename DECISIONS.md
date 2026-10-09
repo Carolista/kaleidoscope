@@ -284,7 +284,9 @@ within a ~550px-tall viewport without scrolling, and to read as clearer
 groups instead of one long wrapped row:
 
 - The swatches, undo/redo, and the remaining action buttons
-  (dark/light, color theme, show/hide editable area, reset, save image) are
+  (show/hide editable area, color theme, randomize, reset, grid shape,
+  create image, dark/light, controls help — in their current order, see
+  "Controls modal" below) are
   each their own flex group, stacked in that order inside one outer
   `role="group" aria-label="Controls"` wrapper. The two previously-separate
   action clusters (toggles vs. destructive/export actions) were merged into
@@ -421,7 +423,7 @@ default fill `HexagonGrid` uses for an unpainted group, so a cell randomly
 assigned accent would look indistinguishable from one that was never
 painted at all, the likely reason it read as less satisfying in practice. The weighting function takes an injectable `random` parameter
 (defaults to `Math.random`) purely so tests can assert deterministic
-outcomes. `RandomizeDesignButton` (fa-shuffle icon) has no confirmation
+outcomes. `RandomizeDesignButton` (fa-magic-wand-sparkles icon) has no confirmation
 dialog, unlike `ResetDesignButton` — it's additive/generative rather than
 destructive, and undo is one click away regardless.
 
@@ -678,9 +680,8 @@ only.
   effect can persist anything) — but now for every device, not just touch,
   since the content is useful to everyone.
 - **Always reachable afterward**: a new `fa-circle-info` icon button
-  (`ControlsInfoButton`) sits last in the Settings and Actions row,
-  specifically to the right of the save-image icon, and reopens the same
-  modal on demand. The open/first-visit state is owned entirely by
+  (`ControlsInfoButton`) sits last in the Settings and Actions row and
+  reopens the same modal on demand. The open/first-visit state is owned entirely by
   `ControlsInfoButton` now (it renders both the button and the
   `ControlsModal`), rather than living up in `App.tsx` the way
   `TouchIntroModal`'s `introOpen` state did — nothing else in `App.tsx`
@@ -690,6 +691,15 @@ only.
   Area" row is filtered out on non-touch via the same `useIsTouchDevice`
   hook, rather than describing a control that isn't even in the toolbar.
   Every other row is identical for everyone.
+- **Toolbar reordered for thumb reach**: after the modal landed, the user
+  rearranged the Settings and Actions row based on likely thumb usage on
+  mobile. The order is now: show/hide editable area (touch only), color
+  theme, randomize, reset, grid shape, create image, dark/light, controls
+  help. The modal lists its rows in this same order, so it reads as a
+  left-to-right key to the toolbar; keep the two in sync if either changes.
+- **Create-image icon**: changed from `fa-image` to `fa-hexagon-image`,
+  a nod to the app's origins as a hexagon grid. Its modal row is labeled
+  "Create Image" to match the button's tooltip.
 
 ## Process
 

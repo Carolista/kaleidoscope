@@ -189,7 +189,8 @@ pass.
 - **Controls modal** (`ControlsModal`, opened via `ControlsInfoButton`'s
   circle-info icon, last in the Settings and Actions row): lists every
   clickable control below the grid (color swatches, undo/redo, and each
-  Settings and Actions icon button) with its icon and a brief explanation,
+  Settings and Actions icon button, listed in the same order as the
+  toolbar) with its icon and a brief explanation,
   two columns (icon, then text) on larger screens collapsing to one
   stacked column at 480px. The eye/eye-slash editable-area row is filtered
   in via `useIsTouchDevice` — shown only on touch devices, since that's
@@ -221,8 +222,8 @@ pass.
   mostly-neutral one. Accent is excluded entirely: it doubles as the
   default fill for an unpainted group (`?? accent` in each grid
   component), so assigning it would look identical to leaving a cell
-  unpainted. `RandomizeDesignButton` (fa-shuffle) sits right of the
-  palette button; no confirmation dialog (unlike reset) since it's a
+  unpainted. `RandomizeDesignButton` (fa-magic-wand-sparkles) sits right of
+  the palette button; no confirmation dialog (unlike reset) since it's a
   generative action and undo is one click away.
 
 ## Layout
@@ -230,8 +231,10 @@ pass.
 A `<header>` with the title, then `<main>`: the grid, then a `"Controls"`
 group holding, in order: current-color swatches (clamp-sized to stay on
 one row), undo/redo, and a `"Settings and Actions"` row of icon buttons
-(dark/light, color theme, randomize design, show/hide editable area
-(touch devices only), reset, save image, controls help). Single column at
+(show/hide editable area (touch devices only), color theme, randomize
+design, reset, grid shape, create image (fa-hexagon-image, a nod to the
+app's hexagon origins), dark/light, controls help). The order is
+deliberate, chosen for likely thumb reach on mobile. Single column at
 every width.
 
 ## Accessibility standards
@@ -279,13 +282,11 @@ piece of each shape's own geometry, rendered rather than hand-drawn), a
 codebase-wide rename clearing up "hex" ambiguity once hexagon and
 hexagram coexisted (`HexGrid`→`HexagonGrid`, `hexGroupColors`→
 `shapeGroupColors`, etc.), a controls modal with instructions on every
-clickable control (reworked from the earlier touch-only intro modal).
+clickable control (reworked from the earlier touch-only intro modal), a footer.
 
 Next, in priority order:
-
-- Sticky footer, transparent background, simple copyright statement with current full year (done)
 - More alternative shapes/tilings (e.g. a circle of concentric rings of
-  progressively larger circles — anything designable as a wedge, then
+  progressively larger circles, a pinwheel — anything designable as a wedge, then
   mirrored/copied around).
 - README (replace current): what it is, live link,
    screenshots, setup, scripts, stack. Unscheduled until the user supplies
