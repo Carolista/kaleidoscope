@@ -16,6 +16,7 @@ const VALID_GRID_SHAPES: readonly GridShapeId[] = [
 	'triangle',
 	'diamondStar',
 	'hexagram',
+	'circleRings',
 ]
 
 interface PersistedDesign {

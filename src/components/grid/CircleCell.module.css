@@ -1,0 +1,34 @@
+.cell {
+	/* Grout color matches the page background, so painted tiles read as
+     colored shapes separated by a thin gap rather than outlined. --base
+     is set on the app root (App.tsx) and inherits down via CSS custom
+     property cascade. Matches PolygonCell.module.css's rules — a
+     separate module since this styles a `<circle>` rather than a
+     `<polygon>`, but intentionally kept visually identical. */
+	stroke: var(--base, #fff);
+	stroke-width: 1;
+	transition:
+		opacity 0.15s ease,
+		stroke 0.2s ease,
+		fill 0.1s ease;
+}
+
+.clickable {
+	cursor: pointer;
+}
+
+.clickable:focus-visible {
+	outline: 3px solid var(--accent, #222);
+	outline-offset: -2px;
+}
+
+.clickable:hover {
+	/* --hover-fill is computed per-cell in JS (colorMath.ts) from its own
+     fill color, so this only ever changes `fill` — the stroke is
+     completely untouched, keeping the grout line crisp. */
+	fill: var(--hover-fill);
+}
+
+.dimmed {
+	opacity: 0.2;
+}

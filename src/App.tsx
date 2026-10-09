@@ -12,7 +12,13 @@ import {
 	UndoRedoButtons,
 } from '@controls'
 import { GridShapeButton } from '@shapes'
-import { DiamondStarGrid, HexagonGrid, HexagramGrid, TriangleGrid } from '@grid'
+import {
+	CircleRingsGrid,
+	DiamondStarGrid,
+	HexagonGrid,
+	HexagramGrid,
+	TriangleGrid,
+} from '@grid'
 import Footer from './components/layout/Footer'
 import Header from './components/layout/Header'
 import { getThemeColors } from './state/theme'
@@ -59,6 +65,8 @@ function App() {
 					<DiamondStarGrid svgRef={svgRef} />
 				) : state.gridShape === 'hexagram' ? (
 					<HexagramGrid svgRef={svgRef} />
+				) : state.gridShape === 'circleRings' ? (
+					<CircleRingsGrid svgRef={svgRef} />
 				) : (
 					<HexagonGrid svgRef={svgRef} />
 				)}

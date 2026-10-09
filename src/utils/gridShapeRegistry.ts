@@ -1,5 +1,9 @@
 import type { GridShapeId } from '../types/gridShape'
 import {
+	computeGridAspectRatio as computeCircleRingsAspectRatio,
+	getGroupIds as getCircleRingsGroupIds,
+} from './circleRingsGrid'
+import {
 	computeGridAspectRatio as computeDiamondStarAspectRatio,
 	getGroupIds as getDiamondStarGroupIds,
 } from './diamondStarGrid'
@@ -30,6 +34,8 @@ export function getGroupIdsForShape(shape: GridShapeId): string[] {
 			return getDiamondStarGroupIds()
 		case 'hexagram':
 			return getHexagramGroupIds()
+		case 'circleRings':
+			return getCircleRingsGroupIds()
 	}
 }
 
@@ -43,5 +49,7 @@ export function computeAspectRatioForShape(shape: GridShapeId): number {
 			return computeDiamondStarAspectRatio()
 		case 'hexagram':
 			return computeHexagramAspectRatio()
+		case 'circleRings':
+			return computeCircleRingsAspectRatio()
 	}
 }

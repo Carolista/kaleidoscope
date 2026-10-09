@@ -6,12 +6,14 @@ import type { GridShapeId } from '@appTypes/gridShape'
 // Expected piece count for each shape's preview, matching the
 // un-subdivided version of its real grid-generation code: a hexagon of
 // 7 hexagons, a triangle of 4 triangles, a diamond star of 6 diamonds,
-// a hexagram of 12 triangles.
+// a hexagram of 12 triangles, a circle rings shape of 1 center dot + 6
+// ring-1 circles.
 const EXPECTED_PIECE_COUNTS: Record<GridShapeId, number> = {
 	hexagon: 7,
 	triangle: 4,
 	diamondStar: 6,
 	hexagram: 12,
+	circleRings: 7,
 }
 
 describe('GridShapeIcon', () => {
@@ -21,16 +23,22 @@ describe('GridShapeIcon', () => {
 			const { container } = render(<GridShapeIcon shape={shape} />)
 			const svg = container.querySelector('svg')
 			expect(svg).toHaveAttribute('aria-hidden', 'true')
-			expect(container.querySelectorAll('polygon')).toHaveLength(
-				pieceCount,
-			)
+			const pieces = container.querySelectorAll('polygon, circle')
+			expect(pieces).toHaveLength(pieceCount)
 		},
 	)
 
-	it('gives every piece a non-empty points attribute', () => {
+	it('gives every polygon piece a non-empty points attribute', () => {
 		const { container } = render(<GridShapeIcon shape="hexagram" />)
 		for (const polygon of container.querySelectorAll('polygon')) {
 			expect(polygon.getAttribute('points')).toMatch(/\d/)
+		}
+	})
+
+	it('gives every circle piece a positive radius', () => {
+		const { container } = render(<GridShapeIcon shape="circleRings" />)
+		for (const circle of container.querySelectorAll('circle')) {
+			expect(Number(circle.getAttribute('r'))).toBeGreaterThan(0)
 		}
 	})
 })

@@ -1,3 +1,4 @@
+export { default as CircleRingsGrid } from './CircleRingsGrid'
 export { default as DiamondStarGrid } from './DiamondStarGrid'
 export { default as HexagonGrid } from './HexagonGrid'
 export { default as HexagramGrid } from './HexagramGrid'

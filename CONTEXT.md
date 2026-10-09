@@ -286,7 +286,7 @@ clickable control (reworked from the earlier touch-only intro modal), a footer.
 
 Next, in priority order:
 - More alternative shapes/tilings (e.g. a circle of concentric rings of
-  progressively larger circles, a pinwheel — anything designable as a wedge, then
+  progressively larger circles; a pinwheel... anything designable as a wedge, then
   mirrored/copied around).
 - README (replace current): what it is, live link,
    screenshots, setup, scripts, stack. Unscheduled until the user supplies
