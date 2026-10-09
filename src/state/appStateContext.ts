@@ -10,6 +10,7 @@ export interface AppStateContextValue {
 	readonly toggleDarkMode: () => void
 	readonly toggleEditableArea: () => void
 	readonly resetDesign: () => void
+	readonly randomizeDesign: () => void
 	readonly undo: () => void
 	readonly redo: () => void
 	readonly canUndo: boolean

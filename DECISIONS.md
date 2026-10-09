@@ -404,6 +404,21 @@ on) rather than a hardcoded or ref-measured value — so the placeholder
 box is already the correct shape before the image exists, and the `<img>`
 (`object-fit: contain`) just fills it once ready.
 
+### Design randomizer
+
+Added a "generate a design for me" button rather than requiring every
+hex to be painted by hand. `RANDOMIZE_DESIGN` (new reducer action,
+undoable like `RESET_DESIGN`) assigns every group id a color via
+`generateRandomHexGroupColors` (`src/utils/randomDesign.ts`): a weighted
+pool where each of the current scheme's 5 colors gets 18 "tickets" and
+base/accent get 5 each (90% scheme colors, 10% neutral overall), so a
+generated design still reads as a coherent pattern instead of a mostly
+gray/black/white one. The weighting function takes an injectable `random`
+parameter (defaults to `Math.random`) purely so tests can assert
+deterministic outcomes. `RandomizeDesignButton` (fa-shuffle icon) has no
+confirmation dialog, unlike `ResetDesignButton` — it's additive/generative
+rather than destructive, and undo is one click away regardless.
+
 ## Process
 
 Work proceeds one logical step at a time. The user reviews and makes each

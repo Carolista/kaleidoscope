@@ -150,6 +150,29 @@ describe('appReducer', () => {
 		expect(next.hexGroupColors).toEqual({})
 	})
 
+	it('RANDOMIZE_DESIGN assigns every group id a color from the current scheme or theme base/accent', () => {
+		const state = baseState({ darkMode: false })
+		const next = appReducer(state, { type: 'RANDOMIZE_DESIGN' })
+		const possible = new Set([
+			...state.currentScheme.colors,
+			'#ffffff', // light-mode base
+			'#222222', // light-mode accent
+		])
+		const groupIds = Object.keys(next.hexGroupColors)
+		expect(groupIds.length).toBeGreaterThan(0)
+		for (const color of Object.values(next.hexGroupColors)) {
+			expect(possible).toContain(color)
+		}
+	})
+
+	it('RANDOMIZE_DESIGN replaces the entire design, discarding any previously painted groups', () => {
+		const state = baseState({
+			hexGroupColors: { 'not-a-real-group-id': '#ff0000' },
+		})
+		const next = appReducer(state, { type: 'RANDOMIZE_DESIGN' })
+		expect(next.hexGroupColors['not-a-real-group-id']).toBeUndefined()
+	})
+
 	it('TOGGLE_EDITABLE_AREA flips the showEditableArea flag', () => {
 		const state = baseState({ showEditableArea: true })
 		expect(

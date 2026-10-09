@@ -98,6 +98,13 @@ export function groupHexCells(
 	return groups
 }
 
+// Every distinct mirror-symmetry group id in the grid (20 at the default
+// radius, one per clickable tile) — lets callers (e.g. the design
+// randomizer) know which groups exist without needing the full cell list.
+export function getGroupIds(radius: number = HEX_GRID_RADIUS): string[] {
+	return [...groupHexCells(generateHexCells(radius)).keys()]
+}
+
 // The grid's overall (width / height) ratio, independent of `hexSize` — a
 // uniform scale factor cancels out of the ratio — so this reflects the
 // same shape HexGrid renders (and the export service rasterizes from)
