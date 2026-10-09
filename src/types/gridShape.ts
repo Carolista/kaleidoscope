@@ -3,7 +3,7 @@
 // ...) but shares the same `hexGroupColors` paint state and rendering
 // approach (PolygonCell), since painting/undo/redo only ever need a
 // group id, never shape-specific geometry.
-export type GridShapeId = 'hexagon' | 'triangle' | 'diamondStar'
+export type GridShapeId = 'hexagon' | 'triangle' | 'diamondStar' | 'hexagram'
 
 export interface GridShapeOption {
 	readonly id: GridShapeId

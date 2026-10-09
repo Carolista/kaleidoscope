@@ -3,6 +3,7 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import styles from './App.module.css'
 import Header from './components/layout/Header'
 import DiamondStarGrid from './components/grid/DiamondStarGrid'
+import HexagramGrid from './components/grid/HexagramGrid'
 import HexGrid from './components/grid/HexGrid'
 import TriangleGrid from './components/grid/TriangleGrid'
 import ColorOptions from './components/controls/ColorOptions'
@@ -67,6 +68,8 @@ function App() {
 					<TriangleGrid svgRef={svgRef} />
 				) : state.gridShape === 'diamondStar' ? (
 					<DiamondStarGrid svgRef={svgRef} />
+				) : state.gridShape === 'hexagram' ? (
+					<HexagramGrid svgRef={svgRef} />
 				) : (
 					<HexGrid svgRef={svgRef} />
 				)}

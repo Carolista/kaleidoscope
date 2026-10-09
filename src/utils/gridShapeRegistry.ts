@@ -4,6 +4,10 @@ import {
 	getGroupIds as getDiamondStarGroupIds,
 } from './diamondStarGrid'
 import {
+	computeGridAspectRatio as computeHexagramAspectRatio,
+	getGroupIds as getHexagramGroupIds,
+} from './hexagramGrid'
+import {
 	computeGridAspectRatio as computeHexAspectRatio,
 	getGroupIds as getHexGroupIds,
 } from './hexGrid'
@@ -24,6 +28,8 @@ export function getGroupIdsForShape(shape: GridShapeId): string[] {
 			return getTriangleGroupIds()
 		case 'diamondStar':
 			return getDiamondStarGroupIds()
+		case 'hexagram':
+			return getHexagramGroupIds()
 	}
 }
 
@@ -35,5 +41,7 @@ export function computeAspectRatioForShape(shape: GridShapeId): number {
 			return computeTriangleAspectRatio()
 		case 'diamondStar':
 			return computeDiamondStarAspectRatio()
+		case 'hexagram':
+			return computeHexagramAspectRatio()
 	}
 }
