@@ -30,6 +30,10 @@ Live at https://codewithcarrie.com/kaleidoscope/ (GitHub Pages).
 - Don't reach for a Playwright/browser tool to verify small in-progress
   tweaks. Batch verification until the user says they're ready to test,
   since there's often back-and-forth on details first.
+- Don't update CONTEXT.md/DECISIONS.md until the user confirms they're
+  done reviewing/tweaking the current piece of work. The same
+  back-and-forth that applies to Playwright verification applies here —
+  updating docs for a design that's about to be reworked wastes effort.
 
 ## Tech stack & commands
 
@@ -98,7 +102,8 @@ pass.
 
 - **Folder structure**: `src/components/` is organized into subfolders —
   `layout/` (page chrome, e.g. `Header`), `grid/` (`HexGrid`,
-  `TriangleGrid`, `DiamondStarGrid`, `PolygonCell`), `controls/` (palette
+  `TriangleGrid`, `DiamondStarGrid`, `HexagramGrid`, `PolygonCell`),
+  `controls/` (palette
   and everything below the grid), and `shared/` (generic, reusable pieces
   like `IconButton`/`Button`/`Modal`/`ConfirmDialog` used across the
   others). One parent folder, not split into top-level feature folders,
@@ -115,7 +120,7 @@ pass.
     not.
   - `storageService.ts` autosaves to `localStorage` (versioned payload,
     scheme saved by name, defensive loading, all storage errors swallowed).
-- **Grid shapes**: 3 selectable shapes share one `hexGroupColors`
+- **Grid shapes**: 4 selectable shapes share one `hexGroupColors`
   paint-state map and `PolygonCell` rendering component — painting/undo/
   redo only ever need a group id, never shape-specific geometry.
   `GridShapeId` (`src/types/gridShape.ts`) identifies the current shape;
@@ -137,16 +142,30 @@ pass.
     engine below (D3, since a triangular lattice has no simple
     cube-coordinate trick like hexagons).
   - **Diamond star** (`src/utils/diamondStarLayout.ts` +
-    `diamondStarGrid.ts`): a 6-point star of elongated (30-degree point
-    angle) diamonds, in the "Lone Star" quilt style. Only the fundamental
-    wedge — half of one diamond point, split along its long axis — is
-    subdivided (a 5x5 lattice, 25 small triangles) and replicated across
-    all 12 of the star's D6 symmetry positions (6 rotations x mirror),
-    using the same symmetry engine as the triangle grid (fold=6 instead
-    of fold=3). Because the wedge's own apex coincides with the star's
-    center of symmetry, every orbit is a full size-12 orbit — no
-    degenerate mirror-axis cases like the triangle grid has (see
-    DECISIONS.md).
+    `diamondStarGrid.ts`): a 6-point star of elongated (45-degree point
+    angle) diamonds, in the "Lone Star" quilt style. Each diamond point
+    is itself a whole rhombus — not split into triangles — subdivided
+    directly via a 2D affine lattice over its 4 vertices (center, tip,
+    and 2 side vertices) into a 4x4 grid of smaller rhombi (16 per
+    point); only the star's 6 rotations are needed to replicate this
+    across all 6 points (each point is already symmetric about its own
+    long axis), with the full D6 symmetry engine then used just to group
+    the resulting 96 raw cells into 10 clickable orbits. Point angle was
+    widened from an initial 30 degrees to 45 after testing showed 30 was
+    too narrow to tap reliably on small touchscreens; the star's overall
+    width:height ratio (sqrt(3)/2) turned out to be invariant to the
+    point angle, so no other geometry needed to change.
+  - **Hexagram** (`src/utils/hexagramLayout.ts` + `hexagramGrid.ts`): a
+    6-point star of equilateral triangles — a central hexagon with an
+    equilateral triangle "point" attached outward on each of its 6 edges
+    (a Star-of-David-style outline), the whole thing subdivided into
+    small equilateral triangles. Each 60-degree "spoke" (one hexagon
+    slice + its point, together a 60/120-degree rhombus) is subdivided
+    into 2 x 4x4 lattices of small triangles (32 per spoke) using the
+    same general 3-vertex affine lattice formula as the diamond star's,
+    applied to 2 differently-oriented equilateral triangles; replicated
+    across the shape's 6 rotations and grouped via the same D6 symmetry
+    engine into 20 clickable orbits.
   - **General symmetry engine** (`src/utils/symmetry.ts`): computes
     rotation/mirror orbits and clickable-wedge assignment via real
     geometric transforms applied to each cell's centroid (matched back to
@@ -242,14 +261,14 @@ image export/share/download, undo/redo, layout rework, touchscreen wedge
 discoverability (eye toggle + intro modal), reduced grid to radius 7/169
 cells for all devices (was radius 9/271), design randomizer (weighted
 toward the 5 scheme colors over base; accent excluded), alternative grid
-shapes (triangle, 6-point diamond star) alongside the original hexagon,
-selectable via a shape picker.
+shapes (triangle, 6-point diamond star, hexagram) alongside the original
+hexagon, selectable via a shape picker.
 
 Next, in priority order:
 
-- More alternative shapes/tilings (e.g. a 6-point star of equilateral
-  triangles, or a circle of concentric rings of progressively larger
-  circles — anything designable as a wedge, then mirrored/copied around).
+- More alternative shapes/tilings (e.g. a circle of concentric rings of
+  progressively larger circles — anything designable as a wedge, then
+  mirrored/copied around).
 - Sticky footer, transparent background, simple copyright statement with current full year
 - Info modal with instructions on everything (control button by control button)
 - README (replace current): what it is, live link,

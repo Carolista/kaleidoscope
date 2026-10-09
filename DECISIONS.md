@@ -494,53 +494,106 @@ skip the confirmation dialog entirely).
 ### 6-point diamond star
 
 A third shape: 6 elongated-diamond "points" radiating from a shared
-center, Lone-Star-quilt style, each diamond narrower (30-degree point
-angle) than two equilateral triangles joined base-to-base (which would
-give a 60-degree hexagon-like diamond instead). Reuses the triangle
-grid's general approach — subdivide one "wedge" into a small-triangle
-lattice, then let the symmetry engine replicate and group it — but two
-things are genuinely new:
+center, Lone-Star-quilt style. Went through 2 iterations before landing
+on the final design:
 
-- **A non-equilateral wedge.** The fundamental wedge here is half of one
-  diamond point, split along its own long axis: a 15/15/150-degree
-  triangle (apex at the star's center, tip at the point's outer vertex,
-  and a side vertex at the point's wide corner), not equilateral like
-  the triangle grid's. `src/utils/diamondStarLayout.ts`'s `latticePoint`
-  generalizes `triangleLayout.ts`'s lattice formula to affine
-  interpolation between the wedge's actual 3 vertices (`p0 + (row/N)(p1
-  - p0) + (col/N)(p2 - p1)`) — the equilateral formula is just a special
-  case of this, verified algebraically. Not extracted into a shared
-  utility used by both shapes (yet): still only 2 shapes need it, and
-  `triangleLayout.ts` is stable/tested code not worth touching for
-  unrelated churn; revisit if a 3rd shape needs this exact subdivision
-  pattern.
-- **A 1/12th (not 1/6th or 1/3rd) clickable wedge.** The star has D6
-  symmetry (fold=6, mirror=true) like a hexagon, but unlike the hex grid
-  (which operates directly on the full hexagon) or the triangle grid
-  (which subdivides the *entire* big triangle, one wedge per wedge of the
-  shape), this shape's single fundamental wedge is replicated across all
-  12 symmetry positions explicitly (`DIAMOND_STAR_TRANSFORMS`, the same
-  6 rotations + 6 reflections `assignSymmetryGroups` builds internally)
-  to generate the full star, rather than generating one shape-sized
-  region and letting symmetry fold it. Each cell stores which of the 12
-  transforms placed it (`transformIndex`) so `DiamondStarGrid.tsx` can
-  recompute its actual on-screen corners at render time, the same way
-  `TriangleGrid.tsx` recomputes corners fresh from `row`/`col`/`direction`.
+**First attempt (wrong): half-wedge triangle subdivision.** Reused the
+triangle grid's approach directly — subdivide one fundamental wedge (half
+of one diamond point, split along its own long axis: a 15/15/150-degree
+triangle) into a small-triangle lattice, then replicate across all 12 of
+the star's D6 symmetry positions (6 rotations x mirror). This worked
+mechanically (no degenerate orbits, since the wedge's apex coincides with
+the star's center — the sum of a triangle's 3 corners' `(row - col)`
+values is always `3(row - col) ± 1`, never zero for integer row/col) but
+was geometrically wrong: it produced skinny half-diamond slivers as the
+clickable unit, not whole diamonds, which was unusable as an actual touch
+target.
 
-A nice simplification versus the triangle grid: because the wedge's own
-apex coincides exactly with the star's center of rotation, no small
-triangle's centroid can ever land exactly on a mirror axis (proof: the
-sum of a triangle's 3 corners' `(row - col)` values is always `3(row -
-col) ± 1`, never zero for integer row/col) — so every orbit here is a
-full size-12 orbit, with none of the triangle grid's size-1/size-3
-degenerate cases. `isCanonicalWedge`'s test range is correspondingly
-simpler too: a closed `[270, 285]` degree range exactly matching the
-canonical wedge's own 15-degree angular span (see
-`diamondStarGrid.test.ts`).
+**Second attempt (correct): whole-rhombus subdivision.** A diamond point
+is itself a rhombus (a parallelogram), so it tiles cleanly into smaller
+rhombi via a direct 2D affine lattice over its 4 vertices (center, tip,
+and 2 side vertices) — no triangle-splitting needed at all. The lattice's
+2 basis vectors (`sideRight - center` and `sideLeft - center`) are always
+equal length by construction (the diamond is symmetric about its own long
+axis), so every small parallelogram this produces is itself a true
+rhombus. Since one full diamond point is already symmetric about its own
+axis, only the star's 6 rotations are needed to replicate it across all 6
+points (not all 12 D6 transforms) — the full D6 symmetry engine
+(`fold=6, mirror=true`) is still used, but only to group the resulting
+raw cells into clickable orbits, since 2 rhombi within the same point can
+still mirror each other. This introduces a different degenerate case than
+the triangle grid's: cells on the lattice diagonal (`row === col`) sit
+exactly on the diamond's own mirror axis, forming smaller size-6 orbits
+(rotation only) instead of the generic size-12 (rotation x mirror);
+`isCanonicalWedge`'s closed `[270, 285]` range (same range as the first
+attempt, confirmed unchanged by the geometry fix) still picks exactly one
+representative per orbit, including these on-axis cells. Total clickable
+groups: `N(N+1)/2` for an N x N lattice per diamond point.
 
-`DIAMOND_STAR_GRID_SIZE = 5` (25 clickable cells total) was chosen to
-land close to the hex (20) and triangle (22) grids' density, after
-confirming the look with a quick prototype render.
+`DIAMOND_STAR_GRID_SIZE` started at 5 (25 cells) under the first (wrong)
+model; after the rework it became 4 (10 cells) under the corrected model,
+deliberately fewer/chunkier than the hex/triangle grids' ~20-22, since
+whole rhombi are inherently larger shapes than the original tiny
+triangles.
+
+**Point angle widened from 30 to 45 degrees** after testing on an actual
+phone showed 30 degrees (the original "needle-like" Lone Star look) was
+too narrow to tap reliably. Each rhombus's width scales with
+`tan(angle/2)`, so 45 degrees is ~55% wider than 30 at the same radius;
+60 degrees would make the points as wide as the hex grid's own diamonds
+(two equilateral triangles meeting with zero gap between points), so 45
+was chosen as a middle ground: noticeably more tappable, while still
+reading as a distinct 6-point star with visible gaps between points.
+`POINT_ANGLE_DEGREES`/`HALF_ANGLE_DEGREES` are exported from
+`diamondStarLayout.ts` so `diamondStarGrid.ts`'s canonical-wedge angle
+test derives its range from the same constant, rather than duplicating
+the angle as a second hardcoded number that could drift out of sync.
+Surprising side effect confirmed both analytically and in tests: the
+star's overall width:height ratio (`sqrt(3)/2`) is invariant to the point
+angle entirely — it's set by the bounding hexagon formed by the 6 outer
+tips, not by how wide each diamond point itself is — so the CSS sizing
+constant needed no change when the angle did.
+
+### Hexagram (6-point star of equilateral triangles)
+
+A fourth shape: a central hexagon with an equilateral triangle "point"
+attached outward on each of its 6 edges — the classic Star-of-David-style
+outline (also describable as 2 overlapping big equilateral triangles),
+subdivided into small equilateral triangles throughout. Chosen over the
+simpler "6 equilateral triangles meeting at a single center point"
+reading of "star of triangles" because that configuration tiles into a
+perfect hexagon with zero gaps (6 x 60 degrees = 360, exactly) — not a
+star at all; equilateral triangles can only form a visible star shape
+when attached to a separate inner polygon's edges instead of meeting at
+one point.
+
+Each 60-degree "spoke" of the star is made of 2 equilateral triangles — a
+slice of the central hexagon (apex at the shared center) and its attached
+point (apex at the outer tip) — which together form a 60/120-degree
+rhombus, symmetric about its own long axis, same as the diamond star's
+single-piece spoke. `src/utils/hexagramLayout.ts`'s `latticePoint`
+generalizes the same 3-vertex affine interpolation formula used (and
+documented) in the diamond star's geometry, applied twice per spoke (once
+per equilateral triangle, oriented oppositely) rather than once — since
+the formula already works for any triangle shape, and these 2 are both
+already genuinely equilateral, no new subdivision math was needed, only a
+second application of it. As with the diamond star, only 6 rotations are
+needed to generate the full shape (each spoke already covers both mirror
+halves), with the full D6 engine used only for clickable-orbit grouping.
+Degenerate on-axis orbits (size 6 instead of size 12) occur for the same
+reason as the diamond star's: cells on a spoke's own mirror axis.
+`isCanonicalWedge`'s closed `[270, 300]` range matches the spoke's full
+60-degree angular span, halved.
+
+`HEXAGRAM_GRID_SIZE = 4` (2 x 4x4 lattices per spoke) gives `N(N+1)` = 20
+clickable cells, chosen to land close to the hex (20) and triangle (22)
+grids' density, per the user's preference for this shape (vs. the diamond
+star's deliberately chunkier, lower-density cells).
+
+Confirmed by a quick prototype render (not committed) before
+implementation, same process used for the diamond star: every generated
+triangle is genuinely equilateral (checked numerically), and the
+symmetry grouping has no missing-canonical-representative orbits.
 
 ## Process
 

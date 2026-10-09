@@ -4,6 +4,7 @@ import { isConfirmDialogDismissed } from '../../services/confirmDialogPreference
 import { useAppState } from '../../state/useAppState'
 import type { GridShapeId } from '../../types/gridShape'
 import ConfirmDialog from '../shared/ConfirmDialog'
+import GridShapeIcon from './GridShapeIcon'
 import styles from './GridShapePicker.module.css'
 
 const DONT_SHOW_AGAIN_KEY = 'switch-grid-shape'
@@ -34,6 +35,8 @@ function GridShapePicker({ onSelected }: GridShapePickerProps) {
 							type="button"
 							className={styles.shapeButton}
 							aria-pressed={state.gridShape === option.id}
+							aria-label={option.label}
+							title={option.label}
 							onClick={() => {
 								if (option.id === state.gridShape) return
 								if (
@@ -48,7 +51,7 @@ function GridShapePicker({ onSelected }: GridShapePickerProps) {
 								}
 							}}
 						>
-							{option.label}
+							<GridShapeIcon shape={option.id} />
 						</button>
 					</li>
 				))}

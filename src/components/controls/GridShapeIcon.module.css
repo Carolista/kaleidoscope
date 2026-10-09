@@ -1,0 +1,20 @@
+.icon {
+	width: 100%;
+	height: 100%;
+}
+
+.piece {
+	/* Inherits the containing button's `color` (set to the current accent
+	   color), same as Font Awesome icons rendered via <i>. */
+	fill: currentcolor;
+	/* Grout line between pieces, matching PolygonCell's real-grid look.
+	   All 4 shapes' previews are built at `size: 1`, so one fixed
+	   stroke-width reads consistently across every icon. */
+	stroke: var(--base, #fff);
+	/* Set per-shape on the <svg> root (GridShapeIcon.tsx), scaled to that
+	   shape's own viewBox width — a fixed value here would read as very
+	   different relative thicknesses across shapes, since each one's
+	   bounding box spans a different number of "size: 1" units. */
+	stroke-width: var(--grout-width);
+	stroke-linejoin: round;
+}
