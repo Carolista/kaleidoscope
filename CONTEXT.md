@@ -148,14 +148,25 @@ pass.
   and rasterizes to a PNG with the theme base color as background. Share
   is shown only when `navigator.share` supports files; Download is always
   available.
+- **Randomizer** (`src/utils/randomDesign.ts`, `RANDOMIZE_DESIGN` in
+  `appReducer.ts`, undoable): assigns every group id a random color drawn
+  from a weighted pool — the current scheme's 5 colors are heavily
+  favored (18 "tickets" each) over the theme's base (10), 90% vs. 10%
+  overall, so a generated design still reads as a coherent pattern
+  rather than a mostly-neutral one. Accent is excluded entirely: it
+  doubles as the default fill for an unpainted group (`HexGrid`'s
+  `?? accent`), so assigning it would look identical to leaving a cell
+  unpainted. `RandomizeDesignButton` (fa-shuffle) sits right of the
+  palette button; no confirmation dialog (unlike reset) since it's a
+  generative action and undo is one click away.
 
 ## Layout
 
 A `<header>` with the title, then `<main>`: hex grid, then a `"Controls"`
 group holding, in order: current-color swatches (clamp-sized to stay on
 one row), undo/redo, and a `"Settings and Actions"` row of icon buttons
-(dark/light, color theme, show/hide editable area (touch devices only),
-reset, save image). Single column at every width.
+(dark/light, color theme, randomize design, show/hide editable area
+(touch devices only), reset, save image). Single column at every width.
 
 ## Accessibility standards
 
@@ -194,21 +205,22 @@ automatically (Pages source is "GitHub Actions"). Vite `base` is
 Done: Phase 1 (feature-parity rebuild), comment cleanup, localStorage,
 image export/share/download, undo/redo, layout rework, touchscreen wedge
 discoverability (eye toggle + intro modal), reduced grid to radius 7/169
-cells for all devices (was radius 9/271).
+cells for all devices (was radius 9/271), design randomizer (weighted
+toward the 5 scheme colors over base; accent excluded).
 
 Next, in priority order:
 
-1. **README** (replace current): what it is, live link,
+- Alternative shapes/tilings beyond hexagons (diamonds and/or triangles in a 6-point star, for example).
+- Sticky footer, transparent background, simple copyright statement with current full year
+- Info modal with instructions on everything (control button by control button)
+- README (replace current): what it is, live link,
    screenshots, setup, scripts, stack. Unscheduled until the user supplies
    examples and asks.
 
-Ideas, unscheduled:
-
-- Sticky footer, transparent background, simple copyright statement with current full year
+Other future possibilities:
 - A larger grid (the original radius-9/271-cell size, or similar) offered
   as a secondary option on tablets/full-size screens, now that the default
   for all devices is the smaller radius-7/169-cell grid.
-- Alternative shapes/tilings beyond hexagons (diamonds and/or triangles in a 6-point star, for example).
 - New color themes released over time (the scheme list is data-driven in
   `src/data/colorSchemes.ts`).
 - Custom color picker beyond the presets ("Create your own palette").

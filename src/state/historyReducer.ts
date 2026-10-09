@@ -9,6 +9,7 @@ const UNDOABLE_ACTION_TYPES = new Set<AppAction['type']>([
 	'SELECT_SCHEME',
 	'PAINT_HEX_GROUP',
 	'RESET_DESIGN',
+	'RANDOMIZE_DESIGN',
 ])
 
 type DesignSnapshot = Pick<AppState, 'currentScheme' | 'hexGroupColors'>

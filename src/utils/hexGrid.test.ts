@@ -3,6 +3,7 @@ import {
 	HEX_GRID_RADIUS,
 	computeGridAspectRatio,
 	generateHexCells,
+	getGroupIds,
 	groupHexCells,
 } from './hexGrid'
 
@@ -50,6 +51,16 @@ describe('generateHexCells', () => {
 		const radius = 2
 		const small = generateHexCells(radius)
 		expect(small).toHaveLength(1 + 3 * radius * (radius + 1))
+	})
+})
+
+describe('getGroupIds', () => {
+	it('returns one id per mirror-symmetry group (20 at the default radius), matching groupHexCells', () => {
+		const ids = getGroupIds()
+		expect(ids).toHaveLength(20)
+		expect(new Set(ids)).toEqual(
+			new Set(groupHexCells(generateHexCells()).keys()),
+		)
 	})
 })
 

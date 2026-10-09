@@ -46,6 +46,10 @@ export function AppStateProvider({
 		() => dispatch({ type: 'RESET_DESIGN' }),
 		[],
 	)
+	const randomizeDesign = useCallback(
+		() => dispatch({ type: 'RANDOMIZE_DESIGN' }),
+		[],
+	)
 	const undo = useCallback(() => dispatch({ type: 'UNDO' }), [])
 	const redo = useCallback(() => dispatch({ type: 'REDO' }), [])
 
@@ -58,6 +62,7 @@ export function AppStateProvider({
 			toggleDarkMode,
 			toggleEditableArea,
 			resetDesign,
+			randomizeDesign,
 			undo,
 			redo,
 			canUndo: history.past.length > 0,
@@ -71,6 +76,7 @@ export function AppStateProvider({
 			toggleDarkMode,
 			toggleEditableArea,
 			resetDesign,
+			randomizeDesign,
 			undo,
 			redo,
 			history.past.length,

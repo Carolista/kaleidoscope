@@ -1,6 +1,8 @@
+import { colorSchemes } from '../data/colorSchemes'
 import type { AppState } from '../types/appState'
 import type { ColorScheme } from '../types/colorScheme'
-import { colorSchemes } from '../data/colorSchemes'
+import { getGroupIds } from '../utils/hexGrid'
+import { generateRandomHexGroupColors } from '../utils/randomDesign'
 import { getThemeColors } from './theme'
 
 export type AppAction =
@@ -10,6 +12,7 @@ export type AppAction =
 	| { readonly type: 'TOGGLE_DARK_MODE' }
 	| { readonly type: 'TOGGLE_EDITABLE_AREA' }
 	| { readonly type: 'RESET_DESIGN' }
+	| { readonly type: 'RANDOMIZE_DESIGN' }
 
 // Matches the original app's randomized default scheme on page load.
 export function pickRandomScheme(): ColorScheme {
@@ -90,6 +93,16 @@ export function appReducer(state: AppState, action: AppAction): AppState {
 
 		case 'RESET_DESIGN':
 			return { ...state, hexGroupColors: {} }
+
+		case 'RANDOMIZE_DESIGN': {
+			const { base } = getThemeColors(state.darkMode)
+			const hexGroupColors = generateRandomHexGroupColors(
+				getGroupIds(),
+				state.currentScheme,
+				base,
+			)
+			return { ...state, hexGroupColors }
+		}
 
 		default:
 			return state

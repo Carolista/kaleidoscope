@@ -7,6 +7,7 @@ import ColorOptions from './components/controls/ColorOptions'
 import ColorThemeButton from './components/controls/ColorThemeButton'
 import DarkModeToggle from './components/controls/DarkModeToggle'
 import EditableAreaToggle from './components/controls/EditableAreaToggle'
+import RandomizeDesignButton from './components/controls/RandomizeDesignButton'
 import ResetDesignButton from './components/controls/ResetDesignButton'
 import SaveImageButton from './components/controls/SaveImageButton'
 import TouchIntroModal from './components/controls/TouchIntroModal'
@@ -76,6 +77,7 @@ function App() {
 					>
 						<DarkModeToggle />
 						<ColorThemeButton />
+						<RandomizeDesignButton />
 						<EditableAreaToggle />
 						<ResetDesignButton />
 						<SaveImageButton svgRef={svgRef} />
