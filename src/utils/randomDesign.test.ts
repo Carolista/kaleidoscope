@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { ColorScheme } from '../types/colorScheme'
 import {
-	generateRandomHexGroupColors,
+	generateRandomShapeGroupColors,
 	pickRandomPaintColor,
 } from './randomDesign'
 
@@ -33,16 +33,16 @@ describe('pickRandomPaintColor', () => {
 	})
 })
 
-describe('generateRandomHexGroupColors', () => {
+describe('generateRandomShapeGroupColors', () => {
 	it('assigns a color to every given group id', () => {
 		const groupIds = ['a', 'b', 'c']
-		const result = generateRandomHexGroupColors(groupIds, SCHEME, BASE)
+		const result = generateRandomShapeGroupColors(groupIds, SCHEME, BASE)
 		expect(Object.keys(result).sort()).toEqual(groupIds.sort())
 	})
 
 	it('is deterministic given a fixed random function', () => {
 		const groupIds = ['a', 'b']
-		const result = generateRandomHexGroupColors(
+		const result = generateRandomShapeGroupColors(
 			groupIds,
 			SCHEME,
 			BASE,

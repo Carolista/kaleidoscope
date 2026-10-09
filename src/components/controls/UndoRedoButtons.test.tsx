@@ -6,12 +6,12 @@ import { useAppState } from '../../state/useAppState'
 import UndoRedoButtons from './UndoRedoButtons'
 
 function Harness() {
-	const { state, paintHexGroup } = useAppState()
+	const { state, paintShapeGroup } = useAppState()
 	return (
 		<>
-			<button onClick={() => paintHexGroup('0,0')}>Paint</button>
+			<button onClick={() => paintShapeGroup('0,0')}>Paint</button>
 			<span data-testid="painted-count">
-				{Object.keys(state.hexGroupColors).length}
+				{Object.keys(state.shapeGroupColors).length}
 			</span>
 			<UndoRedoButtons />
 		</>

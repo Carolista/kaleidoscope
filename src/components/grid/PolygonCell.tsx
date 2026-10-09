@@ -1,6 +1,6 @@
 import type { CSSProperties, KeyboardEvent } from 'react'
 import type { Point } from '../../types/geometry'
-import { pointsToSvgAttr } from '../../utils/hexLayout'
+import { pointsToSvgAttr } from '../../utils/svgPoints'
 import { getHoverFill } from '../../utils/colorMath'
 import styles from './PolygonCell.module.css'
 

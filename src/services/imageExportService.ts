@@ -13,7 +13,7 @@ export function buildExportFilename(date: Date = new Date()): string {
 	return `kaleidoscope-${stamp}.png`
 }
 
-// Renders the live hex grid SVG to a PNG blob at a larger, fixed
+// Renders the live grid SVG to a PNG blob at a larger, fixed
 // resolution (independent of its current on-screen display size) for a
 // crisp download/share image.
 export async function exportSvgAsPngBlob(

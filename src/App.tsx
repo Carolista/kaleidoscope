@@ -4,7 +4,7 @@ import styles from './App.module.css'
 import Header from './components/layout/Header'
 import DiamondStarGrid from './components/grid/DiamondStarGrid'
 import HexagramGrid from './components/grid/HexagramGrid'
-import HexGrid from './components/grid/HexGrid'
+import HexagonGrid from './components/grid/HexagonGrid'
 import TriangleGrid from './components/grid/TriangleGrid'
 import ColorOptions from './components/controls/ColorOptions'
 import ColorThemeButton from './components/controls/ColorThemeButton'
@@ -71,7 +71,7 @@ function App() {
 				) : state.gridShape === 'hexagram' ? (
 					<HexagramGrid svgRef={svgRef} />
 				) : (
-					<HexGrid svgRef={svgRef} />
+					<HexagonGrid svgRef={svgRef} />
 				)}
 				<div
 					role="group"

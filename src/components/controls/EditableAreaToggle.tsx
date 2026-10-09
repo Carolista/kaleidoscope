@@ -3,7 +3,7 @@ import { useIsTouchDevice } from '../../utils/useIsTouchDevice'
 import IconButton from '../shared/IconButton'
 
 // Touch devices have no hover, so there's no way to discover the editable
-// wedge the way mouse users can (see HexGrid's hover-driven dimming). This
+// wedge the way mouse users can (see HexagonGrid's hover-driven dimming). This
 // button offers the same dimming effect on demand instead, and only
 // renders on touch devices since mouse/trackpad users already have hover.
 function EditableAreaToggle() {

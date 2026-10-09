@@ -10,7 +10,7 @@ function baseState(overrides: Partial<AppState> = {}): AppState {
 		darkMode: false,
 		showEditableArea: true,
 		gridShape: 'hexagon',
-		hexGroupColors: {},
+		shapeGroupColors: {},
 		...overrides,
 	}
 }
@@ -24,27 +24,27 @@ describe('historyReducer', () => {
 		expect(history.future).toEqual([])
 	})
 
-	it('PAINT_HEX_GROUP pushes the previous design onto past', () => {
+	it('PAINT_SHAPE_GROUP pushes the previous design onto past', () => {
 		const state = baseState({ currentColor: '#ff0000' })
 		const history = historyReducer(createInitialHistoryState(state), {
-			type: 'PAINT_HEX_GROUP',
+			type: 'PAINT_SHAPE_GROUP',
 			groupId: '0,0',
 		})
-		expect(history.present.hexGroupColors).toEqual({ '0,0': '#ff0000' })
+		expect(history.present.shapeGroupColors).toEqual({ '0,0': '#ff0000' })
 		expect(history.past).toHaveLength(1)
-		expect(history.past[0].hexGroupColors).toEqual({})
+		expect(history.past[0].shapeGroupColors).toEqual({})
 	})
 
 	it('UNDO restores the previous design and moves it to future', () => {
 		const state = baseState({ currentColor: '#ff0000' })
 		let history = createInitialHistoryState(state)
 		history = historyReducer(history, {
-			type: 'PAINT_HEX_GROUP',
+			type: 'PAINT_SHAPE_GROUP',
 			groupId: '0,0',
 		})
 		history = historyReducer(history, { type: 'UNDO' })
 
-		expect(history.present.hexGroupColors).toEqual({})
+		expect(history.present.shapeGroupColors).toEqual({})
 		expect(history.past).toHaveLength(0)
 		expect(history.future).toHaveLength(1)
 	})
@@ -53,13 +53,13 @@ describe('historyReducer', () => {
 		const state = baseState({ currentColor: '#ff0000' })
 		let history = createInitialHistoryState(state)
 		history = historyReducer(history, {
-			type: 'PAINT_HEX_GROUP',
+			type: 'PAINT_SHAPE_GROUP',
 			groupId: '0,0',
 		})
 		history = historyReducer(history, { type: 'UNDO' })
 		history = historyReducer(history, { type: 'REDO' })
 
-		expect(history.present.hexGroupColors).toEqual({ '0,0': '#ff0000' })
+		expect(history.present.shapeGroupColors).toEqual({ '0,0': '#ff0000' })
 		expect(history.past).toHaveLength(1)
 		expect(history.future).toHaveLength(0)
 	})
@@ -78,23 +78,23 @@ describe('historyReducer', () => {
 		const state = baseState({ currentColor: '#ff0000' })
 		let history = createInitialHistoryState(state)
 		history = historyReducer(history, {
-			type: 'PAINT_HEX_GROUP',
+			type: 'PAINT_SHAPE_GROUP',
 			groupId: '0,0',
 		})
 		history = historyReducer(history, { type: 'UNDO' })
 		history = historyReducer(history, {
-			type: 'PAINT_HEX_GROUP',
+			type: 'PAINT_SHAPE_GROUP',
 			groupId: '1,1',
 		})
 
-		expect(history.present.hexGroupColors).toEqual({ '1,1': '#ff0000' })
+		expect(history.present.shapeGroupColors).toEqual({ '1,1': '#ff0000' })
 		expect(history.future).toHaveLength(0)
 	})
 
 	it('SELECT_COLOR updates present without touching past/future', () => {
 		let history = createInitialHistoryState(baseState())
 		history = historyReducer(history, {
-			type: 'PAINT_HEX_GROUP',
+			type: 'PAINT_SHAPE_GROUP',
 			groupId: '0,0',
 		})
 		const pastBefore = history.past
@@ -110,7 +110,7 @@ describe('historyReducer', () => {
 	it('TOGGLE_DARK_MODE updates present without being undoable', () => {
 		let history = createInitialHistoryState(baseState({ darkMode: false }))
 		history = historyReducer(history, {
-			type: 'PAINT_HEX_GROUP',
+			type: 'PAINT_SHAPE_GROUP',
 			groupId: '0,0',
 		})
 		history = historyReducer(history, { type: 'TOGGLE_DARK_MODE' })
@@ -122,17 +122,17 @@ describe('historyReducer', () => {
 		history = historyReducer(history, { type: 'UNDO' })
 		// Undo steps back through the design, not the dark-mode toggle.
 		expect(history.present.darkMode).toBe(true)
-		expect(history.present.hexGroupColors).toEqual({})
+		expect(history.present.shapeGroupColors).toEqual({})
 	})
 
 	it('RESET_DESIGN is undoable', () => {
-		const state = baseState({ hexGroupColors: { a: '#ff0000' } })
+		const state = baseState({ shapeGroupColors: { a: '#ff0000' } })
 		let history = createInitialHistoryState(state)
 		history = historyReducer(history, { type: 'RESET_DESIGN' })
-		expect(history.present.hexGroupColors).toEqual({})
+		expect(history.present.shapeGroupColors).toEqual({})
 
 		history = historyReducer(history, { type: 'UNDO' })
-		expect(history.present.hexGroupColors).toEqual({ a: '#ff0000' })
+		expect(history.present.shapeGroupColors).toEqual({ a: '#ff0000' })
 	})
 
 	it('multiple undos/redos walk the full history in order', () => {
@@ -140,18 +140,18 @@ describe('historyReducer', () => {
 			baseState({ currentColor: '#ff0000' }),
 		)
 		history = historyReducer(history, {
-			type: 'PAINT_HEX_GROUP',
+			type: 'PAINT_SHAPE_GROUP',
 			groupId: 'a',
 		})
 		history = historyReducer(history, {
-			type: 'PAINT_HEX_GROUP',
+			type: 'PAINT_SHAPE_GROUP',
 			groupId: 'b',
 		})
 		history = historyReducer(history, {
-			type: 'PAINT_HEX_GROUP',
+			type: 'PAINT_SHAPE_GROUP',
 			groupId: 'c',
 		})
-		expect(history.present.hexGroupColors).toEqual({
+		expect(history.present.shapeGroupColors).toEqual({
 			a: '#ff0000',
 			b: '#ff0000',
 			c: '#ff0000',
@@ -159,10 +159,10 @@ describe('historyReducer', () => {
 
 		history = historyReducer(history, { type: 'UNDO' })
 		history = historyReducer(history, { type: 'UNDO' })
-		expect(history.present.hexGroupColors).toEqual({ a: '#ff0000' })
+		expect(history.present.shapeGroupColors).toEqual({ a: '#ff0000' })
 
 		history = historyReducer(history, { type: 'REDO' })
-		expect(history.present.hexGroupColors).toEqual({
+		expect(history.present.shapeGroupColors).toEqual({
 			a: '#ff0000',
 			b: '#ff0000',
 		})

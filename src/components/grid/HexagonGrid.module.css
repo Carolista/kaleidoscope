@@ -1,4 +1,4 @@
-.hexGrid {
+.hexagonGrid {
 	display: block;
 	/* Scales with viewport width as before (capped at 560px), but also
 	   caps itself by available viewport height so short viewports (e.g.

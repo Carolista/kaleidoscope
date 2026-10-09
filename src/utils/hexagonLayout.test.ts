@@ -1,13 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import {
-	axialToPixel,
-	boundingBox,
-	hexCorners,
-	pointsToSvgAttr,
-} from './hexLayout'
-import type { HexLayout } from './hexLayout'
+import { axialToPixel, boundingBox, hexagonCorners } from './hexagonLayout'
+import type { HexagonLayout } from './hexagonLayout'
 
-const layout: HexLayout = { orientation: 'flat', size: 10 }
+const layout: HexagonLayout = { orientation: 'flat', size: 10 }
 
 describe('axialToPixel', () => {
 	it('places the origin cell at the pixel origin', () => {
@@ -33,7 +28,7 @@ describe('axialToPixel', () => {
 	})
 
 	it('supports pointy-top orientation too, with the same neighbor-distance property', () => {
-		const pointyLayout: HexLayout = { orientation: 'pointy', size: 10 }
+		const pointyLayout: HexagonLayout = { orientation: 'pointy', size: 10 }
 		const a = axialToPixel({ q: 0, r: 0 }, pointyLayout)
 		const b = axialToPixel({ q: 1, r: 0 }, pointyLayout)
 		const c = axialToPixel({ q: 0, r: 1 }, pointyLayout)
@@ -43,26 +38,15 @@ describe('axialToPixel', () => {
 	})
 })
 
-describe('hexCorners', () => {
+describe('hexagonCorners', () => {
 	it('returns 6 corners, each exactly `size` away from the center', () => {
 		const center = { x: 5, y: -5 }
-		const corners = hexCorners(center, layout)
+		const corners = hexagonCorners(center, layout)
 		expect(corners).toHaveLength(6)
 		for (const corner of corners) {
 			const dist = Math.hypot(corner.x - center.x, corner.y - center.y)
 			expect(dist).toBeCloseTo(layout.size, 10)
 		}
-	})
-})
-
-describe('pointsToSvgAttr', () => {
-	it('formats points as a space-separated "x,y" list', () => {
-		expect(
-			pointsToSvgAttr([
-				{ x: 1, y: 2 },
-				{ x: 3, y: 4 },
-			]),
-		).toBe('1,2 3,4')
 	})
 })
 

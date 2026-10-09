@@ -27,18 +27,18 @@ export interface DiamondStarGridProps {
 
 const DEFAULT_DIAMOND_SIZE = 32
 
-// The diamond-star counterpart of HexGrid/TriangleGrid: same rendering/
+// The diamond-star counterpart of HexagonGrid/TriangleGrid: same rendering/
 // interaction approach (PolygonCell, hover/touch dimming, keyboard
 // support, live region announcements), but built from the 6-point
 // elongated-diamond-star subdivision in diamondStarGrid.ts. Still reuses
-// the hex-named `hexGroupColors` state/`paintHexGroup` action, since both
+// the shared `shapeGroupColors` state/`paintShapeGroup` action, since both
 // are already shape-agnostic in practice (just a map keyed by group id).
 function DiamondStarGrid({
 	gridSize = DIAMOND_STAR_GRID_SIZE,
 	diamondSize = DEFAULT_DIAMOND_SIZE,
 	svgRef,
 }: DiamondStarGridProps) {
-	const { state, paintHexGroup } = useAppState()
+	const { state, paintShapeGroup } = useAppState()
 	const { base, accent } = getThemeColors(state.darkMode)
 	const [isHovering, setIsHovering] = useState(false)
 	const isTouch = useIsTouchDevice()
@@ -72,7 +72,7 @@ function DiamondStarGrid({
 	const [announcement, setAnnouncement] = useState('')
 
 	function handlePaint(groupId: string, tileNumber: number | undefined) {
-		paintHexGroup(groupId)
+		paintShapeGroup(groupId)
 		setAnnouncement(`Painted tile ${tileNumber} of ${tileCount}.`)
 	}
 
@@ -104,7 +104,7 @@ function DiamondStarGrid({
 						<PolygonCell
 							key={key}
 							corners={corners}
-							fill={state.hexGroupColors[groupId] ?? accent}
+							fill={state.shapeGroupColors[groupId] ?? accent}
 							isClickable={isClickable}
 							dimmed={
 								(isHovering || showPersistentHighlight) &&

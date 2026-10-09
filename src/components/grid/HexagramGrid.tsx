@@ -25,11 +25,11 @@ export interface HexagramGridProps {
 
 const DEFAULT_TRIANGLE_SIZE = 32
 
-// The hexagram counterpart of HexGrid/TriangleGrid/DiamondStarGrid: same
+// The hexagram counterpart of HexagonGrid/TriangleGrid/DiamondStarGrid: same
 // rendering/interaction approach (PolygonCell, hover/touch dimming,
 // keyboard support, live region announcements), but built from the
 // central-hexagon-plus-6-points subdivision in hexagramGrid.ts. Still
-// reuses the hex-named `hexGroupColors` state/`paintHexGroup` action,
+// reuses the shared `shapeGroupColors` state/`paintShapeGroup` action,
 // since both are already shape-agnostic in practice (just a map keyed by
 // group id).
 function HexagramGrid({
@@ -37,7 +37,7 @@ function HexagramGrid({
 	triangleSize = DEFAULT_TRIANGLE_SIZE,
 	svgRef,
 }: HexagramGridProps) {
-	const { state, paintHexGroup } = useAppState()
+	const { state, paintShapeGroup } = useAppState()
 	const { base, accent } = getThemeColors(state.darkMode)
 	const [isHovering, setIsHovering] = useState(false)
 	const isTouch = useIsTouchDevice()
@@ -71,7 +71,7 @@ function HexagramGrid({
 	const [announcement, setAnnouncement] = useState('')
 
 	function handlePaint(groupId: string, tileNumber: number | undefined) {
-		paintHexGroup(groupId)
+		paintShapeGroup(groupId)
 		setAnnouncement(`Painted tile ${tileNumber} of ${tileCount}.`)
 	}
 
@@ -103,7 +103,7 @@ function HexagramGrid({
 						<PolygonCell
 							key={key}
 							corners={corners}
-							fill={state.hexGroupColors[groupId] ?? accent}
+							fill={state.shapeGroupColors[groupId] ?? accent}
 							isClickable={isClickable}
 							dimmed={
 								(isHovering || showPersistentHighlight) &&

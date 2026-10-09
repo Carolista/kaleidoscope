@@ -7,10 +7,12 @@ in [old-dom-app-2020/](./old-dom-app-2020) for reference only.
 
 ## What it is
 
-A coloring toy. The user paints a small wedge of hexagons and the app
-mirrors the work across a 169-cell hex grid with D6 symmetry (rotations plus
-reflections), like a kaleidoscope. Includes preset color schemes, dark/light
-mode, undo/redo, autosave, and PNG export/share/download.
+A coloring toy. The user paints a small wedge of tiles and the app mirrors
+the work across the full grid with D6 (or D3) symmetry (rotations plus
+reflections), like a kaleidoscope. The default grid is a 169-cell hexagon;
+other selectable grid shapes are also available (see Grid shapes below).
+Includes preset color schemes, dark/light mode, undo/redo, autosave, and
+PNG export/share/download.
 
 Live at https://codewithcarrie.com/kaleidoscope/ (GitHub Pages).
 
@@ -101,7 +103,7 @@ pass.
 ## Architecture
 
 - **Folder structure**: `src/components/` is organized into subfolders —
-  `layout/` (page chrome, e.g. `Header`), `grid/` (`HexGrid`,
+  `layout/` (page chrome, e.g. `Header`), `grid/` (`HexagonGrid`,
   `TriangleGrid`, `DiamondStarGrid`, `HexagramGrid`, `PolygonCell`),
   `controls/` (palette
   and everything below the grid), and `shared/` (generic, reusable pieces
@@ -120,7 +122,7 @@ pass.
     not.
   - `storageService.ts` autosaves to `localStorage` (versioned payload,
     scheme saved by name, defensive loading, all storage errors swallowed).
-- **Grid shapes**: 4 selectable shapes share one `hexGroupColors`
+- **Grid shapes**: 4 selectable shapes share one `shapeGroupColors`
   paint-state map and `PolygonCell` rendering component — painting/undo/
   redo only ever need a group id, never shape-specific geometry.
   `GridShapeId` (`src/types/gridShape.ts`) identifies the current shape;
@@ -129,11 +131,11 @@ pass.
   shape's cell-generation/geometry lives in its own pair of modules, and
   `src/utils/gridShapeRegistry.ts` dispatches shape-agnostic callers (the
   design randomizer, the save-image aspect ratio) to the right one:
-  - **Hexagon** (`src/utils/hexGrid.ts`): axial `(q, r)` cells in a
+  - **Hexagon** (`src/utils/hexagonGrid.ts`): axial `(q, r)` cells in a
     radius-7 hexagon (169 cells; reduced from the original 271/radius-9
     for small touchscreens, see DECISIONS.md), computed rather than
     hand-authored. Each cell's group id is the lexicographically smallest
-    coordinate in its D6 orbit, using hex-specific cube-coordinate
+    coordinate in its D6 orbit, using hexagon-specific cube-coordinate
     rotation. One cell per group (20 total) is `isClickable`; these form
     a single wedge at 11-12 o'clock.
   - **Triangle** (`src/utils/triangleLayout.ts` + `triangleGrid.ts`): a
@@ -171,8 +173,8 @@ pass.
     geometric transforms applied to each cell's centroid (matched back to
     known cells by rounded-coordinate lookup), parametrized by `{ center,
     fold, mirror, mirrorAxisAngle }` and a caller-supplied `isCanonical`
-    test — shared by any shape that isn't a simple hex grid.
-- **Hex hover**: the hover fill is computed per cell in JS
+    test — shared by any shape that isn't a simple hexagon grid.
+- **Grid hover**: the hover fill is computed per cell in JS
   (`src/utils/colorMath.ts`): neutral gray if the cell is base/accent,
   otherwise a brightened/saturated version of its own color. It is applied
   via a `--hover-fill` custom property.
@@ -216,7 +218,7 @@ pass.
 
 ## Layout
 
-A `<header>` with the title, then `<main>`: hex grid, then a `"Controls"`
+A `<header>` with the title, then `<main>`: the grid, then a `"Controls"`
 group holding, in order: current-color swatches (clamp-sized to stay on
 one row), undo/redo, and a `"Settings and Actions"` row of icon buttons
 (dark/light, color theme, randomize design, show/hide editable area
@@ -224,8 +226,8 @@ one row), undo/redo, and a `"Settings and Actions"` row of icon buttons
 
 ## Accessibility standards
 
-- Clickable hexes are `role="button"`, `tabIndex={0}`, labeled
-  "Paint hex tile N of 20", and paint on Enter/Space. The SVG is
+- Clickable tiles are `role="button"`, `tabIndex={0}`, labeled
+  "Paint tile N of {group count}", and paint on Enter/Space. The SVG is
   `role="group"` (never `role="img"`, which hides interactive children).
 - Non-clickable mirror polygons are `aria-hidden`.
 - A visually hidden `role="status"` live region announces each paint.
@@ -262,7 +264,11 @@ discoverability (eye toggle + intro modal), reduced grid to radius 7/169
 cells for all devices (was radius 9/271), design randomizer (weighted
 toward the 5 scheme colors over base; accent excluded), alternative grid
 shapes (triangle, 6-point diamond star, hexagram) alongside the original
-hexagon, selectable via a shape picker.
+hexagon, selectable via a shape picker with SVG icon previews (one real
+piece of each shape's own geometry, rendered rather than hand-drawn), a
+codebase-wide rename clearing up "hex" ambiguity once hexagon and
+hexagram coexisted (`HexGrid`→`HexagonGrid`, `hexGroupColors`→
+`shapeGroupColors`, etc.).
 
 Next, in priority order:
 

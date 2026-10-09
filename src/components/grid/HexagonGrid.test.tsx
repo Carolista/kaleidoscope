@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AppStateProvider } from '../../state/AppContext'
-import HexGrid from './HexGrid'
+import HexagonGrid from './HexagonGrid'
 
-describe('HexGrid', () => {
+describe('HexagonGrid', () => {
 	it('exposes exactly 20 clickable tiles, each as an accessible, labeled button', () => {
-		render(<HexGrid />, { wrapper: AppStateProvider })
+		render(<HexagonGrid />, { wrapper: AppStateProvider })
 		const tiles = screen.getAllByRole('button')
 		expect(tiles).toHaveLength(20)
 		expect(tiles[0]).toHaveAccessibleName('Paint tile 1 of 20')
@@ -15,7 +15,7 @@ describe('HexGrid', () => {
 
 	it('paints a tile on click and announces it via the live region', async () => {
 		const user = userEvent.setup()
-		render(<HexGrid />, { wrapper: AppStateProvider })
+		render(<HexagonGrid />, { wrapper: AppStateProvider })
 
 		const tile = screen.getByRole('button', {
 			name: 'Paint tile 1 of 20',
@@ -32,7 +32,7 @@ describe('HexGrid', () => {
 
 	it('paints a tile via the keyboard (Enter and Space), not just click', async () => {
 		const user = userEvent.setup()
-		render(<HexGrid />, { wrapper: AppStateProvider })
+		render(<HexagonGrid />, { wrapper: AppStateProvider })
 
 		const tile = screen.getByRole('button', {
 			name: 'Paint tile 2 of 20',

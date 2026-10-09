@@ -1,15 +1,22 @@
 import { useMemo, useState } from 'react'
 import type { Ref } from 'react'
-import { HEX_GRID_RADIUS, generateHexCells } from '../../utils/hexGrid'
-import { axialToPixel, boundingBox, hexCorners } from '../../utils/hexLayout'
-import type { HexLayout } from '../../utils/hexLayout'
+import {
+	HEXAGON_GRID_RADIUS,
+	generateHexagonCells,
+} from '../../utils/hexagonGrid'
+import {
+	axialToPixel,
+	boundingBox,
+	hexagonCorners,
+} from '../../utils/hexagonLayout'
+import type { HexagonLayout } from '../../utils/hexagonLayout'
 import { useAppState } from '../../state/useAppState'
 import { getThemeColors } from '../../state/theme'
 import { useIsTouchDevice } from '../../utils/useIsTouchDevice'
 import PolygonCell from './PolygonCell'
-import styles from './HexGrid.module.css'
+import styles from './HexagonGrid.module.css'
 
-export interface HexGridProps {
+export interface HexagonGridProps {
 	readonly radius?: number
 	// Circumradius of each hexagon, in SVG user units.
 	readonly hexSize?: number
@@ -19,12 +26,12 @@ export interface HexGridProps {
 
 const DEFAULT_HEX_SIZE = 16
 
-function HexGrid({
-	radius = HEX_GRID_RADIUS,
+function HexagonGrid({
+	radius = HEXAGON_GRID_RADIUS,
 	hexSize = DEFAULT_HEX_SIZE,
 	svgRef,
-}: HexGridProps) {
-	const { state, paintHexGroup } = useAppState()
+}: HexagonGridProps) {
+	const { state, paintShapeGroup } = useAppState()
 	const { base, accent } = getThemeColors(state.darkMode)
 	const [isHovering, setIsHovering] = useState(false)
 	const isTouch = useIsTouchDevice()
@@ -33,12 +40,12 @@ function HexGrid({
 	// relying on hover and ignore showEditableArea entirely.
 	const showPersistentHighlight = isTouch && state.showEditableArea
 
-	const layout: HexLayout = useMemo(
+	const layout: HexagonLayout = useMemo(
 		() => ({ orientation: 'flat', size: hexSize }),
 		[hexSize],
 	)
 
-	const cells = useMemo(() => generateHexCells(radius), [radius])
+	const cells = useMemo(() => generateHexagonCells(radius), [radius])
 
 	const { polygons, viewBox, tileCount } = useMemo(() => {
 		const centers = cells.map(cell => axialToPixel(cell, layout))
@@ -49,7 +56,7 @@ function HexGrid({
 			groupId: cell.groupId,
 			isClickable: cell.isClickable,
 			tileNumber: cell.isClickable ? ++clickableIndex : undefined,
-			corners: hexCorners(centers[i], layout),
+			corners: hexagonCorners(centers[i], layout),
 		}))
 		return {
 			polygons,
@@ -61,23 +68,23 @@ function HexGrid({
 	const [announcement, setAnnouncement] = useState('')
 
 	function handlePaint(groupId: string, tileNumber: number | undefined) {
-		paintHexGroup(groupId)
+		paintShapeGroup(groupId)
 		setAnnouncement(`Painted tile ${tileNumber} of ${tileCount}.`)
 	}
 
 	return (
 		<>
-			<p id="hex-grid-instructions" className={styles.visuallyHidden}>
+			<p id="hexagon-grid-instructions" className={styles.visuallyHidden}>
 				Tab to move between hexagons. Press Enter or Space to paint the
 				focused hexagon with the current color.
 			</p>
 			<svg
 				ref={svgRef}
-				className={styles.hexGrid}
+				className={styles.hexagonGrid}
 				viewBox={viewBox}
 				role="group"
-				aria-label="Kaleidoscope hex grid"
-				aria-describedby="hex-grid-instructions"
+				aria-label="Kaleidoscope hexagon grid"
+				aria-describedby="hexagon-grid-instructions"
 				onPointerMove={event =>
 					setIsHovering(
 						(event.target as Element).tagName === 'polygon',
@@ -90,7 +97,7 @@ function HexGrid({
 						<PolygonCell
 							key={key}
 							corners={corners}
-							fill={state.hexGroupColors[groupId] ?? accent}
+							fill={state.shapeGroupColors[groupId] ?? accent}
 							isClickable={isClickable}
 							dimmed={
 								(isHovering || showPersistentHighlight) &&
@@ -116,4 +123,4 @@ function HexGrid({
 	)
 }
 
-export default HexGrid
+export default HexagonGrid

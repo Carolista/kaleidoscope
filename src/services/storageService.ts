@@ -30,7 +30,7 @@ interface PersistedDesign {
 	// Optional for the same reason (falls back to 'hexagon', the only
 	// shape that existed before this field was added).
 	readonly gridShape?: GridShapeId
-	readonly hexGroupColors: Readonly<Record<string, string>>
+	readonly shapeGroupColors: Readonly<Record<string, string>>
 }
 
 function toPersistedDesign(state: AppState): PersistedDesign {
@@ -41,7 +41,7 @@ function toPersistedDesign(state: AppState): PersistedDesign {
 		darkMode: state.darkMode,
 		showEditableArea: state.showEditableArea,
 		gridShape: state.gridShape,
-		hexGroupColors: state.hexGroupColors,
+		shapeGroupColors: state.shapeGroupColors,
 	}
 }
 
@@ -59,7 +59,7 @@ function fromPersistedDesign(data: PersistedDesign): AppState | null {
 		darkMode: data.darkMode,
 		showEditableArea: data.showEditableArea ?? true,
 		gridShape: data.gridShape ?? 'hexagon',
-		hexGroupColors: { ...data.hexGroupColors },
+		shapeGroupColors: { ...data.shapeGroupColors },
 	}
 }
 
@@ -75,9 +75,9 @@ function isPersistedDesign(value: unknown): value is PersistedDesign {
 			typeof data.showEditableArea === 'boolean') &&
 		(data.gridShape === undefined ||
 			VALID_GRID_SHAPES.includes(data.gridShape as GridShapeId)) &&
-		typeof data.hexGroupColors === 'object' &&
-		data.hexGroupColors !== null &&
-		Object.values(data.hexGroupColors).every(c => typeof c === 'string')
+		typeof data.shapeGroupColors === 'object' &&
+		data.shapeGroupColors !== null &&
+		Object.values(data.shapeGroupColors).every(c => typeof c === 'string')
 	)
 }
 

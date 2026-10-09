@@ -1,5 +1,5 @@
-// A position in the hex grid, using axial coordinates (q, r). The implied
-// cube third coordinate is always `s = -q - r`.
+// A position in the hexagon grid, using axial coordinates (q, r). The
+// implied cube third coordinate is always `s = -q - r`.
 export interface AxialCoord {
 	readonly q: number
 	readonly r: number
@@ -10,7 +10,7 @@ export interface AxialCoord {
 // reproducing the kaleidoscope's reflective effect. Exactly one cell per
 // group is the `isClickable` representative the user actually interacts
 // with; the rest are its mirrored reflections.
-export interface HexCell extends AxialCoord {
+export interface HexagonCell extends AxialCoord {
 	readonly groupId: string
 	readonly isClickable: boolean
 }

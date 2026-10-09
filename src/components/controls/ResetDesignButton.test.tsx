@@ -5,16 +5,16 @@ import { AppStateProvider } from '../../state/AppContext'
 import { useAppState } from '../../state/useAppState'
 import ResetDesignButton from './ResetDesignButton'
 
-// Paints one hex group so we can observe whether reset actually clears it.
+// Paints one group so we can observe whether reset actually clears it.
 function Harness() {
-	const { state, paintHexGroup } = useAppState()
+	const { state, paintShapeGroup } = useAppState()
 	return (
 		<>
-			<button onClick={() => paintHexGroup('0,0')}>
+			<button onClick={() => paintShapeGroup('0,0')}>
 				Paint test group
 			</button>
 			<span data-testid="painted-count">
-				{Object.keys(state.hexGroupColors).length}
+				{Object.keys(state.shapeGroupColors).length}
 			</span>
 			<ResetDesignButton />
 		</>

@@ -89,8 +89,8 @@ function buildTransforms(
 //
 // This computes symmetry via real geometric transforms applied to actual
 // point positions (matched back to known points by rounded-coordinate
-// lookup), rather than shape-specific coordinate algebra like the hex
-// grid's cube-coordinate rotation trick (see hexGrid.ts) — so the same
+// lookup), rather than shape-specific coordinate algebra like the hexagon
+// grid's cube-coordinate rotation trick (see hexagonGrid.ts) — so the same
 // engine works for any shape whose cells can be identified by a single
 // reference point (a centroid, typically), be it a triangle grid, a
 // 6-point star, or concentric rings.

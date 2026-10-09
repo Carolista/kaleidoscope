@@ -1,3 +1,3 @@
 export type { ColorScheme } from './colorScheme'
-export type { AxialCoord, HexCell } from './hex'
+export type { AxialCoord, HexagonCell } from './hexagon'
 export type { AppState } from './appState'

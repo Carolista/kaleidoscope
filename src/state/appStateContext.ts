@@ -7,7 +7,7 @@ export interface AppStateContextValue {
 	readonly state: AppState
 	readonly selectScheme: (scheme: ColorScheme) => void
 	readonly selectColor: (color: string) => void
-	readonly paintHexGroup: (groupId: string) => void
+	readonly paintShapeGroup: (groupId: string) => void
 	readonly toggleDarkMode: () => void
 	readonly toggleEditableArea: () => void
 	readonly resetDesign: () => void

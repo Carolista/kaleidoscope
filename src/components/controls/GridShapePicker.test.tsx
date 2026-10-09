@@ -37,12 +37,14 @@ describe('GridShapePicker', () => {
 		const user = userEvent.setup()
 
 		function Harness() {
-			const { paintHexGroup, state } = useAppState()
+			const { paintShapeGroup, state } = useAppState()
 			return (
 				<>
-					<button onClick={() => paintHexGroup('0,0')}>Paint</button>
+					<button onClick={() => paintShapeGroup('0,0')}>
+						Paint
+					</button>
 					<span data-testid="count">
-						{Object.keys(state.hexGroupColors).length}
+						{Object.keys(state.shapeGroupColors).length}
 					</span>
 					<GridShapePicker />
 				</>

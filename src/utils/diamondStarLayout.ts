@@ -28,7 +28,7 @@ const CENTER: Point = { x: 0, y: 0 }
 // star's shared center; `tip` is the point's outer vertex; `sideRight`/
 // `sideLeft` are the point's two wide (150-degree) side vertices,
 // mirrored across the point's own long axis (which runs straight up,
-// through `center` and `tip`) — matching the hex/triangle grids'
+// through `center` and `tip`) — matching the hexagon/triangle grids'
 // convention of orienting the shape's "up" spoke near the top, close to
 // the controls above the grid.
 export function diamondVertices(layout: DiamondStarLayout): {

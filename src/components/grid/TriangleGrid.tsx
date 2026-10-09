@@ -25,18 +25,18 @@ export interface TriangleGridProps {
 
 const DEFAULT_TRIANGLE_SIZE = 32
 
-// The triangle-grid counterpart of HexGrid: same rendering/interaction
+// The triangle-grid counterpart of HexagonGrid: same rendering/interaction
 // approach (PolygonCell, hover/touch dimming, keyboard support, live
 // region announcements), but built from the equilateral-triangle
-// subdivision in triangleGrid.ts instead of hex cells. Still reuses the
-// hex-named `hexGroupColors` state/`paintHexGroup` action, since both are
-// already shape-agnostic in practice (just a map keyed by group id).
+// subdivision in triangleGrid.ts instead of hexagon cells. Still reuses
+// the shared `shapeGroupColors` state/`paintShapeGroup` action, since both
+// are already shape-agnostic in practice (just a map keyed by group id).
 function TriangleGrid({
 	gridSize = TRIANGLE_GRID_SIZE,
 	triangleSize = DEFAULT_TRIANGLE_SIZE,
 	svgRef,
 }: TriangleGridProps) {
-	const { state, paintHexGroup } = useAppState()
+	const { state, paintShapeGroup } = useAppState()
 	const { base, accent } = getThemeColors(state.darkMode)
 	const [isHovering, setIsHovering] = useState(false)
 	const isTouch = useIsTouchDevice()
@@ -70,7 +70,7 @@ function TriangleGrid({
 	const [announcement, setAnnouncement] = useState('')
 
 	function handlePaint(groupId: string, tileNumber: number | undefined) {
-		paintHexGroup(groupId)
+		paintShapeGroup(groupId)
 		setAnnouncement(`Painted tile ${tileNumber} of ${tileCount}.`)
 	}
 
@@ -102,7 +102,7 @@ function TriangleGrid({
 						<PolygonCell
 							key={key}
 							corners={corners}
-							fill={state.hexGroupColors[groupId] ?? accent}
+							fill={state.shapeGroupColors[groupId] ?? accent}
 							isClickable={isClickable}
 							dimmed={
 								(isHovering || showPersistentHighlight) &&

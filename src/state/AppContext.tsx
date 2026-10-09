@@ -31,8 +31,8 @@ export function AppStateProvider({
 		(color: string) => dispatch({ type: 'SELECT_COLOR', color }),
 		[],
 	)
-	const paintHexGroup = useCallback(
-		(groupId: string) => dispatch({ type: 'PAINT_HEX_GROUP', groupId }),
+	const paintShapeGroup = useCallback(
+		(groupId: string) => dispatch({ type: 'PAINT_SHAPE_GROUP', groupId }),
 		[],
 	)
 	const toggleDarkMode = useCallback(
@@ -63,7 +63,7 @@ export function AppStateProvider({
 			state,
 			selectScheme,
 			selectColor,
-			paintHexGroup,
+			paintShapeGroup,
 			toggleDarkMode,
 			toggleEditableArea,
 			resetDesign,
@@ -78,7 +78,7 @@ export function AppStateProvider({
 			state,
 			selectScheme,
 			selectColor,
-			paintHexGroup,
+			paintShapeGroup,
 			toggleDarkMode,
 			toggleEditableArea,
 			resetDesign,

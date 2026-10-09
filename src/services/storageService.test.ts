@@ -16,7 +16,7 @@ function baseState(overrides: Partial<AppState> = {}): AppState {
 		darkMode: false,
 		showEditableArea: true,
 		gridShape: 'hexagon',
-		hexGroupColors: {},
+		shapeGroupColors: {},
 		...overrides,
 	}
 }
@@ -29,7 +29,7 @@ describe('storageService', () => {
 	it('loadInitialAppState falls back to a fresh random state when nothing is saved', () => {
 		const state = loadInitialAppState()
 		expect(colorSchemes).toContain(state.currentScheme)
-		expect(state.hexGroupColors).toEqual({})
+		expect(state.shapeGroupColors).toEqual({})
 	})
 
 	it('round-trips a saved design back through loadInitialAppState', () => {
@@ -38,7 +38,7 @@ describe('storageService', () => {
 			currentColor: colorSchemes[2].colors[1],
 			darkMode: true,
 			gridShape: 'triangle',
-			hexGroupColors: { '0,0': colorSchemes[2].colors[1] },
+			shapeGroupColors: { '0,0': colorSchemes[2].colors[1] },
 		})
 		savePersistedState(saved)
 
@@ -54,7 +54,7 @@ describe('storageService', () => {
 				schemeName: 'Not A Real Scheme',
 				currentColor: '#123456',
 				darkMode: true,
-				hexGroupColors: {},
+				shapeGroupColors: {},
 			}),
 		)
 		const state = loadInitialAppState()
@@ -75,14 +75,14 @@ describe('storageService', () => {
 				schemeName: colorSchemes[0].name,
 				currentColor: colorSchemes[0].colors[0],
 				darkMode: false,
-				hexGroupColors: {},
+				shapeGroupColors: {},
 			}),
 		)
 		const state = loadInitialAppState()
 		expect(colorSchemes).toContain(state.currentScheme)
 	})
 
-	it('falls back to a fresh random state when hexGroupColors has non-string values', () => {
+	it('falls back to a fresh random state when shapeGroupColors has non-string values', () => {
 		localStorage.setItem(
 			STORAGE_KEY,
 			JSON.stringify({
@@ -90,12 +90,12 @@ describe('storageService', () => {
 				schemeName: colorSchemes[0].name,
 				currentColor: colorSchemes[0].colors[0],
 				darkMode: false,
-				hexGroupColors: { a: 123 },
+				shapeGroupColors: { a: 123 },
 			}),
 		)
 		const state = loadInitialAppState()
 		expect(colorSchemes).toContain(state.currentScheme)
-		expect(state.hexGroupColors).toEqual({})
+		expect(state.shapeGroupColors).toEqual({})
 	})
 
 	it('defaults showEditableArea to true when loading a design saved before that field existed', () => {
@@ -106,7 +106,7 @@ describe('storageService', () => {
 				schemeName: colorSchemes[0].name,
 				currentColor: colorSchemes[0].colors[0],
 				darkMode: false,
-				hexGroupColors: {},
+				shapeGroupColors: {},
 			}),
 		)
 		const state = loadInitialAppState()
@@ -122,7 +122,7 @@ describe('storageService', () => {
 				currentColor: colorSchemes[0].colors[0],
 				darkMode: false,
 				showEditableArea: 'yes',
-				hexGroupColors: {},
+				shapeGroupColors: {},
 			}),
 		)
 		const state = loadInitialAppState()
@@ -137,7 +137,7 @@ describe('storageService', () => {
 				schemeName: colorSchemes[0].name,
 				currentColor: colorSchemes[0].colors[0],
 				darkMode: false,
-				hexGroupColors: {},
+				shapeGroupColors: {},
 			}),
 		)
 		const state = loadInitialAppState()
@@ -153,7 +153,7 @@ describe('storageService', () => {
 				currentColor: colorSchemes[0].colors[0],
 				darkMode: false,
 				gridShape: 'octagon',
-				hexGroupColors: {},
+				shapeGroupColors: {},
 			}),
 		)
 		const state = loadInitialAppState()

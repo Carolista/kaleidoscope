@@ -16,7 +16,7 @@ import type { DiamondStarLayout } from './diamondStarLayout'
 // mirror axis form smaller, size-6 orbits (rotation only, since they're
 // already their own mirror image), while the rest form regular size-12
 // orbits (6 rotations x mirror). gridSize=4 gives 10 clickable cells —
-// deliberately fewer/larger than the hex/triangle grids' ~20-22, since
+// deliberately fewer/larger than the hexagon/triangle grids' ~20-22, since
 // these are chunkier rhombi rather than thin triangular slivers.
 export const DIAMOND_STAR_GRID_SIZE = 4
 

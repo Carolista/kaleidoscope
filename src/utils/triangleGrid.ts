@@ -5,7 +5,7 @@ import { latticePoint, trianglesBoundingBox } from './triangleLayout'
 import type { TriangleLayout } from './triangleLayout'
 
 // Number of lattice rows the big triangle is subdivided into. Chosen to
-// give a similar number of clickable tiles (~20) to the hex grid's
+// give a similar number of clickable tiles (~20) to the hexagon grid's
 // default radius, for comparable painting granularity.
 export const TRIANGLE_GRID_SIZE = 10
 
@@ -74,7 +74,7 @@ function gridCenter(gridSize: number): Point {
 
 // Picks the canonical (clickable) member of each mirror-symmetry orbit:
 // the one in the 60-degree wedge just to the right of straight up (the
-// big triangle's apex), matching the hex grid's convention of landing
+// big triangle's apex), matching the hexagon grid's convention of landing
 // the clickable wedge near 11-12 o'clock, close to the controls above
 // the grid. A closed [270, 330] range on the angle from center reliably
 // picks exactly one representative per orbit, including the degenerate
@@ -90,10 +90,10 @@ function isCanonicalWedge(point: Point, center: Point): boolean {
 // shape: a big equilateral triangle subdivided into `gridSize^2` small
 // triangles, each tagged with its mirror-symmetry group id and whether
 // it's the clickable representative for that group — the triangle-grid
-// counterpart of hexGrid.ts's generateHexCells, but using the general
-// symmetry engine (symmetry.ts) instead of hex-specific coordinate
-// algebra, since a triangular lattice doesn't have the same simple cube-
-// coordinate rotation trick hexagons do.
+// counterpart of hexagonGrid.ts's generateHexagonCells, but using the
+// general symmetry engine (symmetry.ts) instead of hexagon-specific
+// coordinate algebra, since a triangular lattice doesn't have the same
+// simple cube-coordinate rotation trick hexagons do.
 export function generateTriangleCells(
 	gridSize: number = TRIANGLE_GRID_SIZE,
 ): TriangleCell[] {

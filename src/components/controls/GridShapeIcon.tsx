@@ -1,14 +1,14 @@
 import { useMemo } from 'react'
 import type { CSSProperties } from 'react'
 import type { GridShapeId } from '../../types/gridShape'
-import { generateHexCells } from '../../utils/hexGrid'
+import { generateHexagonCells } from '../../utils/hexagonGrid'
 import {
 	axialToPixel,
 	boundingBox,
-	hexCorners,
-	pointsToSvgAttr,
-} from '../../utils/hexLayout'
-import type { HexLayout } from '../../utils/hexLayout'
+	hexagonCorners,
+} from '../../utils/hexagonLayout'
+import type { HexagonLayout } from '../../utils/hexagonLayout'
+import { pointsToSvgAttr } from '../../utils/svgPoints'
 import { generateTriangleCells } from '../../utils/triangleGrid'
 import {
 	triangleCorners,
@@ -73,12 +73,12 @@ function toPreview(
 function buildPreview(shape: GridShapeId): Preview {
 	switch (shape) {
 		case 'hexagon': {
-			const layout: HexLayout = { orientation: 'flat', size: 1 }
-			const centers = generateHexCells(1).map(cell =>
+			const layout: HexagonLayout = { orientation: 'flat', size: 1 }
+			const centers = generateHexagonCells(1).map(cell =>
 				axialToPixel(cell, layout),
 			)
 			return toPreview(
-				centers.map(center => hexCorners(center, layout)),
+				centers.map(center => hexagonCorners(center, layout)),
 				boundingBox(centers, layout),
 			)
 		}
