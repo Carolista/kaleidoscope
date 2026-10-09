@@ -1,4 +1,4 @@
-.hexagon {
+.cell {
 	/* Grout color matches the page background, so painted tiles read as
      colored shapes separated by a thin gap rather than outlined. --base
      is set on the app root (App.tsx) and inherits down via CSS custom

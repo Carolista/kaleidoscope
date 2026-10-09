@@ -1,22 +1,22 @@
 import { describe, expect, it } from 'vitest'
 import {
-	HEX_GRID_RADIUS,
+	HEXAGON_GRID_RADIUS,
 	computeGridAspectRatio,
-	generateHexCells,
+	generateHexagonCells,
 	getGroupIds,
-	groupHexCells,
-} from './hexGrid'
+	groupHexagonCells,
+} from './hexagonGrid'
 
-describe('generateHexCells', () => {
-	const cells = generateHexCells()
+describe('generateHexagonCells', () => {
+	const cells = generateHexagonCells()
 
 	it('generates 169 cells at the default radius (reduced from the original 271 for small touchscreens; see DECISIONS.md)', () => {
-		expect(HEX_GRID_RADIUS).toBe(7)
+		expect(HEXAGON_GRID_RADIUS).toBe(7)
 		expect(cells).toHaveLength(169)
 	})
 
 	it('produces the expected mirror-group orbit sizes at the default radius (1 center, 10 sixes, 9 twelves)', () => {
-		const groups = groupHexCells(cells)
+		const groups = groupHexagonCells(cells)
 		expect(groups.size).toBe(20)
 
 		const sizesByCount = new Map<number, number>()
@@ -33,7 +33,7 @@ describe('generateHexCells', () => {
 	})
 
 	it('marks exactly one cell per group as clickable', () => {
-		const groups = groupHexCells(cells)
+		const groups = groupHexagonCells(cells)
 		for (const members of groups.values()) {
 			const clickable = members.filter(cell => cell.isClickable)
 			expect(clickable).toHaveLength(1)
@@ -44,22 +44,22 @@ describe('generateHexCells', () => {
 		const center = cells.find(cell => cell.q === 0 && cell.r === 0)
 		expect(center).toBeDefined()
 		expect(center!.isClickable).toBe(true)
-		expect(groupHexCells(cells).get(center!.groupId)).toHaveLength(1)
+		expect(groupHexagonCells(cells).get(center!.groupId)).toHaveLength(1)
 	})
 
 	it('scales to a smaller radius using the centered-hexagonal-number formula (1 + 3N(N+1))', () => {
 		const radius = 2
-		const small = generateHexCells(radius)
+		const small = generateHexagonCells(radius)
 		expect(small).toHaveLength(1 + 3 * radius * (radius + 1))
 	})
 })
 
 describe('getGroupIds', () => {
-	it('returns one id per mirror-symmetry group (20 at the default radius), matching groupHexCells', () => {
+	it('returns one id per mirror-symmetry group (20 at the default radius), matching groupHexagonCells', () => {
 		const ids = getGroupIds()
 		expect(ids).toHaveLength(20)
 		expect(new Set(ids)).toEqual(
-			new Set(groupHexCells(generateHexCells()).keys()),
+			new Set(groupHexagonCells(generateHexagonCells()).keys()),
 		)
 	})
 })

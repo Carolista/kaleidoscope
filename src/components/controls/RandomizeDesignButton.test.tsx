@@ -10,7 +10,7 @@ function Harness() {
 	return (
 		<>
 			<span data-testid="painted-count">
-				{Object.keys(state.hexGroupColors).length}
+				{Object.keys(state.shapeGroupColors).length}
 			</span>
 			<RandomizeDesignButton />
 		</>

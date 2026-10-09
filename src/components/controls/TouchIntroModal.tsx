@@ -24,7 +24,7 @@ function TouchIntroModal({ open, onClose }: TouchIntroModalProps) {
 			<p className={styles.message}>
 				Tapping the{' '}
 				<i className="fa-solid fa-eye" aria-hidden="true"></i> icon in
-				the toolbar will dim the hexes outside the painting area while
+				the toolbar will dim the tiles outside the painting area while
 				you're designing. Tap{' '}
 				<i className="fa-solid fa-eye-slash" aria-hidden="true"></i> to
 				show the full kaleidoscope.

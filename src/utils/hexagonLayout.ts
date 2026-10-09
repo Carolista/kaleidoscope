@@ -1,21 +1,20 @@
-import type { AxialCoord } from '../types/hex'
+import type { AxialCoord } from '../types/hexagon'
+import type { Point } from '../types/geometry'
 
-export type HexOrientation = 'flat' | 'pointy'
+export type HexagonOrientation = 'flat' | 'pointy'
 
-export interface HexLayout {
-	readonly orientation: HexOrientation
+export interface HexagonLayout {
+	readonly orientation: HexagonOrientation
 	// Circumradius: distance from a hex's center to each of its 6 corners, in px.
 	readonly size: number
 }
 
-export interface Point {
-	readonly x: number
-	readonly y: number
-}
-
 const SQRT3 = Math.sqrt(3)
 
-export function axialToPixel({ q, r }: AxialCoord, layout: HexLayout): Point {
+export function axialToPixel(
+	{ q, r }: AxialCoord,
+	layout: HexagonLayout,
+): Point {
 	const { size, orientation } = layout
 	if (orientation === 'flat') {
 		return {
@@ -29,7 +28,7 @@ export function axialToPixel({ q, r }: AxialCoord, layout: HexLayout): Point {
 	}
 }
 
-export function hexCorners(center: Point, layout: HexLayout): Point[] {
+export function hexagonCorners(center: Point, layout: HexagonLayout): Point[] {
 	const angleOffsetDeg = layout.orientation === 'flat' ? 0 : 30
 	return Array.from({ length: 6 }, (_, i) => {
 		const angleRad = (Math.PI / 180) * (60 * i + angleOffsetDeg)
@@ -40,13 +39,9 @@ export function hexCorners(center: Point, layout: HexLayout): Point[] {
 	})
 }
 
-export function pointsToSvgAttr(points: readonly Point[]): string {
-	return points.map(p => `${p.x},${p.y}`).join(' ')
-}
-
 export function boundingBox(
 	centers: readonly Point[],
-	layout: HexLayout,
+	layout: HexagonLayout,
 ): {
 	minX: number
 	minY: number

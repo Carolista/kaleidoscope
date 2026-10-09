@@ -14,7 +14,8 @@ describe('createInitialAppState / pickRandomScheme', () => {
 		expect(state.currentColor).toBe(state.currentScheme.colors[0])
 		expect(state.darkMode).toBe(true)
 		expect(state.showEditableArea).toBe(true)
-		expect(state.hexGroupColors).toEqual({})
+		expect(state.gridShape).toBe('hexagon')
+		expect(state.shapeGroupColors).toEqual({})
 	})
 
 	it('pickRandomScheme always returns one of the known schemes', () => {
@@ -30,7 +31,8 @@ function baseState(overrides: Partial<AppState> = {}): AppState {
 		currentColor: colorSchemes[0].colors[0],
 		darkMode: false,
 		showEditableArea: true,
-		hexGroupColors: {},
+		gridShape: 'hexagon',
+		shapeGroupColors: {},
 		...overrides,
 	}
 }
@@ -46,12 +48,12 @@ describe('appReducer', () => {
 		expect(next.currentColor).toBe(colorSchemes[3].colors[0])
 	})
 
-	it('SELECT_SCHEME remaps hex groups painted with an old-scheme color to the new scheme color at the same position', () => {
+	it('SELECT_SCHEME remaps painted groups with an old-scheme color to the new scheme color at the same position', () => {
 		const oldScheme = colorSchemes[0]
 		const newScheme = colorSchemes[1]
 		const state = baseState({
 			currentScheme: oldScheme,
-			hexGroupColors: {
+			shapeGroupColors: {
 				a: oldScheme.colors[0],
 				b: oldScheme.colors[2],
 			},
@@ -60,24 +62,24 @@ describe('appReducer', () => {
 			type: 'SELECT_SCHEME',
 			scheme: newScheme,
 		})
-		expect(next.hexGroupColors).toEqual({
+		expect(next.shapeGroupColors).toEqual({
 			a: newScheme.colors[0],
 			b: newScheme.colors[2],
 		})
 	})
 
-	it('SELECT_SCHEME leaves hex groups painted base/accent (or any non-scheme color) untouched', () => {
+	it('SELECT_SCHEME leaves painted groups with base/accent (or any non-scheme color) untouched', () => {
 		const oldScheme = colorSchemes[0]
 		const newScheme = colorSchemes[1]
 		const state = baseState({
 			currentScheme: oldScheme,
-			hexGroupColors: { a: '#222222', b: '#ffffff' },
+			shapeGroupColors: { a: '#222222', b: '#ffffff' },
 		})
 		const next = appReducer(state, {
 			type: 'SELECT_SCHEME',
 			scheme: newScheme,
 		})
-		expect(next.hexGroupColors).toEqual({ a: '#222222', b: '#ffffff' })
+		expect(next.shapeGroupColors).toEqual({ a: '#222222', b: '#ffffff' })
 	})
 
 	it('SELECT_COLOR sets the current color directly', () => {
@@ -89,37 +91,37 @@ describe('appReducer', () => {
 		expect(next.currentColor).toBe('#123456')
 	})
 
-	it('PAINT_HEX_GROUP paints an unpainted group with the current color', () => {
+	it('PAINT_SHAPE_GROUP paints an unpainted group with the current color', () => {
 		const state = baseState({ currentColor: '#ff0000' })
 		const next = appReducer(state, {
-			type: 'PAINT_HEX_GROUP',
+			type: 'PAINT_SHAPE_GROUP',
 			groupId: '0,0',
 		})
-		expect(next.hexGroupColors['0,0']).toBe('#ff0000')
+		expect(next.shapeGroupColors['0,0']).toBe('#ff0000')
 	})
 
-	it('PAINT_HEX_GROUP toggles back to the accent color when clicking an already-painted group with the same color', () => {
+	it('PAINT_SHAPE_GROUP toggles back to the accent color when clicking an already-painted group with the same color', () => {
 		const state = baseState({
 			currentColor: '#ff0000',
-			hexGroupColors: { '0,0': '#ff0000' },
+			shapeGroupColors: { '0,0': '#ff0000' },
 		})
 		const next = appReducer(state, {
-			type: 'PAINT_HEX_GROUP',
+			type: 'PAINT_SHAPE_GROUP',
 			groupId: '0,0',
 		})
-		expect(next.hexGroupColors['0,0']).toBe('#222222')
+		expect(next.shapeGroupColors['0,0']).toBe('#222222')
 	})
 
-	it('PAINT_HEX_GROUP repaints (not toggles) a group painted a different color', () => {
+	it('PAINT_SHAPE_GROUP repaints (not toggles) a group painted a different color', () => {
 		const state = baseState({
 			currentColor: '#00ff00',
-			hexGroupColors: { '0,0': '#ff0000' },
+			shapeGroupColors: { '0,0': '#ff0000' },
 		})
 		const next = appReducer(state, {
-			type: 'PAINT_HEX_GROUP',
+			type: 'PAINT_SHAPE_GROUP',
 			groupId: '0,0',
 		})
-		expect(next.hexGroupColors['0,0']).toBe('#00ff00')
+		expect(next.shapeGroupColors['0,0']).toBe('#00ff00')
 	})
 
 	it('TOGGLE_DARK_MODE flips the darkMode flag', () => {
@@ -129,25 +131,25 @@ describe('appReducer', () => {
 		)
 	})
 
-	it('TOGGLE_DARK_MODE flips hex groups painted the old base/accent to the new ones', () => {
+	it('TOGGLE_DARK_MODE flips painted groups with the old base/accent to the new ones', () => {
 		const state = baseState({
 			darkMode: false,
-			hexGroupColors: { a: '#222222', b: '#ffffff', c: '#ff0000' },
+			shapeGroupColors: { a: '#222222', b: '#ffffff', c: '#ff0000' },
 		})
 		const next = appReducer(state, { type: 'TOGGLE_DARK_MODE' })
-		expect(next.hexGroupColors).toEqual({
+		expect(next.shapeGroupColors).toEqual({
 			a: '#ffffff',
 			b: '#222222',
 			c: '#ff0000',
 		})
 	})
 
-	it('RESET_DESIGN clears all painted hex groups', () => {
+	it('RESET_DESIGN clears all painted groups', () => {
 		const state = baseState({
-			hexGroupColors: { a: '#ff0000', b: '#00ff00' },
+			shapeGroupColors: { a: '#ff0000', b: '#00ff00' },
 		})
 		const next = appReducer(state, { type: 'RESET_DESIGN' })
-		expect(next.hexGroupColors).toEqual({})
+		expect(next.shapeGroupColors).toEqual({})
 	})
 
 	it('RANDOMIZE_DESIGN assigns every group id a color from the current scheme or theme base (never accent)', () => {
@@ -157,19 +159,19 @@ describe('appReducer', () => {
 			...state.currentScheme.colors,
 			'#ffffff', // light-mode base
 		])
-		const groupIds = Object.keys(next.hexGroupColors)
+		const groupIds = Object.keys(next.shapeGroupColors)
 		expect(groupIds.length).toBeGreaterThan(0)
-		for (const color of Object.values(next.hexGroupColors)) {
+		for (const color of Object.values(next.shapeGroupColors)) {
 			expect(possible).toContain(color)
 		}
 	})
 
 	it('RANDOMIZE_DESIGN replaces the entire design, discarding any previously painted groups', () => {
 		const state = baseState({
-			hexGroupColors: { 'not-a-real-group-id': '#ff0000' },
+			shapeGroupColors: { 'not-a-real-group-id': '#ff0000' },
 		})
 		const next = appReducer(state, { type: 'RANDOMIZE_DESIGN' })
-		expect(next.hexGroupColors['not-a-real-group-id']).toBeUndefined()
+		expect(next.shapeGroupColors['not-a-real-group-id']).toBeUndefined()
 	})
 
 	it('TOGGLE_EDITABLE_AREA flips the showEditableArea flag', () => {
@@ -183,5 +185,30 @@ describe('appReducer', () => {
 				type: 'TOGGLE_EDITABLE_AREA',
 			}).showEditableArea,
 		).toBe(true)
+	})
+
+	it('SELECT_GRID_SHAPE switches shape and resets shapeGroupColors', () => {
+		const state = baseState({
+			gridShape: 'hexagon',
+			shapeGroupColors: { '0,0': '#ff0000' },
+		})
+		const next = appReducer(state, {
+			type: 'SELECT_GRID_SHAPE',
+			shape: 'triangle',
+		})
+		expect(next.gridShape).toBe('triangle')
+		expect(next.shapeGroupColors).toEqual({})
+	})
+
+	it('SELECT_GRID_SHAPE is a no-op (same state reference) when selecting the already-current shape', () => {
+		const state = baseState({
+			gridShape: 'hexagon',
+			shapeGroupColors: { '0,0': '#ff0000' },
+		})
+		const next = appReducer(state, {
+			type: 'SELECT_GRID_SHAPE',
+			shape: 'hexagon',
+		})
+		expect(next).toBe(state)
 	})
 })

@@ -4,7 +4,7 @@ import type { ColorScheme } from '../types/colorScheme'
 // dominate so a randomized design still reads as a coherent kaleidoscope
 // pattern instead of a mostly-neutral one. Base acts as an occasional
 // highlight, not the norm. Accent is deliberately excluded: it's also the
-// default fill for an unpainted group (see HexGrid's `?? accent`), so
+// default fill for an unpainted group (see HexagonGrid's `?? accent`), so
 // "painting" a cell accent would look identical to never painting it.
 const SCHEME_COLOR_WEIGHT = 18
 const NEUTRAL_COLOR_WEIGHT = 10
@@ -38,7 +38,7 @@ export function pickRandomPaintColor(
 
 // Assigns every given group id a randomly (weighted) chosen color, for the
 // design randomizer.
-export function generateRandomHexGroupColors(
+export function generateRandomShapeGroupColors(
 	groupIds: readonly string[],
 	scheme: ColorScheme,
 	base: string,

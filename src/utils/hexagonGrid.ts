@@ -1,12 +1,12 @@
-import type { AxialCoord, HexCell } from '../types/hex'
-import { axialToPixel, boundingBox } from './hexLayout'
-import type { HexLayout } from './hexLayout'
+import type { AxialCoord, HexagonCell } from '../types/hexagon'
+import { axialToPixel, boundingBox } from './hexagonLayout'
+import type { HexagonLayout } from './hexagonLayout'
 
 // Radius 7 (rings out from the center hex) gives `1 + 3*7*8` = 169 cells.
 // The original app (and this app through phase 2) used radius 9 (271
 // cells, matching the original's hand-authored grid); radius was reduced
 // to make the grid more manageable on small touchscreens. See DECISIONS.md.
-export const HEX_GRID_RADIUS = 7
+export const HEXAGON_GRID_RADIUS = 7
 
 interface CubeCoord {
 	readonly q: number
@@ -68,8 +68,10 @@ function groupIdFor(coord: AxialCoord): string {
 // `groupIdFor` — thanks to the symmetry, the representative always lands
 // in the same contiguous 30-degree wedge of the grid, just like the
 // "editable slice" in the original app).
-export function generateHexCells(radius: number = HEX_GRID_RADIUS): HexCell[] {
-	const cells: HexCell[] = []
+export function generateHexagonCells(
+	radius: number = HEXAGON_GRID_RADIUS,
+): HexagonCell[] {
+	const cells: HexagonCell[] = []
 	for (let q = -radius; q <= radius; q++) {
 		for (let r = -radius; r <= radius; r++) {
 			const cube = toCube({ q, r })
@@ -83,10 +85,10 @@ export function generateHexCells(radius: number = HEX_GRID_RADIUS): HexCell[] {
 
 // Preserves insertion order (a plain `Map` does), since iteration order of
 // the groups matters for the clickable wedge's visual sequence.
-export function groupHexCells(
-	cells: readonly HexCell[],
-): Map<string, HexCell[]> {
-	const groups = new Map<string, HexCell[]>()
+export function groupHexagonCells(
+	cells: readonly HexagonCell[],
+): Map<string, HexagonCell[]> {
+	const groups = new Map<string, HexagonCell[]>()
 	for (const cell of cells) {
 		const list = groups.get(cell.groupId)
 		if (list) {
@@ -101,17 +103,17 @@ export function groupHexCells(
 // Every distinct mirror-symmetry group id in the grid (20 at the default
 // radius, one per clickable tile) — lets callers (e.g. the design
 // randomizer) know which groups exist without needing the full cell list.
-export function getGroupIds(radius: number = HEX_GRID_RADIUS): string[] {
-	return [...groupHexCells(generateHexCells(radius)).keys()]
+export function getGroupIds(radius: number = HEXAGON_GRID_RADIUS): string[] {
+	return [...groupHexagonCells(generateHexagonCells(radius)).keys()]
 }
 
 // The grid's overall (width / height) ratio, independent of `hexSize` — a
 // uniform scale factor cancels out of the ratio — so this reflects the
-// same shape HexGrid renders (and the export service rasterizes from)
+// same shape HexagonGrid renders (and the export service rasterizes from)
 // without needing a live DOM/SVG element to measure.
-export function computeGridAspectRatio(radius: number = HEX_GRID_RADIUS) {
-	const layout: HexLayout = { orientation: 'flat', size: 1 }
-	const centers = generateHexCells(radius).map(cell =>
+export function computeGridAspectRatio(radius: number = HEXAGON_GRID_RADIUS) {
+	const layout: HexagonLayout = { orientation: 'flat', size: 1 }
+	const centers = generateHexagonCells(radius).map(cell =>
 		axialToPixel(cell, layout),
 	)
 	const { minX, minY, maxX, maxY } = boundingBox(centers, layout)

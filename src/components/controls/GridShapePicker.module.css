@@ -1,0 +1,35 @@
+.list {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 8px;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.shapeButton {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 120px;
+	height: 120px;
+	padding: 14px;
+	border: 2px solid transparent;
+	border-radius: 4px;
+	background: none;
+	/* Icons fill with `color` via `currentcolor` (GridShapeIcon.module.css),
+	   so this is what actually themes them for dark/light mode. */
+	color: inherit;
+	cursor: pointer;
+	transition:
+		background-color 0.15s ease,
+		border-color 0.15s ease;
+}
+
+.shapeButton:hover {
+	background-color: rgb(128 128 128 / 20%);
+}
+
+.shapeButton[aria-pressed='true'] {
+	border-color: currentcolor;
+}

@@ -30,7 +30,7 @@ together. Rendering the original in a headless browser and measuring every
 hex's real pixel center confirmed true hex adjacency and orbit sizes of 1, 6,
 or 12: **D6 dihedral symmetry** around the center hex.
 
-So the grid is computed, not hand-coded (`src/utils/hexGrid.ts`): axial
+So the grid is computed, not hand-coded (`src/utils/hexagonGrid.ts`): axial
 coordinates in a radius-9 hexagon (`1 + 3N(N+1) = 271`), group id = smallest
 `(q, r)` in the cell's D6 orbit, and one canonical cell per group is
 clickable. Those 30 cells always form one contiguous 30° wedge, matching the
@@ -191,7 +191,7 @@ history is **unlimited for the session and not persisted**; the UI is
 
 Implemented as a **wrapping reducer** (`historyReducer`) around the existing
 `appReducer` rather than reworking `AppState`. History holds lightweight
-`{ currentScheme, hexGroupColors }` snapshots so undo never restores a stale
+`{ currentScheme, shapeGroupColors }` snapshots so undo never restores a stale
 current color or dark mode. This needed no changes to `appReducer` or its
 consumers, and the existing tests passing unchanged served as the regression
 check. Reset's confirm copy no longer says "cannot be undone".
@@ -226,7 +226,7 @@ updated the three tests that assumed otherwise.
 ### Touchscreen wedge discoverability
 
 Touch devices have no hover, so there was no way to discover which 30 hexes
-are paintable without tapping around (the hover-driven dimming in `HexGrid`
+are paintable without tapping around (the hover-driven dimming in `HexagonGrid`
 is mouse-only). Three options were discussed: a permanent highlight for
 everyone, a `(hover: none)` fallback shown by default, or a user-toggled
 "show editable area" button. The user chose the toggle for a cleaner look,
@@ -268,7 +268,7 @@ on small touchscreens. Rather than a responsive/device-conditional grid
 size (more complexity, and a separate set of visual proportions to
 maintain), the user chose to permanently drop the radius to 7 (169 cells,
 20 clickable tiles instead of 30) for every device, as a simpler first cut.
-`HEX_GRID_RADIUS` in `hexGrid.ts` is the only production code change — the
+`HEXAGON_GRID_RADIUS` in `hexagonGrid.ts` is the only production code change — the
 symmetry/grouping math is already radius-agnostic. A secondary, larger grid
 for tablets/desktop may be reconsidered later (tracked as an idea in
 CONTEXT.md) once the smaller size has been lived with for a while.
@@ -313,7 +313,7 @@ parent folder with subfolders:
 - `components/layout/` — page chrome (`Header`, holding the title in a
   proper `<header>` outside `<main>`; a future `Footer`/`NavMenu` would
   live here too).
-- `components/grid/` — `HexGrid`, `Hexagon`.
+- `components/grid/` — `HexagonGrid`, `Hexagon`.
 - `components/controls/` — the palette and everything below the grid.
 - `components/shared/` — generic, reusable pieces: `IconButton`, `Button`,
   `CloseButton`, `Modal`, `ConfirmDialog`. `ConfirmDialog` and `Modal`
@@ -398,8 +398,8 @@ image loaded (narrow/short while "Generating image…" showed, then jumped
 wider/taller). Fixed by reserving the image's final layout space upfront:
 `.dialog` got a fixed `width` (not just `max-width`), and `.preview` gets
 an inline `aspect-ratio` computed from the grid's own shape (new
-`computeGridAspectRatio()` in `hexGrid.ts`, using the same
-`axialToPixel`/`boundingBox` math `HexGrid` and the export service rely
+`computeGridAspectRatio()` in `hexagonGrid.ts`, using the same
+`axialToPixel`/`boundingBox` math `HexagonGrid` and the export service rely
 on) rather than a hardcoded or ref-measured value — so the placeholder
 box is already the correct shape before the image exists, and the `<img>`
 (`object-fit: contain`) just fills it once ready.
@@ -414,13 +414,245 @@ pool where each of the current scheme's 5 colors gets 18 "tickets" and
 base gets 10 (90% scheme colors, 10% base), so a generated design still
 reads as a coherent pattern instead of a mostly gray/black/white one.
 Accent was tried initially but dropped after testing — it's also the
-default fill `HexGrid` uses for an unpainted group, so a cell randomly
+default fill `HexagonGrid` uses for an unpainted group, so a cell randomly
 assigned accent would look indistinguishable from one that was never
 painted at all, the likely reason it read as less satisfying in practice. The weighting function takes an injectable `random` parameter
 (defaults to `Math.random`) purely so tests can assert deterministic
 outcomes. `RandomizeDesignButton` (fa-shuffle icon) has no confirmation
 dialog, unlike `ResetDesignButton` — it's additive/generative rather than
 destructive, and undo is one click away regardless.
+
+## Phase 3: More grid shapes
+
+### General-purpose symmetry engine, and the triangle grid
+
+Adding a second shape (an equilateral triangle, subdivided into a 10x10
+lattice of 100 small triangles) meant the hexagon grid's cube-coordinate
+rotation trick (`hexagonGrid.ts`) no longer generalized — a triangular
+lattice has no equivalent simple coordinate algebra. Instead, built a
+shape-agnostic `src/utils/symmetry.ts`: `assignSymmetryGroups` computes
+every orbit via real geometric rotation/reflection transforms applied to
+each cell's centroid (not coordinate math), matching transformed points
+back to known cells by a rounded-coordinate lookup (`PRECISION = 1e-6`,
+to absorb trig rounding error). Callers describe their shape's symmetry
+declaratively — `{ center, fold, mirror, mirrorAxisAngle }` plus an
+`isCanonical(point)` test for which orbit member is the clickable
+wedge — rather than hand-deriving shape-specific rotation formulas each
+time. This is the same engine every non-hexagon shape since (triangle,
+diamond star) reuses.
+
+The triangle grid itself (`triangleLayout.ts`/`triangleGrid.ts`) uses D3
+(fold=3, mirror=true). Its mirror axis passes through one triangle
+corner and the midpoint of the opposite edge, which also passes directly
+through some small triangles' centroids — a genuine edge case (not a
+rounding artifact), producing degenerate orbits of size 1 (the one
+triangle centered exactly on an axis crossing the big triangle's own
+center) and size 3 (rather than the "generic" size-6 orbit) for cells
+that straddle an axis. `isCanonicalWedge`'s closed `[270, 330]` degree
+range (rather than a half-open one) was needed specifically to catch
+these axis-straddling points consistently; see `symmetry.test.ts` for
+the regression coverage.
+
+Selecting a shape discards the current design, since a group id from one
+shape's symmetry grouping has no meaning for another's. `GridShapeId`
+(`src/types/gridShape.ts`), a data-driven shape list
+(`src/data/gridShapes.ts`), `GridShapePicker`/`GridShapeModal`, and
+`src/utils/gridShapeRegistry.ts` (a small per-shape dispatch layer for
+group ids/aspect ratio, used by the randomizer and save-image preview)
+tie it all together. `SELECT_GRID_SHAPE` is undoable, like scheme
+changes, so switching is safe to try.
+
+### Confirmation dialog "don't show again" + custom checkbox
+
+`GridShapePicker` and `ResetDesignButton` both stage a destructive-ish
+action behind `ConfirmDialog`. Once there were two independent uses,
+added a per-component-use opt-out: `dontShowAgainKey` prop plus
+`src/services/confirmDialogPreferences.ts` (a small localStorage-backed
+set of dismissed keys) lets a user permanently skip the dialog for one
+specific use (e.g. "switch-grid-shape") without affecting the other.
+
+The checkbox itself is custom-styled (an empty box when unchecked, the
+`fa-square-check` icon at the same size when checked) rather than the
+browser's native checkbox appearance (inconsistent across
+platforms — notably ugly on macOS). A real `<input type="checkbox">`
+stays in the DOM for keyboard/focus/screen-reader behavior, but is
+visually hidden (`opacity: 0`, absolutely positioned) over a `<span>`
+that renders the actual visible box/icon; a `:has(.checkboxInput:focus-visible)`
+rule draws the focus ring on the visible span instead of the invisible
+input. The dialog's `.bottomRow` (checkbox + action buttons, since a user
+asked to fit both in the same row) uses `justify-content: flex-end` with
+`margin-right: auto` on the checkbox/label, rather than
+`space-between`, so the buttons stay right-aligned even when no
+checkbox renders (not every `ConfirmDialog` use has a
+`dontShowAgainKey`).
+
+Both the shape picker and color theme picker's modals now close
+immediately on selection (previously only on explicit confirm/cancel,
+which felt like an obstacle once dismissal preferences made most clicks
+skip the confirmation dialog entirely).
+
+### 6-point diamond star
+
+A third shape: 6 elongated-diamond "points" radiating from a shared
+center, Lone-Star-quilt style. Went through 2 iterations before landing
+on the final design:
+
+**First attempt (wrong): half-wedge triangle subdivision.** Reused the
+triangle grid's approach directly — subdivide one fundamental wedge (half
+of one diamond point, split along its own long axis: a 15/15/150-degree
+triangle) into a small-triangle lattice, then replicate across all 12 of
+the star's D6 symmetry positions (6 rotations x mirror). This worked
+mechanically (no degenerate orbits, since the wedge's apex coincides with
+the star's center — the sum of a triangle's 3 corners' `(row - col)`
+values is always `3(row - col) ± 1`, never zero for integer row/col) but
+was geometrically wrong: it produced skinny half-diamond slivers as the
+clickable unit, not whole diamonds, which was unusable as an actual touch
+target.
+
+**Second attempt (correct): whole-rhombus subdivision.** A diamond point
+is itself a rhombus (a parallelogram), so it tiles cleanly into smaller
+rhombi via a direct 2D affine lattice over its 4 vertices (center, tip,
+and 2 side vertices) — no triangle-splitting needed at all. The lattice's
+2 basis vectors (`sideRight - center` and `sideLeft - center`) are always
+equal length by construction (the diamond is symmetric about its own long
+axis), so every small parallelogram this produces is itself a true
+rhombus. Since one full diamond point is already symmetric about its own
+axis, only the star's 6 rotations are needed to replicate it across all 6
+points (not all 12 D6 transforms) — the full D6 symmetry engine
+(`fold=6, mirror=true`) is still used, but only to group the resulting
+raw cells into clickable orbits, since 2 rhombi within the same point can
+still mirror each other. This introduces a different degenerate case than
+the triangle grid's: cells on the lattice diagonal (`row === col`) sit
+exactly on the diamond's own mirror axis, forming smaller size-6 orbits
+(rotation only) instead of the generic size-12 (rotation x mirror);
+`isCanonicalWedge`'s closed `[270, 285]` range (same range as the first
+attempt, confirmed unchanged by the geometry fix) still picks exactly one
+representative per orbit, including these on-axis cells. Total clickable
+groups: `N(N+1)/2` for an N x N lattice per diamond point.
+
+`DIAMOND_STAR_GRID_SIZE` started at 5 (25 cells) under the first (wrong)
+model; after the rework it became 4 (10 cells) under the corrected model,
+deliberately fewer/chunkier than the hexagon/triangle grids' ~20-22, since
+whole rhombi are inherently larger shapes than the original tiny
+triangles.
+
+**Point angle widened from 30 to 45 degrees** after testing on an actual
+phone showed 30 degrees (the original "needle-like" Lone Star look) was
+too narrow to tap reliably. Each rhombus's width scales with
+`tan(angle/2)`, so 45 degrees is ~55% wider than 30 at the same radius;
+60 degrees would make the points as wide as the hexagon grid's own diamonds
+(two equilateral triangles meeting with zero gap between points), so 45
+was chosen as a middle ground: noticeably more tappable, while still
+reading as a distinct 6-point star with visible gaps between points.
+`POINT_ANGLE_DEGREES`/`HALF_ANGLE_DEGREES` are exported from
+`diamondStarLayout.ts` so `diamondStarGrid.ts`'s canonical-wedge angle
+test derives its range from the same constant, rather than duplicating
+the angle as a second hardcoded number that could drift out of sync.
+Surprising side effect confirmed both analytically and in tests: the
+star's overall width:height ratio (`sqrt(3)/2`) is invariant to the point
+angle entirely — it's set by the bounding hexagon formed by the 6 outer
+tips, not by how wide each diamond point itself is — so the CSS sizing
+constant needed no change when the angle did.
+
+### Hexagram (6-point star of equilateral triangles)
+
+A fourth shape: a central hexagon with an equilateral triangle "point"
+attached outward on each of its 6 edges — the classic Star-of-David-style
+outline (also describable as 2 overlapping big equilateral triangles),
+subdivided into small equilateral triangles throughout. Chosen over the
+simpler "6 equilateral triangles meeting at a single center point"
+reading of "star of triangles" because that configuration tiles into a
+perfect hexagon with zero gaps (6 x 60 degrees = 360, exactly) — not a
+star at all; equilateral triangles can only form a visible star shape
+when attached to a separate inner polygon's edges instead of meeting at
+one point.
+
+Each 60-degree "spoke" of the star is made of 2 equilateral triangles — a
+slice of the central hexagon (apex at the shared center) and its attached
+point (apex at the outer tip) — which together form a 60/120-degree
+rhombus, symmetric about its own long axis, same as the diamond star's
+single-piece spoke. `src/utils/hexagramLayout.ts`'s `latticePoint`
+generalizes the same 3-vertex affine interpolation formula used (and
+documented) in the diamond star's geometry, applied twice per spoke (once
+per equilateral triangle, oriented oppositely) rather than once — since
+the formula already works for any triangle shape, and these 2 are both
+already genuinely equilateral, no new subdivision math was needed, only a
+second application of it. As with the diamond star, only 6 rotations are
+needed to generate the full shape (each spoke already covers both mirror
+halves), with the full D6 engine used only for clickable-orbit grouping.
+Degenerate on-axis orbits (size 6 instead of size 12) occur for the same
+reason as the diamond star's: cells on a spoke's own mirror axis.
+`isCanonicalWedge`'s closed `[270, 300]` range matches the spoke's full
+60-degree angular span, halved.
+
+`HEXAGRAM_GRID_SIZE = 4` (2 x 4x4 lattices per spoke) gives `N(N+1)` = 20
+clickable cells, chosen to land close to the hexagon (20) and triangle (22)
+grids' density, per the user's preference for this shape (vs. the diamond
+star's deliberately chunkier, lower-density cells).
+
+Confirmed by a quick prototype render (not committed) before
+implementation, same process used for the diamond star: every generated
+triangle is genuinely equilateral (checked numerically), and the
+symmetry grouping has no missing-canonical-representative orbits.
+
+### Shape picker: SVG icon previews instead of text labels
+
+With 4 shapes to choose from, `GridShapePicker`'s text-label buttons
+("Hexagon", "Triangle", ...) were replaced with small SVG previews — a
+hexagon of 7 hexagons, a triangle of 4 triangles, a diamond star of 6
+diamonds, a hexagram of 12 triangles — filled with the current accent
+color, in a 2x2 grid of larger (120px) square buttons. The accessible
+name moved to `aria-label`/`title` on the button; the SVG itself is
+`aria-hidden`.
+
+Rather than hand-authoring SVG paths for each icon, `GridShapeIcon.tsx`
+calls each shape's own real cell-generation function at the smallest
+size that still produces the intended multi-piece look (e.g.
+`generateHexagonCells(1)` for the 7-hexagon icon), the same functions the
+actual grid components use. This guarantees the icons can never visually
+drift out of sync with the real grid geometry, matching the project's
+general preference for computed geometry over hand-authored shapes.
+
+Each shape is built at a fixed piece size of 1, but the 4 shapes'
+resulting bounding boxes differ hugely (hexagon-of-7 ≈5 units wide,
+triangle-of-4 ≈2, diamond-star-of-6 ≈1.73, hexagram-of-12 ≈3) — since SVG
+`stroke-width` is an absolute user-space value, not relative to the
+viewBox, a single fixed grout width looked wildly inconsistent across
+icons (very thin on the hexagon, thick on the triangle). Fixed by
+computing `strokeWidth = viewBoxWidth * RELATIVE_STROKE_WIDTH` per shape
+and passing it down via a `--grout-width` CSS custom property set inline
+on each `<svg>` root.
+
+### Rename sweep: hex → hexagon, now that hexagram also exists
+
+Once both "hexagon" and "hexagram" shapes existed, anything still named
+generically for "hex" became ambiguous. Swept the codebase: renamed the
+shared paint-state field `hexGroupColors` → `shapeGroupColors` (plus
+`paintHexGroup`/`PAINT_HEX_GROUP`/`generateRandomHexGroupColors` to
+matching `*ShapeGroup*` names) since it's used by all 4 shapes, not just
+hexagons; renamed everything genuinely hexagon-specific to `Hexagon*`
+(`HexGrid.tsx` → `HexagonGrid.tsx`, `hexGrid.ts` → `hexagonGrid.ts`,
+`hexLayout.ts` → `hexagonLayout.ts`, `types/hex.ts` → `types/hexagon.ts`,
+`HexCell` → `HexagonCell`, `HexLayout` → `HexagonLayout`, `HexOrientation`
+→ `HexagonOrientation`, `HEX_GRID_RADIUS` → `HEXAGON_GRID_RADIUS`); and
+fixed stray prose that said "hex"/"hexes" generically to mean "the
+current grid"/"tiles" rather than hexagons specifically.
+
+`hexGroupColors` is persisted to `localStorage` under a versioned key
+(`storageService.ts`); the user chose to leave `STORAGE_VERSION` at 1
+rather than bump it, since they're the app's only user right now — any
+pre-rename saved design simply fails the post-rename structural check
+(the field it looks for no longer exists) and falls back to a fresh
+random design, the same practical effect as a version bump.
+
+While doing the rename, noticed `pointsToSvgAttr` (a shape-agnostic SVG
+formatting helper used by `PolygonCell` and `GridShapeIcon`) only lived
+in `hexLayout.ts` as a historical accident from when hexagon was the only
+shape. Extracted it to `src/utils/svgPoints.ts` as part of the same pass.
+
+Deliberately left alone: `colorMath.ts`'s `hexToRgb` and
+`colorSchemes.ts`'s "Hex values" comment, which are about hex color
+codes, unrelated to the hexagon/hexagram naming collision.
 
 ## Process
 

@@ -1,4 +1,5 @@
 import type { AppState } from '../types/appState'
+import type { GridShapeId } from '../types/gridShape'
 import { colorSchemes } from '../data/colorSchemes'
 import { createInitialAppState } from '../state/appReducer'
 
@@ -10,6 +11,13 @@ const STORAGE_KEY = 'kaleidoscope:design'
 // first version.
 const STORAGE_VERSION = 1
 
+const VALID_GRID_SHAPES: readonly GridShapeId[] = [
+	'hexagon',
+	'triangle',
+	'diamondStar',
+	'hexagram',
+]
+
 interface PersistedDesign {
 	readonly version: typeof STORAGE_VERSION
 	readonly schemeName: string
@@ -19,7 +27,10 @@ interface PersistedDesign {
 	// (falls back to true in fromPersistedDesign) instead of being
 	// rejected outright.
 	readonly showEditableArea?: boolean
-	readonly hexGroupColors: Readonly<Record<string, string>>
+	// Optional for the same reason (falls back to 'hexagon', the only
+	// shape that existed before this field was added).
+	readonly gridShape?: GridShapeId
+	readonly shapeGroupColors: Readonly<Record<string, string>>
 }
 
 function toPersistedDesign(state: AppState): PersistedDesign {
@@ -29,7 +40,8 @@ function toPersistedDesign(state: AppState): PersistedDesign {
 		currentColor: state.currentColor,
 		darkMode: state.darkMode,
 		showEditableArea: state.showEditableArea,
-		hexGroupColors: state.hexGroupColors,
+		gridShape: state.gridShape,
+		shapeGroupColors: state.shapeGroupColors,
 	}
 }
 
@@ -46,7 +58,8 @@ function fromPersistedDesign(data: PersistedDesign): AppState | null {
 		currentColor: data.currentColor,
 		darkMode: data.darkMode,
 		showEditableArea: data.showEditableArea ?? true,
-		hexGroupColors: { ...data.hexGroupColors },
+		gridShape: data.gridShape ?? 'hexagon',
+		shapeGroupColors: { ...data.shapeGroupColors },
 	}
 }
 
@@ -60,9 +73,11 @@ function isPersistedDesign(value: unknown): value is PersistedDesign {
 		typeof data.darkMode === 'boolean' &&
 		(data.showEditableArea === undefined ||
 			typeof data.showEditableArea === 'boolean') &&
-		typeof data.hexGroupColors === 'object' &&
-		data.hexGroupColors !== null &&
-		Object.values(data.hexGroupColors).every(c => typeof c === 'string')
+		(data.gridShape === undefined ||
+			VALID_GRID_SHAPES.includes(data.gridShape as GridShapeId)) &&
+		typeof data.shapeGroupColors === 'object' &&
+		data.shapeGroupColors !== null &&
+		Object.values(data.shapeGroupColors).every(c => typeof c === 'string')
 	)
 }
 

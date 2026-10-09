@@ -52,7 +52,7 @@ describe('App', () => {
 				currentColor: '#000000',
 				darkMode: true,
 				showEditableArea: true,
-				hexGroupColors: {},
+				shapeGroupColors: {},
 			}),
 		)
 		mockUseIsTouchDevice.mockReturnValue(true)
@@ -71,6 +71,29 @@ describe('App', () => {
 			screen.queryByRole('heading', {
 				name: 'How to Switch Your View',
 			}),
+		).not.toBeInTheDocument()
+	})
+
+	it('renders the hexagon grid by default and switches to the triangle grid via the shape picker', async () => {
+		mockUseIsTouchDevice.mockReturnValue(false)
+		const user = userEvent.setup()
+		renderApp()
+
+		expect(
+			screen.getByRole('group', { name: 'Kaleidoscope hexagon grid' }),
+		).toBeInTheDocument()
+
+		await user.click(
+			screen.getByRole('button', { name: 'Open grid shape picker' }),
+		)
+		await user.click(screen.getByRole('button', { name: 'Triangle' }))
+		await user.click(screen.getByRole('button', { name: 'Switch' }))
+
+		expect(
+			screen.getByRole('group', { name: 'Kaleidoscope triangle grid' }),
+		).toBeInTheDocument()
+		expect(
+			screen.queryByRole('group', { name: 'Kaleidoscope hexagon grid' }),
 		).not.toBeInTheDocument()
 	})
 })

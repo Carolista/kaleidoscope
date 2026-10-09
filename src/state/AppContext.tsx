@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useReducer } from 'react'
 import type { ReactNode } from 'react'
 import type { ColorScheme } from '../types/colorScheme'
+import type { GridShapeId } from '../types/gridShape'
 import { createInitialHistoryState, historyReducer } from './historyReducer'
 import {
 	loadInitialAppState,
@@ -30,8 +31,8 @@ export function AppStateProvider({
 		(color: string) => dispatch({ type: 'SELECT_COLOR', color }),
 		[],
 	)
-	const paintHexGroup = useCallback(
-		(groupId: string) => dispatch({ type: 'PAINT_HEX_GROUP', groupId }),
+	const paintShapeGroup = useCallback(
+		(groupId: string) => dispatch({ type: 'PAINT_SHAPE_GROUP', groupId }),
 		[],
 	)
 	const toggleDarkMode = useCallback(
@@ -50,6 +51,10 @@ export function AppStateProvider({
 		() => dispatch({ type: 'RANDOMIZE_DESIGN' }),
 		[],
 	)
+	const selectGridShape = useCallback(
+		(shape: GridShapeId) => dispatch({ type: 'SELECT_GRID_SHAPE', shape }),
+		[],
+	)
 	const undo = useCallback(() => dispatch({ type: 'UNDO' }), [])
 	const redo = useCallback(() => dispatch({ type: 'REDO' }), [])
 
@@ -58,11 +63,12 @@ export function AppStateProvider({
 			state,
 			selectScheme,
 			selectColor,
-			paintHexGroup,
+			paintShapeGroup,
 			toggleDarkMode,
 			toggleEditableArea,
 			resetDesign,
 			randomizeDesign,
+			selectGridShape,
 			undo,
 			redo,
 			canUndo: history.past.length > 0,
@@ -72,11 +78,12 @@ export function AppStateProvider({
 			state,
 			selectScheme,
 			selectColor,
-			paintHexGroup,
+			paintShapeGroup,
 			toggleDarkMode,
 			toggleEditableArea,
 			resetDesign,
 			randomizeDesign,
+			selectGridShape,
 			undo,
 			redo,
 			history.past.length,

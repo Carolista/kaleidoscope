@@ -7,12 +7,16 @@ import { appReducer } from './appReducer'
 // would expect "undo" to step back through.
 const UNDOABLE_ACTION_TYPES = new Set<AppAction['type']>([
 	'SELECT_SCHEME',
-	'PAINT_HEX_GROUP',
+	'PAINT_SHAPE_GROUP',
 	'RESET_DESIGN',
 	'RANDOMIZE_DESIGN',
+	'SELECT_GRID_SHAPE',
 ])
 
-type DesignSnapshot = Pick<AppState, 'currentScheme' | 'hexGroupColors'>
+type DesignSnapshot = Pick<
+	AppState,
+	'currentScheme' | 'gridShape' | 'shapeGroupColors'
+>
 
 export interface HistoryState {
 	readonly present: AppState
@@ -30,7 +34,8 @@ export function createInitialHistoryState(present: AppState): HistoryState {
 function snapshotOf(state: AppState): DesignSnapshot {
 	return {
 		currentScheme: state.currentScheme,
-		hexGroupColors: state.hexGroupColors,
+		gridShape: state.gridShape,
+		shapeGroupColors: state.shapeGroupColors,
 	}
 }
 
