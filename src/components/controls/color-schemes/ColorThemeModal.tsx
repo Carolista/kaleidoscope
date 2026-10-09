@@ -1,5 +1,5 @@
-import CloseButton from '../shared/CloseButton'
-import Modal from '../shared/Modal'
+import CloseButton from '../../shared/CloseButton'
+import Modal from '../../shared/Modal'
 import SchemePicker from './SchemePicker'
 import styles from './ColorThemeModal.module.css'
 

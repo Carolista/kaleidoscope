@@ -1,33 +1,33 @@
 import { useMemo } from 'react'
 import type { CSSProperties } from 'react'
-import type { GridShapeId } from '../../types/gridShape'
-import { generateHexagonCells } from '../../utils/hexagonGrid'
+import type { GridShapeId } from '../../../types/gridShape'
+import { generateHexagonCells } from '../../../utils/hexagonGrid'
 import {
 	axialToPixel,
 	boundingBox,
 	hexagonCorners,
-} from '../../utils/hexagonLayout'
-import type { HexagonLayout } from '../../utils/hexagonLayout'
-import { pointsToSvgAttr } from '../../utils/svgPoints'
-import { generateTriangleCells } from '../../utils/triangleGrid'
+} from '../../../utils/hexagonLayout'
+import type { HexagonLayout } from '../../../utils/hexagonLayout'
+import { pointsToSvgAttr } from '../../../utils/svgPoints'
+import { generateTriangleCells } from '../../../utils/triangleGrid'
 import {
 	triangleCorners,
 	trianglesBoundingBox,
-} from '../../utils/triangleLayout'
-import type { TriangleLayout } from '../../utils/triangleLayout'
-import { generateDiamondStarCells } from '../../utils/diamondStarGrid'
+} from '../../../utils/triangleLayout'
+import type { TriangleLayout } from '../../../utils/triangleLayout'
+import { generateDiamondStarCells } from '../../../utils/diamondStarGrid'
 import {
 	diamondStarBoundingBox,
 	diamondStarCellCorners,
-} from '../../utils/diamondStarLayout'
-import type { DiamondStarLayout } from '../../utils/diamondStarLayout'
-import { generateHexagramCells } from '../../utils/hexagramGrid'
+} from '../../../utils/diamondStarLayout'
+import type { DiamondStarLayout } from '../../../utils/diamondStarLayout'
+import { generateHexagramCells } from '../../../utils/hexagramGrid'
 import {
 	hexagramBoundingBox,
 	hexagramStarCellCorners,
-} from '../../utils/hexagramLayout'
-import type { HexagramLayout } from '../../utils/hexagramLayout'
-import type { Point } from '../../types/geometry'
+} from '../../../utils/hexagramLayout'
+import type { HexagramLayout } from '../../../utils/hexagramLayout'
+import type { Point } from '../../../types/geometry'
 import styles from './GridShapeIcon.module.css'
 
 export interface GridShapeIconProps {

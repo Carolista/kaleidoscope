@@ -1,5 +1,5 @@
-import CloseButton from '../shared/CloseButton'
-import Modal from '../shared/Modal'
+import CloseButton from '../../shared/CloseButton'
+import Modal from '../../shared/Modal'
 import GridShapePicker from './GridShapePicker'
 import styles from './GridShapeModal.module.css'
 
