@@ -134,6 +134,13 @@ Self-host fonts through `@fontsource` to avoid external font requests.
 Keep Roboto 900: lack of explicit weight declarations does not prove that
 browser-default bold headings never use it.
 
+Use a six-petal diamond star in place of the first O in the Righteous wordmark.
+Keep standalone logos as outlined SVGs for portability, but render live Righteous
+text around the favicon in the app header: outlined letters appeared rough at
+header sizes, and rendering hints or a thin stroke did not visibly improve them.
+Align the four side-petal tips with the lettering's upper/lower bounds and favor
+optical spacing toward the curved D over equal numeric gaps.
+
 Render individually imported Font Awesome definitions through `FontAwesomeIcon`,
 replacing the earlier Kit-script approach. Import core CSS once and disable
 automatic injection. The unused Kit package and registry entry were removed.

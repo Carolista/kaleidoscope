@@ -57,7 +57,9 @@ token before installing dependencies without printing its value.
 GitHub does not provide Actions secrets to pull requests from forks or Dependabot,
 so those runs cannot install the private packages with this workflow.
 
-## Favicon
+## Branding
+
+### Favicon
 
 [public/favicon.svg](./public/favicon.svg) is a static version of the shape
 picker's six-petal diamond star, with a transparent background and muted colors.
@@ -67,6 +69,23 @@ palette, edit the six `fill` values, ordered clockwise from the top petal.
 The stroke width is `0`, so no outline is visible; the white stroke and rounded
 join settings remain available if an outline is wanted later. The square viewBox
 includes padding to keep an outline from clipping.
+
+### Logo
+
+The header combines live Righteous 400 lettering (`KALEID` and `SCOPE`) with
+the favicon replacing the first O. Letter color follows the app's theme accent;
+the six petal colors stay fixed. The star's side tips align with the lettering's
+upper/lower bounds, and spacing shifts it slightly toward the curved D for
+optical balance. The combined mark has one accessible heading name.
+
+[public/logo-black.svg](./public/logo-black.svg) and
+[public/logo-white.svg](./public/logo-white.svg) are transparent, standalone
+logos with Righteous lettering converted to paths so no font installation is
+needed. [public/logo.svg](./public/logo.svg) retains a `currentColor` version
+for inline SVG reuse; an external image does not inherit the page's text color.
+These use the same taller star proportion, but the app uses live text instead
+of their outlined lettering. Petal fills are copied from the favicon; palette
+changes should be applied to all four SVG assets.
 
 ## Code standards
 
