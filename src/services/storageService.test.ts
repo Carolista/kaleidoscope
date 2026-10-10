@@ -53,6 +53,123 @@ describe('storageService', () => {
 		expect(loadInitialAppState()).toEqual(saved)
 	})
 
+	it.each(['#000000', '#ffffff', '#ABCDEF', '#aB12Cd'])(
+		'preserves valid six-digit hex color %s without normalization or palette restrictions',
+		color => {
+			const saved = baseState({
+				currentColor: color,
+				shapeGroupColors: { 'historical-group-id': color },
+			})
+			savePersistedState(saved)
+			expect(loadInitialAppState()).toEqual(saved)
+		},
+	)
+
+	it.each([
+		undefined,
+		null,
+		123,
+		{},
+		[],
+		'',
+		'red',
+		'transparent',
+		'#abc',
+		'#abcd',
+		'#12345678',
+		'123456',
+		'#12345g',
+		' #123456',
+		'#123456 ',
+		'#123456\n',
+		'rgb(1, 2, 3)',
+		'url(#paint)',
+	])('rejects invalid selected or painted color %j', color => {
+		for (const overrides of [
+			{ currentColor: color },
+			{ shapeGroupColors: { valid: '#123456', invalid: color } },
+		]) {
+			// JSON omits undefined properties, so a missing paint value cannot be invalid.
+			if (color === undefined && 'shapeGroupColors' in overrides) continue
+			localStorage.setItem(
+				STORAGE_KEY,
+				JSON.stringify({
+					version: 1,
+					schemeName: colorSchemes[0].name,
+					currentColor: '#123456',
+					darkMode: false,
+					showEditableArea: false,
+					gridShape: 'triangle',
+					shapeGroupColors: { valid: '#123456' },
+					...overrides,
+				}),
+			)
+			const state = loadInitialAppState()
+			expect(state).toEqual({
+				currentScheme: state.currentScheme,
+				currentColor: state.currentScheme.colors[0],
+				darkMode: true,
+				showEditableArea: true,
+				gridShape: 'hexagon',
+				shapeGroupColors: {},
+			})
+			expect(colorSchemes).toContain(state.currentScheme)
+		}
+	})
+
+	it.each([
+		undefined,
+		null,
+		[],
+		['#123456'],
+		['#123456', '#abcdef'],
+		123,
+		'#123456',
+	])('rejects malformed paint map %j', shapeGroupColors => {
+		localStorage.setItem(
+			STORAGE_KEY,
+			JSON.stringify({
+				version: 1,
+				schemeName: colorSchemes[0].name,
+				currentColor: '#123456',
+				darkMode: false,
+				shapeGroupColors,
+			}),
+		)
+		const state = loadInitialAppState()
+		expect(state.darkMode).toBe(true)
+		expect(state.currentColor).toBe(state.currentScheme.colors[0])
+		expect(state.shapeGroupColors).toEqual({})
+	})
+
+	it.each([null, [], ['#123456'], 123, 'design'])(
+		'rejects non-record payload %j without changing the saved-key existence policy',
+		payload => {
+			localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
+			expect(loadInitialAppState().shapeGroupColors).toEqual({})
+			expect(hasPersistedDesign()).toBe(true)
+		},
+	)
+
+	it('restores historical designs with both optional fields missing and valid painted colors', () => {
+		localStorage.setItem(
+			STORAGE_KEY,
+			JSON.stringify({
+				version: 1,
+				schemeName: colorSchemes[0].name,
+				currentColor: '#ABCDEF',
+				darkMode: false,
+				shapeGroupColors: { a: '#123456' },
+			}),
+		)
+		expect(loadInitialAppState()).toEqual(
+			baseState({
+				currentColor: '#ABCDEF',
+				shapeGroupColors: { a: '#123456' },
+			}),
+		)
+	})
+
 	it('falls back to a fresh random state when the saved scheme name no longer exists', () => {
 		localStorage.setItem(
 			STORAGE_KEY,
