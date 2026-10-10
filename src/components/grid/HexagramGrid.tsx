@@ -1,14 +1,17 @@
 import { useMemo, useState } from 'react'
 import type { Ref } from 'react'
-import { HEXAGRAM_GRID_SIZE, generateHexagramCells } from '@utils/hexagramGrid'
+import {
+	HEXAGRAM_GRID_SIZE,
+	generateHexagramCells,
+} from '@geometry/hexagramGrid'
 import {
 	hexagramBoundingBox,
 	hexagramStarCellCorners,
-} from '@utils/hexagramLayout'
-import type { HexagramLayout } from '@utils/hexagramLayout'
+} from '@geometry/hexagramLayout'
+import type { HexagramLayout } from '@geometry/hexagramLayout'
 import { useAppState } from '@state/useAppState'
 import { getThemeColors } from '@state/theme'
-import { useIsTouchDevice } from '@utils/useIsTouchDevice'
+import { useIsTouchDevice } from '@hooks/useIsTouchDevice'
 import PolygonCell from './PolygonCell'
 import styles from './HexagramGrid.module.css'
 

@@ -30,7 +30,7 @@ together. Rendering the original in a headless browser and measuring every
 hex's real pixel center confirmed true hex adjacency and orbit sizes of 1, 6,
 or 12: **D6 dihedral symmetry** around the center hex.
 
-So the grid is computed, not hand-coded (`src/utils/hexagonGrid.ts`): axial
+So the grid is computed, not hand-coded (`src/shapeGeometry/hexagonGrid.ts`): axial
 coordinates in a radius-9 hexagon (`1 + 3N(N+1) = 271`), group id = smallest
 `(q, r)` in the cell's D6 orbit, and one canonical cell per group is
 clickable. Those 30 cells always form one contiguous 30° wedge, matching the
@@ -576,7 +576,7 @@ Each 60-degree "spoke" of the star is made of 2 equilateral triangles — a
 slice of the central hexagon (apex at the shared center) and its attached
 point (apex at the outer tip) — which together form a 60/120-degree
 rhombus, symmetric about its own long axis, same as the diamond star's
-single-piece spoke. `src/utils/hexagramLayout.ts`'s `latticePoint`
+single-piece spoke. `src/shapeGeometry/hexagramLayout.ts`'s `latticePoint`
 generalizes the same 3-vertex affine interpolation formula used (and
 documented) in the diamond star's geometry, applied twice per spoke (once
 per equilateral triangle, oriented oppositely) rather than once — since

@@ -3,16 +3,16 @@ import type { Ref } from 'react'
 import {
 	CIRCLE_RINGS_GRID_SIZE,
 	generateCircleRingsCells,
-} from '@utils/circleRingsGrid'
+} from '@geometry/circleRingsGrid'
 import {
 	circleRingsBoundingBox,
 	circleRingsCellCenter,
 	circleRingsCellRadius,
-} from '@utils/circleRingsLayout'
-import type { CircleRingsLayout } from '@utils/circleRingsLayout'
+} from '@geometry/circleRingsLayout'
+import type { CircleRingsLayout } from '@geometry/circleRingsLayout'
 import { useAppState } from '@state/useAppState'
 import { getThemeColors } from '@state/theme'
-import { useIsTouchDevice } from '@utils/useIsTouchDevice'
+import { useIsTouchDevice } from '@hooks/useIsTouchDevice'
 import CircleCell from './CircleCell'
 import styles from './CircleRingsGrid.module.css'
 

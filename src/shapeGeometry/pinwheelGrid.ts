@@ -1,6 +1,6 @@
 import type { Point } from '../types/geometry'
 import type { PinwheelCell } from '../types/pinwheel'
-import { assignSymmetryGroups } from './symmetry'
+import { assignSymmetryGroups } from '@utils/symmetry'
 import {
 	FULL_ANGLE_DEGREES,
 	PINWHEEL_FOLD,

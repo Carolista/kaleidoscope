@@ -1,6 +1,6 @@
 import type { Point } from '../types/geometry'
 import type { HexagramCell } from '../types/hexagram'
-import { rotate } from './symmetry'
+import { rotate } from '@utils/symmetry'
 
 export interface HexagramLayout {
 	// Number of lattice rows subdividing each of the 2 equilateral

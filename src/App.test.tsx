@@ -3,9 +3,9 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AppStateProvider } from './state/AppContext'
 import App from './App'
-import { useIsTouchDevice } from './utils/useIsTouchDevice'
+import { useIsTouchDevice } from './hooks/useIsTouchDevice'
 
-vi.mock('./utils/useIsTouchDevice')
+vi.mock('./hooks/useIsTouchDevice')
 const mockUseIsTouchDevice = vi.mocked(useIsTouchDevice)
 
 function renderApp() {

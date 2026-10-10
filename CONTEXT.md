@@ -114,7 +114,14 @@ pass.
   genuinely separate major feature is added later. `src/services/` holds
   non-React logic that's used outside a single component (`storageService`,
   `imageExportService`); `src/hooks/` holds reusable React hooks
-  (`useImageExport`).
+  (`useImageExport`, `useIsTouchDevice`). `src/shapeGeometry/` (alias
+  `@geometry`) holds each grid shape's cell-generation/geometry modules —
+  split out from `src/utils/` (alias `@utils`) once it became clear that
+  shape-specific math made up 12 of its 16 files; `src/utils/` now holds
+  only truly shape-agnostic code (`symmetry.ts`, `svgPoints.ts`,
+  `colorMath.ts`, `randomDesign.ts`) plus `gridShapeRegistry.ts`, a thin
+  dispatch layer that's generic in *purpose* even though it necessarily
+  imports every shape module.
 - **State**: `useReducer` + Context, no external state library.
   - `appReducer` handles app actions.
   - `historyReducer` wraps it to provide undo/redo. Only painting, scheme
@@ -131,22 +138,23 @@ pass.
   `GridShapeId` (`src/types/gridShape.ts`) identifies the current shape;
   `GridShapePicker`/`GridShapeModal` let the user switch (behind a
   `ConfirmDialog`, since switching discards the current design); each
-  shape's cell-generation/geometry lives in its own pair of modules, and
-  `src/utils/gridShapeRegistry.ts` dispatches shape-agnostic callers (the
-  design randomizer, the save-image aspect ratio) to the right one:
-  - **Hexagon** (`src/utils/hexagonGrid.ts`): axial `(q, r)` cells in a
+  shape's cell-generation/geometry lives in its own pair of modules in
+  `src/shapeGeometry/`, and `src/utils/gridShapeRegistry.ts` dispatches
+  shape-agnostic callers (the design randomizer, the save-image aspect
+  ratio) to the right one:
+  - **Hexagon** (`src/shapeGeometry/hexagonGrid.ts`): axial `(q, r)` cells in a
     radius-7 hexagon (169 cells; reduced from the original 271/radius-9
     for small touchscreens, see DECISIONS.md), computed rather than
     hand-authored. Each cell's group id is the lexicographically smallest
     coordinate in its D6 orbit, using hexagon-specific cube-coordinate
     rotation. One cell per group (20 total) is `isClickable`; these form
     a single wedge at 11-12 o'clock.
-  - **Triangle** (`src/utils/triangleLayout.ts` + `triangleGrid.ts`): a
+  - **Triangle** (`src/shapeGeometry/triangleLayout.ts` + `triangleGrid.ts`): a
     big equilateral triangle subdivided into a 10x10 lattice (100 small
     triangles, 22 clickable groups), using the general-purpose symmetry
     engine below (D3, since a triangular lattice has no simple
     cube-coordinate trick like hexagons).
-  - **Diamond star** (`src/utils/diamondStarLayout.ts` +
+  - **Diamond star** (`src/shapeGeometry/diamondStarLayout.ts` +
     `diamondStarGrid.ts`): a 6-point star of elongated (45-degree point
     angle) diamonds, in the "Lone Star" quilt style. Each diamond point
     is itself a whole rhombus — not split into triangles — subdivided
@@ -160,7 +168,7 @@ pass.
     too narrow to tap reliably on small touchscreens; the star's overall
     width:height ratio (sqrt(3)/2) turned out to be invariant to the
     point angle, so no other geometry needed to change.
-  - **Hexagram** (`src/utils/hexagramLayout.ts` + `hexagramGrid.ts`): a
+  - **Hexagram** (`src/shapeGeometry/hexagramLayout.ts` + `hexagramGrid.ts`): a
     6-point star of equilateral triangles — a central hexagon with an
     equilateral triangle "point" attached outward on each of its 6 edges
     (a Star-of-David-style outline), the whole thing subdivided into
@@ -171,7 +179,7 @@ pass.
     applied to 2 differently-oriented equilateral triangles; replicated
     across the shape's 6 rotations and grouped via the same D6 symmetry
     engine into 20 clickable orbits.
-  - **Circle rings** (`src/utils/circleRingsLayout.ts` +
+  - **Circle rings** (`src/shapeGeometry/circleRingsLayout.ts` +
     `circleRingsGrid.ts`): a lone center dot surrounded by 6 concentric
     rings of evenly-spaced circles (ring `n` has `6n` circles, so outer
     rings stay just as evenly spaced as inner ones instead of thinning
@@ -191,7 +199,7 @@ pass.
     less visible size increase ring-to-ring, since each additional
     ring's growing circle count demands more circumference to stay
     non-overlapping.
-  - **Pinwheel** (`src/utils/pinwheelLayout.ts` + `pinwheelGrid.ts`): the
+  - **Pinwheel** (`src/shapeGeometry/pinwheelLayout.ts` + `pinwheelGrid.ts`): the
     app's only shape using rotation-only (C8) symmetry instead of
     mirrored (D_n) symmetry — 8 elongated-parallelogram spokes (same
     center/sideRight/sideLeft/tip construction as the diamond star, but
@@ -221,7 +229,7 @@ pass.
   otherwise a brightened/saturated version of its own color. It is applied
   via a `--hover-fill` custom property.
 - **Touch wedge discoverability**: touch devices have no hover, so
-  `src/utils/useIsTouchDevice.ts` (a `(hover: none), (pointer: coarse)`
+  `src/hooks/useIsTouchDevice.ts` (a `(hover: none), (pointer: coarse)`
   media query hook) gates a persistent alternative. `showEditableArea` in
   `AppState` (default `true`, persisted, not undoable) drives the same
   dimming the grid components already use for hover, but only applied

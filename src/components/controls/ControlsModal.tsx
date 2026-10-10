@@ -1,4 +1,4 @@
-import { useIsTouchDevice } from '@utils/useIsTouchDevice'
+import { useIsTouchDevice } from '@hooks/useIsTouchDevice'
 import { CloseButton, Modal } from '@shared'
 import styles from './ControlsModal.module.css'
 

@@ -3,15 +3,15 @@ import type { Ref } from 'react'
 import {
 	DIAMOND_STAR_GRID_SIZE,
 	generateDiamondStarCells,
-} from '@utils/diamondStarGrid'
+} from '@geometry/diamondStarGrid'
 import {
 	diamondStarBoundingBox,
 	diamondStarCellCorners,
-} from '@utils/diamondStarLayout'
-import type { DiamondStarLayout } from '@utils/diamondStarLayout'
+} from '@geometry/diamondStarLayout'
+import type { DiamondStarLayout } from '@geometry/diamondStarLayout'
 import { useAppState } from '@state/useAppState'
 import { getThemeColors } from '@state/theme'
-import { useIsTouchDevice } from '@utils/useIsTouchDevice'
+import { useIsTouchDevice } from '@hooks/useIsTouchDevice'
 import PolygonCell from './PolygonCell'
 import styles from './DiamondStarGrid.module.css'
 

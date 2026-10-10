@@ -1,6 +1,6 @@
 import type { Point } from '../types/geometry'
 import type { CircleRingsCell } from '../types/circleRings'
-import { assignSymmetryGroups } from './symmetry'
+import { assignSymmetryGroups } from '@utils/symmetry'
 import {
 	circleCountForRing,
 	circleRingsBoundingBox,

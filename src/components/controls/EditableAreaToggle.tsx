@@ -1,5 +1,5 @@
 import { useAppState } from '@state/useAppState'
-import { useIsTouchDevice } from '@utils/useIsTouchDevice'
+import { useIsTouchDevice } from '@hooks/useIsTouchDevice'
 import { IconButton } from '@shared'
 
 // Touch devices have no hover, so there's no way to discover the editable

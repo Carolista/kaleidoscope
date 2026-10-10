@@ -4,12 +4,15 @@ import {
 	PINWHEEL_COL_STEPS,
 	PINWHEEL_ROW_STEPS,
 	generatePinwheelCells,
-} from '@utils/pinwheelGrid'
-import { pinwheelBoundingBox, pinwheelCellCorners } from '@utils/pinwheelLayout'
-import type { PinwheelLayout } from '@utils/pinwheelLayout'
+} from '@geometry/pinwheelGrid'
+import {
+	pinwheelBoundingBox,
+	pinwheelCellCorners,
+} from '@geometry/pinwheelLayout'
+import type { PinwheelLayout } from '@geometry/pinwheelLayout'
 import { useAppState } from '@state/useAppState'
 import { getThemeColors } from '@state/theme'
-import { useIsTouchDevice } from '@utils/useIsTouchDevice'
+import { useIsTouchDevice } from '@hooks/useIsTouchDevice'
 import PolygonCell from './PolygonCell'
 import styles from './PinwheelGrid.module.css'
 

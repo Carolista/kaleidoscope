@@ -1,6 +1,6 @@
 import type { Point } from '../types/geometry'
 import type { PinwheelCell } from '../types/pinwheel'
-import { rotate } from './symmetry'
+import { rotate } from '@utils/symmetry'
 
 export interface PinwheelLayout {
 	// Number of lattice steps from the center to the spoke's `sideRight`

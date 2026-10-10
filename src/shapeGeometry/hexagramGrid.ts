@@ -1,6 +1,6 @@
 import type { Point } from '../types/geometry'
 import type { HexagramCell } from '../types/hexagram'
-import { assignSymmetryGroups } from './symmetry'
+import { assignSymmetryGroups } from '@utils/symmetry'
 import {
 	HEXAGRAM_ROTATIONS,
 	hexagramBoundingBox,

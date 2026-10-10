@@ -29,6 +29,8 @@
 			"@shared/*": ["./src/components/shared/*"],
 			"@data": ["./src/data"],
 			"@data/*": ["./src/data/*"],
+			"@geometry": ["./src/shapeGeometry"],
+			"@geometry/*": ["./src/shapeGeometry/*"],
 			"@hooks": ["./src/hooks"],
 			"@hooks/*": ["./src/hooks/*"],
 			"@services": ["./src/services"],
