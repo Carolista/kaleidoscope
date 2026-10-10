@@ -1,6 +1,6 @@
 import type { Point } from '../types/geometry'
 import type { TriangleCell } from '../types/triangle'
-import { assignSymmetryGroups } from './symmetry'
+import { assignSymmetryGroups } from '@utils/symmetry'
 import { latticePoint, trianglesBoundingBox } from './triangleLayout'
 import type { TriangleLayout } from './triangleLayout'
 

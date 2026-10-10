@@ -1,6 +1,6 @@
 import type { Point } from '../types/geometry'
 import type { DiamondStarCell } from '../types/diamondStar'
-import { rotate } from './symmetry'
+import { rotate } from '@utils/symmetry'
 
 export interface DiamondStarLayout {
 	// Number of lattice rows/columns subdividing one diamond point, from

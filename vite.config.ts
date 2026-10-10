@@ -23,6 +23,7 @@ export default defineConfig(({ command }) => ({
 			'@grid': fromSrc('components/grid'),
 			'@shared': fromSrc('components/shared'),
 			'@data': fromSrc('data'),
+			'@geometry': fromSrc('shapeGeometry'),
 			'@hooks': fromSrc('hooks'),
 			'@services': fromSrc('services'),
 			'@state': fromSrc('state'),

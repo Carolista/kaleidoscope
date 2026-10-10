@@ -1,0 +1,30 @@
+.pinwheelGrid {
+	display: block;
+	/* Scales with viewport width as before (capped at 560px), but also
+	   caps itself by available viewport height so short viewports (e.g.
+	   a phone with a visible browser toolbar) never need scrolling to see
+	   the grid, color picker, and buttons together, just the header. The
+	   226px constant is the other UI's approximate height; the pinwheel's
+	   own bounding box is a perfect square (aspect ratio 1 — see
+	   computeGridAspectRatio in pinwheelGrid.ts and DECISIONS.md), so no
+	   extra width:height multiplier is needed here, unlike the diamond
+	   star/hexagram's non-square shapes. */
+	width: min(100%, 560px, calc(100vh - 226px));
+	height: auto;
+	margin: 0 auto;
+}
+
+/* Visually hides content while keeping it available to screen readers
+   (the standard "sr-only" clip pattern: display:none would remove it
+   from the accessibility tree too, so we clip it instead). */
+.visuallyHidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}

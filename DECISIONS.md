@@ -30,7 +30,7 @@ together. Rendering the original in a headless browser and measuring every
 hex's real pixel center confirmed true hex adjacency and orbit sizes of 1, 6,
 or 12: **D6 dihedral symmetry** around the center hex.
 
-So the grid is computed, not hand-coded (`src/utils/hexagonGrid.ts`): axial
+So the grid is computed, not hand-coded (`src/shapeGeometry/hexagonGrid.ts`): axial
 coordinates in a radius-9 hexagon (`1 + 3N(N+1) = 271`), group id = smallest
 `(q, r)` in the cell's D6 orbit, and one canonical cell per group is
 clickable. Those 30 cells always form one contiguous 30° wedge, matching the
@@ -576,7 +576,7 @@ Each 60-degree "spoke" of the star is made of 2 equilateral triangles — a
 slice of the central hexagon (apex at the shared center) and its attached
 point (apex at the outer tip) — which together form a 60/120-degree
 rhombus, symmetric about its own long axis, same as the diamond star's
-single-piece spoke. `src/utils/hexagramLayout.ts`'s `latticePoint`
+single-piece spoke. `src/shapeGeometry/hexagramLayout.ts`'s `latticePoint`
 generalizes the same 3-vertex affine interpolation formula used (and
 documented) in the diamond star's geometry, applied twice per spoke (once
 per equilateral triangle, oriented oppositely) rather than once — since
@@ -701,7 +701,173 @@ only.
   a nod to the app's origins as a hexagon grid. Its modal row is labeled
   "Create Image" to match the button's tooltip.
 
+### Circle rings (5th grid shape)
+
+A 5th shape: a lone center dot surrounded by concentric rings of
+circles, each ring containing more and larger circles than the one
+inside it — "innermost smallest, growing outward" per the user's
+request, and visibly distinct from the other 4 shapes' edge-to-edge
+polygon tiling (circles never need to touch/interlock).
+
+**Defining the "wedge" for a circular shape.** Every other shape's
+symmetry group is generated from one polygon-based wedge, rotated and/or
+mirrored around. Circles have no edges to share, so the equivalent here
+is a 30-degree angular slice from the center outward through every ring
+(a D6 fundamental domain, matching the other shapes' 6-fold symmetry).
+Unlike the diamond star/hexagram, a single 60-degree spoke of a ring's
+circles isn't internally self-mirror-symmetric (verified by hand via
+angle-reflection math), so there's no cheaper rotate-and-replicate
+shortcut — `circleRingsGrid.ts` instead feeds every ring's full set of
+circle centers directly into the general symmetry engine (`symmetry.ts`,
+same D6 engine as every non-hexagon shape), the same approach
+`triangleGrid.ts` uses for the same reason.
+
+**Ring geometry.** Ring `n` has `6n` circles (always a multiple of the
+6-fold symmetry, growing with the ring's own circumference so outer rings
+stay just as evenly spaced as inner ones), phase-aligned so index 0 of
+every ring sits on the "up" axis — this makes the whole arrangement
+automatically D6-symmetric with no extra generation work.
+`isCanonicalWedge`'s `[270, 300]` range (30 degrees, matching the spoke
+width above) picks the clickable member of each orbit, same convention
+as every other shape's 11-12 o'clock wedge.
+
+**Sizing — two rounds of tuning, both from live visual feedback, not
+just numeric validation:**
+
+1. First pass: ring `n`'s bandwidth grew linearly (`n * size`), with
+   circle diameter a fixed fraction of that bandwidth
+   (`FILL_FACTOR = 0.5`, derived to stay below the asymptotic
+   `pi / 6 ≈ 0.5236` bound past which same-ring neighbors would
+   eventually touch at any ring count) and the center dot deliberately
+   smaller than ring 1 (`CENTER_SCALE = 0.7`). `CIRCLE_RINGS_GRID_SIZE =
+   7` was chosen to land on 169 cells / 20 clickable groups, matching
+   the hexagon grid's own numbers. This passed every automated check
+   (no overlaps, correct group counts) but rendered with circles only
+   ~3-5px in diameter at the grid's max on-screen width — numerically
+   correct, visually useless on a touchscreen. Caught only by actually
+   opening the app and looking, not by any test.
+2. Second pass: the user set a hard requirement — circles no smaller
+   than ~30px at the grid's max on-screen width (560px, the same cap
+   `CircleRingsGrid.module.css` already uses for every shape), the
+   center dot and ring 1 tied for smallest (rather than the center being
+   smaller still), and tighter ring-to-ring spacing. Rebuilt the
+   layout math from scratch: `circleRingsCellDiameter` now starts both
+   ring 0 and ring 1 at a floor diameter (`layout.size`) and grows a
+   fixed fraction of that floor per ring (`GROWTH_STEP_RATIO`);
+   `ringCenterRadius` is computed iteratively ring-by-ring, each ring's
+   radius being the larger of two constraints (far enough out that its
+   own `6n` circles don't overlap each other, and far enough from the
+   previous ring that the two rings' circles don't overlap), both
+   governed by a single tight spacing multiplier (`RING_GAP`, just over
+   1 — picked as tight as possible while still leaving a visible gap in
+   practice, not just in theory).
+3. This surfaced a genuine tension, worked out numerically before
+   touching code: adding rings only hits the 30px floor by sacrificing
+   either a visible safety margin or a noticeable per-ring size increase
+   (verified: even with `RING_GAP` pushed to its absolute limit — circles
+   literally touching — 7 rings only reached ~29-32px with outer circles
+   just ~25% bigger than the floor). Presented 3 options to the user; the
+   user picked keeping 7 rings with a tight margin first, but after
+   seeing it live, found the growth "very subtle" and the spacing "very
+   tight" and switched to the originally-declined option: 6 rings (127
+   cells, 16 clickable groups) with `GROWTH_STEP_RATIO = 1/12` and
+   `RING_GAP = 1.04`, landing at ~30.6px floor / ~43.3px outer (a 1.42x
+   ratio) — confirmed via live DOM measurement (`circle[r]` x the SVG's
+   actual rendered-width-to-viewBox scale) in the browser, not just
+   computed. Lesson: for this shape, numeric non-overlap and
+   group-count validation alone didn't catch "too small to use" or "too
+   subtle to see" — both needed eyes on the actual rendered grid.
+
+**Rendering.** Unlike the other 4 shapes (all sharing `PolygonCell`),
+circles need their own `CircleCell`/`CircleCell.module.css` (an SVG
+`<circle>`, not a `<polygon>`) — deliberately near-identical to
+`PolygonCell`'s CSS (generic, class-based selectors) rather than shared,
+matching the project's one-module-per-grid-component convention.
+`imageExportService.ts`'s opacity-forcing and stroke-inlining (needed
+for PNG export, since CSS doesn't travel with a serialized standalone
+SVG) were generalized from a `polygon`-only selector to `'polygon,
+circle'`, and `GridShapeIcon`'s preview piece type became a discriminated
+union (`polygon` | `circle`) so the shape picker could preview this shape
+too, using `generateCircleRingsCells(1)` the same computed-not-hand-drawn
+way every other shape's icon works.
+
+### Pinwheel (6th grid shape, rotation-only symmetry)
+
+A 6th shape, and the first to deliberately break mirror symmetry: 8
+spokes copied around the center by rotation alone (a C8 cyclic group),
+never mirrored — so, unlike every other shape, painting one cell never
+implies painting a left/right mirrored partner, only its 7 rotated
+copies. `assignSymmetryGroups` (`symmetry.ts`) already supported this via
+its existing `mirror: false` option, added when the engine was first
+generalized (see "General-purpose symmetry engine, and the triangle
+grid" above) but unused until now — no symmetry-engine changes were
+needed, only a new wedge/spoke shape designed to actually look
+asymmetric once rotated.
+
+**First attempt: a diamond-star-style rhombus spoke, subdivided
+lopsidedly.** Reused the diamond star's `center`/`sideRight`/`sideLeft`/
+`tip` construction, with `sideRight`/`sideLeft` always equidistant from
+`center` (so adjacent rotated copies tile edge-to-edge with no gaps), but
+subdivided with *independent* step counts per axis
+(`PINWHEEL_ROW_STEPS`/`PINWHEEL_COL_STEPS`, first tried as 3 and 5, then
+3 and 7) instead of diamond star's single shared `gridSize`. This did
+make the subdivision lattice asymmetric/chiral (confirmed by screenshot:
+color bands spiral consistently in one direction rather than forming
+mirrored chevrons at spoke boundaries) — but the user flagged two
+problems after seeing it rendered: the shape still read as a plain
+8-point star (an unavoidable consequence of giving both sides equal
+length — the tip-to-side ratio is fixed at `2*cos(22.5°) ≈ 1.85`
+regardless of the row/col split), and increasing the finer axis's step
+count to make the size change more obvious instead made the *coarse*
+axis's cells (stretched to match the finer axis's total reach) balloon
+out into long, messy-looking slivers near the center.
+
+**Final design: let `sideRight`/`sideLeft` be different lengths, built
+from uniform-size *elongated* cells instead of stretched rhombi.**
+Traced to the root cause together with the user: forcing both sides to
+reach the same radius was what both created the sharp star point *and*
+forced a coarse axis's individual steps to stretch disproportionately
+long. The fix (the user's own proposed math, confirmed by prototyping
+both options live): scale `sideRight` by `rowSteps * size` and
+`sideLeft` by `colSteps * PINWHEEL_COL_ASPECT_RATIO * size` — each
+individual lattice cell is a uniform elongated parallelogram (`size`
+wide, `size * PINWHEEL_COL_ASPECT_RATIO` long, not a rhombus), and the
+two spoke sides are deliberately *unequal* lengths rather than tied
+together. Trade-off, accepted after visual review: this breaks
+edge-to-edge tiling, leaving small visible background gaps between
+adjacent spokes' outer edges — but those gaps are exactly what visually
+separates each blade from the next, which is what makes it read as a
+pinwheel/flower rather than one solid star. The elongated cells (at a
+2:1 length:width ratio, `PINWHEEL_COL_ASPECT_RATIO = 2`) also visually
+separate consecutive spokes from each other on their own, reinforcing
+the same effect.
+
+Settled on `PINWHEEL_ROW_STEPS = PINWHEEL_COL_STEPS = 3` (72 total
+cells, 9 clickable groups, each orbit exactly size 8) after trying a 3x7
+split first — the user pointed out that 3 long (2:1) cells per spoke
+already covers almost the same reach as 7 short (1:1) cells would, just
+with fewer, chunkier tiles and a clearer gap between spokes, making the
+extra subdivision unnecessary. Each orbit's size-8 uniformity (vs. the
+diamond star/hexagram's mix of size-6/size-12 orbits) comes from having
+no mirror step to pair cells up, and — unlike those two — no on-axis
+degenerate case to special-case either, since every cell's centroid
+lands at a distinct angle; a plain
+`assignSymmetryGroups({ fold: 8, mirror: false })` call reliably picks
+the "up" spoke's cells as each orbit's clickable member via a closed
+angle-range check (`isCanonicalWedge`).
+
+**Shape-picker icon**: uses 1 cell per spoke (`generatePinwheelCells(1,
+1)`, 8 pieces total) rather than a further-subdivided version — with the
+final design's visible per-spoke gaps and elongated cells already
+reading clearly as a pinwheel blade shape even unsubdivided, there's no
+need for the extra subdivision the first (rhombus/full-disk) design
+needed just to make the asymmetry visible at icon size.
+
 ## Process
+
+Work proceeds one logical step at a time. The user reviews and makes each
+commit. Decisions and standards are tracked in these two files so they carry
+across sessions.
 
 Work proceeds one logical step at a time. The user reviews and makes each
 commit. Decisions and standards are tracked in these two files so they carry

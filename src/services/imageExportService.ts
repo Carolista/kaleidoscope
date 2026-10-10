@@ -64,7 +64,7 @@ export function buildExportClone(
 	const clone = svg.cloneNode(true) as SVGSVGElement
 	clone.setAttribute('width', String(width))
 	clone.setAttribute('height', String(height))
-	inlinePolygonStrokes(svg, clone)
+	inlineCellStrokes(svg, clone)
 	forceFullOpacity(clone)
 	return clone
 }
@@ -72,32 +72,32 @@ export function buildExportClone(
 // The editable-wedge highlight (hover, or the touch-only persistent
 // toggle) dims non-wedge cells via a CSS class for on-screen display only
 // — the exported image should always show the full, undimmed design, so
-// force every polygon fully opaque regardless of that class.
+// force every cell fully opaque regardless of that class. Cells are
+// `<polygon>`s for every shape but circleRings, which uses `<circle>`s
+// instead (see CircleCell.tsx).
 function forceFullOpacity(clonedSvg: SVGSVGElement) {
-	for (const polygon of clonedSvg.querySelectorAll('polygon')) {
-		;(polygon as SVGPolygonElement).style.opacity = '1'
+	for (const cell of clonedSvg.querySelectorAll('polygon, circle')) {
+		;(cell as SVGElement).style.opacity = '1'
 	}
 }
 
-// The grid's "grout" lines are a CSS stroke from PolygonCell.module.css,
-// which isn't available once the SVG is serialized on its own — so bake
-// the live computed stroke style into every cloned polygon as plain
-// attributes instead of relying on a stylesheet that won't travel with it.
-function inlinePolygonStrokes(
-	liveSvg: SVGSVGElement,
-	clonedSvg: SVGSVGElement,
-) {
-	const samplePolygon = liveSvg.querySelector('polygon')
-	if (!samplePolygon) return
-	const computed = getComputedStyle(samplePolygon)
+// The grid's "grout" lines are a CSS stroke from PolygonCell.module.css/
+// CircleCell.module.css, which isn't available once the SVG is
+// serialized on its own — so bake the live computed stroke style into
+// every cloned cell as plain attributes instead of relying on a
+// stylesheet that won't travel with it.
+function inlineCellStrokes(liveSvg: SVGSVGElement, clonedSvg: SVGSVGElement) {
+	const sampleCell = liveSvg.querySelector('polygon, circle')
+	if (!sampleCell) return
+	const computed = getComputedStyle(sampleCell)
 	const stroke = computed.stroke
 	const strokeWidth = parseFloat(computed.strokeWidth)
 	const strokeLinejoin = computed.strokeLinejoin
 
-	for (const polygon of clonedSvg.querySelectorAll('polygon')) {
-		polygon.setAttribute('stroke', stroke)
-		polygon.setAttribute('stroke-width', String(strokeWidth))
-		polygon.setAttribute('stroke-linejoin', strokeLinejoin)
+	for (const cell of clonedSvg.querySelectorAll('polygon, circle')) {
+		cell.setAttribute('stroke', stroke)
+		cell.setAttribute('stroke-width', String(strokeWidth))
+		cell.setAttribute('stroke-linejoin', strokeLinejoin)
 	}
 }
 

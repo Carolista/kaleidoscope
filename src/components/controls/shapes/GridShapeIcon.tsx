@@ -1,25 +1,42 @@
 import { useMemo } from 'react'
 import type { CSSProperties } from 'react'
 import type { GridShapeId } from '@appTypes/gridShape'
-import { generateHexagonCells } from '@utils/hexagonGrid'
-import { axialToPixel, boundingBox, hexagonCorners } from '@utils/hexagonLayout'
-import type { HexagonLayout } from '@utils/hexagonLayout'
+import { generateHexagonCells } from '@geometry/hexagonGrid'
+import {
+	axialToPixel,
+	boundingBox,
+	hexagonCorners,
+} from '@geometry/hexagonLayout'
+import type { HexagonLayout } from '@geometry/hexagonLayout'
 import { pointsToSvgAttr } from '@utils/svgPoints'
-import { generateTriangleCells } from '@utils/triangleGrid'
-import { triangleCorners, trianglesBoundingBox } from '@utils/triangleLayout'
-import type { TriangleLayout } from '@utils/triangleLayout'
-import { generateDiamondStarCells } from '@utils/diamondStarGrid'
+import { generateTriangleCells } from '@geometry/triangleGrid'
+import { triangleCorners, trianglesBoundingBox } from '@geometry/triangleLayout'
+import type { TriangleLayout } from '@geometry/triangleLayout'
+import { generateDiamondStarCells } from '@geometry/diamondStarGrid'
 import {
 	diamondStarBoundingBox,
 	diamondStarCellCorners,
-} from '@utils/diamondStarLayout'
-import type { DiamondStarLayout } from '@utils/diamondStarLayout'
-import { generateHexagramCells } from '@utils/hexagramGrid'
+} from '@geometry/diamondStarLayout'
+import type { DiamondStarLayout } from '@geometry/diamondStarLayout'
+import { generateHexagramCells } from '@geometry/hexagramGrid'
 import {
 	hexagramBoundingBox,
 	hexagramStarCellCorners,
-} from '@utils/hexagramLayout'
-import type { HexagramLayout } from '@utils/hexagramLayout'
+} from '@geometry/hexagramLayout'
+import type { HexagramLayout } from '@geometry/hexagramLayout'
+import { generateCircleRingsCells } from '@geometry/circleRingsGrid'
+import {
+	circleRingsBoundingBox,
+	circleRingsCellCenter,
+	circleRingsCellRadius,
+} from '@geometry/circleRingsLayout'
+import type { CircleRingsLayout } from '@geometry/circleRingsLayout'
+import { generatePinwheelCells } from '@geometry/pinwheelGrid'
+import {
+	pinwheelBoundingBox,
+	pinwheelCellCorners,
+} from '@geometry/pinwheelLayout'
+import type { PinwheelLayout } from '@geometry/pinwheelLayout'
 import type { Point } from '@appTypes/geometry'
 import styles from './GridShapeIcon.module.css'
 
@@ -27,25 +44,37 @@ export interface GridShapeIconProps {
 	readonly shape: GridShapeId
 }
 
+// A preview piece is either a straight-edged polygon (every shape but
+// circleRings) or a circle (circleRings, whose cells aren't straight-
+// edged) — matching the real grid rendering's PolygonCell/CircleCell
+// split.
+type PreviewPiece =
+	| { readonly kind: 'polygon'; readonly points: readonly Point[] }
+	| {
+			readonly kind: 'circle'
+			readonly center: Point
+			readonly radius: number
+	  }
+
 interface Preview {
-	readonly pieces: readonly (readonly Point[])[]
+	readonly pieces: readonly PreviewPiece[]
 	readonly viewBox: string
 	// Grout stroke width, in the same SVG user units as `pieces`/`viewBox`.
 	readonly strokeWidth: number
 }
 
 // Each shape's preview is assembled at a fixed `size: 1` (one small
-// piece's edge length), but the 4 shapes' overall spans work out to very
+// piece's edge length), but the 6 shapes' overall spans work out to very
 // different multiples of that unit — e.g. the hexagon-of-7's bounding
 // box is 5 units wide, while the diamond star's is under 2 — so a single
 // fixed stroke-width would read as dramatically thinner or thicker grout
 // depending on the shape. Scaling the stroke to a fraction of each
 // shape's own viewBox width keeps the grout visually consistent across
-// all 4 icons.
+// all 6 icons.
 const RELATIVE_STROKE_WIDTH = 0.03
 
 function toPreview(
-	pieces: readonly (readonly Point[])[],
+	pieces: readonly PreviewPiece[],
 	box: { minX: number; minY: number; maxX: number; maxY: number },
 ): Preview {
 	const width = box.maxX - box.minX
@@ -60,9 +89,11 @@ function toPreview(
 // of its real grid-generation code (gridSize/radius 1, or 2 for the
 // triangle — the smallest value that still yields a big-triangle shape
 // rather than a single cell) — a hexagon of 7 hexagons, a triangle of 4
-// triangles, a diamond star of 6 diamonds, a hexagram of 12 triangles.
-// Reusing the actual geometry utilities (rather than hand-drawn paths)
-// keeps every icon perfectly in sync with the grid it represents.
+// triangles, a diamond star of 6 diamonds, a hexagram of 12 triangles, a
+// circle-rings center dot plus its first ring of 6 circles, a pinwheel
+// of 8 lopsided parallelograms (1 per spoke). Reusing the actual
+// geometry utilities (rather than hand-drawn paths) keeps every icon
+// perfectly in sync with the grid it represents.
 function buildPreview(shape: GridShapeId): Preview {
 	switch (shape) {
 		case 'hexagon': {
@@ -71,7 +102,10 @@ function buildPreview(shape: GridShapeId): Preview {
 				axialToPixel(cell, layout),
 			)
 			return toPreview(
-				centers.map(center => hexagonCorners(center, layout)),
+				centers.map(center => ({
+					kind: 'polygon',
+					points: hexagonCorners(center, layout),
+				})),
 				boundingBox(centers, layout),
 			)
 		}
@@ -80,21 +114,51 @@ function buildPreview(shape: GridShapeId): Preview {
 			const pieces = generateTriangleCells(2).map(cell =>
 				triangleCorners(cell, layout),
 			)
-			return toPreview(pieces, trianglesBoundingBox(pieces))
+			return toPreview(
+				pieces.map(points => ({ kind: 'polygon', points })),
+				trianglesBoundingBox(pieces),
+			)
 		}
 		case 'diamondStar': {
 			const layout: DiamondStarLayout = { gridSize: 1, size: 1 }
 			const pieces = generateDiamondStarCells(1).map(cell =>
 				diamondStarCellCorners(cell, layout),
 			)
-			return toPreview(pieces, diamondStarBoundingBox(pieces))
+			return toPreview(
+				pieces.map(points => ({ kind: 'polygon', points })),
+				diamondStarBoundingBox(pieces),
+			)
 		}
 		case 'hexagram': {
 			const layout: HexagramLayout = { gridSize: 1, size: 1 }
 			const pieces = generateHexagramCells(1).map(cell =>
 				hexagramStarCellCorners(cell, layout),
 			)
-			return toPreview(pieces, hexagramBoundingBox(pieces))
+			return toPreview(
+				pieces.map(points => ({ kind: 'polygon', points })),
+				hexagramBoundingBox(pieces),
+			)
+		}
+		case 'circleRings': {
+			const layout: CircleRingsLayout = { ringCount: 1, size: 1 }
+			const circles = generateCircleRingsCells(1).map(cell => ({
+				center: circleRingsCellCenter(cell, layout),
+				radius: circleRingsCellRadius(cell, layout),
+			}))
+			return toPreview(
+				circles.map(circle => ({ kind: 'circle', ...circle })),
+				circleRingsBoundingBox(circles),
+			)
+		}
+		case 'pinwheel': {
+			const layout: PinwheelLayout = { rowSteps: 1, colSteps: 1, size: 1 }
+			const pieces = generatePinwheelCells(1, 1).map(cell =>
+				pinwheelCellCorners(cell, layout),
+			)
+			return toPreview(
+				pieces.map(points => ({ kind: 'polygon', points })),
+				pinwheelBoundingBox(pieces),
+			)
 		}
 	}
 }
@@ -118,13 +182,23 @@ function GridShapeIcon({ shape }: GridShapeIconProps) {
 			focusable="false"
 			style={{ '--grout-width': strokeWidth } as CSSProperties}
 		>
-			{pieces.map((corners, i) => (
-				<polygon
-					key={i}
-					className={styles.piece}
-					points={pointsToSvgAttr(corners)}
-				/>
-			))}
+			{pieces.map((piece, i) =>
+				piece.kind === 'circle' ? (
+					<circle
+						key={i}
+						className={styles.piece}
+						cx={piece.center.x}
+						cy={piece.center.y}
+						r={piece.radius}
+					/>
+				) : (
+					<polygon
+						key={i}
+						className={styles.piece}
+						points={pointsToSvgAttr(piece.points)}
+					/>
+				),
+			)}
 		</svg>
 	)
 }

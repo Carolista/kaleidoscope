@@ -1,6 +1,6 @@
 import type { Point } from '../types/geometry'
 import type { DiamondStarCell } from '../types/diamondStar'
-import { assignSymmetryGroups } from './symmetry'
+import { assignSymmetryGroups } from '@utils/symmetry'
 import {
 	DIAMOND_STAR_ROTATIONS,
 	HALF_ANGLE_DEGREES,

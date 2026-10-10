@@ -58,4 +58,29 @@ describe('buildExportClone', () => {
 		const livePolygon = svg.querySelector('polygon') as SVGPolygonElement
 		expect(livePolygon.style.opacity).toBe('0.2')
 	})
+
+	function buildSvgWithDimmedCircle(): SVGSVGElement {
+		const svgNS = 'http://www.w3.org/2000/svg'
+		const svg = document.createElementNS(svgNS, 'svg') as SVGSVGElement
+		const circle = document.createElementNS(
+			svgNS,
+			'circle',
+		) as SVGCircleElement
+		circle.setAttribute('cx', '0')
+		circle.setAttribute('cy', '0')
+		circle.setAttribute('r', '1')
+		// Mimics the on-screen "dimmed" treatment the editable-wedge
+		// highlight applies (hover, or the touch toggle's persistent state).
+		circle.style.opacity = '0.2'
+		svg.appendChild(circle)
+		document.body.appendChild(svg)
+		return svg
+	}
+
+	it('also forces every circle fully opaque (the circleRings shape uses <circle>, not <polygon>)', () => {
+		const svg = buildSvgWithDimmedCircle()
+		const clone = buildExportClone(svg, 100, 100)
+		const circle = clone.querySelector('circle') as SVGCircleElement
+		expect(circle.style.opacity).toBe('1')
+	})
 })
