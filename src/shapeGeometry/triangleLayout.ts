@@ -48,26 +48,4 @@ export function triangleCorners(
 	]
 }
 
-// Computed directly from every cell's actual corner points (rather than
-// a center + fixed margin, as hexLayout's boundingBox does) since a
-// triangle's corners aren't equidistant from its centroid.
-export function trianglesBoundingBox(corners: readonly (readonly Point[])[]): {
-	minX: number
-	minY: number
-	maxX: number
-	maxY: number
-} {
-	let minX = Infinity
-	let minY = Infinity
-	let maxX = -Infinity
-	let maxY = -Infinity
-	for (const triangle of corners) {
-		for (const { x, y } of triangle) {
-			minX = Math.min(minX, x)
-			minY = Math.min(minY, y)
-			maxX = Math.max(maxX, x)
-			maxY = Math.max(maxY, y)
-		}
-	}
-	return { minX, minY, maxX, maxY }
-}
+export { polygonBoundingBox as trianglesBoundingBox } from '@utils/geometryMath'

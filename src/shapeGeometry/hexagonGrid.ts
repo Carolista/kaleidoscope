@@ -1,4 +1,5 @@
 import type { AxialCoord, HexagonCell } from '../types/hexagon'
+import { groupCells } from '@utils/groupCells'
 import { axialToPixel, boundingBox } from './hexagonLayout'
 import type { HexagonLayout } from './hexagonLayout'
 
@@ -88,16 +89,7 @@ export function generateHexagonCells(
 export function groupHexagonCells(
 	cells: readonly HexagonCell[],
 ): Map<string, HexagonCell[]> {
-	const groups = new Map<string, HexagonCell[]>()
-	for (const cell of cells) {
-		const list = groups.get(cell.groupId)
-		if (list) {
-			list.push(cell)
-		} else {
-			groups.set(cell.groupId, [cell])
-		}
-	}
-	return groups
+	return groupCells(cells)
 }
 
 // Every distinct mirror-symmetry group id in the grid (20 at the default

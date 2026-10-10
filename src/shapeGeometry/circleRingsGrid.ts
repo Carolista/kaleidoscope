@@ -1,5 +1,6 @@
 import type { Point } from '../types/geometry'
 import type { CircleRingsCell } from '../types/circleRings'
+import { groupCells } from '@utils/groupCells'
 import { assignSymmetryGroups } from '@utils/symmetry'
 import {
 	circleCountForRing,
@@ -99,16 +100,7 @@ export function generateCircleRingsCells(
 export function groupCircleRingsCells(
 	cells: readonly CircleRingsCell[],
 ): Map<string, CircleRingsCell[]> {
-	const groups = new Map<string, CircleRingsCell[]>()
-	for (const cell of cells) {
-		const list = groups.get(cell.groupId)
-		if (list) {
-			list.push(cell)
-		} else {
-			groups.set(cell.groupId, [cell])
-		}
-	}
-	return groups
+	return groupCells(cells)
 }
 
 // Every distinct symmetry group id in the grid — lets callers (e.g. the

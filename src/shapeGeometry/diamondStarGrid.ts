@@ -1,5 +1,7 @@
 import type { Point } from '../types/geometry'
 import type { DiamondStarCell } from '../types/diamondStar'
+import { averagePoint } from '@utils/geometryMath'
+import { groupCells } from '@utils/groupCells'
 import { assignSymmetryGroups } from '@utils/symmetry'
 import {
 	DIAMOND_STAR_ROTATIONS,
@@ -51,14 +53,6 @@ function generateDiamondCells(gridSize: number): RawCell[] {
 	return cells
 }
 
-function centroid(corners: readonly Point[]): Point {
-	const sum = corners.reduce(
-		(acc, p) => ({ x: acc.x + p.x, y: acc.y + p.y }),
-		{ x: 0, y: 0 },
-	)
-	return { x: sum.x / corners.length, y: sum.y / corners.length }
-}
-
 // Picks the canonical (clickable) member of each symmetry orbit: the
 // rhombi living in the "right half" of the star's "up" diamond point —
 // the copy nearer its `sideRight` vertex — which spans exactly
@@ -100,7 +94,11 @@ export function generateDiamondStarCells(
 	DIAMOND_STAR_ROTATIONS.forEach((transform, transformIndex) => {
 		baseCells.forEach((cell, cellIndex) => {
 			const corners = baseCorners[cellIndex].map(transform)
-			raw.push({ ...cell, transformIndex, centroid: centroid(corners) })
+			raw.push({
+				...cell,
+				transformIndex,
+				centroid: averagePoint(corners),
+			})
 		})
 	})
 
@@ -129,16 +127,7 @@ export function generateDiamondStarCells(
 export function groupDiamondStarCells(
 	cells: readonly DiamondStarCell[],
 ): Map<string, DiamondStarCell[]> {
-	const groups = new Map<string, DiamondStarCell[]>()
-	for (const cell of cells) {
-		const list = groups.get(cell.groupId)
-		if (list) {
-			list.push(cell)
-		} else {
-			groups.set(cell.groupId, [cell])
-		}
-	}
-	return groups
+	return groupCells(cells)
 }
 
 // Every distinct symmetry group id in the grid — lets callers (e.g. the

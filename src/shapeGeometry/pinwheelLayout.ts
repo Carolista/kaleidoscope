@@ -162,25 +162,4 @@ export function pinwheelCellCorners(
 	return raw.map(transform)
 }
 
-// Computed directly from every cell's actual corner points, same
-// approach as diamondStarLayout's `diamondStarBoundingBox`.
-export function pinwheelBoundingBox(corners: readonly (readonly Point[])[]): {
-	minX: number
-	minY: number
-	maxX: number
-	maxY: number
-} {
-	let minX = Infinity
-	let minY = Infinity
-	let maxX = -Infinity
-	let maxY = -Infinity
-	for (const piece of corners) {
-		for (const { x, y } of piece) {
-			minX = Math.min(minX, x)
-			minY = Math.min(minY, y)
-			maxX = Math.max(maxX, x)
-			maxY = Math.max(maxY, y)
-		}
-	}
-	return { minX, minY, maxX, maxY }
-}
+export { polygonBoundingBox as pinwheelBoundingBox } from '@utils/geometryMath'

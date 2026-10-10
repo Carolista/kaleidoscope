@@ -1,5 +1,7 @@
 import type { Point } from '../types/geometry'
 import type { HexagramCell } from '../types/hexagram'
+import { averagePoint } from '@utils/geometryMath'
+import { groupCells } from '@utils/groupCells'
 import { assignSymmetryGroups } from '@utils/symmetry'
 import {
 	HEXAGRAM_ROTATIONS,
@@ -64,13 +66,6 @@ function generateSpokeCells(gridSize: number): RawCell[] {
 	]
 }
 
-function centroid(corners: readonly Point[]): Point {
-	return {
-		x: (corners[0].x + corners[1].x + corners[2].x) / 3,
-		y: (corners[0].y + corners[1].y + corners[2].y) / 3,
-	}
-}
-
 // Picks the canonical (clickable) member of each symmetry orbit: the
 // triangles living in the "right half" of the star's "up" spoke — the
 // half nearer its `hexEdgeRight` vertex — which spans exactly 30 degrees,
@@ -115,7 +110,11 @@ export function generateHexagramCells(
 	HEXAGRAM_ROTATIONS.forEach((transform, transformIndex) => {
 		baseCells.forEach((cell, cellIndex) => {
 			const corners = baseCorners[cellIndex].map(transform)
-			raw.push({ ...cell, transformIndex, centroid: centroid(corners) })
+			raw.push({
+				...cell,
+				transformIndex,
+				centroid: averagePoint(corners),
+			})
 		})
 	})
 
@@ -146,16 +145,7 @@ export function generateHexagramCells(
 export function groupHexagramCells(
 	cells: readonly HexagramCell[],
 ): Map<string, HexagramCell[]> {
-	const groups = new Map<string, HexagramCell[]>()
-	for (const cell of cells) {
-		const list = groups.get(cell.groupId)
-		if (list) {
-			list.push(cell)
-		} else {
-			groups.set(cell.groupId, [cell])
-		}
-	}
-	return groups
+	return groupCells(cells)
 }
 
 // Every distinct symmetry group id in the grid — lets callers (e.g. the
