@@ -1,6 +1,7 @@
 import type { AppState } from '../types/appState'
 import type { AppAction } from './appReducer'
 import { appReducer } from './appReducer'
+import { getThemeColors } from './theme'
 
 // Only the design content itself is undoable — picking a current color or
 // toggling dark mode are just viewing/tool choices, not something a user
@@ -40,7 +41,19 @@ function snapshotOf(state: AppState): DesignSnapshot {
 }
 
 function applySnapshot(state: AppState, snapshot: DesignSnapshot): AppState {
-	return { ...state, ...snapshot }
+	let currentColor = state.currentColor
+	const { base, accent } = getThemeColors(state.darkMode)
+	if (
+		currentColor !== base &&
+		currentColor !== accent &&
+		!snapshot.currentScheme.colors.includes(currentColor)
+	) {
+		const colorIndex = state.currentScheme.colors.indexOf(currentColor)
+		if (colorIndex !== -1) {
+			currentColor = snapshot.currentScheme.colors[colorIndex]
+		}
+	}
+	return { ...state, ...snapshot, currentColor }
 }
 
 export function historyReducer(

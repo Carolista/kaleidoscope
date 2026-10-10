@@ -107,6 +107,96 @@ describe('historyReducer', () => {
 		expect(history.past).toBe(pastBefore)
 	})
 
+	it('maps the selected palette position on scheme undo and redo', () => {
+		const originalScheme = colorSchemes[0]
+		const nextScheme = colorSchemes[1]
+		let history = createInitialHistoryState(baseState())
+		history = historyReducer(history, {
+			type: 'SELECT_SCHEME',
+			scheme: nextScheme,
+		})
+		history = historyReducer(history, {
+			type: 'SELECT_COLOR',
+			color: nextScheme.colors[3],
+		})
+
+		expect(history.past).toHaveLength(1)
+		history = historyReducer(history, { type: 'UNDO' })
+		expect(history.present.currentScheme).toBe(originalScheme)
+		expect(history.present.currentColor).toBe(originalScheme.colors[3])
+
+		history = historyReducer(history, { type: 'REDO' })
+		expect(history.present.currentScheme).toBe(nextScheme)
+		expect(history.present.currentColor).toBe(nextScheme.colors[3])
+	})
+
+	it('paints with the reconciled color after undoing a scheme change', () => {
+		let history = createInitialHistoryState(baseState())
+		history = historyReducer(history, {
+			type: 'SELECT_SCHEME',
+			scheme: colorSchemes[1],
+		})
+		history = historyReducer(history, { type: 'UNDO' })
+		history = historyReducer(history, {
+			type: 'PAINT_SHAPE_GROUP',
+			groupId: '0,0',
+		})
+
+		expect(history.present.currentColor).toBe(colorSchemes[0].colors[0])
+		expect(history.present.shapeGroupColors['0,0']).toBe(
+			colorSchemes[0].colors[0],
+		)
+	})
+
+	it('preserves a selected color already present at another position in the restored palette', () => {
+		const originalScheme = colorSchemes[0]
+		const nextScheme = {
+			name: 'Overlapping palette',
+			colors: [
+				originalScheme.colors[1],
+				originalScheme.colors[2],
+				originalScheme.colors[3],
+				originalScheme.colors[4],
+				originalScheme.colors[0],
+			] as const,
+		}
+		let history = createInitialHistoryState(baseState())
+		history = historyReducer(history, {
+			type: 'SELECT_SCHEME',
+			scheme: nextScheme,
+		})
+		history = historyReducer(history, { type: 'UNDO' })
+
+		expect(history.present.currentColor).toBe(originalScheme.colors[1])
+		history = historyReducer(history, { type: 'REDO' })
+		expect(history.present.currentColor).toBe(originalScheme.colors[1])
+	})
+
+	it.each([
+		[false, '#ffffff'],
+		[false, '#222222'],
+		[true, '#222222'],
+		[true, '#ffffff'],
+	])(
+		'preserves neutral %s mode color %s across scheme undo and redo',
+		(darkMode, color) => {
+			let history = createInitialHistoryState(baseState({ darkMode }))
+			history = historyReducer(history, {
+				type: 'SELECT_SCHEME',
+				scheme: colorSchemes[1],
+			})
+			history = historyReducer(history, {
+				type: 'SELECT_COLOR',
+				color,
+			})
+			history = historyReducer(history, { type: 'UNDO' })
+			expect(history.present.currentColor).toBe(color)
+			expect(history.present.darkMode).toBe(darkMode)
+			history = historyReducer(history, { type: 'REDO' })
+			expect(history.present.currentColor).toBe(color)
+		},
+	)
+
 	it('TOGGLE_DARK_MODE updates present without being undoable', () => {
 		let history = createInitialHistoryState(baseState({ darkMode: false }))
 		history = historyReducer(history, {
