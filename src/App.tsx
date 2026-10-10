@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import type { ComponentType, CSSProperties, Ref } from 'react'
 import { useLayoutEffect, useRef } from 'react'
 import styles from './App.module.css'
 import { ColorOptions, ColorThemeButton } from '@color-schemes'
@@ -24,11 +24,25 @@ import Footer from './components/layout/Footer'
 import Header from './components/layout/Header'
 import { getThemeColors } from './state/theme'
 import { useAppState } from './state/useAppState'
+import type { GridShapeId } from './types/gridShape'
+
+const gridComponents = {
+	hexagon: HexagonGrid,
+	triangle: TriangleGrid,
+	diamondStar: DiamondStarGrid,
+	hexagram: HexagramGrid,
+	circleRings: CircleRingsGrid,
+	pinwheel: PinwheelGrid,
+} satisfies Record<
+	GridShapeId,
+	ComponentType<{ readonly svgRef?: Ref<SVGSVGElement> }>
+>
 
 function App() {
 	const { state } = useAppState()
 	const { base, accent } = getThemeColors(state.darkMode)
 	const svgRef = useRef<SVGSVGElement>(null)
+	const Grid = gridComponents[state.gridShape]
 
 	useLayoutEffect(() => {
 		// `--base`/`--accent` are set inline below, but CSS custom properties
@@ -60,19 +74,7 @@ function App() {
 		>
 			<Header />
 			<main className={styles.app}>
-				{state.gridShape === 'triangle' ? (
-					<TriangleGrid svgRef={svgRef} />
-				) : state.gridShape === 'diamondStar' ? (
-					<DiamondStarGrid svgRef={svgRef} />
-				) : state.gridShape === 'hexagram' ? (
-					<HexagramGrid svgRef={svgRef} />
-				) : state.gridShape === 'circleRings' ? (
-					<CircleRingsGrid svgRef={svgRef} />
-				) : state.gridShape === 'pinwheel' ? (
-					<PinwheelGrid svgRef={svgRef} />
-				) : (
-					<HexagonGrid svgRef={svgRef} />
-				)}
+				<Grid svgRef={svgRef} />
 				<div
 					role="group"
 					aria-label="Controls"

@@ -24,40 +24,43 @@ import {
 	getGroupIds as getTriangleGroupIds,
 } from '@geometry/triangleGrid'
 
-// Small dispatch layer so callers that need a shape's group ids or aspect
-// ratio (the design randomizer, the save-image preview) don't need to
-// know which shape is current themselves — they just ask for the
-// current `gridShape`.
-export function getGroupIdsForShape(shape: GridShapeId): string[] {
-	switch (shape) {
-		case 'hexagon':
-			return getHexagonGroupIds()
-		case 'triangle':
-			return getTriangleGroupIds()
-		case 'diamondStar':
-			return getDiamondStarGroupIds()
-		case 'hexagram':
-			return getHexagramGroupIds()
-		case 'circleRings':
-			return getCircleRingsGroupIds()
-		case 'pinwheel':
-			return getPinwheelGroupIds()
+const shapeGeometry = {
+	hexagon: {
+		getGroupIds: getHexagonGroupIds,
+		aspectRatio: computeHexagonAspectRatio,
+	},
+	triangle: {
+		getGroupIds: getTriangleGroupIds,
+		aspectRatio: computeTriangleAspectRatio,
+	},
+	diamondStar: {
+		getGroupIds: getDiamondStarGroupIds,
+		aspectRatio: computeDiamondStarAspectRatio,
+	},
+	hexagram: {
+		getGroupIds: getHexagramGroupIds,
+		aspectRatio: computeHexagramAspectRatio,
+	},
+	circleRings: {
+		getGroupIds: getCircleRingsGroupIds,
+		aspectRatio: computeCircleRingsAspectRatio,
+	},
+	pinwheel: {
+		getGroupIds: getPinwheelGroupIds,
+		aspectRatio: computePinwheelAspectRatio,
+	},
+} satisfies Record<
+	GridShapeId,
+	{
+		readonly getGroupIds: () => string[]
+		readonly aspectRatio: () => number
 	}
+>
+
+export function getGroupIdsForShape(shape: GridShapeId): string[] {
+	return shapeGeometry[shape].getGroupIds()
 }
 
 export function computeAspectRatioForShape(shape: GridShapeId): number {
-	switch (shape) {
-		case 'hexagon':
-			return computeHexagonAspectRatio()
-		case 'triangle':
-			return computeTriangleAspectRatio()
-		case 'diamondStar':
-			return computeDiamondStarAspectRatio()
-		case 'hexagram':
-			return computeHexagramAspectRatio()
-		case 'circleRings':
-			return computeCircleRingsAspectRatio()
-		case 'pinwheel':
-			return computePinwheelAspectRatio()
-	}
+	return shapeGeometry[shape].aspectRatio()
 }

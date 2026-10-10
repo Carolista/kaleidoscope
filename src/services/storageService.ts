@@ -1,6 +1,7 @@
 import type { AppState } from '../types/appState'
 import type { GridShapeId } from '../types/gridShape'
 import { colorSchemes } from '../data/colorSchemes'
+import { isGridShapeId } from '../data/gridShapes'
 import { createInitialAppState } from '../state/appReducer'
 
 const STORAGE_KEY = 'kaleidoscope:design'
@@ -10,15 +11,6 @@ const STORAGE_KEY = 'kaleidoscope:design'
 // crash trying to parse it. No migration logic yet since this is the
 // first version.
 const STORAGE_VERSION = 1
-
-const VALID_GRID_SHAPES: readonly GridShapeId[] = [
-	'hexagon',
-	'triangle',
-	'diamondStar',
-	'hexagram',
-	'circleRings',
-	'pinwheel',
-]
 
 interface PersistedDesign {
 	readonly version: typeof STORAGE_VERSION
@@ -75,8 +67,7 @@ function isPersistedDesign(value: unknown): value is PersistedDesign {
 		typeof data.darkMode === 'boolean' &&
 		(data.showEditableArea === undefined ||
 			typeof data.showEditableArea === 'boolean') &&
-		(data.gridShape === undefined ||
-			VALID_GRID_SHAPES.includes(data.gridShape as GridShapeId)) &&
+		(data.gridShape === undefined || isGridShapeId(data.gridShape)) &&
 		typeof data.shapeGroupColors === 'object' &&
 		data.shapeGroupColors !== null &&
 		Object.values(data.shapeGroupColors).every(c => typeof c === 'string')

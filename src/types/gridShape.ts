@@ -1,4 +1,6 @@
-// Identifies one of the kaleidoscope's selectable grid shapes. Each shape
+import type { supportedGridShapes } from '../data/gridShapes'
+
+// Identifies one of the kaleidoscope's supported grid shapes. Each shape
 // has its own cell-generation/symmetry module (hexagonGrid.ts,
 // triangleGrid.ts, ...) but shares the same `shapeGroupColors` paint state,
 // since painting/undo/redo only ever need a group id, never shape-specific
@@ -8,13 +10,7 @@
 // `pinwheel` uses mirror symmetry (D_n) to replicate/group its cells;
 // `pinwheel` is rotation-only (C8), since its own lopsided lattice can't
 // be its own mirror image.
-export type GridShapeId =
-	| 'hexagon'
-	| 'triangle'
-	| 'diamondStar'
-	| 'hexagram'
-	| 'circleRings'
-	| 'pinwheel'
+export type GridShapeId = (typeof supportedGridShapes)[number]['id']
 
 export interface GridShapeOption {
 	readonly id: GridShapeId

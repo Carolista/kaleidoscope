@@ -1,13 +1,23 @@
-import type { GridShapeOption } from '../types/gridShape'
+import type { GridShapeId } from '../types/gridShape'
 
-// Every grid shape offered in the shape picker, in the order they're
-// listed. Add a new entry here (plus its cell-generation module and a
-// case in gridShapeRegistry.ts) to offer another shape.
-export const gridShapes: readonly GridShapeOption[] = [
-	{ id: 'hexagon', label: 'Hexagon' },
-	{ id: 'triangle', label: 'Triangle' },
-	{ id: 'diamondStar', label: 'Diamond Star' },
-	{ id: 'hexagram', label: 'Hexagram' },
-	{ id: 'circleRings', label: 'Circle Rings' },
-	{ id: 'pinwheel', label: 'Pinwheel' },
-]
+// Supported shapes remain loadable even when hidden from the picker.
+export const supportedGridShapes = [
+	{ id: 'hexagon', label: 'Hexagon', pickerVisible: true },
+	{ id: 'triangle', label: 'Triangle', pickerVisible: true },
+	{ id: 'diamondStar', label: 'Diamond Star', pickerVisible: true },
+	{ id: 'hexagram', label: 'Hexagram', pickerVisible: true },
+	{ id: 'circleRings', label: 'Circle Rings', pickerVisible: true },
+	{ id: 'pinwheel', label: 'Pinwheel', pickerVisible: true },
+] as const satisfies readonly {
+	readonly id: string
+	readonly label: string
+	readonly pickerVisible: boolean
+}[]
+
+export const gridShapes = supportedGridShapes.filter(
+	shape => shape.pickerVisible,
+)
+
+export function isGridShapeId(value: unknown): value is GridShapeId {
+	return supportedGridShapes.some(shape => shape.id === value)
+}

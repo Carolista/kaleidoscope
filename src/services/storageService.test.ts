@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { colorSchemes } from '../data/colorSchemes'
+import { supportedGridShapes } from '../data/gridShapes'
 import type { AppState } from '../types/appState'
 import {
 	loadInitialAppState,
@@ -44,6 +45,12 @@ describe('storageService', () => {
 
 		const loaded = loadInitialAppState()
 		expect(loaded).toEqual(saved)
+	})
+
+	it.each(supportedGridShapes)('restores supported shape $id', ({ id }) => {
+		const saved = baseState({ gridShape: id })
+		savePersistedState(saved)
+		expect(loadInitialAppState()).toEqual(saved)
 	})
 
 	it('falls back to a fresh random state when the saved scheme name no longer exists', () => {

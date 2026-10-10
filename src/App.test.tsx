@@ -4,6 +4,9 @@ import userEvent from '@testing-library/user-event'
 import { AppStateProvider } from './state/AppContext'
 import App from './App'
 import { useIsTouchDevice } from './hooks/useIsTouchDevice'
+import { supportedGridShapes } from './data/gridShapes'
+import { colorSchemes } from './data/colorSchemes'
+import { savePersistedState } from './services/storageService'
 
 vi.mock('./hooks/useIsTouchDevice')
 const mockUseIsTouchDevice = vi.mocked(useIsTouchDevice)
@@ -24,6 +27,27 @@ describe('App', () => {
 			screen.getByRole('heading', { name: 'Controls' }),
 		).toBeInTheDocument()
 	})
+
+	it.each(supportedGridShapes)(
+		'renders a restored $id design using the correct grid',
+		({ id }) => {
+			savePersistedState({
+				currentScheme: colorSchemes[0],
+				currentColor: colorSchemes[0].colors[0],
+				darkMode: true,
+				showEditableArea: true,
+				gridShape: id,
+				shapeGroupColors: {},
+			})
+			mockUseIsTouchDevice.mockReturnValue(false)
+			renderApp()
+			expect(
+				screen.getByRole('group', {
+					name: `Kaleidoscope ${id === 'diamondStar' ? 'diamond star' : id === 'circleRings' ? 'circle rings' : id} grid`,
+				}),
+			).toBeInTheDocument()
+		},
+	)
 
 	it('dismisses the controls modal via its close button', async () => {
 		mockUseIsTouchDevice.mockReturnValue(false)
