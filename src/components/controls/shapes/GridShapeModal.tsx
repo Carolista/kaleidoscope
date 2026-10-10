@@ -1,4 +1,5 @@
-import { CloseButton, Modal } from '@shared'
+import { useId } from 'react'
+import { Modal, ModalHeader } from '@shared'
 import GridShapePicker from './GridShapePicker'
 import styles from './GridShapeModal.module.css'
 
@@ -8,22 +9,20 @@ export interface GridShapeModalProps {
 }
 
 function GridShapeModal({ open, onClose }: GridShapeModalProps) {
+	const titleId = useId()
 	return (
 		<Modal
 			open={open}
 			onClose={onClose}
-			labelledBy="grid-shape-modal-title"
+			labelledBy={titleId}
 			className={styles.dialog}
 		>
-			<div className={styles.header}>
-				<h2 id="grid-shape-modal-title" className={styles.title}>
-					Grid Shape
-				</h2>
-				<CloseButton
-					label="Close grid shape selector"
-					onClick={onClose}
-				/>
-			</div>
+			<ModalHeader
+				title="Grid Shape"
+				titleId={titleId}
+				closeLabel="Close grid shape selector"
+				onClose={onClose}
+			/>
 			<div className={styles.content}>
 				<GridShapePicker onSelected={onClose} />
 			</div>
