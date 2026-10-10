@@ -28,6 +28,7 @@ interface GridViewProps {
 	readonly instructions: string
 	readonly sizingAspectRatio: number
 	readonly svgRef?: Ref<SVGSVGElement>
+	readonly hoverAreaPath?: string
 }
 
 function GridView({
@@ -37,6 +38,7 @@ function GridView({
 	instructions,
 	sizingAspectRatio,
 	svgRef,
+	hoverAreaPath,
 }: GridViewProps) {
 	const { state, paintShapeGroup } = useAppState()
 	const { base, accent } = getThemeColors(state.darkMode)
@@ -77,11 +79,24 @@ function GridView({
 					setIsHovering(
 						event.target instanceof Element &&
 							(event.target.tagName === 'polygon' ||
-								event.target.tagName === 'circle'),
+								event.target.tagName === 'circle' ||
+								event.target.hasAttribute(
+									'data-grid-hover-area',
+								)),
 					)
 				}
 				onPointerLeave={() => setIsHovering(false)}
 			>
+				{hoverAreaPath && (
+					<path
+						d={hoverAreaPath}
+						fill="transparent"
+						stroke="none"
+						pointerEvents="all"
+						aria-hidden="true"
+						data-grid-hover-area=""
+					/>
+				)}
 				{numberedCells.map(cell => {
 					const props = {
 						fill: state.shapeGroupColors[cell.groupId] ?? accent,
