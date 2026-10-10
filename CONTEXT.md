@@ -63,6 +63,7 @@ environment and as a **repository Actions secret** for CI.
   the destination. Standard boxes are 2.5rem; undo/redo use 1.875rem.
 - Shared controls are **app-shared**, not provider-independent primitives:
   icon tinting intentionally reads app state.
+- kebab-case preferred over camelCase for directory naming convention.
 
 ## Architecture
 
@@ -72,7 +73,7 @@ environment and as a **repository Actions secret** for CI.
 | [components/grid/](./src/components/grid/) | Shape adapters, shared `GridView`, polygon/circle cells |
 | [components/controls/](./src/components/controls/) | Toolbar, pickers, and modal content |
 | [components/shared/](./src/components/shared/) | Buttons, native `Modal`, `ModalHeader`, `ConfirmDialog` |
-| [shapeGeometry/](./src/shapeGeometry/) | Shape-specific generation and layout (`@geometry`) |
+| [shape-geometry/](./src/shape-geometry/) | Shape-specific generation and layout (`@geometry`) |
 | [utils/](./src/utils/) | Shared math, symmetry, randomization, and geometry dispatch |
 | [state/](./src/state/) | App reducer, history wrapper, and Context |
 | [services/](./src/services/) | Persistence, confirmation preferences, PNG export |
