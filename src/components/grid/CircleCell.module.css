@@ -17,6 +17,10 @@
 	cursor: pointer;
 }
 
+.clickable:focus:not(:focus-visible) {
+	outline: none;
+}
+
 .clickable:focus-visible {
 	outline: 3px solid var(--accent, #222);
 	outline-offset: -2px;

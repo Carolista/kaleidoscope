@@ -112,16 +112,23 @@ describe.each(['polygon', 'circle'] as const)(
 		it('paints with Enter and Space while ignoring unrelated keys', async () => {
 			const user = userEvent.setup()
 			renderWithProvider(<GridView {...props} />)
+			await user.tab()
+			expect(
+				screen.getByRole('button', { name: 'Paint tile 1 of 2' }),
+			).toHaveFocus()
+			await user.tab()
 			const tile = screen.getByRole('button', {
 				name: 'Paint tile 2 of 2',
 			})
-			tile.focus()
+			expect(tile).toHaveFocus()
 			await user.keyboard('a')
 			expect(tile).toHaveAttribute('fill', '#ffffff')
 			await user.keyboard('{Enter}')
 			expect(tile).toHaveAttribute('fill', paintColor)
+			expect(tile).toHaveFocus()
 			await user.keyboard(' ')
 			expect(tile).toHaveAttribute('fill', '#ffffff')
+			expect(tile).toHaveFocus()
 		})
 
 		it('dims only decorative cells while pointing at a cell and clears dimming over empty space or on leave', () => {

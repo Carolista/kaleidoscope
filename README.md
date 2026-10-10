@@ -40,7 +40,7 @@ Today, the application reflects how my engineering approach has evolved. It has 
 - **Design controls:** Randomize a design, reset it, or undo and redo recent design changes.
 - **Light and dark themes:** Switch the surrounding canvas theme; tiles painted with the theme colors adapt with it.
 - **Save and share:** Export a crisp PNG of the complete design, download it, or share it where the browser supports file sharing.
-- **Mouse, touch, and keyboard interaction:** Hover reveals the editable wedge on mouse and trackpad; touch users can toggle it. Grid tiles can also be reached with Tab and painted with Enter or Space.
+- **Mouse, touch, and keyboard interaction:** Hover reveals the editable wedge on mouse and trackpad; touch users can toggle it. Grid tiles can also be reached with Tab and painted with Enter or Space. Focus outlines remain visible for keyboard navigation without lingering after mouse clicks or taps.
 - **Automatic save:** Your current design and preferences are restored from browser storage on your next visit.
 
 <!-- ## Visuals -->
