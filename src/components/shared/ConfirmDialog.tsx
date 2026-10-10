@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { faSquareCheck } from '@fortawesome/sharp-duotone-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useDuotoneIconTint } from '@hooks/useDuotoneIconTint'
@@ -32,6 +32,7 @@ function ConfirmDialog({
 	onCancel,
 	dontShowAgainKey,
 }: ConfirmDialogProps) {
+	const titleId = useId()
 	const [dontShowAgain, setDontShowAgain] = useState(false)
 	const duotoneTint = useDuotoneIconTint()
 
@@ -52,10 +53,10 @@ function ConfirmDialog({
 		<Modal
 			open={open}
 			onClose={handleCancel}
-			labelledBy="confirm-dialog-title"
+			labelledBy={titleId}
 			className={styles.dialog}
 		>
-			<h2 id="confirm-dialog-title" className={styles.title}>
+			<h2 id={titleId} className={styles.title}>
 				{title}
 			</h2>
 			<p className={styles.message}>{message}</p>
