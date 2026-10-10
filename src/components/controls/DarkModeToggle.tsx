@@ -1,4 +1,4 @@
-import { faMoon, faSun } from '@fortawesome/pro-solid-svg-icons'
+import { faMoon, faSun } from '@fortawesome/sharp-duotone-solid-svg-icons'
 import { useAppState } from '@state/useAppState'
 import { IconButton } from '@shared'
 

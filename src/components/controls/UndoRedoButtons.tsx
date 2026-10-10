@@ -1,5 +1,8 @@
 import { useEffect } from 'react'
-import { faRotateLeft, faRotateRight } from '@fortawesome/pro-solid-svg-icons'
+import {
+	faRotateLeft,
+	faRotateRight,
+} from '@fortawesome/sharp-duotone-solid-svg-icons'
 import { useAppState } from '@state/useAppState'
 import { IconButton } from '@shared'
 import styles from './UndoRedoButtons.module.css'

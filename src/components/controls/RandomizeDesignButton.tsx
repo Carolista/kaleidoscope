@@ -1,4 +1,4 @@
-import { faMagicWandSparkles } from '@fortawesome/pro-solid-svg-icons'
+import { faMagicWandSparkles } from '@fortawesome/sharp-duotone-solid-svg-icons'
 import { useAppState } from '@state/useAppState'
 import { IconButton } from '@shared'
 

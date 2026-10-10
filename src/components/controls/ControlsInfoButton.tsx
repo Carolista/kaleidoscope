@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { faCircleInfo } from '@fortawesome/pro-solid-svg-icons'
+import { faCircleInfo } from '@fortawesome/sharp-duotone-solid-svg-icons'
 import { hasPersistedDesign } from '@services/storageService'
 import { IconButton } from '@shared'
 import ControlsModal from './ControlsModal'

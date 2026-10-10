@@ -1,18 +1,19 @@
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import {
 	faEraser,
 	faRotateLeft,
 	faRotateRight,
-} from '@fortawesome/pro-solid-svg-icons'
+} from '@fortawesome/sharp-duotone-solid-svg-icons'
+import { renderWithProvider } from '@test/renderWithProvider'
 import IconButton from './IconButton'
 
 describe('IconButton', () => {
 	it('renders an accessible icon-only button that fires onClick', async () => {
 		const user = userEvent.setup()
 		const onClick = vi.fn()
-		render(
+		renderWithProvider(
 			<IconButton
 				icon={faEraser}
 				label="Reset design"
@@ -28,7 +29,7 @@ describe('IconButton', () => {
 	})
 
 	it('uses a separate title when given, without changing the accessible name', () => {
-		render(
+		renderWithProvider(
 			<IconButton
 				icon={faRotateLeft}
 				label="Undo"
@@ -42,7 +43,7 @@ describe('IconButton', () => {
 	})
 
 	it('can be disabled', () => {
-		render(
+		renderWithProvider(
 			<IconButton
 				icon={faRotateRight}
 				label="Redo"

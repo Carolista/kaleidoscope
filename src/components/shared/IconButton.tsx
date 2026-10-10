@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core'
+import { useDuotoneIconTint } from '@hooks/useDuotoneIconTint'
 import styles from './IconButton.module.css'
 
 export type IconButtonSize = 'md' | 'sm'
@@ -12,7 +13,7 @@ const SIZES: Readonly<Record<IconButtonSize, string>> = {
 
 export interface IconButtonProps {
 	// A Font Awesome icon definition (e.g. `faEraser` from
-	// `@fortawesome/pro-solid-svg-icons`), imported by the caller so each
+	// `@fortawesome/sharp-duotone-solid-svg-icons`), imported by the caller so each
 	// icon is tree-shaken individually rather than bundling the whole kit.
 	readonly icon: IconDefinition
 	// Accessible name. Also used as the visible tooltip unless `title` is
@@ -32,6 +33,8 @@ function IconButton({
 	disabled,
 	onClick,
 }: IconButtonProps) {
+	const duotoneTint = useDuotoneIconTint()
+
 	return (
 		<button
 			type="button"
@@ -42,7 +45,11 @@ function IconButton({
 			disabled={disabled}
 			onClick={onClick}
 		>
-			<FontAwesomeIcon icon={icon} aria-hidden="true" />
+			<FontAwesomeIcon
+				icon={icon}
+				aria-hidden="true"
+				style={duotoneTint(icon)}
+			/>
 		</button>
 	)
 }

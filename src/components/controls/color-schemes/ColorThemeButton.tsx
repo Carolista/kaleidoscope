@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { faPalette } from '@fortawesome/pro-solid-svg-icons'
+import { faPalette } from '@fortawesome/sharp-duotone-solid-svg-icons'
 import { IconButton } from '@shared'
 import ColorThemeModal from './ColorThemeModal'
 

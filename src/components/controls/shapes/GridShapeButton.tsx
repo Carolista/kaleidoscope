@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { faShapes } from '@fortawesome/pro-solid-svg-icons'
+import { faShapes } from '@fortawesome/sharp-duotone-solid-svg-icons'
 import { IconButton } from '@shared'
 import GridShapeModal from './GridShapeModal'
 

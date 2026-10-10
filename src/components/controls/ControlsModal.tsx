@@ -12,9 +12,10 @@ import {
 	faRotateRight,
 	faShapes,
 	faSun,
-} from '@fortawesome/pro-solid-svg-icons'
+} from '@fortawesome/sharp-duotone-solid-svg-icons'
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { useDuotoneIconTint } from '@hooks/useDuotoneIconTint'
 import { useIsTouchDevice } from '@hooks/useIsTouchDevice'
 import { CloseButton, Modal } from '@shared'
 import styles from './ControlsModal.module.css'
@@ -100,6 +101,7 @@ const CONTROL_ITEMS: readonly ControlItem[] = [
 function ControlsModal({ open, onClose }: ControlsModalProps) {
 	const isTouch = useIsTouchDevice()
 	const items = CONTROL_ITEMS.filter(item => !item.touchOnly || isTouch)
+	const duotoneTint = useDuotoneIconTint()
 
 	return (
 		<Modal
@@ -122,6 +124,7 @@ function ControlsModal({ open, onClose }: ControlsModalProps) {
 								<FontAwesomeIcon
 									key={icon.iconName}
 									icon={icon}
+									style={duotoneTint(icon)}
 								/>
 							))}
 						</div>

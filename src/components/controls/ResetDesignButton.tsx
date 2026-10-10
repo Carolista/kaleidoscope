@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { faArrowsRotate } from '@fortawesome/pro-solid-svg-icons'
+import { faArrowsRotate } from '@fortawesome/sharp-duotone-solid-svg-icons'
 import { isConfirmDialogDismissed } from '@services/confirmDialogPreferences'
 import { useAppState } from '@state/useAppState'
 import { ConfirmDialog, IconButton } from '@shared'

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { RefObject } from 'react'
-import { faHexagonImage } from '@fortawesome/pro-solid-svg-icons'
+import { faHexagonImage } from '@fortawesome/sharp-duotone-solid-svg-icons'
 import { IconButton } from '@shared'
 import SaveImageModal from './SaveImageModal'
 

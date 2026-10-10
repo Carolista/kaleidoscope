@@ -1,4 +1,4 @@
-import { faEye, faEyeSlash } from '@fortawesome/pro-solid-svg-icons'
+import { faEye, faEyeSlash } from '@fortawesome/sharp-duotone-solid-svg-icons'
 import { useAppState } from '@state/useAppState'
 import { useIsTouchDevice } from '@hooks/useIsTouchDevice'
 import { IconButton } from '@shared'
