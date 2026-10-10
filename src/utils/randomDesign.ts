@@ -44,10 +44,11 @@ export function generateRandomShapeGroupColors(
 	base: string,
 	random: () => number = Math.random,
 ): Record<string, string> {
+	const pool = weightedColorPool(scheme, base)
 	return Object.fromEntries(
 		groupIds.map(groupId => [
 			groupId,
-			pickRandomPaintColor(scheme, base, random),
+			pool[Math.floor(random() * pool.length)],
 		]),
 	)
 }
