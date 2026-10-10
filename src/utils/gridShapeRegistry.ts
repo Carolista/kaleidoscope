@@ -1,4 +1,3 @@
-import type { GridShapeId } from '../types/gridShape'
 import {
 	computeGridAspectRatio as computeCircleRingsAspectRatio,
 	getGroupIds as getCircleRingsGroupIds,
@@ -8,13 +7,13 @@ import {
 	getGroupIds as getDiamondStarGroupIds,
 } from '@geometry/diamondStarGrid'
 import {
-	computeGridAspectRatio as computeHexagramAspectRatio,
-	getGroupIds as getHexagramGroupIds,
-} from '@geometry/hexagramGrid'
-import {
 	computeGridAspectRatio as computeHexagonAspectRatio,
 	getGroupIds as getHexagonGroupIds,
 } from '@geometry/hexagonGrid'
+import {
+	computeGridAspectRatio as computeHexagramAspectRatio,
+	getGroupIds as getHexagramGroupIds,
+} from '@geometry/hexagramGrid'
 import {
 	computeGridAspectRatio as computePinwheelAspectRatio,
 	getGroupIds as getPinwheelGroupIds,
@@ -23,6 +22,7 @@ import {
 	computeGridAspectRatio as computeTriangleAspectRatio,
 	getGroupIds as getTriangleGroupIds,
 } from '@geometry/triangleGrid'
+import type { GridShapeId } from '../types/gridShape'
 
 const shapeGeometry = {
 	hexagon: {

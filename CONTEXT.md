@@ -42,9 +42,50 @@ ESLint, Prettier, Node/npm.
 | `npm test` | Run tests once |
 | `npm run test:coverage` | Run tests once with V8 coverage reports in `coverage/` |
 
-Font Awesome Pro packages require `FONT_AWESOME_AUTH_TOKEN` in the local
-environment and as a **repository Actions secret** for CI.
-[.npmrc](./.npmrc) reads that environment variable; never commit the token.
+### Font Awesome authentication
+
+Installing dependencies requires a Font Awesome token with access to the project's
+private Pro packages. Set `FONT_AWESOME_AUTH_TOKEN` in your shell before running
+`npm ci`; [.npmrc](./.npmrc) configures the registries and reads that environment
+variable. Never commit the token.
+
+For CI, add `FONT_AWESOME_AUTH_TOKEN` under **Settings > Secrets and variables >
+Actions > Repository secrets**. A secret stored only in the `github-pages`
+environment is not available to the test job. The workflow checks for a missing
+token before installing dependencies without printing its value.
+
+GitHub does not provide Actions secrets to pull requests from forks or Dependabot,
+so those runs cannot install the private packages with this workflow.
+
+## Branding
+
+### Favicon
+
+[public/favicon.svg](./public/favicon.svg) is a static version of the shape
+picker's six-petal diamond star, with a transparent background and muted colors.
+Each polygon has a position-based ID and its own fill color. To update the
+palette, edit the six `fill` values, ordered clockwise from the top petal.
+
+The stroke width is `0`, so no outline is visible; the white stroke and rounded
+join settings remain available if an outline is wanted later. The square viewBox
+includes padding to keep an outline from clipping.
+
+### Logo
+
+The header combines live Righteous 400 lettering (`KALEID` and `SCOPE`) with
+the favicon replacing the first O. Letter color follows the app's theme accent;
+the six petal colors stay fixed. The star's side tips align with the lettering's
+upper/lower bounds, and spacing shifts it slightly toward the curved D for
+optical balance. The combined mark has one accessible heading name.
+
+[public/logo-black.svg](./public/logo-black.svg) and
+[public/logo-white.svg](./public/logo-white.svg) are transparent, standalone
+logos with Righteous lettering converted to paths so no font installation is
+needed. [public/logo.svg](./public/logo.svg) retains a `currentColor` version
+for inline SVG reuse; an external image does not inherit the page's text color.
+These use the same taller star proportion, but the app uses live text instead
+of their outlined lettering. Petal fills are copied from the favicon; palette
+changes should be applied to all four SVG assets.
 
 ## Code standards
 
@@ -63,6 +104,7 @@ environment and as a **repository Actions secret** for CI.
   the destination. Standard boxes are 2.5rem; undo/redo use 1.875rem.
 - Shared controls are **app-shared**, not provider-independent primitives:
   icon tinting intentionally reads app state.
+- kebab-case preferred over camelCase for directory naming convention.
 
 ## Architecture
 
@@ -72,7 +114,7 @@ environment and as a **repository Actions secret** for CI.
 | [components/grid/](./src/components/grid/) | Shape adapters, shared `GridView`, polygon/circle cells |
 | [components/controls/](./src/components/controls/) | Toolbar, pickers, and modal content |
 | [components/shared/](./src/components/shared/) | Buttons, native `Modal`, `ModalHeader`, `ConfirmDialog` |
-| [shapeGeometry/](./src/shapeGeometry/) | Shape-specific generation and layout (`@geometry`) |
+| [shape-geometry/](./src/shape-geometry/) | Shape-specific generation and layout (`@geometry`) |
 | [utils/](./src/utils/) | Shared math, symmetry, randomization, and geometry dispatch |
 | [state/](./src/state/) | App reducer, history wrapper, and Context |
 | [services/](./src/services/) | Persistence, confirmation preferences, PNG export |

@@ -1,13 +1,33 @@
 .title {
-	font-family: 'Righteous', sans-serif;
-	text-transform: uppercase;
 	/* Scales continuously between viewport widths 320px and 608px — the
 	   same range over which the grid itself actively shrinks/grows (grid
 	   caps out at 560px wide once the viewport reaches 608px; see
 	   HexGrid.module.css), so the title reaches its min/max at the same
 	   breakpoints instead of sitting flat while the grid keeps resizing. */
 	font-size: clamp(1.75rem, 0.917rem + 4.17vw, 2.5rem);
-	letter-spacing: 0.04em;
 	margin: 0;
 	color: var(--accent, #222);
+	font-family: 'Righteous', sans-serif;
+	font-weight: 400;
+	line-height: 1;
+	white-space: nowrap;
+}
+
+.letters {
+	letter-spacing: 0.04em;
+}
+
+.letters:first-child {
+	margin-right: -0.04em;
+}
+
+.star {
+	/* Side tips span half the star's height. Match that span to the
+	   Righteous capitals, accounting for the favicon's viewBox padding. */
+	width: 1.508203em;
+	height: 1.508203em;
+	vertical-align: -0.406836em;
+	/* Shift toward the curved D for optical, rather than numeric, balance. */
+	margin-left: -0.145838em;
+	margin-right: -0.065838em;
 }

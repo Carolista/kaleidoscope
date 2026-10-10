@@ -7,10 +7,10 @@ implementation and working agreements, see [CONTEXT.md](./CONTEXT.md).
 ## Stack and boundaries
 
 - Rebuilt the 2020 DOM app in React/Vite/TypeScript rather than extending its
-  hand-authored markup. Preserve the legacy app as reference.
+  hand-authored markup. Preserve the legacy app as-is for reference.
 - Use computed SVG geometry, CSS Modules/plain CSS, and reducer + Context state.
   An external state library or feature-folder overhaul is unnecessary for one coloring app.
-- Keep shape math in `shapeGeometry`, shared math in `utils`, non-React services
+- Keep shape math in `shape-geometry`, shared math in `utils`, non-React services
   in `services`, and React lifecycle logic in hooks.
 - Share actual repeated behavior: `GridView` for grid interactions,
   `ModalHeader` for modal chrome, and narrow geometry helpers. Keep per-shape
@@ -133,6 +133,13 @@ write a design without painting; help remains manually accessible.
 Self-host fonts through `@fontsource` to avoid external font requests.
 Keep Roboto 900: lack of explicit weight declarations does not prove that
 browser-default bold headings never use it.
+
+Use a six-petal diamond star in place of the first O in the Righteous wordmark.
+Keep standalone logos as outlined SVGs for portability, but render live Righteous
+text around the favicon in the app header: outlined letters appeared rough at
+header sizes, and rendering hints or a thin stroke did not visibly improve them.
+Align the four side-petal tips with the lettering's upper/lower bounds and favor
+optical spacing toward the curved D over equal numeric gaps.
 
 Render individually imported Font Awesome definitions through `FontAwesomeIcon`,
 replacing the earlier Kit-script approach. Import core CSS once and disable
