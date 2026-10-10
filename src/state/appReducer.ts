@@ -59,19 +59,20 @@ export function appReducer(state: AppState, action: AppAction): AppState {
 		}
 
 		case 'SELECT_COLOR':
+			if (action.color === state.currentColor) return state
 			return { ...state, currentColor: action.color }
 
 		case 'PAINT_SHAPE_GROUP': {
 			const { accent } = getThemeColors(state.darkMode)
 			const existing = state.shapeGroupColors[action.groupId] ?? accent
 			const isTogglingOff = existing === state.currentColor
+			const color = isTogglingOff ? accent : state.currentColor
+			if (color === existing) return state
 			return {
 				...state,
 				shapeGroupColors: {
 					...state.shapeGroupColors,
-					[action.groupId]: isTogglingOff
-						? accent
-						: state.currentColor,
+					[action.groupId]: color,
 				},
 			}
 		}
@@ -100,6 +101,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
 			return { ...state, showEditableArea: !state.showEditableArea }
 
 		case 'RESET_DESIGN':
+			if (Object.keys(state.shapeGroupColors).length === 0) return state
 			return { ...state, shapeGroupColors: {} }
 
 		case 'RANDOMIZE_DESIGN': {

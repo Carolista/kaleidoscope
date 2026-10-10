@@ -1,6 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { colorSchemes } from '../data/colorSchemes'
 import type { AppState } from '../types/appState'
+import type { AppAction } from './appReducer'
+import { getGroupIdsForShape } from '../utils/gridShapeRegistry'
 import { createInitialHistoryState, historyReducer } from './historyReducer'
 
 function baseState(overrides: Partial<AppState> = {}): AppState {
@@ -16,6 +18,182 @@ function baseState(overrides: Partial<AppState> = {}): AppState {
 }
 
 describe('historyReducer', () => {
+	const noOpActions: AppAction[] = [
+		{ type: 'SELECT_GRID_SHAPE', shape: 'hexagon' },
+		{ type: 'RESET_DESIGN' },
+		{ type: 'SELECT_SCHEME', scheme: colorSchemes[0] },
+		{
+			type: 'SELECT_SCHEME',
+			scheme: { ...colorSchemes[0], colors: [...colorSchemes[0].colors] },
+		},
+		{ type: 'SELECT_COLOR', color: colorSchemes[0].colors[0] },
+	]
+
+	it.each(noOpActions)(
+		'$type leaves empty history unchanged for a no-op',
+		action => {
+			const history = createInitialHistoryState(baseState())
+			expect(historyReducer(history, action)).toBe(history)
+		},
+	)
+
+	it.each(noOpActions)(
+		'$type preserves both history stacks and usable redo for a no-op',
+		action => {
+			let history = createInitialHistoryState(baseState())
+			history = historyReducer(history, {
+				type: 'SELECT_GRID_SHAPE',
+				shape: 'triangle',
+			})
+			history = historyReducer(history, {
+				type: 'SELECT_GRID_SHAPE',
+				shape: 'hexagon',
+			})
+			history = historyReducer(history, {
+				type: 'PAINT_SHAPE_GROUP',
+				groupId: 'b',
+			})
+			history = historyReducer(history, { type: 'UNDO' })
+			expect(history.past.length).toBeGreaterThan(0)
+			expect(history.future).toHaveLength(1)
+			const unchanged = historyReducer(history, action)
+			expect(unchanged).toBe(history)
+			expect(
+				historyReducer(unchanged, { type: 'REDO' }).present
+					.shapeGroupColors,
+			).toEqual({
+				b: colorSchemes[0].colors[0],
+			})
+		},
+	)
+
+	it('reselecting an equivalent scheme resets the selected tool color but preserves history', () => {
+		let history = createInitialHistoryState(baseState())
+		history = historyReducer(history, {
+			type: 'PAINT_SHAPE_GROUP',
+			groupId: 'a',
+		})
+		history = historyReducer(history, { type: 'UNDO' })
+		history = historyReducer(history, {
+			type: 'SELECT_COLOR',
+			color: colorSchemes[0].colors[3],
+		})
+		const next = historyReducer(history, {
+			type: 'SELECT_SCHEME',
+			scheme: colorSchemes[0],
+		})
+		expect(next.present.currentColor).toBe(colorSchemes[0].colors[0])
+		expect(next.past).toBe(history.past)
+		expect(next.future).toBe(history.future)
+		expect(
+			historyReducer(next, { type: 'REDO' }).present.shapeGroupColors,
+		).toEqual({
+			a: colorSchemes[0].colors[0],
+		})
+	})
+
+	it.each([false, true])(
+		'painting accent over default accent preserves redo in dark mode %s',
+		darkMode => {
+			const accent = darkMode ? '#ffffff' : '#222222'
+			let history = createInitialHistoryState(baseState({ darkMode }))
+			history = historyReducer(history, {
+				type: 'PAINT_SHAPE_GROUP',
+				groupId: 'a',
+			})
+			history = historyReducer(history, { type: 'UNDO' })
+			history = historyReducer(history, {
+				type: 'SELECT_COLOR',
+				color: accent,
+			})
+			expect(
+				historyReducer(history, {
+					type: 'PAINT_SHAPE_GROUP',
+					groupId: 'a',
+				}),
+			).toBe(history)
+			expect(history.present.shapeGroupColors).toEqual({})
+		},
+	)
+
+	it('an identical randomized design preserves history regardless of group insertion order', () => {
+		const groupIds = getGroupIdsForShape('hexagon')
+		const state = baseState({
+			shapeGroupColors: Object.fromEntries(
+				[...groupIds]
+					.reverse()
+					.map(id => [id, colorSchemes[0].colors[0]]),
+			),
+		})
+		let history = createInitialHistoryState(state)
+		history = historyReducer(history, { type: 'RESET_DESIGN' })
+		history = historyReducer(history, { type: 'UNDO' })
+		const random = vi.spyOn(Math, 'random').mockReturnValue(0)
+		try {
+			expect(historyReducer(history, { type: 'RANDOMIZE_DESIGN' })).toBe(
+				history,
+			)
+		} finally {
+			random.mockRestore()
+		}
+		expect(
+			historyReducer(history, { type: 'REDO' }).present.shapeGroupColors,
+		).toEqual({})
+	})
+
+	it.each([
+		{ ...colorSchemes[0], name: 'Renamed palette' },
+		{ name: colorSchemes[0].name, colors: colorSchemes[1].colors },
+	])(
+		'records a real scheme change to $name even when one field matches',
+		scheme => {
+			let history = createInitialHistoryState(baseState())
+			history = historyReducer(history, {
+				type: 'PAINT_SHAPE_GROUP',
+				groupId: 'a',
+			})
+			history = historyReducer(history, { type: 'UNDO' })
+			const next = historyReducer(history, {
+				type: 'SELECT_SCHEME',
+				scheme,
+			})
+			expect(next.past).toHaveLength(history.past.length + 1)
+			expect(next.future).toEqual([])
+			expect(next.present.currentScheme).toBe(scheme)
+			const undone = historyReducer(next, { type: 'UNDO' })
+			expect(undone.present.currentScheme).toBe(colorSchemes[0])
+			expect(
+				historyReducer(undone, { type: 'REDO' }).present.currentScheme,
+			).toBe(scheme)
+		},
+	)
+
+	it('a changed randomized design clears redo and remains undoable', () => {
+		let history = createInitialHistoryState(baseState())
+		history = historyReducer(history, {
+			type: 'PAINT_SHAPE_GROUP',
+			groupId: 'a',
+		})
+		history = historyReducer(history, { type: 'UNDO' })
+		const random = vi.spyOn(Math, 'random').mockReturnValue(0)
+		try {
+			const next = historyReducer(history, { type: 'RANDOMIZE_DESIGN' })
+			expect(next.past).toHaveLength(1)
+			expect(next.future).toEqual([])
+			expect(Object.keys(next.present.shapeGroupColors)).toEqual(
+				getGroupIdsForShape('hexagon'),
+			)
+			const undone = historyReducer(next, { type: 'UNDO' })
+			expect(undone.present.shapeGroupColors).toEqual({})
+			expect(
+				historyReducer(undone, { type: 'REDO' }).present
+					.shapeGroupColors,
+			).toEqual(next.present.shapeGroupColors)
+		} finally {
+			random.mockRestore()
+		}
+	})
+
 	it('starts with empty past/future and the given present state', () => {
 		const state = baseState()
 		const history = createInitialHistoryState(state)

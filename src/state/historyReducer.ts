@@ -40,6 +40,28 @@ function snapshotOf(state: AppState): DesignSnapshot {
 	}
 }
 
+function sameDesign(previous: AppState, next: AppState): boolean {
+	if (
+		previous.gridShape !== next.gridShape ||
+		previous.currentScheme.name !== next.currentScheme.name ||
+		!previous.currentScheme.colors.every(
+			(color, index) => color === next.currentScheme.colors[index],
+		)
+	) {
+		return false
+	}
+	if (previous.shapeGroupColors === next.shapeGroupColors) return true
+	const previousIds = Object.keys(previous.shapeGroupColors)
+	return (
+		previousIds.length === Object.keys(next.shapeGroupColors).length &&
+		previousIds.every(
+			id =>
+				Object.hasOwn(next.shapeGroupColors, id) &&
+				previous.shapeGroupColors[id] === next.shapeGroupColors[id],
+		)
+	)
+}
+
 function applySnapshot(state: AppState, snapshot: DesignSnapshot): AppState {
 	let currentColor = state.currentColor
 	const { base, accent } = getThemeColors(state.darkMode)
@@ -81,10 +103,23 @@ export function historyReducer(
 	}
 
 	const present = appReducer(history.present, action)
+	if (present === history.present) return history
 
 	if (!UNDOABLE_ACTION_TYPES.has(action.type)) {
 		// Still applies (e.g. dark mode remapping), just isn't a stop on the
 		// undo/redo stack.
+		return { ...history, present }
+	}
+
+	if (sameDesign(history.present, present)) {
+		// Reselecting a scheme can reset the paint tool without changing the design.
+		if (
+			present.currentColor === history.present.currentColor &&
+			present.darkMode === history.present.darkMode &&
+			present.showEditableArea === history.present.showEditableArea
+		) {
+			return history
+		}
 		return { ...history, present }
 	}
 
