@@ -336,9 +336,6 @@ instructions on every clickable control (reworked from the earlier
 touch-only intro modal), a footer.
 
 Next, in priority order:
-- More alternative shapes/tilings. Anything designable as a wedge, then
-  mirrored/copied around, or just copied around without mirroring (like
-  the pinwheel).
 - README (replace current): what it is, live link,
    screenshots, setup, scripts, stack. Unscheduled until the user supplies
    examples and asks.
@@ -352,4 +349,7 @@ Other future possibilities:
 - Custom color picker beyond the presets ("Create your own palette").
 - Animation/transition polish.
 - Full ARIA grid pattern (roving tabindex, arrow keys) for the grid.
+- More alternative shapes/tilings. Anything designable as a wedge, then
+  mirrored/copied around, or just copied around without mirroring (like
+  the pinwheel).
 - (Long-term goal) Preset puzzles to solve... needs more thought by user before discussing.
