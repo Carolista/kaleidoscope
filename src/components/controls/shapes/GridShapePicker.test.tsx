@@ -85,9 +85,7 @@ describe('GridShapePicker', () => {
 		const user = userEvent.setup()
 		render(<Harness />, { wrapper: AppStateProvider })
 
-		await user.click(
-			screen.getByRole('button', { name: 'Paint', exact: true }),
-		)
+		await user.click(screen.getByRole('button', { name: 'Paint' }))
 		expect(screen.getByTestId('count')).toHaveTextContent('1')
 		await user.click(screen.getByRole('button', { name: 'Triangle' }))
 		await user.click(screen.getByRole('button', { name: 'Cancel' }))
@@ -168,9 +166,7 @@ describe('GridShapePicker', () => {
 		const user = userEvent.setup()
 		render(<Harness />, { wrapper: AppStateProvider })
 
-		await user.click(
-			screen.getByRole('button', { name: 'Paint', exact: true }),
-		)
+		await user.click(screen.getByRole('button', { name: 'Paint' }))
 		await user.click(screen.getByRole('button', { name: 'Hexagon' }))
 
 		expect(

@@ -46,7 +46,7 @@ describe('ConfirmDialog', () => {
 		expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
 		await userEvent
 			.setup()
-			.click(screen.getByRole('button', { name: 'Confirm', exact: true }))
+			.click(screen.getByRole('button', { name: 'Confirm' }))
 		expect(onConfirm).toHaveBeenCalledTimes(1)
 		expect(onCancel).not.toHaveBeenCalled()
 		expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
@@ -83,9 +83,7 @@ describe('ConfirmDialog', () => {
 			const user = userEvent.setup()
 			const { onConfirm } = renderControlledDialog('test-confirm')
 			if (checked) await user.click(screen.getByRole('checkbox'))
-			await user.click(
-				screen.getByRole('button', { name: 'Confirm', exact: true }),
-			)
+			await user.click(screen.getByRole('button', { name: 'Confirm' }))
 			expect(onConfirm).toHaveBeenCalledTimes(1)
 			expect(isConfirmDialogDismissed('test-confirm')).toBe(checked)
 			expect(isConfirmDialogDismissed('unrelated-action')).toBe(false)

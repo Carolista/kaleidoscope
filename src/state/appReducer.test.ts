@@ -105,7 +105,11 @@ describe('appReducer', () => {
 		'painting accent onto default or explicit accent is a no-op in dark mode %s',
 		darkMode => {
 			const accent = darkMode ? '#ffffff' : '#222222'
-			for (const shapeGroupColors of [{}, { a: accent }]) {
+			const paintMaps: AppState['shapeGroupColors'][] = [
+				{},
+				{ a: accent },
+			]
+			for (const shapeGroupColors of paintMaps) {
 				const state = baseState({
 					darkMode,
 					currentColor: accent,

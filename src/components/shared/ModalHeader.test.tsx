@@ -56,7 +56,6 @@ describe('shared modal headers', () => {
 			await userEvent.setup().click(
 				within(dialog).getByRole('button', {
 					name: closeLabel,
-					exact: true,
 				}),
 			)
 			expect(onClose).toHaveBeenCalledTimes(1)
