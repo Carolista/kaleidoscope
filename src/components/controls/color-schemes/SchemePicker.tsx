@@ -23,7 +23,7 @@ function SchemePicker({ onSelected }: SchemePickerProps) {
 						className={styles.schemeButton}
 						title={scheme.name}
 						aria-pressed={state.currentScheme.name === scheme.name}
-						aria-label={`Select the ${scheme.name} color scheme`}
+						aria-label={`Select the ${scheme.name} color palette`}
 						onClick={() => {
 							selectScheme(scheme)
 							onSelected?.()

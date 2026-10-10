@@ -1,23 +1,23 @@
 import { CloseButton, Modal } from '@shared'
 import SchemePicker from './SchemePicker'
-import styles from './ColorThemeModal.module.css'
+import styles from './ColorSchemeModal.module.css'
 
-export interface ColorThemeModalProps {
+export interface ColorSchemeModalProps {
 	readonly open: boolean
 	readonly onClose: () => void
 }
 
-function ColorThemeModal({ open, onClose }: ColorThemeModalProps) {
+function ColorSchemeModal({ open, onClose }: ColorSchemeModalProps) {
 	return (
 		<Modal
 			open={open}
 			onClose={onClose}
-			labelledBy="color-theme-modal-title"
+			labelledBy="color-scheme-modal-title"
 			className={styles.dialog}
 		>
 			<div className={styles.header}>
-				<h2 id="color-theme-modal-title" className={styles.title}>
-					Color Theme
+				<h2 id="color-scheme-modal-title" className={styles.title}>
+					Color Palette
 				</h2>
 				<CloseButton
 					label="Close color palette selector"
@@ -31,4 +31,4 @@ function ColorThemeModal({ open, onClose }: ColorThemeModalProps) {
 	)
 }
 
-export default ColorThemeModal
+export default ColorSchemeModal

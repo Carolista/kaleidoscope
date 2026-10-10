@@ -10,6 +10,13 @@ describe('SchemePicker', () => {
 	it('renders one button per color scheme', () => {
 		render(<SchemePicker />, { wrapper: AppStateProvider })
 		expect(screen.getAllByRole('button')).toHaveLength(colorSchemes.length)
+		for (const scheme of colorSchemes) {
+			expect(
+				screen.getByRole('button', {
+					name: `Select the ${scheme.name} color palette`,
+				}),
+			).toBeInTheDocument()
+		}
 	})
 
 	it('marks exactly one scheme as pressed, and switches which one on click', async () => {
@@ -51,7 +58,7 @@ describe('SchemePicker', () => {
 		const targetName = target
 			.getAttribute('aria-label')!
 			.replace('Select the ', '')
-			.replace(' color scheme', '')
+			.replace(' color palette', '')
 		const targetScheme = colorSchemes.find(
 			scheme => scheme.name === targetName,
 		)!

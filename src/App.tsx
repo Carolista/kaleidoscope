@@ -1,7 +1,7 @@
 import type { ComponentType, CSSProperties, Ref } from 'react'
 import { useLayoutEffect, useRef } from 'react'
 import styles from './App.module.css'
-import { ColorOptions, ColorThemeButton } from '@color-schemes'
+import { ColorOptions, ColorSchemeButton } from '@color-schemes'
 import {
 	ControlsInfoButton,
 	DarkModeToggle,
@@ -90,7 +90,7 @@ function App() {
 						className={styles.buttonGroup}
 					>
 						<EditableAreaToggle />
-						<ColorThemeButton />
+						<ColorSchemeButton />
 						<RandomizeDesignButton />
 						<ResetDesignButton />
 						<GridShapeButton />
