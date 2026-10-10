@@ -1,5 +1,4 @@
 import {
-	faArrowsRotate,
 	faCircleInfo,
 	faEye,
 	faEyeSlash,
@@ -8,11 +7,14 @@ import {
 	faMagicWandSparkles,
 	faMoon,
 	faPalette,
-	faRotateLeft,
-	faRotateRight,
 	faShapes,
 	faSun,
 } from '@fortawesome/sharp-duotone-solid-svg-icons'
+import {
+	faRotateLeft,
+	faRotateRight,
+	faRotate,
+} from '@fortawesome/pro-solid-svg-icons'
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useDuotoneIconTint } from '@hooks/useDuotoneIconTint'
@@ -68,7 +70,7 @@ const CONTROL_ITEMS: readonly ControlItem[] = [
 			'Generate a random design using your current color palette.',
 	},
 	{
-		icons: [faArrowsRotate],
+		icons: [faRotate],
 		label: 'Reset Design',
 		description: 'Clear your design and start over.',
 	},

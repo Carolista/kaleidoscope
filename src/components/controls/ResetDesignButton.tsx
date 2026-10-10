@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { faArrowsRotate } from '@fortawesome/sharp-duotone-solid-svg-icons'
+import { faRotate } from '@fortawesome/sharp-duotone-solid-svg-icons'
 import { isConfirmDialogDismissed } from '@services/confirmDialogPreferences'
 import { useAppState } from '@state/useAppState'
 import { ConfirmDialog, IconButton } from '@shared'
@@ -13,7 +13,7 @@ function ResetDesignButton() {
 	return (
 		<>
 			<IconButton
-				icon={faArrowsRotate}
+				icon={faRotate}
 				label="Reset the design board"
 				onClick={() => {
 					if (isConfirmDialogDismissed(DONT_SHOW_AGAIN_KEY)) {

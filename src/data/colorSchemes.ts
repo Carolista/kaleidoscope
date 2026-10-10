@@ -25,7 +25,7 @@ export const colorSchemes: readonly ColorScheme[] = [
 	},
 	{
 		name: 'Lake House',
-		colors: ['#901412', '#dbb80d', '#f3e5bf', '#239cb7', '#156783'],
+		colors: ['#8d201e', '#dbb80d', '#f3e5bf', '#239cb7', '#156783'],
 	},
 	{
 		name: 'Tahoe',
