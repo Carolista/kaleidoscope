@@ -89,14 +89,18 @@ function App() {
 						aria-label="Settings and Actions"
 						className={styles.buttonGroup}
 					>
-						<EditableAreaToggle />
-						<ColorSchemeButton />
-						<RandomizeDesignButton />
-						<ResetDesignButton />
-						<GridShapeButton />
-						<SaveImageButton svgRef={svgRef} />
-						<DarkModeToggle />
-						<ControlsInfoButton />
+						<div className={styles.buttonRow}>
+							<EditableAreaToggle />
+							<ColorSchemeButton />
+							<RandomizeDesignButton />
+							<ResetDesignButton />
+						</div>
+						<div className={styles.buttonRow}>
+							<GridShapeButton />
+							<SaveImageButton svgRef={svgRef} />
+							<DarkModeToggle />
+							<ControlsInfoButton />
+						</div>
 					</div>
 				</div>
 			</main>
