@@ -53,14 +53,12 @@ describe('shared modal headers', () => {
 				name: title,
 			})
 			expect(dialog).toHaveAttribute('aria-labelledby', heading.id)
-			await userEvent
-				.setup()
-				.click(
-					within(dialog).getByRole('button', {
-						name: closeLabel,
-						exact: true,
-					}),
-				)
+			await userEvent.setup().click(
+				within(dialog).getByRole('button', {
+					name: closeLabel,
+					exact: true,
+				}),
+			)
 			expect(onClose).toHaveBeenCalledTimes(1)
 		},
 	)
