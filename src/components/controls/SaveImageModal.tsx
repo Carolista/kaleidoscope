@@ -59,6 +59,9 @@ function SaveImageModal({ open, svgRef, onClose }: SaveImageModalProps) {
 				)}
 			</div>
 
+			{exportState.status === 'ready' && exportState.shareError && (
+				<p role="alert">{exportState.shareError}</p>
+			)}
 			<div className={styles.actions}>
 				{canShare && <Button onClick={handleShare}>Share</Button>}
 				<Button

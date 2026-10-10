@@ -60,13 +60,45 @@ describe('useImageExport', () => {
 		})
 	})
 
-	it('stays generating when the modal is not open or has no svg yet', () => {
+	it('does not generate an image while the modal is closed', () => {
 		const { result } = renderHook(() =>
-			useImageExport(svgRefWith(null), true, '#fff'),
+			useImageExport(svgRefWith(null), false, '#fff'),
 		)
 		expect(result.current.exportState.status).toBe('generating')
 		expect(mockExportSvgAsPngBlob).not.toHaveBeenCalled()
 	})
+
+	it('surfaces an error when opened without an SVG', () => {
+		const { result } = renderHook(() =>
+			useImageExport(svgRefWith(null), true, '#fff'),
+		)
+		expect(result.current.exportState.status).toBe('error')
+		expect(mockExportSvgAsPngBlob).not.toHaveBeenCalled()
+	})
+
+	it.each(['close', 'unmount'])(
+		'ignores generation completing after %s',
+		async action => {
+			let resolveExport!: (blob: Blob) => void
+			mockExportSvgAsPngBlob.mockReturnValue(
+				new Promise(resolve => {
+					resolveExport = resolve
+				}),
+			)
+			const { result, rerender, unmount } = renderHook(
+				({ open }) =>
+					useImageExport(svgRefWith(createSvg()), open, '#fff'),
+				{ initialProps: { open: true } },
+			)
+			if (action === 'close') rerender({ open: false })
+			else unmount()
+
+			await act(async () => resolveExport(pngBlob))
+
+			expect(URL.createObjectURL).not.toHaveBeenCalled()
+			expect(result.current.exportState.status).toBe('generating')
+		},
+	)
 
 	it('surfaces an error state when generation fails', async () => {
 		mockExportSvgAsPngBlob.mockRejectedValue(new Error('boom'))
@@ -173,9 +205,13 @@ describe('useImageExport', () => {
 			await expect(
 				act(() => result.current.handleShare()),
 			).resolves.not.toThrow()
+			expect(result.current.exportState).not.toHaveProperty(
+				'shareError',
+				expect.any(String),
+			)
 		})
 
-		it('rethrows a non-AbortError from the share sheet', async () => {
+		it('surfaces a share error while keeping the image ready, and clears it on retry', async () => {
 			mockExportSvgAsPngBlob.mockResolvedValue(pngBlob)
 			const otherError = new Error('network down')
 			Object.assign(navigator, {
@@ -190,9 +226,26 @@ describe('useImageExport', () => {
 				expect(result.current.exportState.status).toBe('ready'),
 			)
 
-			await expect(result.current.handleShare()).rejects.toThrow(
-				'network down',
-			)
+			await act(() => result.current.handleShare())
+			expect(result.current.exportState).toMatchObject({
+				status: 'ready',
+				blob: pngBlob,
+				url: 'blob:fake-url',
+				shareError: expect.stringContaining('sharing failed'),
+			})
+			expect(result.current.canShare).toBe(true)
+			const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click')
+			act(() => result.current.handleDownload())
+			expect(clickSpy).toHaveBeenCalledOnce()
+
+			Object.assign(navigator, {
+				share: vi.fn().mockResolvedValue(undefined),
+			})
+			await act(() => result.current.handleShare())
+			expect(result.current.exportState).toMatchObject({
+				status: 'ready',
+				shareError: undefined,
+			})
 		})
 	})
 })
