@@ -144,7 +144,10 @@ describe.each(['polygon', 'circle'] as const)(
 			mockUseIsTouchDevice.mockReturnValue(true)
 			const { container } = renderWithProvider(
 				<>
-					<GridView {...props} />
+					<GridView
+						{...props}
+						hoverAreaPath="M 0 0 H 20 V 20 H 0 Z"
+					/>
 					<ToggleHighlight />
 				</>,
 			)
@@ -154,6 +157,8 @@ describe.each(['polygon', 'circle'] as const)(
 			fireEvent.pointerLeave(screen.getByRole('group'))
 			expect(rendered[0]).toHaveClass(cellStyles.dimmed)
 			await userEvent.setup().click(screen.getByText('Toggle highlight'))
+			expect(rendered[0]).not.toHaveClass(cellStyles.dimmed)
+			fireEvent.pointerLeave(screen.getByRole('group'))
 			expect(rendered[0]).not.toHaveClass(cellStyles.dimmed)
 		})
 

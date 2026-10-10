@@ -36,12 +36,17 @@ function CircleRingsGrid({
 		() => generateCircleRingsCells(ringCount),
 		[ringCount],
 	)
-	const { circles, viewBox } = useMemo(() => {
+	const { circles, viewBox, hoverAreaPath } = useMemo(() => {
 		const positioned = cells.map(cell => ({
 			center: circleRingsCellCenter(cell, layout),
 			radius: circleRingsCellRadius(cell, layout),
 		}))
 		const { minX, minY, maxX, maxY } = circleRingsBoundingBox(positioned)
+		const outerRadius = Math.max(
+			...positioned.map(
+				({ center, radius }) => Math.hypot(center.x, center.y) + radius,
+			),
+		)
 		const circles: GridCell[] = cells.map((cell, i) => ({
 			kind: 'circle',
 			key: `${cell.ring},${cell.index}`,
@@ -52,6 +57,8 @@ function CircleRingsGrid({
 		return {
 			circles,
 			viewBox: `${minX} ${minY} ${maxX - minX} ${maxY - minY}`,
+			// A path keeps the invisible hit area out of cell-only export styling.
+			hoverAreaPath: `M 0 ${-outerRadius} A ${outerRadius} ${outerRadius} 0 1 1 0 ${outerRadius} A ${outerRadius} ${outerRadius} 0 1 1 0 ${-outerRadius} Z`,
 		}
 	}, [cells, layout])
 
@@ -59,6 +66,7 @@ function CircleRingsGrid({
 		<GridView
 			cells={circles}
 			viewBox={viewBox}
+			hoverAreaPath={hoverAreaPath}
 			svgRef={svgRef}
 			sizingAspectRatio={1}
 			label="Kaleidoscope circle rings grid"
