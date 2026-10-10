@@ -36,9 +36,11 @@ ESLint, Prettier, Node/npm.
 | `npm run dev` | Development server |
 | `npm run build` | Typecheck and production build |
 | `npm run lint` | ESLint |
+| `npm run lint:fix` | ESLint with automatic fixes |
 | `npm run format` | Format files |
 | `npm run format:check` | Check formatting |
 | `npm test` | Run tests once |
+| `npm run test:coverage` | Run tests once with V8 coverage reports in `coverage/` |
 
 Font Awesome Pro packages require `FONT_AWESOME_AUTH_TOKEN` in the local
 environment and as a **repository Actions secret** for CI.
