@@ -25,10 +25,16 @@ jobs:
                   node-version: 20
                   cache: npm
             - name: Authenticate with Font Awesome
+              env:
+                  FONT_AWESOME_AUTH_TOKEN: ${{ secrets.FONT_AWESOME_AUTH_TOKEN }}
               run: |
-                  npm config set "@fortawesome:registry" https://npm.fontawesome.com/
-                  npm config set "//npm.fontawesome.com/:_authToken" ${{ secrets.FONT_AWESOME_AUTH_TOKEN }}
+                  if [ -z "$FONT_AWESOME_AUTH_TOKEN" ]; then
+                    echo "::error::FONT_AWESOME_AUTH_TOKEN is not set. Add it as a repository Actions secret; environment secrets are not available to this job."
+                    exit 1
+                  fi
             - name: Install dependencies
+              env:
+                  FONT_AWESOME_AUTH_TOKEN: ${{ secrets.FONT_AWESOME_AUTH_TOKEN }}
               run: npm ci
             - run: npm run lint
             - run: npm run format:check
