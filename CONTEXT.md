@@ -42,9 +42,31 @@ ESLint, Prettier, Node/npm.
 | `npm test` | Run tests once |
 | `npm run test:coverage` | Run tests once with V8 coverage reports in `coverage/` |
 
-Font Awesome Pro packages require `FONT_AWESOME_AUTH_TOKEN` in the local
-environment and as a **repository Actions secret** for CI.
-[.npmrc](./.npmrc) reads that environment variable; never commit the token.
+### Font Awesome authentication
+
+Installing dependencies requires a Font Awesome token with access to the project's
+private Pro packages. Set `FONT_AWESOME_AUTH_TOKEN` in your shell before running
+`npm ci`; [.npmrc](./.npmrc) configures the registries and reads that environment
+variable. Never commit the token.
+
+For CI, add `FONT_AWESOME_AUTH_TOKEN` under **Settings > Secrets and variables >
+Actions > Repository secrets**. A secret stored only in the `github-pages`
+environment is not available to the test job. The workflow checks for a missing
+token before installing dependencies without printing its value.
+
+GitHub does not provide Actions secrets to pull requests from forks or Dependabot,
+so those runs cannot install the private packages with this workflow.
+
+## Favicon
+
+[public/favicon.svg](./public/favicon.svg) is a static version of the shape
+picker's six-petal diamond star, with a transparent background and muted colors.
+Each polygon has a position-based ID and its own fill color. To update the
+palette, edit the six `fill` values, ordered clockwise from the top petal.
+
+The stroke width is `0`, so no outline is visible; the white stroke and rounded
+join settings remain available if an outline is wanted later. The square viewBox
+includes padding to keep an outline from clipping.
 
 ## Code standards
 
