@@ -16,7 +16,7 @@
         <img src="https://img.shields.io/badge/Prettier-F7B93E?style=for-the-badge&logo=prettier&logoColor=333333" alt="Prettier" />
     </div>
     <hr />
-    <p style="font-size: 1.4rem; margin-top: 15px;">An interactive kaleidoscope-inspired art tool for making colorful, symmetrical designs right in your browser.</p>
+    <p style="font-size: 1.4rem; margin-top: 15px;">Unwind and create: an interactive digital kaleidoscope built for quiet brain breaks.</p>
     <hr />
     <a href="http://codewithcarrie.com/kaleidoscope" style="" target="_blank"><img src="public/screenshots/desktop-example.png" alt="Kaleidoscope" height="300px" style="border: 1px solid #ddd; border-radius: 8px; margin-right: 10px;" /></a>
     <a href="http://codewithcarrie.com/kaleidoscope" style="" target="_blank"><img src="public/screenshots/mobile-example.png" alt="Kaleidoscope" height="300px" style="border: 1px solid #ddd; border-radius: 8px;" /></a>
