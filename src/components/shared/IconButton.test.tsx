@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import {
+	faEraser,
+	faRotateLeft,
+	faRotateRight,
+} from '@fortawesome/pro-solid-svg-icons'
 import IconButton from './IconButton'
 
 describe('IconButton', () => {
@@ -8,7 +13,11 @@ describe('IconButton', () => {
 		const user = userEvent.setup()
 		const onClick = vi.fn()
 		render(
-			<IconButton icon="eraser" label="Reset design" onClick={onClick} />,
+			<IconButton
+				icon={faEraser}
+				label="Reset design"
+				onClick={onClick}
+			/>,
 		)
 
 		const button = screen.getByRole('button', { name: 'Reset design' })
@@ -21,7 +30,7 @@ describe('IconButton', () => {
 	it('uses a separate title when given, without changing the accessible name', () => {
 		render(
 			<IconButton
-				icon="rotate-left"
+				icon={faRotateLeft}
 				label="Undo"
 				title="Undo (Ctrl/Cmd+Z)"
 				onClick={() => {}}
@@ -35,7 +44,7 @@ describe('IconButton', () => {
 	it('can be disabled', () => {
 		render(
 			<IconButton
-				icon="rotate-right"
+				icon={faRotateRight}
 				label="Redo"
 				disabled
 				onClick={() => {}}

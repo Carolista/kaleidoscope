@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { faSquareCheck } from '@fortawesome/pro-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { dismissConfirmDialog } from '@services/confirmDialogPreferences'
 import Button from './Button'
 import styles from './ConfirmDialog.module.css'
@@ -74,10 +76,10 @@ function ConfirmDialog({
 								}
 							/>
 							{dontShowAgain && (
-								<i
-									className="fa-solid fa-square-check"
+								<FontAwesomeIcon
+									icon={faSquareCheck}
 									aria-hidden="true"
-								></i>
+								/>
 							)}
 						</span>
 						Don't show this again

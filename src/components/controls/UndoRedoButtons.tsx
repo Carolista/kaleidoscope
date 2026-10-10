@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { faRotateLeft, faRotateRight } from '@fortawesome/pro-solid-svg-icons'
 import { useAppState } from '@state/useAppState'
 import { IconButton } from '@shared'
 import styles from './UndoRedoButtons.module.css'
@@ -26,7 +27,7 @@ function UndoRedoButtons() {
 	return (
 		<div className={styles.group}>
 			<IconButton
-				icon="rotate-left"
+				icon={faRotateLeft}
 				label="Undo"
 				title="Undo (Ctrl/Cmd+Z)"
 				size="sm"
@@ -34,7 +35,7 @@ function UndoRedoButtons() {
 				onClick={undo}
 			/>
 			<IconButton
-				icon="rotate-right"
+				icon={faRotateRight}
 				label="Redo"
 				title="Redo (Ctrl/Cmd+Shift+Z)"
 				size="sm"

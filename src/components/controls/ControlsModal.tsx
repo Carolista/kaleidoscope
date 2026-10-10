@@ -1,3 +1,20 @@
+import {
+	faArrowsRotate,
+	faCircleInfo,
+	faEye,
+	faEyeSlash,
+	faFillDrip,
+	faHexagonImage,
+	faMagicWandSparkles,
+	faMoon,
+	faPalette,
+	faRotateLeft,
+	faRotateRight,
+	faShapes,
+	faSun,
+} from '@fortawesome/pro-solid-svg-icons'
+import type { IconDefinition } from '@fortawesome/fontawesome-svg-core'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useIsTouchDevice } from '@hooks/useIsTouchDevice'
 import { CloseButton, Modal } from '@shared'
 import styles from './ControlsModal.module.css'
@@ -8,9 +25,9 @@ export interface ControlsModalProps {
 }
 
 interface ControlItem {
-	// Font Awesome icon names, without the `fa-` prefix. Two icons (e.g.
-	// ['sun', 'moon']) represent a toggle between two states.
-	readonly icons: readonly string[]
+	// Two icons (e.g. [faSun, faMoon]) represent a toggle between two
+	// states.
+	readonly icons: readonly IconDefinition[]
 	readonly label: string
 	readonly description: string
 	// Rendered only on touch devices, matching EditableAreaToggle itself
@@ -21,57 +38,57 @@ interface ControlItem {
 
 const CONTROL_ITEMS: readonly ControlItem[] = [
 	{
-		icons: ['fill-drip'],
+		icons: [faFillDrip],
 		label: 'Paint Colors',
 		description:
 			'Tap a swatch to select a paint color, then tap any tile in the grid to paint it that color.',
 	},
 	{
-		icons: ['rotate-left', 'rotate-right'],
+		icons: [faRotateLeft, faRotateRight],
 		label: 'Undo / Redo',
 		description: 'Step backward or forward through your recent changes.',
 	},
 	{
-		icons: ['eye', 'eye-slash'],
+		icons: [faEye, faEyeSlash],
 		label: 'Show / Hide Editable Area',
 		description:
 			'Dim the tiles outside the editable area while you design, or show the full kaleidoscope again.',
 		touchOnly: true,
 	},
 	{
-		icons: ['palette'],
+		icons: [faPalette],
 		label: 'Color Palette',
 		description: 'Choose a different set of colors to paint with.',
 	},
 	{
-		icons: ['magic-wand-sparkles'],
+		icons: [faMagicWandSparkles],
 		label: 'Randomize Design',
 		description:
 			'Generate a random design using your current color palette.',
 	},
 	{
-		icons: ['arrows-rotate'],
+		icons: [faArrowsRotate],
 		label: 'Reset Design',
 		description: 'Clear your design and start over.',
 	},
 	{
-		icons: ['shapes'],
+		icons: [faShapes],
 		label: 'Grid Shape',
 		description: 'Switch the kaleidoscope to a different grid shape.',
 	},
 	{
-		icons: ['hexagon-image'],
+		icons: [faHexagonImage],
 		label: 'Create Image',
 		description: 'Save your design as an image you can download or share.',
 	},
 	{
-		icons: ['sun', 'moon'],
+		icons: [faSun, faMoon],
 		label: 'Dark / Light Mode',
 		description:
 			'Switch between dark and light mode. Tiles painted with the base or accent color switch along with it.',
 	},
 	{
-		icons: ['circle-info'],
+		icons: [faCircleInfo],
 		label: 'Help',
 		description: 'Reopen these instructions any time.',
 	},
@@ -102,9 +119,9 @@ function ControlsModal({ open, onClose }: ControlsModalProps) {
 					<li key={item.label} className={styles.item}>
 						<div className={styles.icons} aria-hidden="true">
 							{item.icons.map(icon => (
-								<i
-									key={icon}
-									className={`fa-solid fa-${icon}`}
+								<FontAwesomeIcon
+									key={icon.iconName}
+									icon={icon}
 								/>
 							))}
 						</div>

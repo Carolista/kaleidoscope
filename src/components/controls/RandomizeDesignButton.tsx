@@ -1,3 +1,4 @@
+import { faMagicWandSparkles } from '@fortawesome/pro-solid-svg-icons'
 import { useAppState } from '@state/useAppState'
 import { IconButton } from '@shared'
 
@@ -6,7 +7,7 @@ function RandomizeDesignButton() {
 
 	return (
 		<IconButton
-			icon="magic-wand-sparkles"
+			icon={faMagicWandSparkles}
 			label="Generate a random design"
 			onClick={randomizeDesign}
 		/>
