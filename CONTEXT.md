@@ -9,7 +9,8 @@ in [old-dom-app-2020/](./old-dom-app-2020) for reference only.
 
 A coloring toy. The user paints a small wedge of tiles and the app mirrors
 the work across the full grid with D6 (or D3) symmetry (rotations plus
-reflections), like a kaleidoscope. The default grid is a 169-cell hexagon;
+reflections) — or, for the pinwheel shape, rotation only, with no
+mirroring — like a kaleidoscope. The default grid is a 169-cell hexagon;
 other selectable grid shapes are also available (see Grid shapes below).
 Includes preset color schemes, dark/light mode, undo/redo, autosave, and
 PNG export/share/download.
@@ -122,10 +123,10 @@ pass.
     not.
   - `storageService.ts` autosaves to `localStorage` (versioned payload,
     scheme saved by name, defensive loading, all storage errors swallowed).
-- **Grid shapes**: 5 selectable shapes share one `shapeGroupColors`
+- **Grid shapes**: 6 selectable shapes share one `shapeGroupColors`
   paint-state map — painting/undo/
-  redo only ever need a group id, never shape-specific geometry. 4 of the
-  5 share `PolygonCell` for rendering; circle rings uses its own
+  redo only ever need a group id, never shape-specific geometry. 5 of the
+  6 share `PolygonCell` for rendering; circle rings uses its own
   `CircleCell` (a `<circle>`, not a `<polygon>`).
   `GridShapeId` (`src/types/gridShape.ts`) identifies the current shape;
   `GridShapePicker`/`GridShapeModal` let the user switch (behind a
@@ -190,6 +191,25 @@ pass.
     less visible size increase ring-to-ring, since each additional
     ring's growing circle count demands more circumference to stay
     non-overlapping.
+  - **Pinwheel** (`src/utils/pinwheelLayout.ts` + `pinwheelGrid.ts`): the
+    app's only shape using rotation-only (C8) symmetry instead of
+    mirrored (D_n) symmetry — 8 elongated-parallelogram spokes (same
+    center/sideRight/sideLeft/tip construction as the diamond star, but
+    with `sideRight`/`sideLeft` deliberately *unequal* distances from the
+    center: `sideRight = size * rowSteps`, `sideLeft = size *
+    PINWHEEL_COL_ASPECT_RATIO * colSteps`) replicated by 8 rotations with
+    no mirror step at any point. Each spoke is subdivided into a 3x3
+    lattice (`PINWHEEL_ROW_STEPS`/`PINWHEEL_COL_STEPS`) of uniform
+    elongated cells (`size` wide, `size * PINWHEEL_COL_ASPECT_RATIO`
+    long, a 2:1 ratio) rather than a uniform rhombus grid — this
+    deliberately breaks edge-to-edge tiling, leaving small visible gaps
+    between adjacent spokes that visually separate each blade from the
+    next (confirmed as a desired look, not a bug), and avoids the sharp,
+    star-like silhouette that an equal-sided rhombus spoke is always
+    stuck with regardless of its internal subdivision. 72 cells, 9
+    clickable groups (each orbit exactly size 8, since there's no mirror
+    pairing to create degenerate on-axis cells like the diamond star/
+    hexagram have).
   - **General symmetry engine** (`src/utils/symmetry.ts`): computes
     rotation/mirror orbits and clickable-wedge assignment via real
     geometric transforms applied to each cell's centroid (matched back to
@@ -298,22 +318,19 @@ image export/share/download, undo/redo, layout rework, touchscreen wedge
 discoverability (eye toggle), reduced grid to radius 7/169 cells for all
 devices (was radius 9/271), design randomizer (weighted toward the 5
 scheme colors over base; accent excluded), alternative grid shapes
-(triangle, 6-point diamond star, hexagram, circle rings) alongside the
-original hexagon, selectable via a shape picker with SVG icon previews
-(one real piece of each shape's own geometry, rendered rather than
-hand-drawn), a codebase-wide rename clearing up "hex" ambiguity once
-hexagon and hexagram coexisted (`HexGrid`→`HexagonGrid`,
+(triangle, 6-point diamond star, hexagram, circle rings, pinwheel)
+alongside the original hexagon, selectable via a shape picker with SVG
+icon previews (one real piece of each shape's own geometry, rendered
+rather than hand-drawn), a codebase-wide rename clearing up "hex"
+ambiguity once hexagon and hexagram coexisted (`HexGrid`→`HexagonGrid`,
 `hexGroupColors`→ `shapeGroupColors`, etc.), a controls modal with
 instructions on every clickable control (reworked from the earlier
 touch-only intro modal), a footer.
 
 Next, in priority order:
-- More alternative shapes/tilings (e.g. a pinwheel — copied/rotated
-  around but not mirrored, so left- and right-handed wedges aren't
-  forced to match; could suit 8 spokes instead of 6, since it doesn't
-  need a fold that's also friendly to mirroring). Anything designable as
-  a wedge, then mirrored/copied around, or just copied around without
-  mirroring.
+- More alternative shapes/tilings. Anything designable as a wedge, then
+  mirrored/copied around, or just copied around without mirroring (like
+  the pinwheel).
 - README (replace current): what it is, live link,
    screenshots, setup, scripts, stack. Unscheduled until the user supplies
    examples and asks.

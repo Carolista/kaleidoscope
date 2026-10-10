@@ -16,6 +16,10 @@ import {
 	getGroupIds as getHexagonGroupIds,
 } from './hexagonGrid'
 import {
+	computeGridAspectRatio as computePinwheelAspectRatio,
+	getGroupIds as getPinwheelGroupIds,
+} from './pinwheelGrid'
+import {
 	computeGridAspectRatio as computeTriangleAspectRatio,
 	getGroupIds as getTriangleGroupIds,
 } from './triangleGrid'
@@ -36,6 +40,8 @@ export function getGroupIdsForShape(shape: GridShapeId): string[] {
 			return getHexagramGroupIds()
 		case 'circleRings':
 			return getCircleRingsGroupIds()
+		case 'pinwheel':
+			return getPinwheelGroupIds()
 	}
 }
 
@@ -51,5 +57,7 @@ export function computeAspectRatioForShape(shape: GridShapeId): number {
 			return computeHexagramAspectRatio()
 		case 'circleRings':
 			return computeCircleRingsAspectRatio()
+		case 'pinwheel':
+			return computePinwheelAspectRatio()
 	}
 }

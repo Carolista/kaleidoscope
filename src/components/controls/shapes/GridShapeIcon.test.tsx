@@ -7,13 +7,15 @@ import type { GridShapeId } from '@appTypes/gridShape'
 // un-subdivided version of its real grid-generation code: a hexagon of
 // 7 hexagons, a triangle of 4 triangles, a diamond star of 6 diamonds,
 // a hexagram of 12 triangles, a circle rings shape of 1 center dot + 6
-// ring-1 circles.
+// ring-1 circles, a pinwheel of 8 parallelograms (1 per spoke x 8
+// spokes).
 const EXPECTED_PIECE_COUNTS: Record<GridShapeId, number> = {
 	hexagon: 7,
 	triangle: 4,
 	diamondStar: 6,
 	hexagram: 12,
 	circleRings: 7,
+	pinwheel: 8,
 }
 
 describe('GridShapeIcon', () => {

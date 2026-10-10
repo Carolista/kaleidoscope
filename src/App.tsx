@@ -17,6 +17,7 @@ import {
 	DiamondStarGrid,
 	HexagonGrid,
 	HexagramGrid,
+	PinwheelGrid,
 	TriangleGrid,
 } from '@grid'
 import Footer from './components/layout/Footer'
@@ -67,6 +68,8 @@ function App() {
 					<HexagramGrid svgRef={svgRef} />
 				) : state.gridShape === 'circleRings' ? (
 					<CircleRingsGrid svgRef={svgRef} />
+				) : state.gridShape === 'pinwheel' ? (
+					<PinwheelGrid svgRef={svgRef} />
 				) : (
 					<HexagonGrid svgRef={svgRef} />
 				)}

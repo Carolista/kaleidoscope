@@ -27,6 +27,9 @@ import {
 	circleRingsCellRadius,
 } from '@utils/circleRingsLayout'
 import type { CircleRingsLayout } from '@utils/circleRingsLayout'
+import { generatePinwheelCells } from '@utils/pinwheelGrid'
+import { pinwheelBoundingBox, pinwheelCellCorners } from '@utils/pinwheelLayout'
+import type { PinwheelLayout } from '@utils/pinwheelLayout'
 import type { Point } from '@appTypes/geometry'
 import styles from './GridShapeIcon.module.css'
 
@@ -54,13 +57,13 @@ interface Preview {
 }
 
 // Each shape's preview is assembled at a fixed `size: 1` (one small
-// piece's edge length), but the 5 shapes' overall spans work out to very
+// piece's edge length), but the 6 shapes' overall spans work out to very
 // different multiples of that unit — e.g. the hexagon-of-7's bounding
 // box is 5 units wide, while the diamond star's is under 2 — so a single
 // fixed stroke-width would read as dramatically thinner or thicker grout
 // depending on the shape. Scaling the stroke to a fraction of each
 // shape's own viewBox width keeps the grout visually consistent across
-// all 5 icons.
+// all 6 icons.
 const RELATIVE_STROKE_WIDTH = 0.03
 
 function toPreview(
@@ -80,9 +83,10 @@ function toPreview(
 // triangle — the smallest value that still yields a big-triangle shape
 // rather than a single cell) — a hexagon of 7 hexagons, a triangle of 4
 // triangles, a diamond star of 6 diamonds, a hexagram of 12 triangles, a
-// circle-rings center dot plus its first ring of 6 circles. Reusing the
-// actual geometry utilities (rather than hand-drawn paths) keeps every
-// icon perfectly in sync with the grid it represents.
+// circle-rings center dot plus its first ring of 6 circles, a pinwheel
+// of 8 lopsided parallelograms (1 per spoke). Reusing the actual
+// geometry utilities (rather than hand-drawn paths) keeps every icon
+// perfectly in sync with the grid it represents.
 function buildPreview(shape: GridShapeId): Preview {
 	switch (shape) {
 		case 'hexagon': {
@@ -137,6 +141,16 @@ function buildPreview(shape: GridShapeId): Preview {
 			return toPreview(
 				circles.map(circle => ({ kind: 'circle', ...circle })),
 				circleRingsBoundingBox(circles),
+			)
+		}
+		case 'pinwheel': {
+			const layout: PinwheelLayout = { rowSteps: 1, colSteps: 1, size: 1 }
+			const pieces = generatePinwheelCells(1, 1).map(cell =>
+				pinwheelCellCorners(cell, layout),
+			)
+			return toPreview(
+				pieces.map(points => ({ kind: 'polygon', points })),
+				pinwheelBoundingBox(pieces),
 			)
 		}
 	}

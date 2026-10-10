@@ -791,7 +791,83 @@ union (`polygon` | `circle`) so the shape picker could preview this shape
 too, using `generateCircleRingsCells(1)` the same computed-not-hand-drawn
 way every other shape's icon works.
 
+### Pinwheel (6th grid shape, rotation-only symmetry)
+
+A 6th shape, and the first to deliberately break mirror symmetry: 8
+spokes copied around the center by rotation alone (a C8 cyclic group),
+never mirrored — so, unlike every other shape, painting one cell never
+implies painting a left/right mirrored partner, only its 7 rotated
+copies. `assignSymmetryGroups` (`symmetry.ts`) already supported this via
+its existing `mirror: false` option, added when the engine was first
+generalized (see "General-purpose symmetry engine, and the triangle
+grid" above) but unused until now — no symmetry-engine changes were
+needed, only a new wedge/spoke shape designed to actually look
+asymmetric once rotated.
+
+**First attempt: a diamond-star-style rhombus spoke, subdivided
+lopsidedly.** Reused the diamond star's `center`/`sideRight`/`sideLeft`/
+`tip` construction, with `sideRight`/`sideLeft` always equidistant from
+`center` (so adjacent rotated copies tile edge-to-edge with no gaps), but
+subdivided with *independent* step counts per axis
+(`PINWHEEL_ROW_STEPS`/`PINWHEEL_COL_STEPS`, first tried as 3 and 5, then
+3 and 7) instead of diamond star's single shared `gridSize`. This did
+make the subdivision lattice asymmetric/chiral (confirmed by screenshot:
+color bands spiral consistently in one direction rather than forming
+mirrored chevrons at spoke boundaries) — but the user flagged two
+problems after seeing it rendered: the shape still read as a plain
+8-point star (an unavoidable consequence of giving both sides equal
+length — the tip-to-side ratio is fixed at `2*cos(22.5°) ≈ 1.85`
+regardless of the row/col split), and increasing the finer axis's step
+count to make the size change more obvious instead made the *coarse*
+axis's cells (stretched to match the finer axis's total reach) balloon
+out into long, messy-looking slivers near the center.
+
+**Final design: let `sideRight`/`sideLeft` be different lengths, built
+from uniform-size *elongated* cells instead of stretched rhombi.**
+Traced to the root cause together with the user: forcing both sides to
+reach the same radius was what both created the sharp star point *and*
+forced a coarse axis's individual steps to stretch disproportionately
+long. The fix (the user's own proposed math, confirmed by prototyping
+both options live): scale `sideRight` by `rowSteps * size` and
+`sideLeft` by `colSteps * PINWHEEL_COL_ASPECT_RATIO * size` — each
+individual lattice cell is a uniform elongated parallelogram (`size`
+wide, `size * PINWHEEL_COL_ASPECT_RATIO` long, not a rhombus), and the
+two spoke sides are deliberately *unequal* lengths rather than tied
+together. Trade-off, accepted after visual review: this breaks
+edge-to-edge tiling, leaving small visible background gaps between
+adjacent spokes' outer edges — but those gaps are exactly what visually
+separates each blade from the next, which is what makes it read as a
+pinwheel/flower rather than one solid star. The elongated cells (at a
+2:1 length:width ratio, `PINWHEEL_COL_ASPECT_RATIO = 2`) also visually
+separate consecutive spokes from each other on their own, reinforcing
+the same effect.
+
+Settled on `PINWHEEL_ROW_STEPS = PINWHEEL_COL_STEPS = 3` (72 total
+cells, 9 clickable groups, each orbit exactly size 8) after trying a 3x7
+split first — the user pointed out that 3 long (2:1) cells per spoke
+already covers almost the same reach as 7 short (1:1) cells would, just
+with fewer, chunkier tiles and a clearer gap between spokes, making the
+extra subdivision unnecessary. Each orbit's size-8 uniformity (vs. the
+diamond star/hexagram's mix of size-6/size-12 orbits) comes from having
+no mirror step to pair cells up, and — unlike those two — no on-axis
+degenerate case to special-case either, since every cell's centroid
+lands at a distinct angle; a plain
+`assignSymmetryGroups({ fold: 8, mirror: false })` call reliably picks
+the "up" spoke's cells as each orbit's clickable member via a closed
+angle-range check (`isCanonicalWedge`).
+
+**Shape-picker icon**: uses 1 cell per spoke (`generatePinwheelCells(1,
+1)`, 8 pieces total) rather than a further-subdivided version — with the
+final design's visible per-spoke gaps and elongated cells already
+reading clearly as a pinwheel blade shape even unsubdivided, there's no
+need for the extra subdivision the first (rhombus/full-disk) design
+needed just to make the asymmetry visible at icon size.
+
 ## Process
+
+Work proceeds one logical step at a time. The user reviews and makes each
+commit. Decisions and standards are tracked in these two files so they carry
+across sessions.
 
 Work proceeds one logical step at a time. The user reviews and makes each
 commit. Decisions and standards are tracked in these two files so they carry

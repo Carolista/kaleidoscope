@@ -9,4 +9,5 @@ export const gridShapes: readonly GridShapeOption[] = [
 	{ id: 'diamondStar', label: 'Diamond Star' },
 	{ id: 'hexagram', label: 'Hexagram' },
 	{ id: 'circleRings', label: 'Circle Rings' },
+	{ id: 'pinwheel', label: 'Pinwheel' },
 ]
