@@ -1,3 +1,4 @@
+import { faEye, faEyeSlash } from '@fortawesome/sharp-duotone-solid-svg-icons'
 import { useAppState } from '@state/useAppState'
 import { useIsTouchDevice } from '@hooks/useIsTouchDevice'
 import { IconButton } from '@shared'
@@ -19,7 +20,7 @@ function EditableAreaToggle() {
 	return (
 		// Icon shows the state a click leads to, matching the label.
 		<IconButton
-			icon={state.showEditableArea ? 'eye-slash' : 'eye'}
+			icon={state.showEditableArea ? faEyeSlash : faEye}
 			label={label}
 			onClick={toggleEditableArea}
 		/>

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { faShapes } from '@fortawesome/sharp-duotone-solid-svg-icons'
 import { IconButton } from '@shared'
 import GridShapeModal from './GridShapeModal'
 
@@ -8,7 +9,7 @@ function GridShapeButton() {
 	return (
 		<>
 			<IconButton
-				icon="shapes"
+				icon={faShapes}
 				label="Select a different shape"
 				onClick={() => setOpen(true)}
 			/>

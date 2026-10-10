@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { faPalette } from '@fortawesome/sharp-duotone-solid-svg-icons'
 import { IconButton } from '@shared'
 import ColorThemeModal from './ColorThemeModal'
 
@@ -8,7 +9,7 @@ function ColorThemeButton() {
 	return (
 		<>
 			<IconButton
-				icon="palette"
+				icon={faPalette}
 				label="Select a different color palette"
 				onClick={() => setOpen(true)}
 			/>

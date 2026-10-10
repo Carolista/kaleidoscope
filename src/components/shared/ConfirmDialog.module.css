@@ -77,7 +77,7 @@
 	outline-offset: 2px;
 }
 
-.checkboxBox i {
+.checkboxBox svg {
 	pointer-events: none;
 }
 

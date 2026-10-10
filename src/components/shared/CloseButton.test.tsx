@@ -1,13 +1,14 @@
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { renderWithProvider } from '@test/renderWithProvider'
 import CloseButton from './CloseButton'
 
 describe('CloseButton', () => {
 	it('renders with its label as the accessible name and fires onClick', async () => {
 		const user = userEvent.setup()
 		const onClick = vi.fn()
-		render(
+		renderWithProvider(
 			<CloseButton
 				label="Close color palette selector"
 				onClick={onClick}

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { RefObject } from 'react'
+import { faHexagonImage } from '@fortawesome/sharp-duotone-solid-svg-icons'
 import { IconButton } from '@shared'
 import SaveImageModal from './SaveImageModal'
 
@@ -13,7 +14,7 @@ function SaveImageButton({ svgRef }: SaveImageButtonProps) {
 	return (
 		<>
 			<IconButton
-				icon="hexagon-image"
+				icon={faHexagonImage}
 				label="Download or share image of design"
 				onClick={() => setOpen(true)}
 			/>

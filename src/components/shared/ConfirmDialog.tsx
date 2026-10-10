@@ -1,4 +1,7 @@
 import { useState } from 'react'
+import { faSquareCheck } from '@fortawesome/sharp-duotone-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { useDuotoneIconTint } from '@hooks/useDuotoneIconTint'
 import { dismissConfirmDialog } from '@services/confirmDialogPreferences'
 import Button from './Button'
 import styles from './ConfirmDialog.module.css'
@@ -30,6 +33,7 @@ function ConfirmDialog({
 	dontShowAgainKey,
 }: ConfirmDialogProps) {
 	const [dontShowAgain, setDontShowAgain] = useState(false)
+	const duotoneTint = useDuotoneIconTint()
 
 	function handleConfirm() {
 		if (dontShowAgainKey && dontShowAgain) {
@@ -74,10 +78,11 @@ function ConfirmDialog({
 								}
 							/>
 							{dontShowAgain && (
-								<i
-									className="fa-solid fa-square-check"
+								<FontAwesomeIcon
+									icon={faSquareCheck}
 									aria-hidden="true"
-								></i>
+									style={duotoneTint(faSquareCheck)}
+								/>
 							)}
 						</span>
 						Don't show this again

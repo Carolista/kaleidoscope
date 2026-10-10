@@ -94,6 +94,17 @@ function hslToRgb({ h, s, l }: Hsl): Rgb {
 // Fixed fallback used when there's no hue to brighten (see above).
 export const NEUTRAL_HOVER_FILL = '#808080'
 
+// Keeps a hex color's hue and saturation but overrides its lightness,
+// returning a fully opaque result. Used to tint the secondary layer of a
+// duotone icon at a fixed lightness (rather than relying on CSS
+// translucency, which would blend toward whatever's actually rendered
+// behind it — muddy against a dark background, washed-out against a
+// light one).
+export function withLightness(hex: string, lightnessPercent: number): string {
+	const hsl = rgbToHsl(hexToRgb(hex))
+	return rgbToHex(hslToRgb({ ...hsl, l: lightnessPercent }))
+}
+
 const SATURATION_BOOST = 20
 const LIGHTNESS_BOOST = 12
 const MAX_LIGHTNESS = 92

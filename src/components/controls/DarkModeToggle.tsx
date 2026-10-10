@@ -1,3 +1,4 @@
+import { faMoon, faSun } from '@fortawesome/sharp-duotone-solid-svg-icons'
 import { useAppState } from '@state/useAppState'
 import { IconButton } from '@shared'
 
@@ -13,7 +14,7 @@ function DarkModeToggle() {
 		// Icon shows the mode a click leads to (sun/day while in dark mode,
 		// moon/night while in light mode), matching the label.
 		<IconButton
-			icon={state.darkMode ? 'sun' : 'moon'}
+			icon={state.darkMode ? faSun : faMoon}
 			label={label}
 			onClick={toggleDarkMode}
 		/>

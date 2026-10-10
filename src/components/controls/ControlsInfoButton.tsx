@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { faCircleInfo } from '@fortawesome/sharp-duotone-solid-svg-icons'
 import { hasPersistedDesign } from '@services/storageService'
 import { IconButton } from '@shared'
 import ControlsModal from './ControlsModal'
@@ -15,7 +16,7 @@ function ControlsInfoButton() {
 	return (
 		<>
 			<IconButton
-				icon="circle-info"
+				icon={faCircleInfo}
 				label="Show controls help"
 				onClick={() => setOpen(true)}
 			/>

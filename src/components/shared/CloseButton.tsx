@@ -1,3 +1,4 @@
+import { faXmark } from '@fortawesome/pro-solid-svg-icons'
 import IconButton from './IconButton'
 
 export interface CloseButtonProps {
@@ -8,7 +9,7 @@ export interface CloseButtonProps {
 // A thin IconButton wrapper rather than its own styling, so a modal's "×"
 // close button always matches the rest of the app's icon buttons.
 function CloseButton({ label, onClick }: CloseButtonProps) {
-	return <IconButton icon="xmark" label={label} onClick={onClick} />
+	return <IconButton icon={faXmark} label={label} onClick={onClick} />
 }
 
 export default CloseButton
