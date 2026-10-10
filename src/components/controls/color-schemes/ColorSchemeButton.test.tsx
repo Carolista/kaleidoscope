@@ -2,15 +2,15 @@ import { describe, expect, it } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AppStateProvider } from '@state/AppContext'
-import ColorThemeButton from './ColorThemeButton'
+import ColorSchemeButton from './ColorSchemeButton'
 
-describe('ColorThemeButton', () => {
-	it('opens the color theme modal (with the scheme picker) and closes it', async () => {
+describe('ColorSchemeButton', () => {
+	it('opens the color palette modal (with the scheme picker) and closes it', async () => {
 		const user = userEvent.setup()
-		render(<ColorThemeButton />, { wrapper: AppStateProvider })
+		render(<ColorSchemeButton />, { wrapper: AppStateProvider })
 
 		expect(
-			screen.queryByRole('heading', { name: 'Color Theme' }),
+			screen.queryByRole('dialog', { name: 'Color Palette' }),
 		).toBeNull()
 
 		await user.click(
@@ -20,11 +20,11 @@ describe('ColorThemeButton', () => {
 		)
 
 		expect(
-			screen.getByRole('heading', { name: 'Color Theme' }),
+			screen.getByRole('dialog', { name: 'Color Palette' }),
 		).toBeInTheDocument()
 		expect(
 			screen.getByRole('button', {
-				name: 'Select the Daytona color scheme',
+				name: 'Select the Daytona color palette',
 			}),
 		).toBeInTheDocument()
 
@@ -36,14 +36,14 @@ describe('ColorThemeButton', () => {
 
 		await waitFor(() =>
 			expect(
-				screen.queryByRole('heading', { name: 'Color Theme' }),
+				screen.queryByRole('dialog', { name: 'Color Palette' }),
 			).not.toBeInTheDocument(),
 		)
 	})
 
 	it('closes automatically once a scheme is selected', async () => {
 		const user = userEvent.setup()
-		render(<ColorThemeButton />, { wrapper: AppStateProvider })
+		render(<ColorSchemeButton />, { wrapper: AppStateProvider })
 
 		await user.click(
 			screen.getByRole('button', {
@@ -52,13 +52,13 @@ describe('ColorThemeButton', () => {
 		)
 		await user.click(
 			screen.getByRole('button', {
-				name: 'Select the Daytona color scheme',
+				name: 'Select the Daytona color palette',
 			}),
 		)
 
 		await waitFor(() =>
 			expect(
-				screen.queryByRole('heading', { name: 'Color Theme' }),
+				screen.queryByRole('dialog', { name: 'Color Palette' }),
 			).not.toBeInTheDocument(),
 		)
 	})

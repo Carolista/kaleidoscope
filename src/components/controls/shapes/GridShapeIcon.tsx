@@ -160,6 +160,12 @@ function buildPreview(shape: GridShapeId): Preview {
 				pinwheelBoundingBox(pieces),
 			)
 		}
+		default: {
+			const unsupportedShape: never = shape
+			throw new Error(
+				`Unsupported grid shape preview: ${unsupportedShape}`,
+			)
+		}
 	}
 }
 

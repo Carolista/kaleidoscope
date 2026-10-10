@@ -12,6 +12,7 @@ export type ExportState =
 			readonly blob: Blob
 			readonly url: string
 			readonly filename: string
+			readonly shareError?: string
 	  }
 	| { readonly status: 'error' }
 
@@ -45,7 +46,10 @@ export function useImageExport(
 	useEffect(() => {
 		if (!open) return
 		const svg = svgRef.current
-		if (!svg) return
+		if (!svg) {
+			setExportState({ status: 'error' })
+			return
+		}
 
 		let cancelled = false
 		setExportState({ status: 'generating' })
@@ -95,6 +99,7 @@ export function useImageExport(
 		const file = new File([exportState.blob], exportState.filename, {
 			type: 'image/png',
 		})
+		setExportState({ ...exportState, shareError: undefined })
 		try {
 			await navigator.share({
 				files: [file],
@@ -102,7 +107,16 @@ export function useImageExport(
 			})
 		} catch (error) {
 			// AbortError just means the user cancelled the share sheet.
-			if ((error as Error).name !== 'AbortError') throw error
+			if (error instanceof Error && error.name === 'AbortError') return
+			setExportState(current =>
+				current.status === 'ready' && current.url === exportState.url
+					? {
+							...current,
+							shareError:
+								'Sorry, sharing failed. You can try again or download your image instead.',
+						}
+					: current,
+			)
 		}
 	}
 

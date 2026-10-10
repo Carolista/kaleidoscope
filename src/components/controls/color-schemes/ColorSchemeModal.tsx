@@ -1,14 +1,14 @@
 import { useId } from 'react'
 import { Modal, ModalHeader } from '@shared'
-import GridShapePicker from './GridShapePicker'
-import styles from './GridShapeModal.module.css'
+import SchemePicker from './SchemePicker'
+import styles from './ColorSchemeModal.module.css'
 
-export interface GridShapeModalProps {
+export interface ColorSchemeModalProps {
 	readonly open: boolean
 	readonly onClose: () => void
 }
 
-function GridShapeModal({ open, onClose }: GridShapeModalProps) {
+function ColorSchemeModal({ open, onClose }: ColorSchemeModalProps) {
 	const titleId = useId()
 	return (
 		<Modal
@@ -18,16 +18,16 @@ function GridShapeModal({ open, onClose }: GridShapeModalProps) {
 			className={styles.dialog}
 		>
 			<ModalHeader
-				title="Grid Shape"
+				title="Color Palette"
 				titleId={titleId}
-				closeLabel="Close grid shape selector"
+				closeLabel="Close color palette selector"
 				onClose={onClose}
 			/>
 			<div className={styles.content}>
-				<GridShapePicker onSelected={onClose} />
+				<SchemePicker onSelected={onClose} />
 			</div>
 		</Modal>
 	)
 }
 
-export default GridShapeModal
+export default ColorSchemeModal

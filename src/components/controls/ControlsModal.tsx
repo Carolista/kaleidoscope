@@ -1,3 +1,4 @@
+import { useId } from 'react'
 import {
 	faCircleInfo,
 	faEye,
@@ -19,7 +20,7 @@ import type { IconDefinition } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useDuotoneIconTint } from '@hooks/useDuotoneIconTint'
 import { useIsTouchDevice } from '@hooks/useIsTouchDevice'
-import { CloseButton, Modal } from '@shared'
+import { Modal, ModalHeader } from '@shared'
 import styles from './ControlsModal.module.css'
 
 export interface ControlsModalProps {
@@ -101,6 +102,7 @@ const CONTROL_ITEMS: readonly ControlItem[] = [
 // Shown once automatically on a brand-new device (see ControlsInfoButton),
 // then available afterward via its own circle-info icon button.
 function ControlsModal({ open, onClose }: ControlsModalProps) {
+	const titleId = useId()
 	const isTouch = useIsTouchDevice()
 	const items = CONTROL_ITEMS.filter(item => !item.touchOnly || isTouch)
 	const duotoneTint = useDuotoneIconTint()
@@ -109,15 +111,15 @@ function ControlsModal({ open, onClose }: ControlsModalProps) {
 		<Modal
 			open={open}
 			onClose={onClose}
-			labelledBy="controls-modal-title"
+			labelledBy={titleId}
 			className={styles.dialog}
 		>
-			<div className={styles.header}>
-				<h2 id="controls-modal-title" className={styles.title}>
-					Controls
-				</h2>
-				<CloseButton label="Close controls help" onClick={onClose} />
-			</div>
+			<ModalHeader
+				title="Controls"
+				titleId={titleId}
+				closeLabel="Close controls help"
+				onClose={onClose}
+			/>
 			<ul className={styles.list}>
 				{items.map(item => (
 					<li key={item.label} className={styles.item}>

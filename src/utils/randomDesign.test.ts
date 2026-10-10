@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { ColorScheme } from '../types/colorScheme'
 import {
 	generateRandomShapeGroupColors,
@@ -34,6 +34,43 @@ describe('pickRandomPaintColor', () => {
 })
 
 describe('generateRandomShapeGroupColors', () => {
+	it('preserves every weighted pool slot and consumes one random value per group in order', () => {
+		const groupIds = Array.from(
+			{ length: 100 },
+			(_, index) => `group-${index}`,
+		)
+		const random = vi.fn()
+		for (let index = 0; index < 100; index++) {
+			random.mockReturnValueOnce((index + 0.5) / 100)
+		}
+		const result = generateRandomShapeGroupColors(
+			groupIds,
+			SCHEME,
+			BASE,
+			random,
+		)
+		expect(Object.keys(result)).toEqual(groupIds)
+		expect(random).toHaveBeenCalledTimes(groupIds.length)
+		const expected = [
+			...SCHEME.colors.flatMap(color => Array(18).fill(color)),
+			...Array(10).fill(BASE),
+		]
+		expect(Object.values(result)).toEqual(expected)
+		for (let index = 0; index < 100; index++) {
+			expect(result[groupIds[index]]).toBe(
+				pickRandomPaintColor(SCHEME, BASE, () => (index + 0.5) / 100),
+			)
+		}
+	})
+
+	it('returns an empty design without consuming random values when there are no groups', () => {
+		const random = vi.fn()
+		expect(
+			generateRandomShapeGroupColors([], SCHEME, BASE, random),
+		).toEqual({})
+		expect(random).not.toHaveBeenCalled()
+	})
+
 	it('assigns a color to every given group id', () => {
 		const groupIds = ['a', 'b', 'c']
 		const result = generateRandomShapeGroupColors(groupIds, SCHEME, BASE)

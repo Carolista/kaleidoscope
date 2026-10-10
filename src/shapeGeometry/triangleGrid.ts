@@ -1,7 +1,9 @@
 import type { Point } from '../types/geometry'
 import type { TriangleCell } from '../types/triangle'
+import { averagePoint } from '@utils/geometryMath'
+import { groupCells } from '@utils/groupCells'
 import { assignSymmetryGroups } from '@utils/symmetry'
-import { latticePoint, trianglesBoundingBox } from './triangleLayout'
+import { triangleCorners, trianglesBoundingBox } from './triangleLayout'
 import type { TriangleLayout } from './triangleLayout'
 
 // Number of lattice rows the big triangle is subdivided into. Chosen to
@@ -22,13 +24,6 @@ interface RawTriangle {
 	readonly centroid: Point
 }
 
-function centroid(corners: readonly Point[]): Point {
-	return {
-		x: (corners[0].x + corners[1].x + corners[2].x) / 3,
-		y: (corners[0].y + corners[1].y + corners[2].y) / 3,
-	}
-}
-
 // Every small triangle in the big triangle's subdivision, in row-major
 // order: row `row` alternates `row + 1` "up" triangles with `row` "down"
 // triangles in between them, for `gridSize` rows total (`gridSize^2`
@@ -37,29 +32,27 @@ function generateRawTriangles(gridSize: number): RawTriangle[] {
 	const triangles: RawTriangle[] = []
 	for (let row = 0; row < gridSize; row++) {
 		for (let col = 0; col <= row; col++) {
-			const corners = [
-				latticePoint(row, col, UNIT_LAYOUT),
-				latticePoint(row + 1, col, UNIT_LAYOUT),
-				latticePoint(row + 1, col + 1, UNIT_LAYOUT),
-			]
+			const corners = triangleCorners(
+				{ row, col, direction: 'up' },
+				UNIT_LAYOUT,
+			)
 			triangles.push({
 				row,
 				col,
 				direction: 'up',
-				centroid: centroid(corners),
+				centroid: averagePoint(corners),
 			})
 		}
 		for (let col = 0; col < row; col++) {
-			const corners = [
-				latticePoint(row, col, UNIT_LAYOUT),
-				latticePoint(row, col + 1, UNIT_LAYOUT),
-				latticePoint(row + 1, col + 1, UNIT_LAYOUT),
-			]
+			const corners = triangleCorners(
+				{ row, col, direction: 'down' },
+				UNIT_LAYOUT,
+			)
 			triangles.push({
 				row,
 				col,
 				direction: 'down',
-				centroid: centroid(corners),
+				centroid: averagePoint(corners),
 			})
 		}
 	}
@@ -119,16 +112,7 @@ export function generateTriangleCells(
 export function groupTriangleCells(
 	cells: readonly TriangleCell[],
 ): Map<string, TriangleCell[]> {
-	const groups = new Map<string, TriangleCell[]>()
-	for (const cell of cells) {
-		const list = groups.get(cell.groupId)
-		if (list) {
-			list.push(cell)
-		} else {
-			groups.set(cell.groupId, [cell])
-		}
-	}
-	return groups
+	return groupCells(cells)
 }
 
 // Every distinct mirror-symmetry group id in the grid — lets callers
@@ -138,22 +122,6 @@ export function getGroupIds(gridSize: number = TRIANGLE_GRID_SIZE): string[] {
 	return [...groupTriangleCells(generateTriangleCells(gridSize)).keys()]
 }
 
-function cornersFor(triangle: RawTriangle): Point[] {
-	const { row, col, direction } = triangle
-	if (direction === 'up') {
-		return [
-			latticePoint(row, col, UNIT_LAYOUT),
-			latticePoint(row + 1, col, UNIT_LAYOUT),
-			latticePoint(row + 1, col + 1, UNIT_LAYOUT),
-		]
-	}
-	return [
-		latticePoint(row, col, UNIT_LAYOUT),
-		latticePoint(row, col + 1, UNIT_LAYOUT),
-		latticePoint(row + 1, col + 1, UNIT_LAYOUT),
-	]
-}
-
 // The grid's overall (width / height) ratio, independent of render size
 // — a uniform scale factor cancels out of the ratio — so this reflects
 // the same shape TriangleGrid renders (and the export service
@@ -161,7 +129,9 @@ function cornersFor(triangle: RawTriangle): Point[] {
 export function computeGridAspectRatio(
 	gridSize: number = TRIANGLE_GRID_SIZE,
 ): number {
-	const corners = generateRawTriangles(gridSize).map(cornersFor)
+	const corners = generateRawTriangles(gridSize).map(cell =>
+		triangleCorners(cell, UNIT_LAYOUT),
+	)
 	const { minX, minY, maxX, maxY } = trianglesBoundingBox(corners)
 	return (maxX - minX) / (maxY - minY)
 }

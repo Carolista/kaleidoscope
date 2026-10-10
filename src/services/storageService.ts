@@ -1,6 +1,7 @@
 import type { AppState } from '../types/appState'
 import type { GridShapeId } from '../types/gridShape'
 import { colorSchemes } from '../data/colorSchemes'
+import { isGridShapeId } from '../data/gridShapes'
 import { createInitialAppState } from '../state/appReducer'
 
 const STORAGE_KEY = 'kaleidoscope:design'
@@ -10,15 +11,6 @@ const STORAGE_KEY = 'kaleidoscope:design'
 // crash trying to parse it. No migration logic yet since this is the
 // first version.
 const STORAGE_VERSION = 1
-
-const VALID_GRID_SHAPES: readonly GridShapeId[] = [
-	'hexagon',
-	'triangle',
-	'diamondStar',
-	'hexagram',
-	'circleRings',
-	'pinwheel',
-]
 
 interface PersistedDesign {
 	readonly version: typeof STORAGE_VERSION
@@ -65,29 +57,39 @@ function fromPersistedDesign(data: PersistedDesign): AppState | null {
 	}
 }
 
-function isPersistedDesign(value: unknown): value is PersistedDesign {
-	if (typeof value !== 'object' || value === null) return false
-	const data = value as Record<string, unknown>
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function isHexColor(value: unknown): value is string {
+	return (
+		typeof value === 'string' &&
+		value.length === 7 &&
+		/^#[0-9a-f]{6}$/i.test(value)
+	)
+}
+
+function isPersistedDesign(data: unknown): data is PersistedDesign {
+	if (!isRecord(data)) return false
 	return (
 		data.version === STORAGE_VERSION &&
 		typeof data.schemeName === 'string' &&
-		typeof data.currentColor === 'string' &&
+		isHexColor(data.currentColor) &&
 		typeof data.darkMode === 'boolean' &&
 		(data.showEditableArea === undefined ||
 			typeof data.showEditableArea === 'boolean') &&
-		(data.gridShape === undefined ||
-			VALID_GRID_SHAPES.includes(data.gridShape as GridShapeId)) &&
-		typeof data.shapeGroupColors === 'object' &&
-		data.shapeGroupColors !== null &&
-		Object.values(data.shapeGroupColors).every(c => typeof c === 'string')
+		(data.gridShape === undefined || isGridShapeId(data.gridShape)) &&
+		isRecord(data.shapeGroupColors) &&
+		Object.values(data.shapeGroupColors).every(isHexColor)
 	)
 }
 
 // Falls back to a fresh random-scheme state (same as a first-ever visit)
 // whenever there's nothing usable to restore: no saved design, corrupted
-// JSON, an unrecognized shape/version, or a scheme name that no longer
-// exists. Also swallows any storage access error (e.g. disabled
-// localStorage in a private-browsing mode) rather than crashing the app.
+// JSON, malformed paint maps/colors, an unrecognized shape/version, or a
+// scheme name that no longer exists. Also swallows any storage access error
+// (e.g. disabled localStorage in a private-browsing mode) rather than crashing
+// the app.
 export function loadInitialAppState(): AppState {
 	try {
 		const raw = localStorage.getItem(STORAGE_KEY)

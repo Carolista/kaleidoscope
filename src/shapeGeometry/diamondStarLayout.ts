@@ -121,23 +121,4 @@ export function diamondStarCellCorners(
 	return raw.map(transform)
 }
 
-// Computed directly from every cell's actual corner points, same
-// approach as triangleLayout's `trianglesBoundingBox` (a diamond star's
-// corners aren't equidistant from its center either).
-export function diamondStarBoundingBox(
-	corners: readonly (readonly Point[])[],
-): { minX: number; minY: number; maxX: number; maxY: number } {
-	let minX = Infinity
-	let minY = Infinity
-	let maxX = -Infinity
-	let maxY = -Infinity
-	for (const rhombus of corners) {
-		for (const { x, y } of rhombus) {
-			minX = Math.min(minX, x)
-			minY = Math.min(minY, y)
-			maxX = Math.max(maxX, x)
-			maxY = Math.max(maxY, y)
-		}
-	}
-	return { minX, minY, maxX, maxY }
-}
+export { polygonBoundingBox as diamondStarBoundingBox } from '@utils/geometryMath'

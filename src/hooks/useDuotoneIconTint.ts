@@ -35,21 +35,21 @@ function isDuotoneIcon(icon: IconDefinition) {
 // mapping over an array of icons.
 export function useDuotoneIconTint() {
 	const { state } = useAppState()
+	// The richest/darkest color in the active palette is always first.
+	const secondaryColor = withLightness(
+		state.currentScheme.colors[0],
+		SECONDARY_TINT_LIGHTNESS_PERCENT[state.darkMode ? 'dark' : 'light'],
+	)
+	const tint = {
+		'--fa-secondary-color': secondaryColor,
+		'--fa-secondary-opacity': '1',
+	}
 
 	return function duotoneIconTint(icon: IconDefinition) {
 		if (!isDuotoneIcon(icon)) {
 			return undefined
 		}
 
-		// The richest/darkest color in the active palette is always first.
-		const secondaryColor = withLightness(
-			state.currentScheme.colors[0],
-			SECONDARY_TINT_LIGHTNESS_PERCENT[state.darkMode ? 'dark' : 'light'],
-		)
-
-		return {
-			'--fa-secondary-color': secondaryColor,
-			'--fa-secondary-opacity': '1',
-		}
+		return tint
 	}
 }

@@ -1,10 +1,10 @@
 import type { RefObject } from 'react'
-import { useMemo } from 'react'
+import { useId, useMemo } from 'react'
 import { useAppState } from '@state/useAppState'
 import { getThemeColors } from '@state/theme'
 import { useImageExport } from '@hooks/useImageExport'
 import { computeAspectRatioForShape } from '@utils/gridShapeRegistry'
-import { Button, CloseButton, Modal } from '@shared'
+import { Button, Modal, ModalHeader } from '@shared'
 import styles from './SaveImageModal.module.css'
 
 export interface SaveImageModalProps {
@@ -14,6 +14,7 @@ export interface SaveImageModalProps {
 }
 
 function SaveImageModal({ open, svgRef, onClose }: SaveImageModalProps) {
+	const titleId = useId()
 	const { state } = useAppState()
 	const { base } = getThemeColors(state.darkMode)
 	const { exportState, canShare, handleDownload, handleShare } =
@@ -30,15 +31,15 @@ function SaveImageModal({ open, svgRef, onClose }: SaveImageModalProps) {
 		<Modal
 			open={open}
 			onClose={onClose}
-			labelledBy="save-image-modal-title"
+			labelledBy={titleId}
 			className={styles.dialog}
 		>
-			<div className={styles.header}>
-				<h2 id="save-image-modal-title" className={styles.title}>
-					Save Image
-				</h2>
-				<CloseButton label="Close" onClick={onClose} />
-			</div>
+			<ModalHeader
+				title="Save Image"
+				titleId={titleId}
+				closeLabel="Close"
+				onClose={onClose}
+			/>
 
 			<div
 				className={styles.preview}
@@ -59,6 +60,9 @@ function SaveImageModal({ open, svgRef, onClose }: SaveImageModalProps) {
 				)}
 			</div>
 
+			{exportState.status === 'ready' && exportState.shareError && (
+				<p role="alert">{exportState.shareError}</p>
+			)}
 			<div className={styles.actions}>
 				{canShare && <Button onClick={handleShare}>Share</Button>}
 				<Button

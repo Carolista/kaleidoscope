@@ -1,5 +1,7 @@
 import type { Point } from '../types/geometry'
 import type { PinwheelCell } from '../types/pinwheel'
+import { averagePoint } from '@utils/geometryMath'
+import { groupCells } from '@utils/groupCells'
 import { assignSymmetryGroups } from '@utils/symmetry'
 import {
 	FULL_ANGLE_DEGREES,
@@ -48,14 +50,6 @@ function generateSpokeCells(rowSteps: number, colSteps: number): RawCell[] {
 	return cells
 }
 
-function centroid(corners: readonly Point[]): Point {
-	const sum = corners.reduce(
-		(acc, p) => ({ x: acc.x + p.x, y: acc.y + p.y }),
-		{ x: 0, y: 0 },
-	)
-	return { x: sum.x / corners.length, y: sum.y / corners.length }
-}
-
 // Picks the canonical (clickable) member of each symmetry orbit: the
 // cells belonging to spoke 0 (the "up" spoke), spanning exactly
 // `FULL_ANGLE_DEGREES` centered on straight up (270 degrees) — matching
@@ -98,7 +92,11 @@ export function generatePinwheelCells(
 	PINWHEEL_ROTATIONS.forEach((transform, transformIndex) => {
 		baseCells.forEach((cell, cellIndex) => {
 			const corners = baseCorners[cellIndex].map(transform)
-			raw.push({ ...cell, transformIndex, centroid: centroid(corners) })
+			raw.push({
+				...cell,
+				transformIndex,
+				centroid: averagePoint(corners),
+			})
 		})
 	})
 
@@ -122,16 +120,7 @@ export function generatePinwheelCells(
 export function groupPinwheelCells(
 	cells: readonly PinwheelCell[],
 ): Map<string, PinwheelCell[]> {
-	const groups = new Map<string, PinwheelCell[]>()
-	for (const cell of cells) {
-		const list = groups.get(cell.groupId)
-		if (list) {
-			list.push(cell)
-		} else {
-			groups.set(cell.groupId, [cell])
-		}
-	}
-	return groups
+	return groupCells(cells)
 }
 
 // Every distinct symmetry group id in the grid — lets callers (e.g. the

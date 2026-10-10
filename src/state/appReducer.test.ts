@@ -91,6 +91,36 @@ describe('appReducer', () => {
 		expect(next.currentColor).toBe('#123456')
 	})
 
+	it('SELECT_COLOR preserves the state reference for the already-selected color', () => {
+		const state = baseState()
+		expect(
+			appReducer(state, {
+				type: 'SELECT_COLOR',
+				color: state.currentColor,
+			}),
+		).toBe(state)
+	})
+
+	it.each([false, true])(
+		'painting accent onto default or explicit accent is a no-op in dark mode %s',
+		darkMode => {
+			const accent = darkMode ? '#ffffff' : '#222222'
+			for (const shapeGroupColors of [{}, { a: accent }]) {
+				const state = baseState({
+					darkMode,
+					currentColor: accent,
+					shapeGroupColors,
+				})
+				expect(
+					appReducer(state, {
+						type: 'PAINT_SHAPE_GROUP',
+						groupId: 'a',
+					}),
+				).toBe(state)
+			}
+		},
+	)
+
 	it('PAINT_SHAPE_GROUP paints an unpainted group with the current color', () => {
 		const state = baseState({ currentColor: '#ff0000' })
 		const next = appReducer(state, {
@@ -152,6 +182,10 @@ describe('appReducer', () => {
 		expect(next.shapeGroupColors).toEqual({})
 	})
 
+	it('RESET_DESIGN preserves the state reference when already empty', () => {
+		const state = baseState()
+		expect(appReducer(state, { type: 'RESET_DESIGN' })).toBe(state)
+	})
 	it('RANDOMIZE_DESIGN assigns every group id a color from the current scheme or theme base (never accent)', () => {
 		const state = baseState({ darkMode: false })
 		const next = appReducer(state, { type: 'RANDOMIZE_DESIGN' })

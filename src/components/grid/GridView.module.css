@@ -1,0 +1,20 @@
+.grid {
+	display: block;
+	/* Keep the existing 560px cap and 226px allowance for surrounding UI.
+	   Each adapter supplies its original viewport-sizing ratio. */
+	width: min(100%, 560px, calc((100vh - 226px) * var(--grid-aspect-ratio)));
+	height: auto;
+	margin: 0 auto;
+}
+
+.visuallyHidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}

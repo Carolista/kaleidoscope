@@ -1,7 +1,3 @@
-.dialog {
-	max-width: 26rem;
-}
-
 .header {
 	display: flex;
 	align-items: center;
@@ -14,9 +10,4 @@
 	font-family: 'Righteous', sans-serif;
 	text-transform: uppercase;
 	font-size: 1.1rem;
-}
-
-.content {
-	display: flex;
-	justify-content: center;
 }
