@@ -7,7 +7,7 @@ import {
 import { triangleCorners, trianglesBoundingBox } from '@geometry/triangleLayout'
 import type { TriangleLayout } from '@geometry/triangleLayout'
 import GridView from './GridView'
-import type { GridCell } from './GridView'
+import type { GridCell, GridInteraction } from './GridView'
 
 export interface TriangleGridProps {
 	readonly gridSize?: number
@@ -15,6 +15,7 @@ export interface TriangleGridProps {
 	readonly triangleSize?: number
 	// Exposes the rendered <svg> element, e.g. for image export.
 	readonly svgRef?: Ref<SVGSVGElement>
+	readonly interaction?: GridInteraction
 }
 
 const DEFAULT_TRIANGLE_SIZE = 32
@@ -23,6 +24,7 @@ function TriangleGrid({
 	gridSize = TRIANGLE_GRID_SIZE,
 	triangleSize = DEFAULT_TRIANGLE_SIZE,
 	svgRef,
+	interaction,
 }: TriangleGridProps) {
 	const layout: TriangleLayout = useMemo(
 		() => ({ size: triangleSize }),
@@ -50,6 +52,7 @@ function TriangleGrid({
 			cells={polygons}
 			viewBox={viewBox}
 			svgRef={svgRef}
+			interaction={interaction}
 			sizingAspectRatio={1.1547}
 			label="Kaleidoscope triangle grid"
 			instructions="Tab to move between triangles. Press Enter or Space to paint the focused triangle with the current color."

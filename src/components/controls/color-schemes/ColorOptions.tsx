@@ -1,7 +1,6 @@
-import type { CSSProperties } from 'react'
 import { useAppState } from '@state/useAppState'
 import { getThemeColors } from '@state/theme'
-import styles from './ColorOptions.module.css'
+import ColorSwatches from './ColorSwatches'
 
 // The 7 colors the user can currently paint with: the active scheme's 5
 // colors, plus the always-available base and accent (swap with dark mode).
@@ -19,24 +18,11 @@ function ColorOptions() {
 	]
 
 	return (
-		<div
-			className={styles.options}
-			role="group"
-			aria-label="Current Color Options"
-			style={{ '--swatch-selected-border': accent } as CSSProperties}
-		>
-			{options.map(({ color, label }) => (
-				<button
-					key={label}
-					type="button"
-					className={styles.swatch}
-					style={{ backgroundColor: color }}
-					aria-label={label}
-					aria-pressed={state.currentColor === color}
-					onClick={() => selectColor(color)}
-				/>
-			))}
-		</div>
+		<ColorSwatches
+			options={options}
+			selectedColor={state.currentColor}
+			onSelect={selectColor}
+		/>
 	)
 }
 

@@ -1,27 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import { colorSchemes } from '../data/colorSchemes'
-import {
-	appReducer,
-	createInitialAppState,
-	pickRandomScheme,
-} from './appReducer'
+import { appReducer, createInitialAppState } from './appReducer'
 import type { AppState } from '../types/appState'
 
-describe('createInitialAppState / pickRandomScheme', () => {
-	it('picks a scheme from the known list and defaults current color to its first color', () => {
+describe('createInitialAppState', () => {
+	it('uses the first scheme and defaults current color to its first color', () => {
 		const state = createInitialAppState()
-		expect(colorSchemes).toContain(state.currentScheme)
-		expect(state.currentColor).toBe(state.currentScheme.colors[0])
+		expect(state.currentScheme).toBe(colorSchemes[0])
+		expect(state.currentColor).toBe(colorSchemes[0].colors[0])
 		expect(state.darkMode).toBe(true)
 		expect(state.showEditableArea).toBe(true)
 		expect(state.gridShape).toBe('hexagon')
 		expect(state.shapeGroupColors).toEqual({})
-	})
-
-	it('pickRandomScheme always returns one of the known schemes', () => {
-		for (let i = 0; i < 20; i++) {
-			expect(colorSchemes).toContain(pickRandomScheme())
-		}
 	})
 })
 

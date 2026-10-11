@@ -23,12 +23,17 @@
 	transition: border-color 0.15s ease;
 }
 
-.swatch:hover {
+.swatch:hover:not(:disabled) {
 	transform: scale(1.2);
 }
 
 .swatch[aria-pressed='true'] {
 	border-width: 2px;
 	margin: calc(var(--swatch-margin) - 1px);
-	border-color: var(--swatch-selected-border);
+	border-color: var(--accent);
+}
+
+.swatch:disabled {
+	opacity: 0.3;
+	cursor: not-allowed;
 }

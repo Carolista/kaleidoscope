@@ -21,6 +21,13 @@ export type GridCell = {
 	  }
 )
 
+export interface GridInteraction {
+	readonly groupColors: Readonly<Record<string, string>>
+	readonly onPaint: (groupId: string) => void
+	readonly isPaintable: (groupId: string) => boolean
+	readonly highlightEditableArea: boolean
+}
+
 interface GridViewProps {
 	readonly cells: readonly GridCell[]
 	readonly viewBox: string
@@ -29,6 +36,7 @@ interface GridViewProps {
 	readonly sizingAspectRatio: number
 	readonly svgRef?: Ref<SVGSVGElement>
 	readonly hoverAreaPath?: string
+	readonly interaction?: GridInteraction
 }
 
 function GridView({
@@ -39,6 +47,7 @@ function GridView({
 	sizingAspectRatio,
 	svgRef,
 	hoverAreaPath,
+	interaction,
 }: GridViewProps) {
 	const { state, paintShapeGroup } = useAppState()
 	const { base, accent } = getThemeColors(state.darkMode)
@@ -47,7 +56,10 @@ function GridView({
 	const [announcement, setAnnouncement] = useState('')
 	const instructionsId = useId()
 	const highlightEditableArea =
-		isHovering || (isTouch && state.showEditableArea)
+		interaction?.highlightEditableArea ??
+		(isHovering || (isTouch && state.showEditableArea))
+	const groupColors = interaction?.groupColors ?? state.shapeGroupColors
+	const paint = interaction?.onPaint ?? paintShapeGroup
 
 	const { numberedCells, tileCount } = useMemo(() => {
 		let tileCount = 0
@@ -99,15 +111,17 @@ function GridView({
 				)}
 				{numberedCells.map(cell => {
 					const props = {
-						fill: state.shapeGroupColors[cell.groupId] ?? accent,
-						isClickable: cell.isClickable,
+						fill: groupColors[cell.groupId] ?? accent,
+						isClickable:
+							cell.isClickable &&
+							(interaction?.isPaintable(cell.groupId) ?? true),
 						dimmed: highlightEditableArea && !cell.isClickable,
 						base,
 						accent,
 						tileNumber: cell.tileNumber,
 						tileCount,
 						onClick: () => {
-							paintShapeGroup(cell.groupId)
+							paint(cell.groupId)
 							setAnnouncement(
 								`Painted tile ${cell.tileNumber} of ${tileCount}.`,
 							)

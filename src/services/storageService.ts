@@ -105,7 +105,7 @@ export function loadInitialAppState(): AppState {
 }
 
 // Used once, at startup (before the autosave effect can run), to decide
-// whether to show the controls modal automatically: a design already
+// whether to show the intro sequence: a design already
 // existing means this isn't the device's first-ever visit.
 export function hasPersistedDesign(): boolean {
 	try {

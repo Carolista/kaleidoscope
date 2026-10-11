@@ -1,7 +1,6 @@
 .list {
 	display: flex;
 	flex-direction: column;
-	gap: 4px;
 	list-style: none;
 	margin: 0;
 	padding: 0;
@@ -11,24 +10,22 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	width: 190px;
-	height: 30px;
-	padding: 0;
-	border: none;
+	padding: 6px;
+	border: 2px solid transparent;
 	border-radius: 4px;
 	background: none;
 	cursor: pointer;
-	transition: background-color 0.15s ease;
+	transition: border-color 0.15s ease;
 }
 
 .schemeButton:hover {
-	background-color: rgb(128 128 128 / 20%);
+	border: 2px solid var(--accent);
 }
 
 .swatch {
 	display: inline-block;
-	width: 20px;
-	height: 20px;
+	width: 30px;
+	height: 30px;
 	margin: 0 2px;
 	border: 1px solid #bbb;
 	border-radius: 2px;

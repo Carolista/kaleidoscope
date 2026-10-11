@@ -15,17 +15,64 @@ function renderApp() {
 	return render(<App />, { wrapper: AppStateProvider })
 }
 
+// Any saved record means this isn't a first visit, so the intro is skipped.
+function seedSavedDesign() {
+	localStorage.setItem(
+		'kaleidoscope:design',
+		JSON.stringify({
+			version: 1,
+			schemeName: 'does not matter for this check',
+			currentColor: '#000000',
+			darkMode: true,
+			showEditableArea: true,
+			shapeGroupColors: {},
+		}),
+	)
+}
+
 describe('App', () => {
 	beforeEach(() => {
 		localStorage.clear()
 	})
 
-	it('shows the controls modal on first-ever load, regardless of touch', () => {
+	it('shows only the intro, with no footer, regular controls, or help modal, on first-ever load', () => {
 		mockUseIsTouchDevice.mockReturnValue(false)
 		renderApp()
 		expect(
+			screen.getByRole('heading', { name: 'Welcome!' }),
+		).toBeInTheDocument()
+		expect(screen.queryByRole('contentinfo')).not.toBeInTheDocument()
+		expect(
+			screen.queryByRole('group', { name: 'Controls' }),
+		).not.toBeInTheDocument()
+		expect(
+			screen.queryByRole('heading', { name: 'Controls' }),
+		).not.toBeInTheDocument()
+	})
+
+	it('reveals the full app with the controls modal open after completing the intro', async () => {
+		mockUseIsTouchDevice.mockReturnValue(false)
+		const user = userEvent.setup()
+		renderApp()
+
+		for (let i = 1; i <= 5; i++) {
+			await user.click(screen.getByRole('button', { name: `Color ${i}` }))
+			await user.click(
+				screen.getByRole('button', { name: `Paint tile ${i} of 5` }),
+			)
+		}
+		await user.click(screen.getByRole('button', { name: 'Continue' }))
+
+		expect(
 			screen.getByRole('heading', { name: 'Controls' }),
 		).toBeInTheDocument()
+		expect(screen.getByRole('contentinfo')).toBeInTheDocument()
+		expect(
+			screen.getByRole('group', { name: 'Kaleidoscope hexagon grid' }),
+		).toBeInTheDocument()
+		expect(
+			screen.queryByRole('heading', { name: 'Welcome!' }),
+		).not.toBeInTheDocument()
 	})
 
 	it.each(supportedGridShapes)(
@@ -49,11 +96,18 @@ describe('App', () => {
 		},
 	)
 
-	it('dismisses the controls modal via its close button', async () => {
+	it('dismisses the controls modal via its close button after the intro', async () => {
 		mockUseIsTouchDevice.mockReturnValue(false)
 		const user = userEvent.setup()
 		renderApp()
 
+		for (let i = 1; i <= 5; i++) {
+			await user.click(screen.getByRole('button', { name: `Color ${i}` }))
+			await user.click(
+				screen.getByRole('button', { name: `Paint tile ${i} of 5` }),
+			)
+		}
+		await user.click(screen.getByRole('button', { name: 'Continue' }))
 		await user.click(
 			screen.getByRole('button', { name: 'Close controls help' }),
 		)
@@ -112,6 +166,7 @@ describe('App', () => {
 	})
 
 	it('only lists the editable-area toggle control on touch devices', () => {
+		seedSavedDesign()
 		mockUseIsTouchDevice.mockReturnValue(false)
 		renderApp()
 		expect(
@@ -120,6 +175,7 @@ describe('App', () => {
 	})
 
 	it('lists the editable-area toggle control on touch devices', () => {
+		seedSavedDesign()
 		mockUseIsTouchDevice.mockReturnValue(true)
 		renderApp()
 		expect(

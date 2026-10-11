@@ -48,7 +48,7 @@
 	gap: 0.75rem;
 }
 
-/* The two rows are only distinct below 400px, where all eight buttons
+/* The two rows are only distinct at 400px and below, where all eight buttons
    (seven on non-touch devices) no longer fit on one line; wider than
    that they flow as a single wrapping row. */
 .buttonRow {
@@ -61,14 +61,14 @@
 	}
 }
 
-/* Tighter spacing so a full row of eight buttons fits from 400px up. */
-@media screen and (min-width: 400px) and (max-width: 480px) {
+/* Tighter spacing so a full row of eight buttons fits from 401px up. */
+@media screen and (min-width: 401px) and (max-width: 480px) {
 	.buttonGroup {
 		gap: 0.4rem;
 	}
 }
 
-@media screen and (max-width: 399.98px) {
+@media screen and (max-width: 400px) {
 	.buttonGroup {
 		flex-direction: column;
 		align-items: center;

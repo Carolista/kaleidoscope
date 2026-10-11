@@ -1,4 +1,5 @@
 .dialog {
+	max-width: calc(100vw - 2rem); /* universal */
 	border: 2px solid var(--accent, #222);
 	border-radius: 6px;
 	padding: 1.5rem;
@@ -8,4 +9,10 @@
 
 .dialog::backdrop {
 	background: rgb(0 0 0 / 50%);
+}
+
+@media screen and (max-width: 400px) {
+	.dialog {
+		padding: 1rem;
+	}
 }
