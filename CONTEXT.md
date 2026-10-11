@@ -101,12 +101,15 @@ changes should be applied to all four SVG assets.
   No Kit script or Kit dependency.
 - Self-hosted fonts: Righteous 400 (header, buttons, modal titles); Mr Dafoe 400
   (intro Welcome/Congratulations headings); Urbanist 200, 400, 400 italic, and 700
-  (body text, default bold headings, italic footer).
+  (body text and default bold headings).
 - Icon buttons use accessible labels and tooltips. Toggle labels/icons describe
   the destination. Standard boxes are 2.5rem; undo/redo use 1.875rem.
 - Shared controls are **app-shared**, not provider-independent primitives:
   icon tinting intentionally reads app state.
 - kebab-case preferred over camelCase for directory naming convention.
+- CSS Module class names are camelCase so they can be read as `styles.itemTitle`
+  rather than `styles['item-title']`. Custom properties, element ids, and data
+  attributes stay kebab-case.
 
 ## Architecture
 

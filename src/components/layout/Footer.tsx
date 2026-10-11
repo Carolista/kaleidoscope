@@ -5,7 +5,9 @@ function Footer() {
 	return (
 		<footer>
 			<div className={styles.copyright}>
-				<p>&copy;{currentYear} Caroline R. Jones</p>
+				<p className={styles.yearName}>
+					&copy;{currentYear} Caroline R. Jones
+				</p>
 				<p className={styles.reserved}>All rights reserved.</p>
 			</div>
 		</footer>

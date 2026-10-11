@@ -3,7 +3,6 @@
 	   the "Generating image…" text and then jump wider once the image
 	   appears. */
 	width: 26rem;
-	max-width: calc(100vw - 2rem);
 }
 
 .preview {

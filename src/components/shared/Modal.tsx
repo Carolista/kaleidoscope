@@ -7,7 +7,7 @@ export interface ModalProps {
 	readonly onClose: () => void
 	// id of the element (usually a heading) that labels this dialog for assistive tech.
 	readonly labelledBy: string
-	// Extra class merged onto the `<dialog>` element, e.g. to set a max-width.
+	// Extra class merged onto the `<dialog>` element, e.g. to set a width.
 	readonly className?: string
 	readonly children: ReactNode
 }

@@ -107,12 +107,7 @@ function ControlsModal({ open, onClose }: ControlsModalProps) {
 	const duotoneTint = useDuotoneIconTint()
 
 	return (
-		<Modal
-			open={open}
-			onClose={onClose}
-			labelledBy={titleId}
-			className={styles.dialog}
-		>
+		<Modal open={open} onClose={onClose} labelledBy={titleId}>
 			<ModalHeader
 				title="Controls"
 				titleId={titleId}
