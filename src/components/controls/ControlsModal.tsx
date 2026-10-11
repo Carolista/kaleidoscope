@@ -99,8 +99,7 @@ const CONTROL_ITEMS: readonly ControlItem[] = [
 ]
 
 // Lists every clickable control below the grid with a brief explanation.
-// Shown once automatically on a brand-new device (see ControlsInfoButton),
-// then available afterward via its own circle-info icon button.
+// Shown after the first-visit intro, then available via its info button.
 function ControlsModal({ open, onClose }: ControlsModalProps) {
 	const titleId = useId()
 	const isTouch = useIsTouchDevice()

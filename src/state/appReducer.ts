@@ -16,13 +16,8 @@ export type AppAction =
 	| { readonly type: 'RANDOMIZE_DESIGN' }
 	| { readonly type: 'SELECT_GRID_SHAPE'; readonly shape: GridShapeId }
 
-// Matches the original app's randomized default scheme on page load.
-export function pickRandomScheme(): ColorScheme {
-	return colorSchemes[Math.floor(Math.random() * colorSchemes.length)]
-}
-
 export function createInitialAppState(): AppState {
-	const currentScheme = pickRandomScheme()
+	const currentScheme = colorSchemes[0]
 	return {
 		currentScheme,
 		currentColor: currentScheme.colors[0],

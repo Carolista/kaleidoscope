@@ -99,7 +99,9 @@ changes should be applied to all four SVG assets.
 - Import individual Font Awesome definitions and render `FontAwesomeIcon` SVGs.
   [main.tsx](./src/main.tsx) imports core CSS and disables automatic CSS injection.
   No Kit script or Kit dependency.
-- Self-hosted fonts: Righteous 400; Roboto 400 and 900.
+- Self-hosted fonts: Righteous 400 (header, buttons, modal titles); Mr Dafoe 400
+  (intro Welcome/Congratulations headings); Urbanist 200, 400, 400 italic, and 700
+  (body text, default bold headings, italic footer).
 - Icon buttons use accessible labels and tooltips. Toggle labels/icons describe
   the destination. Standard boxes are 2.5rem; undo/redo use 1.875rem.
 - Shared controls are **app-shared**, not provider-independent primitives:
@@ -113,6 +115,7 @@ changes should be applied to all four SVG assets.
 | [components/layout/](./src/components/layout/) | Header and footer |
 | [components/grid/](./src/components/grid/) | Shape adapters, shared `GridView`, polygon/circle cells |
 | [components/controls/](./src/components/controls/) | Toolbar, pickers, and modal content |
+| [components/intro/](./src/components/intro/) | First-visit learn-by-doing sequence |
 | [components/shared/](./src/components/shared/) | Buttons, native `Modal`, `ModalHeader`, `ConfirmDialog` |
 | [shape-geometry/](./src/shape-geometry/) | Shape-specific generation and layout (`@geometry`) |
 | [utils/](./src/utils/) | Shared math, symmetry, randomization, and geometry dispatch |
@@ -123,7 +126,9 @@ changes should be applied to all four SVG assets.
 | [types/](./src/types/) | Domain types, imported from individual modules |
 
 Shape adapters supply geometry to `GridView`; it owns numbering, painting,
-highlighting, announcements, and SVG references. Helpers preserve generated
+highlighting, announcements, and SVG references. An optional `interaction`
+prop (supported by `TriangleGrid`) replaces app-state paint colors, paint handling,
+paintable groups, and highlighting; the intro uses it for its local design. Helpers preserve generated
 cell/group ordering. `averagePoint` is a vertex average, not an area-weighted centroid.
 
 [gridShapes.ts](./src/data/gridShapes.ts) defines supported IDs, labels, order,
@@ -147,7 +152,8 @@ symmetry engine. One representative per group is clickable.
 
 ### State and persistence
 
-- New designs start in dark mode with a random scheme and its first color selected.
+- New designs start in dark mode with the first scheme in
+  [colorSchemes.ts](./src/data/colorSchemes.ts) and its first color selected.
 - Painting toggles a group back to accent when its current color is selected again.
   Unpainted groups also display accent.
 - Scheme changes remap painted palette colors by position and select the first
@@ -178,8 +184,14 @@ symmetry engine. One representative per group is clickable.
 - Retain visible focus indicators and unique dialog/instruction label IDs.
 - Native dialogs provide modal focus behavior. Reset/shape confirmations have
   independent persistent opt-outs, saved only on confirmation.
-- Help opens when the design storage key is absent at startup, checked before
-  autosave. Key existence, not payload validity, determines this rule.
+- When the design storage key is absent at startup (checked before autosave; key
+  existence, not payload validity), `App` shows the first-visit intro instead of the
+  grid, controls, and footer. Intro state is local: a size-4 triangle grid with its
+  5 paintable tiles, and the first scheme's five colors. Choosing a swatch and a tile
+  permanently paints that tile and disables that swatch; after five, dimming is
+  released and **Continue** replaces the swatches. Continue shows the regular app
+  with a fresh design and the help modal open. Nothing is saved until then. The
+  help modal itself stays available through its toolbar button.
 - Backgrounds are literal inline colors with no transitions: synchronous
   bootstrap on `html`, render on `.page`, `useLayoutEffect` on `html`/`body`.
   Descendants use `--base`/`--accent`. Button hover backgrounds also snap instantly.

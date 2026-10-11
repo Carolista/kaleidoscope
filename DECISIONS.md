@@ -103,9 +103,13 @@ No debounce is needed for deliberate user actions. The historical
 `hexGroupColors` rename retained version 1; incompatible pre-rename payloads
 fall back rather than migrate.
 
-Help's first-visit rule uses **storage-key existence**, checked before autosave,
-not successful restoration or a separate "seen help" preference. Autosave can
+The first-visit rule uses **storage-key existence**, checked before autosave,
+not successful restoration or a separate "seen" preference. Autosave can
 write a design without painting; help remains manually accessible.
+
+A first visit always starts with the first scheme in the data rather than a
+random one, so the intro is identical for everyone. Returning users get their
+saved scheme, so random initial selection was removed.
 
 ## Interaction and accessibility
 
@@ -127,12 +131,18 @@ write a design without painting; help remains manually accessible.
   and focus indicators remain visible.
 - General controls help replaced touch-only introductory help. Keep its content
   aligned with available toolbar actions.
+- First visits get a learn-by-doing intro before the help modal: place five colors
+  on a small triangle grid (one more tile than the hexagon prototype's four, for
+  more visual interest), then Continue reveals the app with help open. The intro
+  paints locally rather than through app state, so it never touches the saved
+  design or undo history, and Continue starts a fresh full-size design. Used
+  swatches are disabled so every tile gets a distinct color.
 
 ## Styling and icons
 
 Self-host fonts through `@fontsource` to avoid external font requests.
-Keep Roboto 900: lack of explicit weight declarations does not prove that
-browser-default bold headings never use it.
+Urbanist replaced Roboto for body text; Mr Dafoe is reserved for the intro's
+Welcome/Congratulations headings, with Righteous staying for the brand and UI chrome.
 
 Use a six-petal diamond star in place of the first O in the Righteous wordmark.
 Keep standalone logos as outlined SVGs for portability, but render live Righteous

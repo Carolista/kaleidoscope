@@ -1,0 +1,27 @@
+.intro {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 1.5rem;
+	width: 100%;
+	color: var(--accent);
+	text-align: center;
+}
+
+.exclamation {
+	font-family: 'Mr Dafoe', cursive;
+	font-size: clamp(1.75rem, 8vw, 3rem);
+	font-weight: 400;
+	margin: 0;
+}
+
+.message {
+	font-size: 1.1rem;
+	max-width: 26rem;
+	margin: 0;
+}
+
+.grid {
+	width: 100%;
+	max-width: 300px;
+}

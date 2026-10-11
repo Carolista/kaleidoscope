@@ -1,5 +1,5 @@
 import type { ComponentType, CSSProperties, Ref } from 'react'
-import { useLayoutEffect, useRef } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import styles from './App.module.css'
 import { ColorOptions, ColorSchemeButton } from '@color-schemes'
 import {
@@ -22,6 +22,8 @@ import {
 } from '@grid'
 import Footer from './components/layout/Footer'
 import Header from './components/layout/Header'
+import IntroSequence from './components/intro/IntroSequence'
+import { hasPersistedDesign } from './services/storageService'
 import { getThemeColors } from './state/theme'
 import { useAppState } from './state/useAppState'
 import type { GridShapeId } from './types/gridShape'
@@ -43,6 +45,8 @@ function App() {
 	const { base, accent } = getThemeColors(state.darkMode)
 	const svgRef = useRef<SVGSVGElement>(null)
 	const Grid = gridComponents[state.gridShape]
+	const [isFirstVisit] = useState(() => !hasPersistedDesign())
+	const [showIntro, setShowIntro] = useState(isFirstVisit)
 
 	useLayoutEffect(() => {
 		// `--base`/`--accent` are set inline below, but CSS custom properties
@@ -74,37 +78,45 @@ function App() {
 		>
 			<Header />
 			<main className={styles.app}>
-				<Grid svgRef={svgRef} />
-				<div
-					role="group"
-					aria-label="Controls"
-					className={styles.controlRows}
-				>
-					<div className={styles.colorRow}>
-						<ColorOptions />
-					</div>
-					<UndoRedoButtons />
-					<div
-						role="group"
-						aria-label="Settings and Actions"
-						className={styles.buttonGroup}
-					>
-						<div className={styles.buttonRow}>
-							<EditableAreaToggle />
-							<ColorSchemeButton />
-							<RandomizeDesignButton />
-							<ResetDesignButton />
+				{showIntro ? (
+					<IntroSequence onContinue={() => setShowIntro(false)} />
+				) : (
+					<>
+						<Grid svgRef={svgRef} />
+						<div
+							role="group"
+							aria-label="Controls"
+							className={styles.controlRows}
+						>
+							<div className={styles.colorRow}>
+								<ColorOptions />
+							</div>
+							<UndoRedoButtons />
+							<div
+								role="group"
+								aria-label="Settings and Actions"
+								className={styles.buttonGroup}
+							>
+								<div className={styles.buttonRow}>
+									<EditableAreaToggle />
+									<ColorSchemeButton />
+									<RandomizeDesignButton />
+									<ResetDesignButton />
+								</div>
+								<div className={styles.buttonRow}>
+									<GridShapeButton />
+									<SaveImageButton svgRef={svgRef} />
+									<DarkModeToggle />
+									<ControlsInfoButton
+										initialOpen={isFirstVisit}
+									/>
+								</div>
+							</div>
 						</div>
-						<div className={styles.buttonRow}>
-							<GridShapeButton />
-							<SaveImageButton svgRef={svgRef} />
-							<DarkModeToggle />
-							<ControlsInfoButton />
-						</div>
-					</div>
-				</div>
+					</>
+				)}
 			</main>
-			<Footer />
+			{!showIntro && <Footer />}
 		</div>
 	)
 }

@@ -4,12 +4,12 @@ import type { ColorScheme } from '../types/colorScheme'
 // Ported from the original app's scripts.js.
 export const colorSchemes: readonly ColorScheme[] = [
 	{
-		name: 'Autumn',
-		colors: ['#bc6c25', '#dda15e', '#f1c780', '#6d7b42', '#3f5428'],
+		name: 'Tahiti',
+		colors: ['#ff9f1c', '#ffbf69', '#ffecb6', '#cbf3f0', '#2ec4b6'],
 	},
 	{
-		name: 'Rose Gold',
-		colors: ['#744253', '#c78283', '#ebc9cd', '#e4b8b5', '#aa6e6b'],
+		name: 'Cabo',
+		colors: ['#a53f2b', '#f09f92', '#ffdccc', '#0f7173', '#124e5f'],
 	},
 	{
 		name: 'Club Neon',
@@ -36,6 +36,10 @@ export const colorSchemes: readonly ColorScheme[] = [
 		colors: ['#6ab47e', '#96d3be', '#7785ac', '#683991', '#472469'],
 	},
 	{
+		name: 'Autumn',
+		colors: ['#bc6c25', '#dda15e', '#f1c780', '#6d7b42', '#3f5428'],
+	},
+	{
 		name: 'Watermelon',
 		colors: ['#e34a6f', '#f7b2bd', '#d6e8d5', '#60a561', '#09482c'],
 	},
@@ -48,12 +52,8 @@ export const colorSchemes: readonly ColorScheme[] = [
 		colors: ['#5fa8d3', '#9ad5f2', '#bee9e8', '#62b6cb', '#24597a'],
 	},
 	{
-		name: 'Cabo',
-		colors: ['#a53f2b', '#f09f92', '#ffdccc', '#0f7173', '#124e5f'],
-	},
-	{
-		name: 'Tahiti',
-		colors: ['#ff9f1c', '#ffbf69', '#ffecb6', '#cbf3f0', '#2ec4b6'],
+		name: 'Rose Gold',
+		colors: ['#744253', '#c78283', '#ebc9cd', '#e4b8b5', '#aa6e6b'],
 	},
 	{
 		name: 'Salmon',
