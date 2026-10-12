@@ -1,5 +1,6 @@
 <div align="center">
     <img src="public/screenshots/kaleidoscope-header.png" alt="Kaleidoscope" width="100%" style="border-radius: 10px; max-width: 1200px; margin-bottom: 15px" />
+    <hr />
     <div>
         <img src="https://img.shields.io/badge/React-61DBFB?style=for-the-badge&logo=react&logoColor=333333" alt="React" />
         <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
@@ -18,11 +19,14 @@
     <hr />
     <p style="font-size: 1.4rem; margin-top: 15px;">Unwind and create: an interactive digital kaleidoscope built for quiet brain breaks.</p>
     <hr />
-    <a href="http://codewithcarrie.com/kaleidoscope" style="" target="_blank"><img src="public/screenshots/desktop-example.png" alt="Kaleidoscope" height="300px" style="border: 1px solid #ddd; border-radius: 8px; margin-right: 10px;" /></a>
-    <a href="http://codewithcarrie.com/kaleidoscope" style="" target="_blank"><img src="public/screenshots/mobile-example.png" alt="Kaleidoscope" height="300px" style="border: 1px solid #ddd; border-radius: 8px;" /></a>
-    <a href="http://codewithcarrie.com/kaleidoscope" style="font-size: 1.8rem; color: #2184c7; font-weight: bold" target="_blank"><p>TRY THE LIVE APP</p></a>
-    <hr />
 </div>
+
+# TRY KALEIDOSCOPE
+
+Take Kaleidoscope for a spin on the [web app](http://codewithcarrie.com/kaleidoscope). (Mobile app in the works!)
+
+<a href="http://codewithcarrie.com/kaleidoscope" style="" target="_blank"><img src="public/screenshots/desktop-example.png" alt="Kaleidoscope" height="300px" style="border: 1px solid #ddd; border-radius: 8px; margin-right: 10px;" /></a>
+<a href="http://codewithcarrie.com/kaleidoscope" style="" target="_blank"><img src="public/screenshots/mobile-example.png" alt="Kaleidoscope" height="300px" style="border: 1px solid #ddd; border-radius: 8px;" /></a>
 
 ## About
 
