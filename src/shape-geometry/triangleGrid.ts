@@ -1,5 +1,6 @@
 import type { Point } from '../types/geometry'
 import type { TriangleCell } from '../types/triangle'
+import type { GridSize } from '../types/gridSize'
 import { averagePoint } from '@utils/geometryMath'
 import { groupCells } from '@utils/groupCells'
 import { assignSymmetryGroups } from '@utils/symmetry'
@@ -10,6 +11,11 @@ import type { TriangleLayout } from './triangleLayout'
 // give a similar number of clickable tiles (~20) to the hexagon grid's
 // default radius, for comparable painting granularity.
 export const TRIANGLE_GRID_SIZE = 10
+export const TRIANGLE_GRID_SIZES: Record<GridSize, number> = {
+	sm: 4,
+	md: 7,
+	lg: TRIANGLE_GRID_SIZE,
+}
 
 const SQRT3 = Math.sqrt(3)
 // A fixed, abstract layout (edge length 1) used only to compute each

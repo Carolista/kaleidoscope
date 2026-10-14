@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { colorSchemes } from '../data/colorSchemes'
 import { supportedGridShapes } from '../data/gridShapes'
 import { defaultGridSizes } from '../data/gridSizes'
+import { legacyGridSizes } from '../data/gridSizes'
 import type { AppState } from '../types/appState'
 import {
 	loadInitialAppState,
@@ -168,12 +169,13 @@ describe('storageService', () => {
 		expect(loadInitialAppState()).toEqual(
 			baseState({
 				currentColor: '#ABCDEF',
+				gridSizes: { ...defaultGridSizes, hexagon: 'lg' },
 				shapeGroupColors: { a: '#123456' },
 			}),
 		)
 	})
 
-	it('round-trips per-shape grid sizes and defaults missing sizes for older saved designs', () => {
+	it('round-trips per-shape grid sizes and migrates old saved designs to their previous active size', () => {
 		const saved = baseState({
 			gridSizes: { ...defaultGridSizes, hexagon: 'lg' },
 		})
@@ -185,24 +187,31 @@ describe('storageService', () => {
 			unknown
 		>
 		delete legacy.gridSizes
+		legacy.gridShape = 'triangle'
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(legacy))
-		expect(loadInitialAppState().gridSizes).toEqual(defaultGridSizes)
+		expect(loadInitialAppState().gridSizes).toEqual({
+			...defaultGridSizes,
+			triangle: legacyGridSizes.triangle,
+		})
 	})
 
-	it('rejects invalid persisted grid sizes', () => {
-		localStorage.setItem(
-			STORAGE_KEY,
-			JSON.stringify({
-				version: 1,
-				schemeName: colorSchemes[0].name,
-				currentColor: '#123456',
-				darkMode: false,
-				gridSizes: { hexagon: 'extra-large' },
-				shapeGroupColors: {},
-			}),
-		)
-		expect(loadInitialAppState().gridSizes).toEqual(defaultGridSizes)
-	})
+	it.each([{ hexagon: 'extra-large' }, { circleRings: 'lg' }])(
+		'rejects invalid or unavailable persisted grid sizes',
+		gridSizes => {
+			localStorage.setItem(
+				STORAGE_KEY,
+				JSON.stringify({
+					version: 1,
+					schemeName: colorSchemes[0].name,
+					currentColor: '#123456',
+					darkMode: false,
+					gridSizes,
+					shapeGroupColors: {},
+				}),
+			)
+			expect(loadInitialAppState().gridSizes).toEqual(defaultGridSizes)
+		},
+	)
 
 	it('falls back to a fresh random state when the saved scheme name no longer exists', () => {
 		localStorage.setItem(

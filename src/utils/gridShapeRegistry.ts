@@ -22,6 +22,7 @@ import {
 import {
 	computeGridAspectRatio as computeTriangleAspectRatio,
 	getGroupIds as getTriangleGroupIds,
+	TRIANGLE_GRID_SIZES,
 } from '@geometry/triangleGrid'
 import type { GridShapeId } from '../types/gridShape'
 import type { GridSize } from '../types/gridSize'
@@ -66,6 +67,9 @@ export function getGroupIdsForShape(
 	if (shape === 'hexagon') {
 		return getHexagonGroupIds(HEXAGON_GRID_RADII[gridSize])
 	}
+	if (shape === 'triangle') {
+		return getTriangleGroupIds(TRIANGLE_GRID_SIZES[gridSize])
+	}
 	return shapeGeometry[shape].getGroupIds()
 }
 
@@ -75,6 +79,9 @@ export function computeAspectRatioForShape(
 ): number {
 	if (shape === 'hexagon') {
 		return computeHexagonAspectRatio(HEXAGON_GRID_RADII[gridSize])
+	}
+	if (shape === 'triangle') {
+		return computeTriangleAspectRatio(TRIANGLE_GRID_SIZES[gridSize])
 	}
 	return shapeGeometry[shape].aspectRatio()
 }

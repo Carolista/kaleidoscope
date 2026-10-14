@@ -210,12 +210,17 @@ describe('App', () => {
 		await user.click(
 			screen.getByRole('button', { name: 'Select a different shape' }),
 		)
-		await user.click(screen.getByRole('button', { name: 'Triangle MD' }))
+		await user.click(screen.getByRole('button', { name: 'Triangle SM' }))
 		await user.click(screen.getByRole('button', { name: 'Switch' }))
 
+		const triangleGrid = screen.getByRole('group', {
+			name: 'Kaleidoscope triangle grid',
+		})
+		expect(triangleGrid).toBeInTheDocument()
+		expect(triangleGrid.querySelectorAll('polygon')).toHaveLength(16)
 		expect(
-			screen.getByRole('group', { name: 'Kaleidoscope triangle grid' }),
-		).toBeInTheDocument()
+			screen.getAllByRole('button', { name: /Paint tile/ }),
+		).toHaveLength(5)
 		expect(
 			screen.queryByRole('group', { name: 'Kaleidoscope hexagon grid' }),
 		).not.toBeInTheDocument()

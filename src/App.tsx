@@ -28,6 +28,7 @@ import { getThemeColors } from './state/theme'
 import { useAppState } from './state/useAppState'
 import type { GridShapeId } from './types/gridShape'
 import { HEXAGON_GRID_RADII } from '@geometry/hexagonGrid'
+import { TRIANGLE_GRID_SIZES } from '@geometry/triangleGrid'
 
 const gridComponents = {
 	hexagon: HexagonGrid,
@@ -83,7 +84,16 @@ function App() {
 					<IntroSequence onContinue={() => setShowIntro(false)} />
 				) : (
 					<>
-						{state.gridShape === 'hexagon' ? (
+						{state.gridShape === 'triangle' ? (
+							<TriangleGrid
+								gridSize={
+									TRIANGLE_GRID_SIZES[
+										state.gridSizes.triangle
+									]
+								}
+								svgRef={svgRef}
+							/>
+						) : state.gridShape === 'hexagon' ? (
 							<HexagonGrid
 								radius={
 									HEXAGON_GRID_RADII[state.gridSizes.hexagon]

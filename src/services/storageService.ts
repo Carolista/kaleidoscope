@@ -2,7 +2,12 @@ import type { AppState } from '../types/appState'
 import type { GridShapeId } from '../types/gridShape'
 import { colorSchemes } from '../data/colorSchemes'
 import { isGridShapeId } from '../data/gridShapes'
-import { defaultGridSizes, isGridSize } from '../data/gridSizes'
+import {
+	availableGridSizes,
+	defaultGridSizes,
+	isGridSize,
+	legacyGridSizes,
+} from '../data/gridSizes'
 import { createInitialAppState } from '../state/appReducer'
 
 const STORAGE_KEY = 'kaleidoscope:design'
@@ -24,7 +29,8 @@ interface PersistedDesign {
 	// Optional for the same reason (falls back to 'hexagon', the only
 	// shape that existed before this field was added).
 	readonly gridShape?: GridShapeId
-	// Older saved designs use the default medium size for every shape.
+	// Older saved designs have no remembered sizes and migrate their active
+	// shape to the closest equivalent of its previously available grid.
 	readonly gridSizes?: Partial<AppState['gridSizes']>
 	readonly shapeGroupColors: Readonly<Record<string, string>>
 }
@@ -49,14 +55,18 @@ function toPersistedDesign(state: AppState): PersistedDesign {
 function fromPersistedDesign(data: PersistedDesign): AppState | null {
 	const scheme = colorSchemes.find(s => s.name === data.schemeName)
 	if (!scheme) return null
+	const gridShape = data.gridShape ?? 'hexagon'
+	const gridSizes = data.gridSizes
+		? { ...defaultGridSizes, ...data.gridSizes }
+		: { ...defaultGridSizes, [gridShape]: legacyGridSizes[gridShape] }
 
 	return {
 		currentScheme: scheme,
 		currentColor: data.currentColor,
 		darkMode: data.darkMode,
 		showEditableArea: data.showEditableArea ?? true,
-		gridShape: data.gridShape ?? 'hexagon',
-		gridSizes: { ...defaultGridSizes, ...data.gridSizes },
+		gridShape,
+		gridSizes,
 		shapeGroupColors: { ...data.shapeGroupColors },
 	}
 }
@@ -86,7 +96,10 @@ function isPersistedDesign(data: unknown): data is PersistedDesign {
 		(data.gridSizes === undefined ||
 			(isRecord(data.gridSizes) &&
 				Object.entries(data.gridSizes).every(
-					([shape, size]) => isGridShapeId(shape) && isGridSize(size),
+					([shape, size]) =>
+						isGridShapeId(shape) &&
+						isGridSize(size) &&
+						availableGridSizes[shape].includes(size),
 				))) &&
 		isRecord(data.shapeGroupColors) &&
 		Object.values(data.shapeGroupColors).every(isHexColor)

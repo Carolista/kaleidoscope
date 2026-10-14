@@ -6,6 +6,9 @@ import * as hexagram from '@geometry/hexagramGrid'
 import * as circleRings from '@geometry/circleRingsGrid'
 import * as pinwheel from '@geometry/pinwheelGrid'
 import { supportedGridShapes } from '@data/gridShapes'
+import { defaultGridSizes } from '@data/gridSizes'
+import { HEXAGON_GRID_RADII } from '@geometry/hexagonGrid'
+import { TRIANGLE_GRID_SIZES } from '@geometry/triangleGrid'
 import {
 	computeAspectRatioForShape,
 	getGroupIdsForShape,
@@ -24,9 +27,21 @@ describe('gridShapeRegistry', () => {
 	it.each(supportedGridShapes)(
 		'dispatches $id to its own geometry with unchanged defaults',
 		({ id }) => {
-			expect(getGroupIdsForShape(id)).toEqual(geometry[id].getGroupIds())
-			expect(computeAspectRatioForShape(id)).toBe(
+			const size = defaultGridSizes[id]
+			const gridSize =
+				id === 'hexagon'
+					? HEXAGON_GRID_RADII[size]
+					: id === 'triangle'
+						? TRIANGLE_GRID_SIZES[size]
+						: undefined
+			expect(getGroupIdsForShape(id)).toEqual(
+				gridSize === undefined
+					? geometry[id].getGroupIds()
+					: geometry[id].getGroupIds(gridSize),
+			)
+			expect(computeAspectRatioForShape(id)).toBeCloseTo(
 				geometry[id].computeGridAspectRatio(),
+				12,
 			)
 		},
 	)
@@ -37,6 +52,21 @@ describe('gridShapeRegistry', () => {
 		)
 		expect(computeAspectRatioForShape('hexagon', 'lg')).toBe(
 			hexagon.computeGridAspectRatio(6),
+		)
+	})
+
+	it('uses the selected triangle size when computing its group ids and aspect ratio', () => {
+		expect(getGroupIdsForShape('triangle', 'sm')).toEqual(
+			triangle.getGroupIds(4),
+		)
+		expect(getGroupIdsForShape('triangle', 'md')).toEqual(
+			triangle.getGroupIds(7),
+		)
+		expect(getGroupIdsForShape('triangle', 'lg')).toEqual(
+			triangle.getGroupIds(10),
+		)
+		expect(computeAspectRatioForShape('triangle', 'sm')).toBe(
+			triangle.computeGridAspectRatio(4),
 		)
 	})
 })

@@ -54,10 +54,10 @@ describe('GridShapePicker', () => {
 		expect(hexagon).toHaveAttribute('aria-pressed', 'true')
 		expect(triangle).toHaveAttribute('aria-pressed', 'false')
 		expect(
-			screen.getByRole('button', { name: 'Triangle SM' }),
+			screen.getByRole('button', { name: 'Circle Rings SM' }),
 		).toBeDisabled()
 		expect(
-			screen.getByRole('button', { name: 'Triangle MD' }),
+			screen.getByRole('button', { name: 'Triangle SM' }),
 		).toBeEnabled()
 	})
 
@@ -201,5 +201,22 @@ describe('GridShapePicker', () => {
 		expect(
 			screen.queryByRole('dialog', { name: 'Confirm Shape Change' }),
 		).not.toBeInTheDocument()
+	})
+
+	it('switches to the selected Triangle size after confirmation', async () => {
+		const user = userEvent.setup()
+		const onSelected = vi.fn()
+		render(<GridShapePicker onSelected={onSelected} />, {
+			wrapper: AppStateProvider,
+		})
+
+		await user.click(screen.getByRole('button', { name: 'Triangle SM' }))
+		expect(onSelected).not.toHaveBeenCalled()
+		await user.click(screen.getByRole('button', { name: 'Switch' }))
+
+		expect(
+			screen.getByRole('button', { name: 'Triangle SM' }),
+		).toHaveAttribute('aria-pressed', 'true')
+		expect(onSelected).toHaveBeenCalledOnce()
 	})
 })

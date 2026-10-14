@@ -53,8 +53,8 @@ function withGridSize(
 	}
 	const gridSizes = { ...state.gridSizes, [shape]: size }
 	let shapeGroupColors = state.shapeGroupColors
-	if (shape === state.gridShape && shape === 'hexagon') {
-		const groupIds = new Set(getGroupIdsForShape('hexagon', size))
+	if (shape === state.gridShape) {
+		const groupIds = new Set(getGroupIdsForShape(shape, size))
 		shapeGroupColors = Object.fromEntries(
 			Object.entries(shapeGroupColors).filter(([groupId]) =>
 				groupIds.has(groupId),
