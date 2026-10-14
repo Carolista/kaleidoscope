@@ -355,14 +355,42 @@ describe('appReducer', () => {
 		})
 	})
 
-	it('SELECT_GRID_SIZE is undoable input and rejects sizes unavailable for that shape', () => {
+	it('SELECT_GRID_SIZE changes Pinwheel steps while retaining overlapping groups', () => {
+		const smallGroupIds = getGroupIdsForShape('pinwheel', 'sm')
+		const largeGroupIds = getGroupIdsForShape('pinwheel', 'lg')
+		const retainedGroupId = largeGroupIds.find(id =>
+			smallGroupIds.includes(id),
+		)!
+		const removedGroupId = largeGroupIds.find(
+			id => !smallGroupIds.includes(id),
+		)!
+		const state = baseState({
+			gridShape: 'pinwheel',
+			gridSizes: { ...defaultGridSizes, pinwheel: 'lg' },
+			shapeGroupColors: {
+				[retainedGroupId]: '#ff0000',
+				[removedGroupId]: '#00ff00',
+			},
+		})
+		const next = appReducer(state, {
+			type: 'SELECT_GRID_SIZE',
+			shape: 'pinwheel',
+			size: 'sm',
+		})
+		expect(next.gridSizes.pinwheel).toBe('sm')
+		expect(next.shapeGroupColors).toEqual({
+			[retainedGroupId]: '#ff0000',
+		})
+	})
+
+	it('SELECT_GRID_SIZE changes an available shape size', () => {
 		const state = baseState()
 		expect(
 			appReducer(state, {
 				type: 'SELECT_GRID_SIZE',
-				shape: 'pinwheel',
+				shape: 'hexagon',
 				size: 'sm',
 			}),
-		).toBe(state)
+		).not.toBe(state)
 	})
 })

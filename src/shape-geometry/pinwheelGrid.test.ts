@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
 	PINWHEEL_COL_STEPS,
+	PINWHEEL_GRID_SIZES,
 	PINWHEEL_ROW_STEPS,
 	computeGridAspectRatio,
 	generatePinwheelCells,
@@ -44,6 +45,20 @@ describe('generatePinwheelCells', () => {
 		expect(small).toHaveLength(8 * 2 * 3)
 		expect(groupPinwheelCells(small).size).toBe(6)
 	})
+
+	it.each(Object.entries(PINWHEEL_GRID_SIZES))(
+		'generates the %s grid at %s row and %s column steps',
+		(_size, { rowSteps, colSteps }) => {
+			const sizedCells = generatePinwheelCells(rowSteps, colSteps)
+			expect(sizedCells).toHaveLength(8 * rowSteps * colSteps)
+			expect(groupPinwheelCells(sizedCells).size).toBe(
+				rowSteps * colSteps,
+			)
+			expect(getGroupIds(rowSteps, colSteps)).toHaveLength(
+				rowSteps * colSteps,
+			)
+		},
+	)
 })
 
 describe('getGroupIds', () => {

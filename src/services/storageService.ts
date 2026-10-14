@@ -16,12 +16,14 @@ const STORAGE_KEY = 'kaleidoscope:design'
 // rejected when their version is not recognized.
 const LEGACY_STORAGE_VERSION = 1
 const PREVIOUS_STORAGE_VERSION = 2
-const STORAGE_VERSION = 3
+const CIRCLE_RINGS_STORAGE_VERSION = 3
+const STORAGE_VERSION = 4
 
 interface PersistedDesign {
 	readonly version:
 		| typeof LEGACY_STORAGE_VERSION
 		| typeof PREVIOUS_STORAGE_VERSION
+		| typeof CIRCLE_RINGS_STORAGE_VERSION
 		| typeof STORAGE_VERSION
 	readonly schemeName: string
 	readonly currentColor: string
@@ -71,10 +73,13 @@ function fromPersistedDesign(data: PersistedDesign): AppState | null {
 		gridSizes.hexagram = 'lg'
 	}
 	if (
-		data.version < STORAGE_VERSION &&
+		data.version < CIRCLE_RINGS_STORAGE_VERSION &&
 		data.gridSizes?.circleRings === 'md'
 	) {
 		gridSizes.circleRings = 'lg'
+	}
+	if (data.version < STORAGE_VERSION && data.gridSizes?.pinwheel === 'md') {
+		gridSizes.pinwheel = 'lg'
 	}
 
 	return {
@@ -105,6 +110,7 @@ function isPersistedDesign(data: unknown): data is PersistedDesign {
 	return (
 		(data.version === LEGACY_STORAGE_VERSION ||
 			data.version === PREVIOUS_STORAGE_VERSION ||
+			data.version === CIRCLE_RINGS_STORAGE_VERSION ||
 			data.version === STORAGE_VERSION) &&
 		typeof data.schemeName === 'string' &&
 		isHexColor(data.currentColor) &&

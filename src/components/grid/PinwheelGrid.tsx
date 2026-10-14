@@ -3,6 +3,7 @@ import type { Ref } from 'react'
 import {
 	PINWHEEL_COL_STEPS,
 	PINWHEEL_ROW_STEPS,
+	computeGridAspectRatio,
 	generatePinwheelCells,
 } from '@geometry/pinwheelGrid'
 import {
@@ -39,6 +40,10 @@ function PinwheelGrid({
 		() => generatePinwheelCells(rowSteps, colSteps),
 		[rowSteps, colSteps],
 	)
+	const sizingAspectRatio = useMemo(
+		() => computeGridAspectRatio(rowSteps, colSteps),
+		[rowSteps, colSteps],
+	)
 	const { polygons, viewBox } = useMemo(() => {
 		const corners = cells.map(cell => pinwheelCellCorners(cell, layout))
 		const { minX, minY, maxX, maxY } = pinwheelBoundingBox(corners)
@@ -60,7 +65,7 @@ function PinwheelGrid({
 			cells={polygons}
 			viewBox={viewBox}
 			svgRef={svgRef}
-			sizingAspectRatio={1}
+			sizingAspectRatio={sizingAspectRatio}
 			label="Kaleidoscope pinwheel grid"
 			instructions="Tab to move between pieces. Press Enter or Space to paint the focused piece with the current color."
 		/>

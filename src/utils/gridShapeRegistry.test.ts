@@ -12,6 +12,7 @@ import { TRIANGLE_GRID_SIZES } from '@geometry/triangleGrid'
 import { DIAMOND_STAR_GRID_SIZES } from '@geometry/diamondStarGrid'
 import { HEXAGRAM_GRID_SIZES } from '@geometry/hexagramGrid'
 import { CIRCLE_RINGS_GRID_SIZES } from '@geometry/circleRingsGrid'
+import { PINWHEEL_GRID_SIZES } from '@geometry/pinwheelGrid'
 import {
 	computeAspectRatioForShape,
 	getGroupIdsForShape,
@@ -31,23 +32,28 @@ describe('gridShapeRegistry', () => {
 		'dispatches $id to its own geometry with unchanged defaults',
 		({ id }) => {
 			const size = defaultGridSizes[id]
-			const gridSize =
+			const expectedGroupIds =
 				id === 'hexagon'
-					? HEXAGON_GRID_RADII[size]
+					? hexagon.getGroupIds(HEXAGON_GRID_RADII[size])
 					: id === 'triangle'
-						? TRIANGLE_GRID_SIZES[size]
+						? triangle.getGroupIds(TRIANGLE_GRID_SIZES[size])
 						: id === 'diamondStar'
-							? DIAMOND_STAR_GRID_SIZES[size]
+							? diamondStar.getGroupIds(
+									DIAMOND_STAR_GRID_SIZES[size],
+								)
 							: id === 'hexagram'
-								? HEXAGRAM_GRID_SIZES[size]
+								? hexagram.getGroupIds(
+										HEXAGRAM_GRID_SIZES[size],
+									)
 								: id === 'circleRings'
-									? CIRCLE_RINGS_GRID_SIZES[size]
-									: undefined
-			expect(getGroupIdsForShape(id)).toEqual(
-				gridSize === undefined
-					? geometry[id].getGroupIds()
-					: geometry[id].getGroupIds(gridSize),
-			)
+									? circleRings.getGroupIds(
+											CIRCLE_RINGS_GRID_SIZES[size],
+										)
+									: pinwheel.getGroupIds(
+											PINWHEEL_GRID_SIZES[size].rowSteps,
+											PINWHEEL_GRID_SIZES[size].colSteps,
+										)
+			expect(getGroupIdsForShape(id)).toEqual(expectedGroupIds)
 			expect(computeAspectRatioForShape(id)).toBeCloseTo(
 				geometry[id].computeGridAspectRatio(),
 				12,
@@ -122,5 +128,17 @@ describe('gridShapeRegistry', () => {
 		expect(computeAspectRatioForShape('circleRings', 'sm')).toBe(
 			circleRings.computeGridAspectRatio(3),
 		)
+	})
+
+	it('uses the selected Pinwheel size when computing groups and aspect ratio', () => {
+		for (const size of ['sm', 'md', 'lg'] as const) {
+			const { rowSteps, colSteps } = PINWHEEL_GRID_SIZES[size]
+			expect(getGroupIdsForShape('pinwheel', size)).toEqual(
+				pinwheel.getGroupIds(rowSteps, colSteps),
+			)
+			expect(computeAspectRatioForShape('pinwheel', size)).toBe(
+				pinwheel.computeGridAspectRatio(rowSteps, colSteps),
+			)
+		}
 	})
 })

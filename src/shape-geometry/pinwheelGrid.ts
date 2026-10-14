@@ -1,5 +1,6 @@
 import type { Point } from '../types/geometry'
 import type { PinwheelCell } from '../types/pinwheel'
+import type { GridSize } from '../types/gridSize'
 import { averagePoint } from '@utils/geometryMath'
 import { groupCells } from '@utils/groupCells'
 import { assignSymmetryGroups } from '@utils/symmetry'
@@ -23,6 +24,14 @@ import type { PinwheelLayout } from './pinwheelLayout'
 // defaults).
 export const PINWHEEL_ROW_STEPS = 3
 export const PINWHEEL_COL_STEPS = 3
+export const PINWHEEL_GRID_SIZES: Record<
+	GridSize,
+	{ readonly rowSteps: number; readonly colSteps: number }
+> = {
+	sm: { rowSteps: 2, colSteps: 2 },
+	md: { rowSteps: 2, colSteps: 3 },
+	lg: { rowSteps: PINWHEEL_ROW_STEPS, colSteps: PINWHEEL_COL_STEPS },
+}
 
 const CENTER: Point = { x: 0, y: 0 }
 

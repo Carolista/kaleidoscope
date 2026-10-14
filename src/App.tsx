@@ -32,6 +32,7 @@ import { TRIANGLE_GRID_SIZES } from '@geometry/triangleGrid'
 import { DIAMOND_STAR_GRID_SIZES } from '@geometry/diamondStarGrid'
 import { HEXAGRAM_GRID_SIZES } from '@geometry/hexagramGrid'
 import { CIRCLE_RINGS_GRID_SIZES } from '@geometry/circleRingsGrid'
+import { PINWHEEL_GRID_SIZES } from '@geometry/pinwheelGrid'
 
 const gridComponents = {
 	hexagon: HexagonGrid,
@@ -128,6 +129,13 @@ function App() {
 										state.gridSizes.circleRings
 									]
 								}
+								svgRef={svgRef}
+							/>
+						) : state.gridShape === 'pinwheel' ? (
+							<PinwheelGrid
+								{...PINWHEEL_GRID_SIZES[
+									state.gridSizes.pinwheel
+								]}
 								svgRef={svgRef}
 							/>
 						) : (

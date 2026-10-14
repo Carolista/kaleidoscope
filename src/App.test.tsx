@@ -6,6 +6,7 @@ import App from './App'
 import { useIsTouchDevice } from './hooks/useIsTouchDevice'
 import { supportedGridShapes } from './data/gridShapes'
 import { defaultGridSizes } from './data/gridSizes'
+import { PINWHEEL_GRID_SIZES } from '@geometry/pinwheelGrid'
 import { colorSchemes } from './data/colorSchemes'
 import { savePersistedState } from './services/storageService'
 
@@ -118,6 +119,29 @@ describe('App', () => {
 				})
 				.querySelectorAll('circle'),
 		).toHaveLength(37)
+	})
+
+	it('renders the selected Pinwheel size', () => {
+		savePersistedState({
+			currentScheme: colorSchemes[0],
+			currentColor: colorSchemes[0].colors[0],
+			darkMode: true,
+			showEditableArea: true,
+			gridShape: 'pinwheel',
+			gridSizes: { ...defaultGridSizes, pinwheel: 'sm' },
+			shapeGroupColors: {},
+		})
+		mockUseIsTouchDevice.mockReturnValue(false)
+		renderApp()
+
+		const { rowSteps, colSteps } = PINWHEEL_GRID_SIZES.sm
+		expect(
+			screen
+				.getByRole('group', {
+					name: 'Kaleidoscope pinwheel grid',
+				})
+				.querySelectorAll('polygon'),
+		).toHaveLength(8 * rowSteps * colSteps)
 	})
 
 	it('dismisses the controls modal via its close button after the intro', async () => {

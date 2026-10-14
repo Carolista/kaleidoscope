@@ -17,10 +17,10 @@ function Harness() {
 			<button onClick={() => paintShapeGroup('0,0')}>Paint</button>
 			<button
 				onClick={() =>
-					paintShapeGroup(getGroupIdsForShape('circleRings', 'sm')[0])
+					paintShapeGroup(getGroupIdsForShape('pinwheel', 'sm')[0])
 				}
 			>
-				Paint Circle
+				Paint Pinwheel
 			</button>
 			<span data-testid="count">
 				{Object.keys(state.shapeGroupColors).length}
@@ -79,6 +79,9 @@ describe('GridShapePicker', () => {
 		expect(
 			screen.getByRole('button', { name: 'Circle Rings LG' }),
 		).toHaveAttribute('aria-pressed', 'false')
+		expect(
+			screen.getByRole('button', { name: 'Pinwheel SM' }),
+		).toBeEnabled()
 	})
 
 	it('clicking a different shape opens a confirmation dialog rather than switching immediately', async () => {
@@ -231,13 +234,31 @@ describe('GridShapePicker', () => {
 			screen.getByRole('button', { name: 'Circle Rings MD' }),
 		)
 		await user.click(screen.getByRole('button', { name: 'Switch' }))
-		await user.click(screen.getByRole('button', { name: 'Paint Circle' }))
+		await user.click(screen.getByRole('button', { name: 'Paint Pinwheel' }))
 		await user.click(
 			screen.getByRole('button', { name: 'Circle Rings SM' }),
 		)
 
 		expect(
 			screen.getByRole('button', { name: 'Circle Rings SM' }),
+		).toHaveAttribute('aria-pressed', 'true')
+		expect(screen.getByTestId('count')).toHaveTextContent('1')
+		expect(
+			screen.queryByRole('dialog', { name: 'Confirm Shape Change' }),
+		).not.toBeInTheDocument()
+	})
+
+	it('changes the selected Pinwheel size directly and preserves shared paint', async () => {
+		const user = userEvent.setup()
+		render(<Harness />, { wrapper: AppStateProvider })
+
+		await user.click(screen.getByRole('button', { name: 'Pinwheel MD' }))
+		await user.click(screen.getByRole('button', { name: 'Switch' }))
+		await user.click(screen.getByRole('button', { name: 'Paint Pinwheel' }))
+		await user.click(screen.getByRole('button', { name: 'Pinwheel SM' }))
+
+		expect(
+			screen.getByRole('button', { name: 'Pinwheel SM' }),
 		).toHaveAttribute('aria-pressed', 'true')
 		expect(screen.getByTestId('count')).toHaveTextContent('1')
 		expect(

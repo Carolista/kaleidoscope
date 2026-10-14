@@ -21,6 +21,7 @@ import {
 import {
 	computeGridAspectRatio as computePinwheelAspectRatio,
 	getGroupIds as getPinwheelGroupIds,
+	PINWHEEL_GRID_SIZES,
 } from '@geometry/pinwheelGrid'
 import {
 	computeGridAspectRatio as computeTriangleAspectRatio,
@@ -31,38 +32,9 @@ import { defaultGridSizes } from '../data/gridSizes'
 import type { GridShapeId } from '../types/gridShape'
 import type { GridSize } from '../types/gridSize'
 
-const shapeGeometry = {
-	hexagon: {
-		getGroupIds: getHexagonGroupIds,
-		aspectRatio: computeHexagonAspectRatio,
-	},
-	triangle: {
-		getGroupIds: getTriangleGroupIds,
-		aspectRatio: computeTriangleAspectRatio,
-	},
-	diamondStar: {
-		getGroupIds: getDiamondStarGroupIds,
-		aspectRatio: computeDiamondStarAspectRatio,
-	},
-	hexagram: {
-		getGroupIds: getHexagramGroupIds,
-		aspectRatio: computeHexagramAspectRatio,
-	},
-	circleRings: {
-		getGroupIds: getCircleRingsGroupIds,
-		aspectRatio: computeCircleRingsAspectRatio,
-	},
-	pinwheel: {
-		getGroupIds: getPinwheelGroupIds,
-		aspectRatio: computePinwheelAspectRatio,
-	},
-} satisfies Record<
-	GridShapeId,
-	{
-		readonly getGroupIds: () => string[]
-		readonly aspectRatio: () => number
-	}
->
+function assertNever(shape: never): never {
+	throw new Error(`Unsupported grid shape: ${shape}`)
+}
 
 export function getGroupIdsForShape(
 	shape: GridShapeId,
@@ -83,7 +55,11 @@ export function getGroupIdsForShape(
 	if (shape === 'circleRings') {
 		return getCircleRingsGroupIds(CIRCLE_RINGS_GRID_SIZES[gridSize])
 	}
-	return shapeGeometry[shape].getGroupIds()
+	if (shape === 'pinwheel') {
+		const { rowSteps, colSteps } = PINWHEEL_GRID_SIZES[gridSize]
+		return getPinwheelGroupIds(rowSteps, colSteps)
+	}
+	return assertNever(shape)
 }
 
 export function computeAspectRatioForShape(
@@ -105,5 +81,9 @@ export function computeAspectRatioForShape(
 	if (shape === 'circleRings') {
 		return computeCircleRingsAspectRatio(CIRCLE_RINGS_GRID_SIZES[gridSize])
 	}
-	return shapeGeometry[shape].aspectRatio()
+	if (shape === 'pinwheel') {
+		const { rowSteps, colSteps } = PINWHEEL_GRID_SIZES[gridSize]
+		return computePinwheelAspectRatio(rowSteps, colSteps)
+	}
+	return assertNever(shape)
 }
