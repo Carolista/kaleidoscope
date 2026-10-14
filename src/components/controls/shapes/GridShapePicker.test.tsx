@@ -51,13 +51,19 @@ describe('GridShapePicker', () => {
 			gridShapes.length * gridSizeOptions.length,
 		)
 		for (const { label } of gridShapes) {
-			for (const { label: sizeLabel } of gridSizeOptions) {
-				expect(
-					screen.getByRole('button', {
-						name: `${label} ${sizeLabel}`,
-					}),
-				).toBeInTheDocument()
+			for (const { id: sizeId, label: sizeLabel } of gridSizeOptions) {
+				const button = screen.getByRole('button', {
+					name: `${label} ${sizeLabel}`,
+				})
+				expect(button).toBeEnabled()
+				expect(button.textContent).toBe('')
+				expect(button.querySelector('svg')).toHaveAttribute(
+					'aria-hidden',
+					'true',
+				)
+				expect(button).toHaveAttribute('data-size', sizeId)
 			}
+			expect(screen.queryByText(label)).not.toBeInTheDocument()
 		}
 		expect(hexagon).toHaveAttribute('aria-pressed', 'true')
 		expect(triangle).toHaveAttribute('aria-pressed', 'false')

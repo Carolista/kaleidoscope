@@ -51,10 +51,6 @@ function GridShapePicker({ onSelected }: GridShapePickerProps) {
 			<ul className={styles.list}>
 				{gridShapes.map(option => (
 					<li key={option.id} className={styles.row}>
-						<div className={styles.shape}>
-							<GridShapeIcon shape={option.id} />
-							<span>{option.label}</span>
-						</div>
 						<div
 							className={styles.sizes}
 							role="group"
@@ -69,19 +65,20 @@ function GridShapePicker({ onSelected }: GridShapePickerProps) {
 										key={size.id}
 										type="button"
 										className={styles.sizeButton}
-										aria-label={`${option.label} ${size.label}`}
+										data-size={size.id}
+										aria-label={`${option.label} (${size.label})`}
 										aria-pressed={
 											state.gridShape === option.id &&
 											state.gridSizes[option.id] ===
 												size.id
 										}
-										title={`${option.label} ${size.label}`}
+										title={`${option.label} (${size.label})`}
 										disabled={!available}
 										onClick={() =>
 											chooseSize(option.id, size.id)
 										}
 									>
-										{size.label}
+										<GridShapeIcon shape={option.id} />
 									</button>
 								)
 							})}

@@ -2,9 +2,9 @@ import type { GridSize } from '../types/gridSize'
 import type { GridShapeId } from '../types/gridShape'
 
 export const gridSizeOptions = [
-	{ id: 'sm', label: 'SM' },
-	{ id: 'md', label: 'MD' },
-	{ id: 'lg', label: 'LG' },
+	{ id: 'sm', label: 'S' },
+	{ id: 'md', label: 'M' },
+	{ id: 'lg', label: 'L' },
 ] as const satisfies readonly {
 	readonly id: GridSize
 	readonly label: string

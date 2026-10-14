@@ -1,7 +1,13 @@
 .dialog {
-	width: 42rem;
+	width: calc(280px + 3rem + 4px);
 }
 
 .content {
 	display: block;
+}
+
+@media screen and (max-width: 400px) {
+	.dialog {
+		width: calc(280px + 2rem + 4px);
+	}
 }

@@ -7,10 +7,6 @@
 }
 
 .row {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr) auto;
-	align-items: center;
-	gap: 16px;
 	padding: 6px 0;
 	border-bottom: 1px solid rgb(128 128 128 / 30%);
 }
@@ -19,38 +15,46 @@
 	border-bottom: 0;
 }
 
-.shape {
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	min-width: 0;
-	font-weight: 600;
-}
-
-.shape > svg {
-	width: 48px;
-	height: 48px;
-	flex: 0 0 48px;
-}
-
 .sizes {
 	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: center;
 	gap: 8px;
 }
 
 .sizeButton {
-	min-width: 52px;
-	padding: 9px 12px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex: 0 0 88px;
+	width: 88px;
+	height: 88px;
+	padding: 10px;
 	border: 2px solid transparent;
 	border-radius: 4px;
 	background: none;
 	color: inherit;
 	font: inherit;
-	font-size: 0.9rem;
 	cursor: pointer;
 	transition:
 		background-color 0.15s ease,
 		border-color 0.15s ease;
+}
+
+.sizeButton[data-size='sm'] > svg {
+	width: 32px;
+	height: 32px;
+}
+
+.sizeButton[data-size='md'] > svg {
+	width: 48px;
+	height: 48px;
+}
+
+.sizeButton[data-size='lg'] > svg {
+	width: 64px;
+	height: 64px;
 }
 
 .sizeButton:hover:not(:disabled) {
@@ -64,15 +68,4 @@
 .sizeButton:disabled {
 	opacity: 0.45;
 	cursor: not-allowed;
-}
-
-@media screen and (max-width: 480px) {
-	.row {
-		grid-template-columns: minmax(0, 1fr);
-		gap: 4px;
-	}
-
-	.sizes {
-		padding-left: 60px;
-	}
 }
