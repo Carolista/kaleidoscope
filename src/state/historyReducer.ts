@@ -1,4 +1,4 @@
-import type { AppState } from '../types/appState'
+import type { AppState, PaintMap } from '../types/appState'
 import type { AppAction } from './appReducer'
 import { supportedGridShapes } from '../data/gridShapes'
 import { appReducer } from './appReducer'
@@ -18,7 +18,11 @@ const UNDOABLE_ACTION_TYPES = new Set<AppAction['type']>([
 
 type DesignSnapshot = Pick<
 	AppState,
-	'currentScheme' | 'gridShape' | 'gridSizes' | 'shapeGroupColors'
+	| 'currentScheme'
+	| 'gridShape'
+	| 'gridSizes'
+	| 'shapeGroupColors'
+	| 'savedBoards'
 >
 
 export interface HistoryState {
@@ -40,6 +44,7 @@ function snapshotOf(state: AppState): DesignSnapshot {
 		gridShape: state.gridShape,
 		gridSizes: state.gridSizes,
 		shapeGroupColors: state.shapeGroupColors,
+		savedBoards: state.savedBoards,
 	}
 }
 
@@ -56,15 +61,27 @@ function sameDesign(previous: AppState, next: AppState): boolean {
 	) {
 		return false
 	}
-	if (previous.shapeGroupColors === next.shapeGroupColors) return true
-	const previousIds = Object.keys(previous.shapeGroupColors)
+	if (!samePaint(previous.shapeGroupColors, next.shapeGroupColors))
+		return false
+	if (previous.savedBoards === next.savedBoards) return true
+	const previousBoards = Object.keys(previous.savedBoards)
+	const nextBoards: Readonly<Record<string, PaintMap | undefined>> =
+		next.savedBoards
 	return (
-		previousIds.length === Object.keys(next.shapeGroupColors).length &&
-		previousIds.every(
-			id =>
-				Object.hasOwn(next.shapeGroupColors, id) &&
-				previous.shapeGroupColors[id] === next.shapeGroupColors[id],
-		)
+		previousBoards.length === Object.keys(nextBoards).length &&
+		Object.entries(previous.savedBoards).every(([id, paint]) => {
+			const nextPaint = nextBoards[id]
+			return nextPaint !== undefined && samePaint(paint, nextPaint)
+		})
+	)
+}
+
+function samePaint(previous: PaintMap, next: PaintMap): boolean {
+	if (previous === next) return true
+	const ids = Object.keys(previous)
+	return (
+		ids.length === Object.keys(next).length &&
+		ids.every(id => Object.hasOwn(next, id) && previous[id] === next[id])
 	)
 }
 

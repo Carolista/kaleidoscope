@@ -20,6 +20,7 @@ describe('useDuotoneIconTint', () => {
 			showEditableArea: true,
 			gridShape: 'hexagon',
 			gridSizes: { ...defaultGridSizes },
+			savedBoards: {},
 			shapeGroupColors: {},
 		})
 	})

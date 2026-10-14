@@ -87,6 +87,7 @@ describe('App', () => {
 				showEditableArea: true,
 				gridShape: id,
 				gridSizes: { ...defaultGridSizes },
+				savedBoards: {},
 				shapeGroupColors: {},
 			})
 			mockUseIsTouchDevice.mockReturnValue(false)
@@ -107,6 +108,7 @@ describe('App', () => {
 			showEditableArea: true,
 			gridShape: 'circleRings',
 			gridSizes: { ...defaultGridSizes, circleRings: 'sm' },
+			savedBoards: {},
 			shapeGroupColors: {},
 		})
 		mockUseIsTouchDevice.mockReturnValue(false)
@@ -129,6 +131,7 @@ describe('App', () => {
 			showEditableArea: true,
 			gridShape: 'pinwheel',
 			gridSizes: { ...defaultGridSizes, pinwheel: 'sm' },
+			savedBoards: {},
 			shapeGroupColors: {},
 		})
 		mockUseIsTouchDevice.mockReturnValue(false)
@@ -257,7 +260,6 @@ describe('App', () => {
 			screen.getByRole('button', { name: 'Select a different shape' }),
 		)
 		await user.click(screen.getByRole('button', { name: 'Triangle (S)' }))
-		await user.click(screen.getByRole('button', { name: 'Switch' }))
 
 		const triangleGrid = screen.getByRole('group', {
 			name: 'Kaleidoscope triangle grid',
@@ -284,7 +286,6 @@ describe('App', () => {
 		await user.click(
 			screen.getByRole('button', { name: 'Diamond Star (S)' }),
 		)
-		await user.click(screen.getByRole('button', { name: 'Switch' }))
 
 		const diamondStarGrid = screen.getByRole('group', {
 			name: 'Kaleidoscope diamond star grid',
@@ -305,7 +306,6 @@ describe('App', () => {
 			screen.getByRole('button', { name: 'Select a different shape' }),
 		)
 		await user.click(screen.getByRole('button', { name: 'Hexagram (S)' }))
-		await user.click(screen.getByRole('button', { name: 'Switch' }))
 
 		const hexagramGrid = screen.getByRole('group', {
 			name: 'Kaleidoscope hexagram grid',

@@ -38,14 +38,16 @@ Today, the application reflects how my engineering approach has evolved. It has 
 
 ## Features
 
-- **Six geometric grids:** Hexagon, triangle, diamond star, hexagram, circle rings, and pinwheel.
+- **Six geometric grids, three sizes each:** Hexagon, triangle, diamond star, hexagram, circle rings, and pinwheel. Choose small, medium, or large using scaled shape icons.
+- **18 independent boards:** Each shape and size keeps its own pattern. Switch freely and pick up where you left off; new boards start blank.
 - **Symmetrical painting:** Paint a tile in the editable area and its corresponding cells update across the full design.
-- **Multiple color palettes:** Pick from curated schemes, then choose a color to paint with.
-- **Design controls:** Randomize a design, reset it, or undo and redo recent design changes.
-- **Light and dark themes:** Switch the surrounding canvas theme; tiles painted with the theme colors adapt with it.
+- **Multiple color palettes:** Pick from curated schemes, then choose a color to paint with. Palette changes carry the color pattern over across all boards.
+- **Design controls:** Randomize or reset the current board, or undo and redo edits and board switches in one session-wide history.
+- **Light and dark themes:** Switch the surrounding canvas theme; tiles painted with the theme colors adapt across all boards. Board switches never change your theme.
 - **Save and share:** Export a crisp PNG of the complete design, download it, or share it where the browser supports file sharing.
 - **Mouse, touch, and keyboard interaction:** Hover reveals the editable wedge on mouse and trackpad; touch users can toggle it. Grid tiles can also be reached with Tab and painted with Enter or Space. Focus outlines remain visible for keyboard navigation without lingering after mouse clicks or taps.
-- **Automatic save:** Your current design and preferences are restored from browser storage on your next visit.
+- **Mobile-friendly modals:** Titles and close controls stay visible while content scrolls, with edge indicators for more options and background scrolling locked.
+- **Automatic save:** All board patterns, your active board, per-shape size choices, and preferences are restored from browser storage on your next visit. Undo history starts fresh each session.
 
 <!-- ## Visuals -->
 

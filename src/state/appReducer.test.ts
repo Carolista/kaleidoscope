@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { colorSchemes } from '../data/colorSchemes'
 import { defaultGridSizes } from '../data/gridSizes'
+import { supportedGridShapes } from '../data/gridShapes'
 import { getGroupIdsForShape } from '../utils/gridShapeRegistry'
 import { appReducer, createInitialAppState } from './appReducer'
 import type { AppState } from '../types/appState'
@@ -26,12 +27,94 @@ function baseState(overrides: Partial<AppState> = {}): AppState {
 		showEditableArea: true,
 		gridShape: 'hexagon',
 		gridSizes: { ...defaultGridSizes },
+		savedBoards: {},
 		shapeGroupColors: {},
 		...overrides,
 	}
 }
 
 describe('appReducer', () => {
+	it('restores independent paint on every one of the 18 boards without changing theme or palette', () => {
+		let state = baseState()
+		const boards = supportedGridShapes.flatMap(({ id }) =>
+			(['sm', 'md', 'lg'] as const).map(size => ({ shape: id, size })),
+		)
+		boards.forEach(({ shape, size }, index) => {
+			state = appReducer(state, {
+				type: 'SELECT_GRID_SHAPE',
+				shape,
+				size,
+			})
+			expect(state.shapeGroupColors).toEqual({})
+			state = appReducer(state, {
+				type: 'SELECT_COLOR',
+				color: `#${index.toString(16).padStart(6, '0')}`,
+			})
+			state = appReducer(state, {
+				type: 'PAINT_SHAPE_GROUP',
+				groupId: '0',
+			})
+		})
+		boards.forEach(({ shape, size }, index) => {
+			state = appReducer(state, {
+				type: 'SELECT_GRID_SHAPE',
+				shape,
+				size,
+			})
+			expect(state.shapeGroupColors).toEqual({
+				'0': `#${index.toString(16).padStart(6, '0')}`,
+			})
+			expect(state.darkMode).toBe(false)
+			expect(state.currentScheme).toBe(colorSchemes[0])
+		})
+		expect(Object.keys(state.savedBoards)).toHaveLength(17)
+	})
+
+	it('remaps palette colors and explicit theme toggles on inactive boards as well', () => {
+		const state = baseState({
+			shapeGroupColors: { a: colorSchemes[0].colors[1] },
+			savedBoards: {
+				'triangle:sm': {
+					a: colorSchemes[0].colors[2],
+					b: '#ffffff',
+					c: '#222222',
+					d: '#abcdef',
+				},
+			},
+		})
+		const changed = appReducer(state, {
+			type: 'SELECT_SCHEME',
+			scheme: colorSchemes[1],
+		})
+		expect(changed.savedBoards['triangle:sm']).toEqual({
+			a: colorSchemes[1].colors[2],
+			b: '#ffffff',
+			c: '#222222',
+			d: '#abcdef',
+		})
+		expect(changed.darkMode).toBe(false)
+		const toggled = appReducer(changed, { type: 'TOGGLE_DARK_MODE' })
+		expect(toggled.savedBoards['triangle:sm']).toEqual({
+			a: colorSchemes[1].colors[2],
+			b: '#222222',
+			c: '#ffffff',
+			d: '#abcdef',
+		})
+	})
+
+	it('reset and randomize affect only the active board', () => {
+		const state = baseState({
+			shapeGroupColors: { a: '#abcdef' },
+			savedBoards: { 'triangle:sm': { b: '#123456' } },
+		})
+		expect(appReducer(state, { type: 'RESET_DESIGN' }).savedBoards).toBe(
+			state.savedBoards,
+		)
+		expect(
+			appReducer(state, { type: 'RANDOMIZE_DESIGN' }).savedBoards,
+		).toBe(state.savedBoards)
+	})
+
 	it('SELECT_SCHEME switches scheme and resets current color to its first color', () => {
 		const state = baseState({ currentColor: '#abcdef' })
 		const next = appReducer(state, {
@@ -219,7 +302,7 @@ describe('appReducer', () => {
 		).toBe(true)
 	})
 
-	it('SELECT_GRID_SHAPE switches shape and resets shapeGroupColors', () => {
+	it('SELECT_GRID_SHAPE switches to an empty board and saves outgoing paint', () => {
 		const state = baseState({
 			gridShape: 'hexagon',
 			shapeGroupColors: { '0,0': '#ff0000' },
@@ -230,6 +313,7 @@ describe('appReducer', () => {
 		})
 		expect(next.gridShape).toBe('triangle')
 		expect(next.shapeGroupColors).toEqual({})
+		expect(next.savedBoards['hexagon:md']).toEqual(state.shapeGroupColors)
 	})
 
 	it('SELECT_GRID_SHAPE is a no-op (same state reference) when selecting the already-current shape', () => {
@@ -244,7 +328,7 @@ describe('appReducer', () => {
 		expect(next).toBe(state)
 	})
 
-	it('SELECT_GRID_SIZE changes the hexagon radius and keeps paint for groups shared by both sizes', () => {
+	it('SELECT_GRID_SIZE saves the entire large hexagon independently of small', () => {
 		const removedGroupId = getGroupIdsForShape('hexagon', 'lg').find(
 			id => !getGroupIdsForShape('hexagon', 'sm').includes(id),
 		)!
@@ -261,10 +345,11 @@ describe('appReducer', () => {
 			size: 'sm',
 		})
 		expect(next.gridSizes.hexagon).toBe('sm')
-		expect(next.shapeGroupColors).toEqual({ '0,0': '#ff0000' })
+		expect(next.shapeGroupColors).toEqual({})
+		expect(next.savedBoards['hexagon:lg']).toEqual(state.shapeGroupColors)
 	})
 
-	it('SELECT_GRID_SIZE changes triangle subdivision while retaining groups still available', () => {
+	it('SELECT_GRID_SIZE saves the entire large triangle independently of small', () => {
 		const removedGroupId = getGroupIdsForShape('triangle', 'lg').find(
 			id => !getGroupIdsForShape('triangle', 'sm').includes(id),
 		)!
@@ -282,10 +367,11 @@ describe('appReducer', () => {
 			size: 'sm',
 		})
 		expect(next.gridSizes.triangle).toBe('sm')
-		expect(next.shapeGroupColors).toEqual({ '0': '#ff0000' })
+		expect(next.shapeGroupColors).toEqual({})
+		expect(next.savedBoards['triangle:lg']).toEqual(state.shapeGroupColors)
 	})
 
-	it('SELECT_GRID_SIZE changes Diamond Star subdivision while retaining overlapping groups', () => {
+	it('SELECT_GRID_SIZE saves the entire large Diamond Star independently of small', () => {
 		const removedGroupId = getGroupIdsForShape('diamondStar', 'lg').find(
 			id => !getGroupIdsForShape('diamondStar', 'sm').includes(id),
 		)!
@@ -303,10 +389,13 @@ describe('appReducer', () => {
 			size: 'sm',
 		})
 		expect(next.gridSizes.diamondStar).toBe('sm')
-		expect(next.shapeGroupColors).toEqual({ '0': '#ff0000' })
+		expect(next.shapeGroupColors).toEqual({})
+		expect(next.savedBoards['diamondStar:lg']).toEqual(
+			state.shapeGroupColors,
+		)
 	})
 
-	it('SELECT_GRID_SIZE changes Hexagram subdivision while retaining overlapping groups', () => {
+	it('SELECT_GRID_SIZE saves the entire large Hexagram independently of small', () => {
 		const removedGroupId = getGroupIdsForShape('hexagram', 'lg').find(
 			id => !getGroupIdsForShape('hexagram', 'sm').includes(id),
 		)!
@@ -324,10 +413,11 @@ describe('appReducer', () => {
 			size: 'sm',
 		})
 		expect(next.gridSizes.hexagram).toBe('sm')
-		expect(next.shapeGroupColors).toEqual({ '0': '#ff0000' })
+		expect(next.shapeGroupColors).toEqual({})
+		expect(next.savedBoards['hexagram:lg']).toEqual(state.shapeGroupColors)
 	})
 
-	it('SELECT_GRID_SIZE changes Circle Rings ring count while retaining overlapping groups', () => {
+	it('SELECT_GRID_SIZE saves the entire large Circle Rings independently of small', () => {
 		const smallGroupIds = getGroupIdsForShape('circleRings', 'sm')
 		const largeGroupIds = getGroupIdsForShape('circleRings', 'lg')
 		const retainedGroupId = largeGroupIds.find(id =>
@@ -350,12 +440,13 @@ describe('appReducer', () => {
 			size: 'sm',
 		})
 		expect(next.gridSizes.circleRings).toBe('sm')
-		expect(next.shapeGroupColors).toEqual({
-			[retainedGroupId]: '#ff0000',
-		})
+		expect(next.shapeGroupColors).toEqual({})
+		expect(next.savedBoards['circleRings:lg']).toEqual(
+			state.shapeGroupColors,
+		)
 	})
 
-	it('SELECT_GRID_SIZE changes Pinwheel steps while retaining overlapping groups', () => {
+	it('SELECT_GRID_SIZE saves the entire large Pinwheel independently of small', () => {
 		const smallGroupIds = getGroupIdsForShape('pinwheel', 'sm')
 		const largeGroupIds = getGroupIdsForShape('pinwheel', 'lg')
 		const retainedGroupId = largeGroupIds.find(id =>
@@ -378,9 +469,8 @@ describe('appReducer', () => {
 			size: 'sm',
 		})
 		expect(next.gridSizes.pinwheel).toBe('sm')
-		expect(next.shapeGroupColors).toEqual({
-			[retainedGroupId]: '#ff0000',
-		})
+		expect(next.shapeGroupColors).toEqual({})
+		expect(next.savedBoards['pinwheel:lg']).toEqual(state.shapeGroupColors)
 	})
 
 	it('SELECT_GRID_SIZE changes an available shape size', () => {

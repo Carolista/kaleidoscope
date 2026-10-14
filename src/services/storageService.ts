@@ -17,13 +17,15 @@ const STORAGE_KEY = 'kaleidoscope:design'
 const LEGACY_STORAGE_VERSION = 1
 const PREVIOUS_STORAGE_VERSION = 2
 const CIRCLE_RINGS_STORAGE_VERSION = 3
-const STORAGE_VERSION = 4
+const PINWHEEL_STORAGE_VERSION = 4
+const STORAGE_VERSION = 5
 
 interface PersistedDesign {
 	readonly version:
 		| typeof LEGACY_STORAGE_VERSION
 		| typeof PREVIOUS_STORAGE_VERSION
 		| typeof CIRCLE_RINGS_STORAGE_VERSION
+		| typeof PINWHEEL_STORAGE_VERSION
 		| typeof STORAGE_VERSION
 	readonly schemeName: string
 	readonly currentColor: string
@@ -39,6 +41,7 @@ interface PersistedDesign {
 	// shape to the closest equivalent of its previously available grid.
 	readonly gridSizes?: Partial<AppState['gridSizes']>
 	readonly shapeGroupColors: Readonly<Record<string, string>>
+	readonly savedBoards?: AppState['savedBoards']
 }
 
 function toPersistedDesign(state: AppState): PersistedDesign {
@@ -51,6 +54,7 @@ function toPersistedDesign(state: AppState): PersistedDesign {
 		gridShape: state.gridShape,
 		gridSizes: state.gridSizes,
 		shapeGroupColors: state.shapeGroupColors,
+		savedBoards: state.savedBoards,
 	}
 }
 
@@ -78,7 +82,10 @@ function fromPersistedDesign(data: PersistedDesign): AppState | null {
 	) {
 		gridSizes.circleRings = 'lg'
 	}
-	if (data.version < STORAGE_VERSION && data.gridSizes?.pinwheel === 'md') {
+	if (
+		data.version < PINWHEEL_STORAGE_VERSION &&
+		data.gridSizes?.pinwheel === 'md'
+	) {
 		gridSizes.pinwheel = 'lg'
 	}
 
@@ -90,6 +97,8 @@ function fromPersistedDesign(data: PersistedDesign): AppState | null {
 		gridShape,
 		gridSizes,
 		shapeGroupColors: { ...data.shapeGroupColors },
+		savedBoards:
+			data.version === STORAGE_VERSION ? { ...data.savedBoards } : {},
 	}
 }
 
@@ -105,12 +114,39 @@ function isHexColor(value: unknown): value is string {
 	)
 }
 
+function hasValidSavedBoards(data: Record<string, unknown>): boolean {
+	if (
+		!isRecord(data.savedBoards) ||
+		!isGridShapeId(data.gridShape) ||
+		!isRecord(data.gridSizes)
+	)
+		return false
+	const activeShape = data.gridShape
+	const activeSize =
+		isRecord(data.gridSizes) && isGridSize(data.gridSizes[activeShape])
+			? data.gridSizes[activeShape]
+			: defaultGridSizes[activeShape]
+	return Object.entries(data.savedBoards).every(([id, paint]) => {
+		const [shape, size, extra] = id.split(':')
+		return (
+			extra === undefined &&
+			isGridShapeId(shape) &&
+			isGridSize(size) &&
+			availableGridSizes[shape].includes(size) &&
+			id !== `${activeShape}:${activeSize}` &&
+			isRecord(paint) &&
+			Object.values(paint).every(isHexColor)
+		)
+	})
+}
+
 function isPersistedDesign(data: unknown): data is PersistedDesign {
 	if (!isRecord(data)) return false
 	return (
 		(data.version === LEGACY_STORAGE_VERSION ||
 			data.version === PREVIOUS_STORAGE_VERSION ||
 			data.version === CIRCLE_RINGS_STORAGE_VERSION ||
+			data.version === PINWHEEL_STORAGE_VERSION ||
 			data.version === STORAGE_VERSION) &&
 		typeof data.schemeName === 'string' &&
 		isHexColor(data.currentColor) &&
@@ -127,11 +163,12 @@ function isPersistedDesign(data: unknown): data is PersistedDesign {
 						availableGridSizes[shape].includes(size),
 				))) &&
 		isRecord(data.shapeGroupColors) &&
-		Object.values(data.shapeGroupColors).every(isHexColor)
+		Object.values(data.shapeGroupColors).every(isHexColor) &&
+		(data.version !== STORAGE_VERSION || hasValidSavedBoards(data))
 	)
 }
 
-// Falls back to a fresh random-scheme state (same as a first-ever visit)
+// Falls back to a fresh initial state (same as a first-ever visit)
 // whenever there's nothing usable to restore: no saved design, corrupted
 // JSON, malformed paint maps/colors, an unrecognized shape/version, or a
 // scheme name that no longer exists. Also swallows any storage access error

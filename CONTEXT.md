@@ -6,7 +6,7 @@ Current behavior, architecture, and working standards. For rationale, see
 ## App
 
 A coloring toy: paint one tile and its symmetry group updates across the grid.
-Includes preset palettes, six shapes, dark/light mode, undo/redo, autosave,
+Includes preset palettes, six shapes with three sizes each, dark/light mode, undo/redo, autosave,
 and PNG download/share.
 
 Live: https://codewithcarrie.com/kaleidoscope/
@@ -137,12 +137,26 @@ and picker visibility. All six are currently visible. Hidden entries remain
 loadable; component/geometry mappings and previews enforce complete shape coverage.
 React rendering remains separate from geometry and storage.
 
-### Default grids
+### Grid sizes
+
+Each shape offers small, medium, and large grids. Size choices are remembered
+independently per shape in [gridSizes.ts](./src/data/gridSizes.ts).
+
+| Shape | Small | Medium | Large | Default |
+| --- | --- | --- | --- | --- |
+| Hexagon | Radius 3 | Radius 4 | Radius 6 | Medium |
+| Triangle | Size 4 (intro size) | Size 7 | Size 10 | Medium |
+| Diamond star | 3 x 3 per point | 4 x 4 per point | 5 x 5 per point | Medium |
+| Hexagram | Size 2 | Size 3 | Size 4 | Large |
+| Circle rings | 3 rings + center | 4 rings + center | 6 rings + center | Large |
+| Pinwheel | 2 x 2 per spoke | 2 x 3 per spoke | 3 x 3 per spoke | Large |
+
+Default app grids:
 
 | Shape | Symmetry | Size | Cells | Clickable groups |
 | --- | --- | --- | --- | --- |
-| Hexagon | D6 | Radius 7 | 169 | 20 |
-| Triangle | D3 | Size 10 | 100 | 22 |
+| Hexagon | D6 | Radius 4 | 61 | 9 |
+| Triangle | D3 | Size 7 | 49 | 12 |
 | Diamond star | D6 | 4 x 4 per point | 96 | 10 |
 | Hexagram | D6 | Size 4 | 192 | 20 |
 | Circle rings | D6 | 6 rings + center | 127 | 16 |
@@ -157,17 +171,38 @@ symmetry engine. One representative per group is clickable.
   [colorSchemes.ts](./src/data/colorSchemes.ts) and its first color selected.
 - Painting toggles a group back to accent when its current color is selected again.
   Unpainted groups also display accent.
-- Scheme changes remap painted palette colors by position and select the first
-  new color. Shape changes clear the design.
-- Undoable: paint, scheme, shape, randomize, reset. Current color, dark mode,
+- Each of the 18 shape/size combinations has an independent paint map. Switching
+  boards saves the outgoing pattern and restores the incoming one; unvisited
+  boards start empty. Paint is never copied between sizes or shapes.
+- Palette and theme are global, not board-specific. Scheme changes remap painted
+  palette colors by position on all boards and select the first new color.
+  Explicit dark/light toggles remap neutral base/accent paint on all boards;
+  switching boards and undo/redo never change the theme.
+- Reset and randomize affect only the active board. Switching shape and size
+  together is one undo step.
+- Undoable: paint, scheme, shape, grid size, randomize, reset. Current color, dark mode,
   and editable-area visibility are tool/view choices, not undo stops.
-- History is unlimited, session-only. Unchanged designs preserve undo/redo;
-  real design edits clear redo. Snapshot restoration reconciles unavailable
+- History is one unlimited, session-only chronological timeline across all boards,
+  including switches. Restored boards form the session's starting baseline;
+  history itself is not restored. Snapshots include active and inactive paint.
+  Unchanged designs preserve undo/redo; real design edits clear redo.
+  Snapshot restoration reconciles unavailable
   selected palette colors by position, preserving available and neutral selections.
-- Autosave writes version 1 to `kaleidoscope:design` on state changes. It saves
-  scheme name, selected color, dark mode, shape, editable-area preference, and paint map.
+- Theme toggles do not remap historical snapshots, so undo across a toggle can
+  restore older literal neutral colors without changing the current theme.
+- Autosave writes version 5 to `kaleidoscope:design` on state changes. It saves
+  scheme name, selected color, dark mode, shape, per-shape sizes,
+  editable-area preference, and all board paint maps in one record.
+  `shapeGroupColors` holds active paint; `savedBoards` holds inactive paint keyed
+  by stable `shape:size` IDs (for example, `triangle:sm`), never duplicating the
+  active board.
+- Versions 1-4 remain loadable. Their single paint map belongs only to the original
+  effective active board; other boards start empty. Missing size data restores the active shape's
+  legacy size. Earlier placeholder medium values for Hexagram (v1), Circle Rings
+  (v1-2), and Pinwheel (v1-3) migrate to large to preserve their previous grids.
 - Loading rejects malformed records, arrays, invalid six-digit hex colors,
-  unknown versions/shapes/schemes; fallback is a fresh design. Missing historical
+  unknown versions/shapes/schemes, invalid board keys, and duplicate active-board
+  entries; fallback is a fresh design. Missing historical
   shape/visibility fields default to hexagon/true. Storage failures never crash the app.
 - Colors retain case and need not belong to the current palette. Unknown group IDs
   are retained; no palette-color migration is implemented.
@@ -183,8 +218,17 @@ symmetry engine. One representative per group is clickable.
   with sequential Tab navigation and Enter/Space painting. Decorative cells/icons
   are hidden from assistive technology; a live region announces painting.
 - Retain visible focus indicators and unique dialog/instruction label IDs.
-- Native dialogs provide modal focus behavior. Reset/shape confirmations have
-  independent persistent opt-outs, saved only on confirmation.
+- Native dialogs provide modal focus behavior. Reset confirmation has a
+  persistent opt-out, saved only on confirmation. Board switches are immediate
+  and non-destructive, so no shape-change confirmation is needed.
+- The shape picker uses three scaled versions of each icon (32/48/64px) in
+  equal 88px square buttons, without visible shape or size text. Accessible
+  names and tooltips identify shape and size as S/M/L. Rows wrap at narrow widths.
+- All modals have stationary headers and one scrolling body, bounded by the
+  dynamic viewport height. Fades and chevrons indicate more content above/below;
+  overflowing bodies are keyboard-focusable. Scroll containment and shared
+  background locking prevent page scrolling, including while confirmations
+  are nested over pickers. Closing the last modal restores page scroll position.
 - When the design storage key is absent at startup (checked before autosave; key
   existence, not payload validity), `App` shows the first-visit intro instead of the
   grid, controls, and footer. Intro state is local: a size-4 triangle grid with its
@@ -201,17 +245,19 @@ symmetry engine. One representative per group is clickable.
 
 - Export clones the SVG, inlines strokes, forces polygons/circles opaque, and
   rasterizes against theme base. Default longest PNG dimension: 1600px.
-- The preview reserves the shape's aspect ratio. Generation failures show an
+- The preview reserves the selected shape and size's geometry-derived aspect ratio. Generation failures show an
   error; share failures retain preview/download/retry. Share cancellation is quiet.
   Share appears only when file sharing is supported; download is enabled when ready.
 - Randomization weights each scheme color 18 times and theme base 10 times
   (90% palette, 10% base). Accent is excluded. The pool is built once per design;
-  duotone tint is computed once per hook invocation.
+  only groups present at the selected grid size are randomized.
+  Duotone tint is computed once per hook invocation.
 
 ## Tests and deployment
 
 Logic/component tests use Vitest + RTL/jsdom; hooks use `renderHook`.
-[Test setup](./src/test/setup.ts) registers cleanup and polyfills dialog open/close.
+[Test setup](./src/test/setup.ts) registers cleanup, polyfills dialog open/close,
+and stubs page scrolling and `ResizeObserver` for jsdom.
 Clear or seed storage and use deterministic state/randomness where needed.
 jsdom does not verify real layout, native focus trapping, or PNG rasterization.
 Browser checks are ad hoc; there is no maintained browser suite or coverage threshold.
