@@ -1,5 +1,6 @@
 import type { Point } from '../types/geometry'
 import type { DiamondStarCell } from '../types/diamondStar'
+import type { GridSize } from '../types/gridSize'
 import { averagePoint } from '@utils/geometryMath'
 import { groupCells } from '@utils/groupCells'
 import { assignSymmetryGroups } from '@utils/symmetry'
@@ -21,6 +22,11 @@ import type { DiamondStarLayout } from './diamondStarLayout'
 // deliberately fewer/larger than the hexagon/triangle grids' ~20-22, since
 // these are chunkier rhombi rather than thin triangular slivers.
 export const DIAMOND_STAR_GRID_SIZE = 4
+export const DIAMOND_STAR_GRID_SIZES: Record<GridSize, number> = {
+	sm: 3,
+	md: DIAMOND_STAR_GRID_SIZE,
+	lg: 5,
+}
 
 const CENTER: Point = { x: 0, y: 0 }
 // The star's own mirror axis, running straight up (-y) through each

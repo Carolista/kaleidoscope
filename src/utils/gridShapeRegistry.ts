@@ -5,6 +5,7 @@ import {
 import {
 	computeGridAspectRatio as computeDiamondStarAspectRatio,
 	getGroupIds as getDiamondStarGroupIds,
+	DIAMOND_STAR_GRID_SIZES,
 } from '@geometry/diamondStarGrid'
 import {
 	computeGridAspectRatio as computeHexagonAspectRatio,
@@ -70,6 +71,9 @@ export function getGroupIdsForShape(
 	if (shape === 'triangle') {
 		return getTriangleGroupIds(TRIANGLE_GRID_SIZES[gridSize])
 	}
+	if (shape === 'diamondStar') {
+		return getDiamondStarGroupIds(DIAMOND_STAR_GRID_SIZES[gridSize])
+	}
 	return shapeGeometry[shape].getGroupIds()
 }
 
@@ -82,6 +86,9 @@ export function computeAspectRatioForShape(
 	}
 	if (shape === 'triangle') {
 		return computeTriangleAspectRatio(TRIANGLE_GRID_SIZES[gridSize])
+	}
+	if (shape === 'diamondStar') {
+		return computeDiamondStarAspectRatio(DIAMOND_STAR_GRID_SIZES[gridSize])
 	}
 	return shapeGeometry[shape].aspectRatio()
 }

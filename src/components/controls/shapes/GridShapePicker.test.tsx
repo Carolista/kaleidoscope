@@ -54,11 +54,14 @@ describe('GridShapePicker', () => {
 		expect(hexagon).toHaveAttribute('aria-pressed', 'true')
 		expect(triangle).toHaveAttribute('aria-pressed', 'false')
 		expect(
-			screen.getByRole('button', { name: 'Circle Rings SM' }),
-		).toBeDisabled()
-		expect(
 			screen.getByRole('button', { name: 'Triangle SM' }),
 		).toBeEnabled()
+		expect(
+			screen.getByRole('button', { name: 'Diamond Star LG' }),
+		).toBeEnabled()
+		expect(
+			screen.getByRole('button', { name: 'Circle Rings SM' }),
+		).toBeDisabled()
 	})
 
 	it('clicking a different shape opens a confirmation dialog rather than switching immediately', async () => {

@@ -9,6 +9,7 @@ import { supportedGridShapes } from '@data/gridShapes'
 import { defaultGridSizes } from '@data/gridSizes'
 import { HEXAGON_GRID_RADII } from '@geometry/hexagonGrid'
 import { TRIANGLE_GRID_SIZES } from '@geometry/triangleGrid'
+import { DIAMOND_STAR_GRID_SIZES } from '@geometry/diamondStarGrid'
 import {
 	computeAspectRatioForShape,
 	getGroupIdsForShape,
@@ -33,7 +34,9 @@ describe('gridShapeRegistry', () => {
 					? HEXAGON_GRID_RADII[size]
 					: id === 'triangle'
 						? TRIANGLE_GRID_SIZES[size]
-						: undefined
+						: id === 'diamondStar'
+							? DIAMOND_STAR_GRID_SIZES[size]
+							: undefined
 			expect(getGroupIdsForShape(id)).toEqual(
 				gridSize === undefined
 					? geometry[id].getGroupIds()
@@ -67,6 +70,21 @@ describe('gridShapeRegistry', () => {
 		)
 		expect(computeAspectRatioForShape('triangle', 'sm')).toBe(
 			triangle.computeGridAspectRatio(4),
+		)
+	})
+
+	it('uses the selected Diamond Star size when computing groups and aspect ratio', () => {
+		expect(getGroupIdsForShape('diamondStar', 'sm')).toEqual(
+			diamondStar.getGroupIds(3),
+		)
+		expect(getGroupIdsForShape('diamondStar', 'md')).toEqual(
+			diamondStar.getGroupIds(4),
+		)
+		expect(getGroupIdsForShape('diamondStar', 'lg')).toEqual(
+			diamondStar.getGroupIds(5),
+		)
+		expect(computeAspectRatioForShape('diamondStar', 'lg')).toBe(
+			diamondStar.computeGridAspectRatio(5),
 		)
 	})
 })

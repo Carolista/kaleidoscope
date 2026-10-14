@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import type { Ref } from 'react'
 import {
 	DIAMOND_STAR_GRID_SIZE,
+	computeGridAspectRatio,
 	generateDiamondStarCells,
 } from '@geometry/diamondStarGrid'
 import {
@@ -34,6 +35,10 @@ function DiamondStarGrid({
 		[gridSize, diamondSize],
 	)
 	const cells = useMemo(() => generateDiamondStarCells(gridSize), [gridSize])
+	const sizingAspectRatio = useMemo(
+		() => computeGridAspectRatio(gridSize),
+		[gridSize],
+	)
 	const { polygons, viewBox } = useMemo(() => {
 		const corners = cells.map(cell => diamondStarCellCorners(cell, layout))
 		const { minX, minY, maxX, maxY } = diamondStarBoundingBox(corners)
@@ -55,7 +60,7 @@ function DiamondStarGrid({
 			cells={polygons}
 			viewBox={viewBox}
 			svgRef={svgRef}
-			sizingAspectRatio={0.866}
+			sizingAspectRatio={sizingAspectRatio}
 			label="Kaleidoscope diamond star grid"
 			instructions="Tab to move between diamonds. Press Enter or Space to paint the focused diamond with the current color."
 		/>

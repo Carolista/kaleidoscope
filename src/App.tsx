@@ -29,6 +29,7 @@ import { useAppState } from './state/useAppState'
 import type { GridShapeId } from './types/gridShape'
 import { HEXAGON_GRID_RADII } from '@geometry/hexagonGrid'
 import { TRIANGLE_GRID_SIZES } from '@geometry/triangleGrid'
+import { DIAMOND_STAR_GRID_SIZES } from '@geometry/diamondStarGrid'
 
 const gridComponents = {
 	hexagon: HexagonGrid,
@@ -89,6 +90,15 @@ function App() {
 								gridSize={
 									TRIANGLE_GRID_SIZES[
 										state.gridSizes.triangle
+									]
+								}
+								svgRef={svgRef}
+							/>
+						) : state.gridShape === 'diamondStar' ? (
+							<DiamondStarGrid
+								gridSize={
+									DIAMOND_STAR_GRID_SIZES[
+										state.gridSizes.diamondStar
 									]
 								}
 								svgRef={svgRef}

@@ -13,7 +13,7 @@ export const gridSizeOptions = [
 export const availableGridSizes: Record<GridShapeId, readonly GridSize[]> = {
 	hexagon: ['sm', 'md', 'lg'],
 	triangle: ['sm', 'md', 'lg'],
-	diamondStar: ['md'],
+	diamondStar: ['sm', 'md', 'lg'],
 	hexagram: ['md'],
 	circleRings: ['md'],
 	pinwheel: ['md'],

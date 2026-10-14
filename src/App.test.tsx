@@ -225,4 +225,27 @@ describe('App', () => {
 			screen.queryByRole('group', { name: 'Kaleidoscope hexagon grid' }),
 		).not.toBeInTheDocument()
 	})
+
+	it('switches to the selected Diamond Star size', async () => {
+		seedSavedDesign()
+		mockUseIsTouchDevice.mockReturnValue(false)
+		const user = userEvent.setup()
+		renderApp()
+
+		await user.click(
+			screen.getByRole('button', { name: 'Select a different shape' }),
+		)
+		await user.click(
+			screen.getByRole('button', { name: 'Diamond Star SM' }),
+		)
+		await user.click(screen.getByRole('button', { name: 'Switch' }))
+
+		const diamondStarGrid = screen.getByRole('group', {
+			name: 'Kaleidoscope diamond star grid',
+		})
+		expect(diamondStarGrid.querySelectorAll('polygon')).toHaveLength(54)
+		expect(
+			screen.getAllByRole('button', { name: /Paint tile/ }),
+		).toHaveLength(6)
+	})
 })

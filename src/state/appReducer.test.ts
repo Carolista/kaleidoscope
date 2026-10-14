@@ -285,6 +285,27 @@ describe('appReducer', () => {
 		expect(next.shapeGroupColors).toEqual({ '0': '#ff0000' })
 	})
 
+	it('SELECT_GRID_SIZE changes Diamond Star subdivision while retaining overlapping groups', () => {
+		const removedGroupId = getGroupIdsForShape('diamondStar', 'lg').find(
+			id => !getGroupIdsForShape('diamondStar', 'sm').includes(id),
+		)!
+		const state = baseState({
+			gridShape: 'diamondStar',
+			gridSizes: { ...defaultGridSizes, diamondStar: 'lg' },
+			shapeGroupColors: {
+				'0': '#ff0000',
+				[removedGroupId]: '#00ff00',
+			},
+		})
+		const next = appReducer(state, {
+			type: 'SELECT_GRID_SIZE',
+			shape: 'diamondStar',
+			size: 'sm',
+		})
+		expect(next.gridSizes.diamondStar).toBe('sm')
+		expect(next.shapeGroupColors).toEqual({ '0': '#ff0000' })
+	})
+
 	it('SELECT_GRID_SIZE is undoable input and rejects sizes unavailable for that shape', () => {
 		const state = baseState()
 		expect(
