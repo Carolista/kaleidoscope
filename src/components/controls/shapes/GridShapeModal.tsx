@@ -16,13 +16,15 @@ function GridShapeModal({ open, onClose }: GridShapeModalProps) {
 			onClose={onClose}
 			labelledBy={titleId}
 			className={styles.dialog}
+			header={
+				<ModalHeader
+					title="Grid Shape"
+					titleId={titleId}
+					closeLabel="Close grid shape selector"
+					onClose={onClose}
+				/>
+			}
 		>
-			<ModalHeader
-				title="Grid Shape"
-				titleId={titleId}
-				closeLabel="Close grid shape selector"
-				onClose={onClose}
-			/>
 			<div className={styles.content}>
 				<GridShapePicker onSelected={onClose} />
 			</div>

@@ -23,10 +23,10 @@ describe('GridShapeButton', () => {
 			screen.getByRole('heading', { name: 'Grid Shape' }),
 		).toBeInTheDocument()
 		expect(
-			screen.getByRole('button', { name: 'Hexagon MD' }),
+			screen.getByRole('button', { name: 'Hexagon (M)' }),
 		).toBeInTheDocument()
 		expect(
-			screen.getByRole('button', { name: 'Triangle MD' }),
+			screen.getByRole('button', { name: 'Triangle (M)' }),
 		).toBeInTheDocument()
 
 		await user.click(
@@ -47,7 +47,7 @@ describe('GridShapeButton', () => {
 		await user.click(
 			screen.getByRole('button', { name: 'Select a different shape' }),
 		)
-		await user.click(screen.getByRole('button', { name: 'Triangle MD' }))
+		await user.click(screen.getByRole('button', { name: 'Triangle (M)' }))
 		await user.click(screen.getByRole('button', { name: 'Switch' }))
 
 		await waitFor(() =>
@@ -64,7 +64,7 @@ describe('GridShapeButton', () => {
 		await user.click(
 			screen.getByRole('button', { name: 'Select a different shape' }),
 		)
-		await user.click(screen.getByRole('button', { name: 'Hexagon SM' }))
+		await user.click(screen.getByRole('button', { name: 'Hexagon (S)' }))
 
 		await waitFor(() =>
 			expect(

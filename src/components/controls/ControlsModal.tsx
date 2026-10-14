@@ -107,13 +107,19 @@ function ControlsModal({ open, onClose }: ControlsModalProps) {
 	const duotoneTint = useDuotoneIconTint()
 
 	return (
-		<Modal open={open} onClose={onClose} labelledBy={titleId}>
-			<ModalHeader
-				title="Controls"
-				titleId={titleId}
-				closeLabel="Close controls help"
-				onClose={onClose}
-			/>
+		<Modal
+			open={open}
+			onClose={onClose}
+			labelledBy={titleId}
+			header={
+				<ModalHeader
+					title="Controls"
+					titleId={titleId}
+					closeLabel="Close controls help"
+					onClose={onClose}
+				/>
+			}
+		>
 			<ul className={styles.list}>
 				{items.map(item => (
 					<li key={item.label} className={styles.item}>

@@ -55,10 +55,12 @@ function ConfirmDialog({
 			onClose={handleCancel}
 			labelledBy={titleId}
 			className={styles.dialog}
+			header={
+				<h2 id={titleId} className={styles.title}>
+					{title}
+				</h2>
+			}
 		>
-			<h2 id={titleId} className={styles.title}>
-				{title}
-			</h2>
 			<p className={styles.message}>{message}</p>
 			<div className={styles.bottomRow}>
 				{dontShowAgainKey && (

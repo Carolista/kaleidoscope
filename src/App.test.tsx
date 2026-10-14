@@ -256,7 +256,7 @@ describe('App', () => {
 		await user.click(
 			screen.getByRole('button', { name: 'Select a different shape' }),
 		)
-		await user.click(screen.getByRole('button', { name: 'Triangle SM' }))
+		await user.click(screen.getByRole('button', { name: 'Triangle (S)' }))
 		await user.click(screen.getByRole('button', { name: 'Switch' }))
 
 		const triangleGrid = screen.getByRole('group', {
@@ -282,7 +282,7 @@ describe('App', () => {
 			screen.getByRole('button', { name: 'Select a different shape' }),
 		)
 		await user.click(
-			screen.getByRole('button', { name: 'Diamond Star SM' }),
+			screen.getByRole('button', { name: 'Diamond Star (S)' }),
 		)
 		await user.click(screen.getByRole('button', { name: 'Switch' }))
 
@@ -304,7 +304,7 @@ describe('App', () => {
 		await user.click(
 			screen.getByRole('button', { name: 'Select a different shape' }),
 		)
-		await user.click(screen.getByRole('button', { name: 'Hexagram SM' }))
+		await user.click(screen.getByRole('button', { name: 'Hexagram (S)' }))
 		await user.click(screen.getByRole('button', { name: 'Switch' }))
 
 		const hexagramGrid = screen.getByRole('group', {

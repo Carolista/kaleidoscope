@@ -34,14 +34,15 @@ function SaveImageModal({ open, svgRef, onClose }: SaveImageModalProps) {
 			onClose={onClose}
 			labelledBy={titleId}
 			className={styles.dialog}
+			header={
+				<ModalHeader
+					title="Save Image"
+					titleId={titleId}
+					closeLabel="Close"
+					onClose={onClose}
+				/>
+			}
 		>
-			<ModalHeader
-				title="Save Image"
-				titleId={titleId}
-				closeLabel="Close"
-				onClose={onClose}
-			/>
-
 			<div
 				className={styles.preview}
 				style={{ aspectRatio: previewAspectRatio }}
