@@ -4,8 +4,6 @@
 	gap: 1.25rem;
 	margin: 0;
 	padding: 0;
-	max-height: 65vh;
-	overflow-y: auto;
 	list-style: none;
 }
 

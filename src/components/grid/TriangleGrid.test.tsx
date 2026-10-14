@@ -2,6 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AppStateProvider } from '@state/AppContext'
+import {
+	TRIANGLE_GRID_SIZES,
+	computeGridAspectRatio,
+	getGroupIds,
+} from '@geometry/triangleGrid'
 import TriangleGrid from './TriangleGrid'
 
 describe('TriangleGrid', () => {
@@ -47,4 +52,26 @@ describe('TriangleGrid', () => {
 		await user.keyboard(' ')
 		expect(tile.getAttribute('fill')).not.toBe(fillAfterEnter)
 	})
+
+	it.each(Object.entries(TRIANGLE_GRID_SIZES))(
+		'renders the %s grid at size %s',
+		(_size, gridSize) => {
+			const { container } = render(<TriangleGrid gridSize={gridSize} />, {
+				wrapper: AppStateProvider,
+			})
+			expect(container.querySelectorAll('polygon')).toHaveLength(
+				gridSize * gridSize,
+			)
+			expect(screen.getAllByRole('button')).toHaveLength(
+				getGroupIds(gridSize).length,
+			)
+			expect(
+				screen.getByRole('group', {
+					name: 'Kaleidoscope triangle grid',
+				}),
+			).toHaveStyle({
+				'--grid-aspect-ratio': String(computeGridAspectRatio(gridSize)),
+			})
+		},
+	)
 })

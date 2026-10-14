@@ -23,10 +23,10 @@ describe('GridShapeButton', () => {
 			screen.getByRole('heading', { name: 'Grid Shape' }),
 		).toBeInTheDocument()
 		expect(
-			screen.getByRole('button', { name: 'Hexagon' }),
+			screen.getByRole('button', { name: 'Hexagon (M)' }),
 		).toBeInTheDocument()
 		expect(
-			screen.getByRole('button', { name: 'Triangle' }),
+			screen.getByRole('button', { name: 'Triangle (M)' }),
 		).toBeInTheDocument()
 
 		await user.click(
@@ -47,8 +47,24 @@ describe('GridShapeButton', () => {
 		await user.click(
 			screen.getByRole('button', { name: 'Select a different shape' }),
 		)
-		await user.click(screen.getByRole('button', { name: 'Triangle' }))
+		await user.click(screen.getByRole('button', { name: 'Triangle (M)' }))
 		await user.click(screen.getByRole('button', { name: 'Switch' }))
+
+		await waitFor(() =>
+			expect(
+				screen.queryByRole('heading', { name: 'Grid Shape' }),
+			).not.toBeInTheDocument(),
+		)
+	})
+
+	it('closes automatically after changing the active shape size', async () => {
+		const user = userEvent.setup()
+		render(<GridShapeButton />, { wrapper: AppStateProvider })
+
+		await user.click(
+			screen.getByRole('button', { name: 'Select a different shape' }),
+		)
+		await user.click(screen.getByRole('button', { name: 'Hexagon (S)' }))
 
 		await waitFor(() =>
 			expect(

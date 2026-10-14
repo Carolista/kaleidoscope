@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+	DIAMOND_STAR_GRID_SIZES,
 	DIAMOND_STAR_GRID_SIZE,
 	computeGridAspectRatio,
 	generateDiamondStarCells,
@@ -50,6 +51,20 @@ describe('generateDiamondStarCells', () => {
 		expect(small).toHaveLength(6 * 9)
 		expect(groupDiamondStarCells(small).size).toBe(6)
 	})
+
+	it.each(Object.entries(DIAMOND_STAR_GRID_SIZES))(
+		'generates the %s grid size at subdivision %s',
+		(_size, gridSize) => {
+			const sizeCells = generateDiamondStarCells(gridSize)
+			const groups = groupDiamondStarCells(sizeCells)
+			expect(sizeCells).toHaveLength(6 * gridSize ** 2)
+			expect(groups.size).toBe((gridSize * (gridSize + 1)) / 2)
+			expect(sizeCells.filter(cell => cell.isClickable)).toHaveLength(
+				groups.size,
+			)
+			expect(getGroupIds(gridSize)).toHaveLength(groups.size)
+		},
+	)
 })
 
 describe('getGroupIds', () => {

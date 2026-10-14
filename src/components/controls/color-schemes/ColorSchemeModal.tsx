@@ -16,13 +16,15 @@ function ColorSchemeModal({ open, onClose }: ColorSchemeModalProps) {
 			onClose={onClose}
 			labelledBy={titleId}
 			className={styles.dialog}
+			header={
+				<ModalHeader
+					title="Color Palette"
+					titleId={titleId}
+					closeLabel="Close color palette selector"
+					onClose={onClose}
+				/>
+			}
 		>
-			<ModalHeader
-				title="Color Palette"
-				titleId={titleId}
-				closeLabel="Close color palette selector"
-				onClose={onClose}
-			/>
 			<div className={styles.content}>
 				<SchemePicker onSelected={onClose} />
 			</div>

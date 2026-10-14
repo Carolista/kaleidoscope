@@ -16,6 +16,7 @@ export interface SaveImageModalProps {
 function SaveImageModal({ open, svgRef, onClose }: SaveImageModalProps) {
 	const titleId = useId()
 	const { state } = useAppState()
+	const gridSize = state.gridSizes[state.gridShape]
 	const { base } = getThemeColors(state.darkMode)
 	const { exportState, canShare, handleDownload, handleShare } =
 		useImageExport(svgRef, open, base)
@@ -23,8 +24,8 @@ function SaveImageModal({ open, svgRef, onClose }: SaveImageModalProps) {
 	// service also rasterizes from, so the preview box is already sized
 	// correctly before the image exists.
 	const previewAspectRatio = useMemo(
-		() => computeAspectRatioForShape(state.gridShape),
-		[state.gridShape],
+		() => computeAspectRatioForShape(state.gridShape, gridSize),
+		[state.gridShape, gridSize],
 	)
 
 	return (
@@ -33,14 +34,15 @@ function SaveImageModal({ open, svgRef, onClose }: SaveImageModalProps) {
 			onClose={onClose}
 			labelledBy={titleId}
 			className={styles.dialog}
+			header={
+				<ModalHeader
+					title="Save Image"
+					titleId={titleId}
+					closeLabel="Close"
+					onClose={onClose}
+				/>
+			}
 		>
-			<ModalHeader
-				title="Save Image"
-				titleId={titleId}
-				closeLabel="Close"
-				onClose={onClose}
-			/>
-
 			<div
 				className={styles.preview}
 				style={{ aspectRatio: previewAspectRatio }}

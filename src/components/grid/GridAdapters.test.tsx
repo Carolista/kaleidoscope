@@ -13,30 +13,30 @@ const grids = [
 	{
 		name: 'hexagon',
 		component: HexagonGrid,
-		cells: 169,
-		tiles: 20,
-		ratio: 0.8763,
+		cells: 61,
+		tiles: 9,
+		ratio: 0.8829238853601823,
 	},
 	{
 		name: 'triangle',
 		component: TriangleGrid,
 		cells: 100,
 		tiles: 22,
-		ratio: 1.1547,
+		ratio: 2 / Math.sqrt(3),
 	},
 	{
 		name: 'diamond star',
 		component: DiamondStarGrid,
 		cells: 96,
 		tiles: 10,
-		ratio: 0.866,
+		ratio: Math.sqrt(3) / 2,
 	},
 	{
 		name: 'hexagram',
 		component: HexagramGrid,
 		cells: 192,
 		tiles: 20,
-		ratio: 0.866,
+		ratio: Math.sqrt(3) / 2,
 	},
 	{
 		name: 'pinwheel',
@@ -70,9 +70,9 @@ describe('Grid adapters', () => {
 			expect(svgRef.current).toBe(svg)
 			expect(svg.querySelectorAll('polygon, circle')).toHaveLength(cells)
 			expect(screen.getAllByRole('button')).toHaveLength(tiles)
-			expect(svg.style.getPropertyValue('--grid-aspect-ratio')).toBe(
-				String(ratio),
-			)
+			expect(
+				Number(svg.style.getPropertyValue('--grid-aspect-ratio')),
+			).toBeCloseTo(ratio, 12)
 			expect(svg).toHaveAccessibleDescription(/Tab to move between/)
 		},
 	)

@@ -2,6 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AppStateProvider } from '@state/AppContext'
+import {
+	PINWHEEL_GRID_SIZES,
+	computeGridAspectRatio,
+	getGroupIds,
+} from '@geometry/pinwheelGrid'
 import PinwheelGrid from './PinwheelGrid'
 
 describe('PinwheelGrid', () => {
@@ -47,4 +52,27 @@ describe('PinwheelGrid', () => {
 		await user.keyboard(' ')
 		expect(tile.getAttribute('fill')).not.toBe(fillAfterEnter)
 	})
+
+	it.each(Object.entries(PINWHEEL_GRID_SIZES))(
+		'renders the %s grid at %s row and %s column steps',
+		(_size, { rowSteps, colSteps }) => {
+			render(<PinwheelGrid rowSteps={rowSteps} colSteps={colSteps} />, {
+				wrapper: AppStateProvider,
+			})
+			const grid = screen.getByRole('group', {
+				name: 'Kaleidoscope pinwheel grid',
+			})
+			expect(grid.querySelectorAll('polygon')).toHaveLength(
+				8 * rowSteps * colSteps,
+			)
+			expect(grid.querySelectorAll('[role="button"]')).toHaveLength(
+				getGroupIds(rowSteps, colSteps).length,
+			)
+			expect(grid).toHaveStyle({
+				'--grid-aspect-ratio': String(
+					computeGridAspectRatio(rowSteps, colSteps),
+				),
+			})
+		},
+	)
 })

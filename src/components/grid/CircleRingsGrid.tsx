@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import type { Ref } from 'react'
 import {
 	CIRCLE_RINGS_GRID_SIZE,
+	computeGridAspectRatio,
 	generateCircleRingsCells,
 } from '@geometry/circleRingsGrid'
 import {
@@ -36,6 +37,10 @@ function CircleRingsGrid({
 		() => generateCircleRingsCells(ringCount),
 		[ringCount],
 	)
+	const sizingAspectRatio = useMemo(
+		() => computeGridAspectRatio(ringCount),
+		[ringCount],
+	)
 	const { circles, viewBox, hoverAreaPath } = useMemo(() => {
 		const positioned = cells.map(cell => ({
 			center: circleRingsCellCenter(cell, layout),
@@ -68,7 +73,7 @@ function CircleRingsGrid({
 			viewBox={viewBox}
 			hoverAreaPath={hoverAreaPath}
 			svgRef={svgRef}
-			sizingAspectRatio={1}
+			sizingAspectRatio={sizingAspectRatio}
 			label="Kaleidoscope circle rings grid"
 			instructions="Tab to move between circles. Press Enter or Space to paint the focused circle with the current color."
 		/>

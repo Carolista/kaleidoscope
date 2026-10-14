@@ -1,5 +1,7 @@
 .dialog {
 	max-width: calc(100vw - 2rem); /* universal */
+	max-height: calc(100dvh - 2rem);
+	overflow: hidden;
 	border: 2px solid var(--accent, #222);
 	border-radius: 6px;
 	padding: 1.5rem;
@@ -7,8 +9,65 @@
 	color: var(--accent, #222);
 }
 
+.dialog[open] {
+	display: flex;
+	flex-direction: column;
+}
+
+.header {
+	flex: none;
+}
+
+.body {
+	display: flex;
+	position: relative;
+	min-height: 0;
+}
+
+.scroller {
+	width: 100%;
+	min-height: 0;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+}
+
+.edge {
+	position: absolute;
+	left: 0;
+	right: 0;
+	height: 28px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	pointer-events: none;
+	color: var(--accent, #222);
+}
+
+.topEdge {
+	top: 0;
+	background: linear-gradient(to bottom, var(--base, #fff), transparent);
+}
+
+.bottomEdge {
+	bottom: 0;
+	background: linear-gradient(to top, var(--base, #fff), transparent);
+}
+
+.chevron {
+	width: 8px;
+	height: 8px;
+	border-right: 2px solid currentcolor;
+	border-bottom: 2px solid currentcolor;
+	transform: rotate(45deg);
+}
+
+.topEdge .chevron {
+	transform: rotate(225deg);
+}
+
 .dialog::backdrop {
 	background: rgb(0 0 0 / 50%);
+	touch-action: none;
 }
 
 @media screen and (max-width: 400px) {

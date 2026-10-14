@@ -2,11 +2,12 @@ import { TriangleGrid } from '@grid'
 import { Button } from '@shared'
 import { useAppState } from '@state/useAppState'
 import { useState } from 'react'
+import { TRIANGLE_GRID_SIZES } from '@geometry/triangleGrid'
 import ColorSwatches from '../controls/color-schemes/ColorSwatches'
 import styles from './IntroSequence.module.css'
 
-// A triangle grid of size 4 has exactly 5 paintable groups.
-const INTRO_GRID_SIZE = 4
+// The intro demonstrates the smallest selectable triangle size (5 groups).
+const INTRO_GRID_SIZE = TRIANGLE_GRID_SIZES.sm
 const INTRO_TILE_COUNT = 5
 
 interface IntroSequenceProps {

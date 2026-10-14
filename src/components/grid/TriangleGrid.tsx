@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import type { Ref } from 'react'
 import {
+	computeGridAspectRatio,
 	TRIANGLE_GRID_SIZE,
 	generateTriangleCells,
 } from '@geometry/triangleGrid'
@@ -31,6 +32,10 @@ function TriangleGrid({
 		[triangleSize],
 	)
 	const cells = useMemo(() => generateTriangleCells(gridSize), [gridSize])
+	const sizingAspectRatio = useMemo(
+		() => computeGridAspectRatio(gridSize),
+		[gridSize],
+	)
 	const { polygons, viewBox } = useMemo(() => {
 		const corners = cells.map(cell => triangleCorners(cell, layout))
 		const { minX, minY, maxX, maxY } = trianglesBoundingBox(corners)
@@ -53,7 +58,7 @@ function TriangleGrid({
 			viewBox={viewBox}
 			svgRef={svgRef}
 			interaction={interaction}
-			sizingAspectRatio={1.1547}
+			sizingAspectRatio={sizingAspectRatio}
 			label="Kaleidoscope triangle grid"
 			instructions="Tab to move between triangles. Press Enter or Space to paint the focused triangle with the current color."
 		/>

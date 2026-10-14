@@ -5,6 +5,8 @@ import { AppStateProvider } from './state/AppContext'
 import App from './App'
 import { useIsTouchDevice } from './hooks/useIsTouchDevice'
 import { supportedGridShapes } from './data/gridShapes'
+import { defaultGridSizes } from './data/gridSizes'
+import { PINWHEEL_GRID_SIZES } from '@geometry/pinwheelGrid'
 import { colorSchemes } from './data/colorSchemes'
 import { savePersistedState } from './services/storageService'
 
@@ -84,6 +86,7 @@ describe('App', () => {
 				darkMode: true,
 				showEditableArea: true,
 				gridShape: id,
+				gridSizes: { ...defaultGridSizes },
 				shapeGroupColors: {},
 			})
 			mockUseIsTouchDevice.mockReturnValue(false)
@@ -95,6 +98,51 @@ describe('App', () => {
 			).toBeInTheDocument()
 		},
 	)
+
+	it('renders the selected Circle Rings size', () => {
+		savePersistedState({
+			currentScheme: colorSchemes[0],
+			currentColor: colorSchemes[0].colors[0],
+			darkMode: true,
+			showEditableArea: true,
+			gridShape: 'circleRings',
+			gridSizes: { ...defaultGridSizes, circleRings: 'sm' },
+			shapeGroupColors: {},
+		})
+		mockUseIsTouchDevice.mockReturnValue(false)
+		renderApp()
+
+		expect(
+			screen
+				.getByRole('group', {
+					name: 'Kaleidoscope circle rings grid',
+				})
+				.querySelectorAll('circle'),
+		).toHaveLength(37)
+	})
+
+	it('renders the selected Pinwheel size', () => {
+		savePersistedState({
+			currentScheme: colorSchemes[0],
+			currentColor: colorSchemes[0].colors[0],
+			darkMode: true,
+			showEditableArea: true,
+			gridShape: 'pinwheel',
+			gridSizes: { ...defaultGridSizes, pinwheel: 'sm' },
+			shapeGroupColors: {},
+		})
+		mockUseIsTouchDevice.mockReturnValue(false)
+		renderApp()
+
+		const { rowSteps, colSteps } = PINWHEEL_GRID_SIZES.sm
+		expect(
+			screen
+				.getByRole('group', {
+					name: 'Kaleidoscope pinwheel grid',
+				})
+				.querySelectorAll('polygon'),
+		).toHaveLength(8 * rowSteps * colSteps)
+	})
 
 	it('dismisses the controls modal via its close button after the intro', async () => {
 		mockUseIsTouchDevice.mockReturnValue(false)
@@ -208,14 +256,63 @@ describe('App', () => {
 		await user.click(
 			screen.getByRole('button', { name: 'Select a different shape' }),
 		)
-		await user.click(screen.getByRole('button', { name: 'Triangle' }))
+		await user.click(screen.getByRole('button', { name: 'Triangle (S)' }))
 		await user.click(screen.getByRole('button', { name: 'Switch' }))
 
+		const triangleGrid = screen.getByRole('group', {
+			name: 'Kaleidoscope triangle grid',
+		})
+		expect(triangleGrid).toBeInTheDocument()
+		expect(triangleGrid.querySelectorAll('polygon')).toHaveLength(16)
 		expect(
-			screen.getByRole('group', { name: 'Kaleidoscope triangle grid' }),
-		).toBeInTheDocument()
+			screen.getAllByRole('button', { name: /Paint tile/ }),
+		).toHaveLength(5)
 		expect(
 			screen.queryByRole('group', { name: 'Kaleidoscope hexagon grid' }),
 		).not.toBeInTheDocument()
+	})
+
+	it('switches to the selected Diamond Star size', async () => {
+		seedSavedDesign()
+		mockUseIsTouchDevice.mockReturnValue(false)
+		const user = userEvent.setup()
+		renderApp()
+
+		await user.click(
+			screen.getByRole('button', { name: 'Select a different shape' }),
+		)
+		await user.click(
+			screen.getByRole('button', { name: 'Diamond Star (S)' }),
+		)
+		await user.click(screen.getByRole('button', { name: 'Switch' }))
+
+		const diamondStarGrid = screen.getByRole('group', {
+			name: 'Kaleidoscope diamond star grid',
+		})
+		expect(diamondStarGrid.querySelectorAll('polygon')).toHaveLength(54)
+		expect(
+			screen.getAllByRole('button', { name: /Paint tile/ }),
+		).toHaveLength(6)
+	})
+
+	it('switches to the selected Hexagram size and renders its tile count', async () => {
+		seedSavedDesign()
+		mockUseIsTouchDevice.mockReturnValue(false)
+		const user = userEvent.setup()
+		renderApp()
+
+		await user.click(
+			screen.getByRole('button', { name: 'Select a different shape' }),
+		)
+		await user.click(screen.getByRole('button', { name: 'Hexagram (S)' }))
+		await user.click(screen.getByRole('button', { name: 'Switch' }))
+
+		const hexagramGrid = screen.getByRole('group', {
+			name: 'Kaleidoscope hexagram grid',
+		})
+		expect(hexagramGrid.querySelectorAll('polygon')).toHaveLength(48)
+		expect(
+			screen.getAllByRole('button', { name: /Paint tile/ }),
+		).toHaveLength(6)
 	})
 })

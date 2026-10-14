@@ -1,8 +1,13 @@
 .dialog {
-	width: 20rem;
+	width: calc(280px + 3rem + 4px);
 }
 
 .content {
-	display: flex;
-	justify-content: center;
+	display: block;
+}
+
+@media screen and (max-width: 400px) {
+	.dialog {
+		width: calc(280px + 2rem + 4px);
+	}
 }

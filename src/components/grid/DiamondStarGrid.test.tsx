@@ -2,6 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AppStateProvider } from '@state/AppContext'
+import {
+	DIAMOND_STAR_GRID_SIZES,
+	computeGridAspectRatio,
+	getGroupIds,
+} from '@geometry/diamondStarGrid'
 import DiamondStarGrid from './DiamondStarGrid'
 
 describe('DiamondStarGrid', () => {
@@ -47,4 +52,27 @@ describe('DiamondStarGrid', () => {
 		await user.keyboard(' ')
 		expect(tile.getAttribute('fill')).not.toBe(fillAfterEnter)
 	})
+
+	it.each(Object.entries(DIAMOND_STAR_GRID_SIZES))(
+		'renders the %s grid at subdivision %s',
+		(_size, gridSize) => {
+			const { container } = render(
+				<DiamondStarGrid gridSize={gridSize} />,
+				{ wrapper: AppStateProvider },
+			)
+			expect(container.querySelectorAll('polygon')).toHaveLength(
+				6 * gridSize ** 2,
+			)
+			expect(screen.getAllByRole('button')).toHaveLength(
+				getGroupIds(gridSize).length,
+			)
+			expect(
+				screen.getByRole('group', {
+					name: 'Kaleidoscope diamond star grid',
+				}),
+			).toHaveStyle({
+				'--grid-aspect-ratio': String(computeGridAspectRatio(gridSize)),
+			})
+		},
+	)
 })

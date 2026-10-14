@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useReducer } from 'react'
 import type { ReactNode } from 'react'
 import type { ColorScheme } from '../types/colorScheme'
 import type { GridShapeId } from '../types/gridShape'
+import type { GridSize } from '../types/gridSize'
 import { createInitialHistoryState, historyReducer } from './historyReducer'
 import {
 	loadInitialAppState,
@@ -52,7 +53,17 @@ export function AppStateProvider({
 		[],
 	)
 	const selectGridShape = useCallback(
-		(shape: GridShapeId) => dispatch({ type: 'SELECT_GRID_SHAPE', shape }),
+		(shape: GridShapeId, size?: GridSize) =>
+			dispatch(
+				size === undefined
+					? { type: 'SELECT_GRID_SHAPE', shape }
+					: { type: 'SELECT_GRID_SHAPE', shape, size },
+			),
+		[],
+	)
+	const selectGridSize = useCallback(
+		(shape: GridShapeId, size: GridSize) =>
+			dispatch({ type: 'SELECT_GRID_SIZE', shape, size }),
 		[],
 	)
 	const undo = useCallback(() => dispatch({ type: 'UNDO' }), [])
@@ -69,6 +80,7 @@ export function AppStateProvider({
 			resetDesign,
 			randomizeDesign,
 			selectGridShape,
+			selectGridSize,
 			undo,
 			redo,
 			canUndo: history.past.length > 0,
@@ -84,6 +96,7 @@ export function AppStateProvider({
 			resetDesign,
 			randomizeDesign,
 			selectGridShape,
+			selectGridSize,
 			undo,
 			redo,
 			history.past.length,

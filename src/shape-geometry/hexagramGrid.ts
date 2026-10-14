@@ -1,5 +1,6 @@
 import type { Point } from '../types/geometry'
 import type { HexagramCell } from '../types/hexagram'
+import type { GridSize } from '../types/gridSize'
 import { averagePoint } from '@utils/geometryMath'
 import { groupCells } from '@utils/groupCells'
 import { assignSymmetryGroups } from '@utils/symmetry'
@@ -19,6 +20,11 @@ import type { HexagramLayout } from './hexagramLayout'
 // gridSize=4 gives 20 clickable cells, comparable density to the hex and
 // triangle grids.
 export const HEXAGRAM_GRID_SIZE = 4
+export const HEXAGRAM_GRID_SIZES: Record<GridSize, number> = {
+	sm: 2,
+	md: 3,
+	lg: HEXAGRAM_GRID_SIZE,
+}
 
 const CENTER: Point = { x: 0, y: 0 }
 // The shape's own mirror axis, running straight up (-y) through each

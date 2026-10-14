@@ -1,13 +1,15 @@
 import type { AxialCoord, HexagonCell } from '../types/hexagon'
+import type { GridSize } from '../types/gridSize'
 import { groupCells } from '@utils/groupCells'
 import { axialToPixel, boundingBox } from './hexagonLayout'
 import type { HexagonLayout } from './hexagonLayout'
 
-// Radius 7 (rings out from the center hex) gives `1 + 3*7*8` = 169 cells.
-// The original app (and this app through phase 2) used radius 9 (271
-// cells, matching the original's hand-authored grid); radius was reduced
-// to make the grid more manageable on small touchscreens. See DECISIONS.md.
-export const HEXAGON_GRID_RADIUS = 7
+export const HEXAGON_GRID_RADII: Record<GridSize, number> = {
+	sm: 3,
+	md: 4,
+	lg: 6,
+}
+export const HEXAGON_GRID_RADIUS = HEXAGON_GRID_RADII.md
 
 interface CubeCoord {
 	readonly q: number
@@ -92,7 +94,7 @@ export function groupHexagonCells(
 	return groupCells(cells)
 }
 
-// Every distinct mirror-symmetry group id in the grid (20 at the default
+// Every distinct mirror-symmetry group id in the grid (9 at the default
 // radius, one per clickable tile) — lets callers (e.g. the design
 // randomizer) know which groups exist without needing the full cell list.
 export function getGroupIds(radius: number = HEXAGON_GRID_RADIUS): string[] {

@@ -4,6 +4,11 @@ import userEvent from '@testing-library/user-event'
 import { useIsTouchDevice } from '@hooks/useIsTouchDevice'
 import { buildExportClone } from '@services/imageExportService'
 import { AppStateProvider } from '@state/AppContext'
+import {
+	CIRCLE_RINGS_GRID_SIZES,
+	computeGridAspectRatio,
+	getGroupIds,
+} from '@geometry/circleRingsGrid'
 import styles from './CircleCell.module.css'
 import CircleRingsGrid from './CircleRingsGrid'
 
@@ -157,4 +162,27 @@ describe('CircleRingsGrid', () => {
 		expect(radii.filter(r => r === smallest)).toHaveLength(7)
 		expect(smallest).toBeLessThan(Math.max(...radii))
 	})
+
+	it.each(Object.entries(CIRCLE_RINGS_GRID_SIZES))(
+		'renders the %s grid with %s rings',
+		(_size, ringCount) => {
+			render(<CircleRingsGrid ringCount={ringCount} />, {
+				wrapper: AppStateProvider,
+			})
+			const grid = screen.getByRole('group', {
+				name: 'Kaleidoscope circle rings grid',
+			})
+			expect(grid.querySelectorAll('circle')).toHaveLength(
+				1 + 3 * ringCount * (ringCount + 1),
+			)
+			expect(grid.querySelectorAll('[role="button"]')).toHaveLength(
+				getGroupIds(ringCount).length,
+			)
+			expect(grid).toHaveStyle({
+				'--grid-aspect-ratio': String(
+					computeGridAspectRatio(ringCount),
+				),
+			})
+		},
+	)
 })

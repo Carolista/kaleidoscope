@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import Modal from './Modal'
+import styles from './Modal.module.css'
 
 describe('Modal', () => {
 	it('synchronizes native open state with its controlled prop and labels its content', () => {
@@ -66,5 +67,107 @@ describe('Modal', () => {
 		expect(onClose).not.toHaveBeenCalled()
 		await user.click(screen.getByRole('dialog'))
 		expect(onClose).toHaveBeenCalledTimes(1)
+	})
+
+	it('keeps its header outside the scrolling content', () => {
+		const { container } = render(
+			<Modal
+				open
+				onClose={vi.fn()}
+				labelledBy="title"
+				header={<h2 id="title">Fixed header</h2>}
+			>
+				<p>Scrollable content</p>
+			</Modal>,
+		)
+		const scroller = container.querySelector(`.${styles.scroller}`)!
+		expect(scroller).toContainElement(
+			screen.getByText('Scrollable content'),
+		)
+		expect(scroller).not.toContainElement(screen.getByRole('heading'))
+	})
+
+	it('locks the page until the last modal closes and restores its styles and scroll position', () => {
+		const originalOverflow = document.body.style.overflow
+		document.body.style.overflow = 'auto'
+		const scroll = vi.spyOn(window, 'scrollY', 'get').mockReturnValue(125)
+		const first = render(
+			<Modal open onClose={vi.fn()} labelledBy="first">
+				<h2 id="first">First</h2>
+			</Modal>,
+		)
+		expect(document.body.style.position).toBe('fixed')
+		expect(document.body.style.top).toBe('-125px')
+		expect(document.documentElement.style.overflow).toBe('hidden')
+		const second = render(
+			<Modal open onClose={vi.fn()} labelledBy="second">
+				<h2 id="second">Second</h2>
+			</Modal>,
+		)
+		second.unmount()
+		expect(document.body.style.position).toBe('fixed')
+		first.unmount()
+		expect(document.body.style.position).toBe('')
+		expect(document.body.style.overflow).toBe('auto')
+		expect(document.documentElement.style.overflow).toBe('')
+		expect(window.scrollTo).toHaveBeenLastCalledWith({
+			left: 0,
+			top: 125,
+			behavior: 'instant',
+		})
+		document.body.style.overflow = originalOverflow
+		scroll.mockRestore()
+	})
+
+	it('shows only the edges with more content and updates when content resizes', () => {
+		let resized = () => {}
+		const observe = vi.spyOn(ResizeObserver.prototype, 'observe')
+		const NativeObserver = ResizeObserver
+		vi.stubGlobal(
+			'ResizeObserver',
+			class extends NativeObserver {
+				constructor(callback: () => void) {
+					super(callback)
+					resized = callback
+				}
+			},
+		)
+		const { container, unmount } = render(
+			<Modal open onClose={vi.fn()} labelledBy="title">
+				<h2 id="title">Overflow</h2>
+			</Modal>,
+		)
+		const scroller = container.querySelector(`.${styles.scroller}`)!
+		Object.defineProperties(scroller, {
+			clientHeight: { configurable: true, value: 100 },
+			scrollHeight: { configurable: true, value: 300 },
+		})
+		act(resized)
+		expect(observe).toHaveBeenCalledTimes(2)
+		expect(container.querySelector(`.${styles.topEdge}`)).toBeNull()
+		expect(
+			container.querySelector(`.${styles.bottomEdge}`),
+		).toHaveAttribute('aria-hidden', 'true')
+		expect(scroller).toHaveAttribute('tabindex', '0')
+		scroller.scrollTop = 100
+		fireEvent.scroll(scroller)
+		expect(
+			container.querySelector(`.${styles.topEdge}`),
+		).toBeInTheDocument()
+		expect(
+			container.querySelector(`.${styles.bottomEdge}`),
+		).toBeInTheDocument()
+		scroller.scrollTop = 200
+		fireEvent.scroll(scroller)
+		expect(container.querySelector(`.${styles.bottomEdge}`)).toBeNull()
+		scroller.scrollTop = 0
+		Object.defineProperty(scroller, 'scrollHeight', { value: 100 })
+		act(resized)
+		expect(container.querySelector(`.${styles.topEdge}`)).toBeNull()
+		expect(container.querySelector(`.${styles.bottomEdge}`)).toBeNull()
+		expect(scroller).toHaveAttribute('tabindex', '-1')
+		unmount()
+		observe.mockRestore()
+		vi.unstubAllGlobals()
 	})
 })

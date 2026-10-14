@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { colorSchemes } from '../data/colorSchemes'
 import { supportedGridShapes } from '../data/gridShapes'
+import { defaultGridSizes } from '../data/gridSizes'
+import { legacyGridSizes } from '../data/gridSizes'
 import type { AppState } from '../types/appState'
 import {
 	loadInitialAppState,
@@ -17,6 +19,7 @@ function baseState(overrides: Partial<AppState> = {}): AppState {
 		darkMode: false,
 		showEditableArea: true,
 		gridShape: 'hexagon',
+		gridSizes: { ...defaultGridSizes },
 		shapeGroupColors: {},
 		...overrides,
 	}
@@ -111,6 +114,7 @@ describe('storageService', () => {
 				darkMode: true,
 				showEditableArea: true,
 				gridShape: 'hexagon',
+				gridSizes: { ...defaultGridSizes },
 				shapeGroupColors: {},
 			})
 			expect(colorSchemes).toContain(state.currentScheme)
@@ -165,9 +169,101 @@ describe('storageService', () => {
 		expect(loadInitialAppState()).toEqual(
 			baseState({
 				currentColor: '#ABCDEF',
+				gridSizes: { ...defaultGridSizes, hexagon: 'lg' },
 				shapeGroupColors: { a: '#123456' },
 			}),
 		)
+	})
+
+	it('round-trips per-shape grid sizes and migrates old saved designs to their previous active size', () => {
+		const saved = baseState({
+			gridSizes: {
+				...defaultGridSizes,
+				hexagon: 'lg',
+				hexagram: 'md',
+			},
+		})
+		savePersistedState(saved)
+		expect(loadInitialAppState()).toEqual(saved)
+
+		const legacy = JSON.parse(localStorage.getItem(STORAGE_KEY)!) as Record<
+			string,
+			unknown
+		>
+		delete legacy.gridSizes
+		legacy.gridShape = 'triangle'
+		localStorage.setItem(STORAGE_KEY, JSON.stringify(legacy))
+		expect(loadInitialAppState().gridSizes).toEqual({
+			...defaultGridSizes,
+			triangle: legacyGridSizes.triangle,
+		})
+	})
+
+	it('migrates pre-Hexagram-size saved MD values to LG to preserve the old rendered size', () => {
+		const previouslySaved = baseState({
+			gridSizes: { ...defaultGridSizes, hexagram: 'md' },
+		})
+		savePersistedState(previouslySaved)
+		const legacy = JSON.parse(localStorage.getItem(STORAGE_KEY)!) as Record<
+			string,
+			unknown
+		>
+		legacy.version = 1
+		localStorage.setItem(STORAGE_KEY, JSON.stringify(legacy))
+
+		expect(loadInitialAppState().gridSizes.hexagram).toBe('lg')
+	})
+
+	it.each([{ hexagon: 'extra-large' }, { pinwheel: 'xl' }])(
+		'rejects invalid or unavailable persisted grid sizes',
+		gridSizes => {
+			localStorage.setItem(
+				STORAGE_KEY,
+				JSON.stringify({
+					version: 1,
+					schemeName: colorSchemes[0].name,
+					currentColor: '#123456',
+					darkMode: false,
+					gridSizes,
+					shapeGroupColors: {},
+				}),
+			)
+			expect(loadInitialAppState().gridSizes).toEqual(defaultGridSizes)
+		},
+	)
+
+	it('migrates pre-Circle-Rings-size MD values to LG to preserve the previous grid', () => {
+		localStorage.setItem(
+			STORAGE_KEY,
+			JSON.stringify({
+				version: 2,
+				schemeName: colorSchemes[0].name,
+				currentColor: '#123456',
+				darkMode: false,
+				gridShape: 'circleRings',
+				gridSizes: { ...defaultGridSizes, circleRings: 'md' },
+				shapeGroupColors: {},
+			}),
+		)
+
+		expect(loadInitialAppState().gridSizes.circleRings).toBe('lg')
+	})
+
+	it('migrates pre-Pinwheel-size MD values to LG to preserve the previous grid', () => {
+		localStorage.setItem(
+			STORAGE_KEY,
+			JSON.stringify({
+				version: 3,
+				schemeName: colorSchemes[0].name,
+				currentColor: '#123456',
+				darkMode: false,
+				gridShape: 'pinwheel',
+				gridSizes: { ...defaultGridSizes, pinwheel: 'md' },
+				shapeGroupColors: {},
+			}),
+		)
+
+		expect(loadInitialAppState().gridSizes.pinwheel).toBe('lg')
 	})
 
 	it('falls back to a fresh random state when the saved scheme name no longer exists', () => {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+	HEXAGRAM_GRID_SIZES,
 	HEXAGRAM_GRID_SIZE,
 	computeGridAspectRatio,
 	generateHexagramCells,
@@ -50,6 +51,20 @@ describe('generateHexagramCells', () => {
 		expect(small).toHaveLength(12 * 9)
 		expect(groupHexagramCells(small).size).toBe(12)
 	})
+
+	it.each(Object.entries(HEXAGRAM_GRID_SIZES))(
+		'generates the %s grid size at subdivision %s',
+		(_size, gridSize) => {
+			const sizeCells = generateHexagramCells(gridSize)
+			const groups = groupHexagramCells(sizeCells)
+			expect(sizeCells).toHaveLength(12 * gridSize ** 2)
+			expect(groups.size).toBe(gridSize * (gridSize + 1))
+			expect(sizeCells.filter(cell => cell.isClickable)).toHaveLength(
+				groups.size,
+			)
+			expect(getGroupIds(gridSize)).toHaveLength(groups.size)
+		},
+	)
 })
 
 describe('getGroupIds', () => {

@@ -27,6 +27,12 @@ import { hasPersistedDesign } from './services/storageService'
 import { getThemeColors } from './state/theme'
 import { useAppState } from './state/useAppState'
 import type { GridShapeId } from './types/gridShape'
+import { HEXAGON_GRID_RADII } from '@geometry/hexagonGrid'
+import { TRIANGLE_GRID_SIZES } from '@geometry/triangleGrid'
+import { DIAMOND_STAR_GRID_SIZES } from '@geometry/diamondStarGrid'
+import { HEXAGRAM_GRID_SIZES } from '@geometry/hexagramGrid'
+import { CIRCLE_RINGS_GRID_SIZES } from '@geometry/circleRingsGrid'
+import { PINWHEEL_GRID_SIZES } from '@geometry/pinwheelGrid'
 
 const gridComponents = {
 	hexagon: HexagonGrid,
@@ -82,7 +88,59 @@ function App() {
 					<IntroSequence onContinue={() => setShowIntro(false)} />
 				) : (
 					<>
-						<Grid svgRef={svgRef} />
+						{state.gridShape === 'triangle' ? (
+							<TriangleGrid
+								gridSize={
+									TRIANGLE_GRID_SIZES[
+										state.gridSizes.triangle
+									]
+								}
+								svgRef={svgRef}
+							/>
+						) : state.gridShape === 'diamondStar' ? (
+							<DiamondStarGrid
+								gridSize={
+									DIAMOND_STAR_GRID_SIZES[
+										state.gridSizes.diamondStar
+									]
+								}
+								svgRef={svgRef}
+							/>
+						) : state.gridShape === 'hexagram' ? (
+							<HexagramGrid
+								gridSize={
+									HEXAGRAM_GRID_SIZES[
+										state.gridSizes.hexagram
+									]
+								}
+								svgRef={svgRef}
+							/>
+						) : state.gridShape === 'hexagon' ? (
+							<HexagonGrid
+								radius={
+									HEXAGON_GRID_RADII[state.gridSizes.hexagon]
+								}
+								svgRef={svgRef}
+							/>
+						) : state.gridShape === 'circleRings' ? (
+							<CircleRingsGrid
+								ringCount={
+									CIRCLE_RINGS_GRID_SIZES[
+										state.gridSizes.circleRings
+									]
+								}
+								svgRef={svgRef}
+							/>
+						) : state.gridShape === 'pinwheel' ? (
+							<PinwheelGrid
+								{...PINWHEEL_GRID_SIZES[
+									state.gridSizes.pinwheel
+								]}
+								svgRef={svgRef}
+							/>
+						) : (
+							<Grid svgRef={svgRef} />
+						)}
 						<div
 							role="group"
 							aria-label="Controls"

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { colorSchemes } from '@data/colorSchemes'
+import { defaultGridSizes } from '@data/gridSizes'
 import { useIsTouchDevice } from '@hooks/useIsTouchDevice'
 import { savePersistedState } from '@services/storageService'
 import { useAppState } from '@state/useAppState'
@@ -29,6 +30,7 @@ beforeEach(() => {
 		darkMode: true,
 		showEditableArea: true,
 		gridShape: 'hexagon',
+		gridSizes: { ...defaultGridSizes },
 		shapeGroupColors: {},
 	})
 	mockUseIsTouchDevice.mockReturnValue(false)

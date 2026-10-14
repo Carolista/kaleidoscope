@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
 	CIRCLE_RINGS_GRID_SIZE,
+	CIRCLE_RINGS_GRID_SIZES,
 	computeGridAspectRatio,
 	generateCircleRingsCells,
 	getGroupIds,
@@ -52,6 +53,17 @@ describe('generateCircleRingsCells', () => {
 		// ring 2's one on-axis + one mirror-paired group (orbits 6 + 12).
 		expect(groupCircleRingsCells(small).size).toBe(4)
 	})
+
+	it.each(Object.entries(CIRCLE_RINGS_GRID_SIZES))(
+		'generates the %s grid at %s rings',
+		(_size, ringCount) => {
+			const sizedCells = generateCircleRingsCells(ringCount)
+			expect(sizedCells).toHaveLength(1 + 3 * ringCount * (ringCount + 1))
+			expect(getGroupIds(ringCount)).toHaveLength(
+				groupCircleRingsCells(sizedCells).size,
+			)
+		},
+	)
 })
 
 describe('getGroupIds', () => {

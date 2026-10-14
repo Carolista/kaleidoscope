@@ -2,18 +2,29 @@ import type { AppState } from '../types/appState'
 import type { GridShapeId } from '../types/gridShape'
 import { colorSchemes } from '../data/colorSchemes'
 import { isGridShapeId } from '../data/gridShapes'
+import {
+	availableGridSizes,
+	defaultGridSizes,
+	isGridSize,
+	legacyGridSizes,
+} from '../data/gridSizes'
 import { createInitialAppState } from '../state/appReducer'
 
 const STORAGE_KEY = 'kaleidoscope:design'
 
-// Bumping this invalidates any previously-persisted design whose shape no
-// longer matches what loadPersistedState expects, rather than risking a
-// crash trying to parse it. No migration logic yet since this is the
-// first version.
-const STORAGE_VERSION = 1
+// Backward-compatible changes are migrated inline; incompatible payloads are
+// rejected when their version is not recognized.
+const LEGACY_STORAGE_VERSION = 1
+const PREVIOUS_STORAGE_VERSION = 2
+const CIRCLE_RINGS_STORAGE_VERSION = 3
+const STORAGE_VERSION = 4
 
 interface PersistedDesign {
-	readonly version: typeof STORAGE_VERSION
+	readonly version:
+		| typeof LEGACY_STORAGE_VERSION
+		| typeof PREVIOUS_STORAGE_VERSION
+		| typeof CIRCLE_RINGS_STORAGE_VERSION
+		| typeof STORAGE_VERSION
 	readonly schemeName: string
 	readonly currentColor: string
 	readonly darkMode: boolean
@@ -24,6 +35,9 @@ interface PersistedDesign {
 	// Optional for the same reason (falls back to 'hexagon', the only
 	// shape that existed before this field was added).
 	readonly gridShape?: GridShapeId
+	// Older saved designs have no remembered sizes and migrate their active
+	// shape to the closest equivalent of its previously available grid.
+	readonly gridSizes?: Partial<AppState['gridSizes']>
 	readonly shapeGroupColors: Readonly<Record<string, string>>
 }
 
@@ -35,6 +49,7 @@ function toPersistedDesign(state: AppState): PersistedDesign {
 		darkMode: state.darkMode,
 		showEditableArea: state.showEditableArea,
 		gridShape: state.gridShape,
+		gridSizes: state.gridSizes,
 		shapeGroupColors: state.shapeGroupColors,
 	}
 }
@@ -46,13 +61,34 @@ function toPersistedDesign(state: AppState): PersistedDesign {
 function fromPersistedDesign(data: PersistedDesign): AppState | null {
 	const scheme = colorSchemes.find(s => s.name === data.schemeName)
 	if (!scheme) return null
+	const gridShape = data.gridShape ?? 'hexagon'
+	const gridSizes = data.gridSizes
+		? { ...defaultGridSizes, ...data.gridSizes }
+		: { ...defaultGridSizes, [gridShape]: legacyGridSizes[gridShape] }
+
+	if (
+		data.version === LEGACY_STORAGE_VERSION &&
+		data.gridSizes?.hexagram === 'md'
+	) {
+		gridSizes.hexagram = 'lg'
+	}
+	if (
+		data.version < CIRCLE_RINGS_STORAGE_VERSION &&
+		data.gridSizes?.circleRings === 'md'
+	) {
+		gridSizes.circleRings = 'lg'
+	}
+	if (data.version < STORAGE_VERSION && data.gridSizes?.pinwheel === 'md') {
+		gridSizes.pinwheel = 'lg'
+	}
 
 	return {
 		currentScheme: scheme,
 		currentColor: data.currentColor,
 		darkMode: data.darkMode,
 		showEditableArea: data.showEditableArea ?? true,
-		gridShape: data.gridShape ?? 'hexagon',
+		gridShape,
+		gridSizes,
 		shapeGroupColors: { ...data.shapeGroupColors },
 	}
 }
@@ -72,13 +108,24 @@ function isHexColor(value: unknown): value is string {
 function isPersistedDesign(data: unknown): data is PersistedDesign {
 	if (!isRecord(data)) return false
 	return (
-		data.version === STORAGE_VERSION &&
+		(data.version === LEGACY_STORAGE_VERSION ||
+			data.version === PREVIOUS_STORAGE_VERSION ||
+			data.version === CIRCLE_RINGS_STORAGE_VERSION ||
+			data.version === STORAGE_VERSION) &&
 		typeof data.schemeName === 'string' &&
 		isHexColor(data.currentColor) &&
 		typeof data.darkMode === 'boolean' &&
 		(data.showEditableArea === undefined ||
 			typeof data.showEditableArea === 'boolean') &&
 		(data.gridShape === undefined || isGridShapeId(data.gridShape)) &&
+		(data.gridSizes === undefined ||
+			(isRecord(data.gridSizes) &&
+				Object.entries(data.gridSizes).every(
+					([shape, size]) =>
+						isGridShapeId(shape) &&
+						isGridSize(size) &&
+						availableGridSizes[shape].includes(size),
+				))) &&
 		isRecord(data.shapeGroupColors) &&
 		Object.values(data.shapeGroupColors).every(isHexColor)
 	)

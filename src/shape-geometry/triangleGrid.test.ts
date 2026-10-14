@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+	TRIANGLE_GRID_SIZES,
 	TRIANGLE_GRID_SIZE,
 	computeGridAspectRatio,
 	generateTriangleCells,
@@ -43,6 +44,24 @@ describe('generateTriangleCells', () => {
 	it('scales to a smaller grid size (gridSize^2 cells total)', () => {
 		const small = generateTriangleCells(4)
 		expect(small).toHaveLength(16)
+	})
+
+	it.each(Object.entries(TRIANGLE_GRID_SIZES))(
+		'generates the %s grid size with %s lattice rows',
+		(_size, gridSize) => {
+			const sizeCells = generateTriangleCells(gridSize)
+			expect(sizeCells).toHaveLength(gridSize * gridSize)
+			const groups = groupTriangleCells(sizeCells)
+			expect(getGroupIds(gridSize)).toHaveLength(groups.size)
+			expect(sizeCells.filter(cell => cell.isClickable)).toHaveLength(
+				groups.size,
+			)
+		},
+	)
+
+	it('uses the intro grid as the small size with five paintable groups', () => {
+		expect(TRIANGLE_GRID_SIZES.sm).toBe(4)
+		expect(getGroupIds(TRIANGLE_GRID_SIZES.sm)).toHaveLength(5)
 	})
 })
 

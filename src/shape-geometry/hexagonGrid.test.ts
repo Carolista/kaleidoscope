@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
 	HEXAGON_GRID_RADIUS,
+	HEXAGON_GRID_RADII,
 	computeGridAspectRatio,
 	generateHexagonCells,
 	getGroupIds,
@@ -10,26 +11,16 @@ import {
 describe('generateHexagonCells', () => {
 	const cells = generateHexagonCells()
 
-	it('generates 169 cells at the default radius (reduced from the original 271 for small touchscreens; see DECISIONS.md)', () => {
-		expect(HEXAGON_GRID_RADIUS).toBe(7)
-		expect(cells).toHaveLength(169)
+	it('generates the medium grid (radius 4) by default', () => {
+		expect(HEXAGON_GRID_RADIUS).toBe(4)
+		expect(cells).toHaveLength(61)
 	})
 
-	it('produces the expected mirror-group orbit sizes at the default radius (1 center, 10 sixes, 9 twelves)', () => {
+	it('groups every cell into exactly one mirror-symmetry group', () => {
 		const groups = groupHexagonCells(cells)
-		expect(groups.size).toBe(20)
+		expect(groups.size).toBe(getGroupIds().length)
 
-		const sizesByCount = new Map<number, number>()
-		for (const members of groups.values()) {
-			sizesByCount.set(
-				members.length,
-				(sizesByCount.get(members.length) ?? 0) + 1,
-			)
-		}
-
-		expect(sizesByCount.get(1)).toBe(1)
-		expect(sizesByCount.get(6)).toBe(10)
-		expect(sizesByCount.get(12)).toBe(9)
+		expect([...groups.values()].flat()).toHaveLength(cells.length)
 	})
 
 	it('marks exactly one cell per group as clickable', () => {
@@ -52,12 +43,23 @@ describe('generateHexagonCells', () => {
 		const small = generateHexagonCells(radius)
 		expect(small).toHaveLength(1 + 3 * radius * (radius + 1))
 	})
+
+	it.each(Object.entries(HEXAGON_GRID_RADII))(
+		'generates the %s grid size at radius %s',
+		(_size, radius) => {
+			expect(generateHexagonCells(radius)).toHaveLength(
+				1 + 3 * radius * (radius + 1),
+			)
+			expect(getGroupIds(radius)).toHaveLength(
+				groupHexagonCells(generateHexagonCells(radius)).size,
+			)
+		},
+	)
 })
 
 describe('getGroupIds', () => {
-	it('returns one id per mirror-symmetry group (20 at the default radius), matching groupHexagonCells', () => {
+	it('returns one id per mirror-symmetry group, matching groupHexagonCells', () => {
 		const ids = getGroupIds()
-		expect(ids).toHaveLength(20)
 		expect(new Set(ids)).toEqual(
 			new Set(groupHexagonCells(generateHexagonCells()).keys()),
 		)
@@ -66,7 +68,7 @@ describe('getGroupIds', () => {
 
 describe('computeGridAspectRatio', () => {
 	it('matches the known (width / height) ratio of the default flat-top grid', () => {
-		expect(computeGridAspectRatio()).toBeCloseTo(0.8762, 4)
+		expect(computeGridAspectRatio()).toBeCloseTo(0.8829, 4)
 	})
 
 	it('returns a positive, finite ratio for other radii', () => {

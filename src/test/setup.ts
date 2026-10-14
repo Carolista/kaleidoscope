@@ -1,4 +1,4 @@
-import { afterEach } from 'vitest'
+import { afterEach, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 
@@ -22,5 +22,13 @@ if (!HTMLDialogElement.prototype.close) {
 	HTMLDialogElement.prototype.close = function (this: HTMLDialogElement) {
 		this.removeAttribute('open')
 		this.dispatchEvent(new Event('close'))
+	}
+
+	// Layout and page scrolling are not implemented by jsdom.
+	vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+	globalThis.ResizeObserver = class {
+		observe() {}
+		unobserve() {}
+		disconnect() {}
 	}
 }

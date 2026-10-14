@@ -29,7 +29,7 @@ describe('RandomizeDesignButton', () => {
 		)
 
 		await waitFor(() =>
-			expect(screen.getByTestId('painted-count')).toHaveTextContent('20'),
+			expect(screen.getByTestId('painted-count')).toHaveTextContent('9'),
 		)
 	})
 })
