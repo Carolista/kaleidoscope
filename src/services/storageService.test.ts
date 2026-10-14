@@ -177,7 +177,11 @@ describe('storageService', () => {
 
 	it('round-trips per-shape grid sizes and migrates old saved designs to their previous active size', () => {
 		const saved = baseState({
-			gridSizes: { ...defaultGridSizes, hexagon: 'lg' },
+			gridSizes: {
+				...defaultGridSizes,
+				hexagon: 'lg',
+				hexagram: 'md',
+			},
 		})
 		savePersistedState(saved)
 		expect(loadInitialAppState()).toEqual(saved)
@@ -193,6 +197,21 @@ describe('storageService', () => {
 			...defaultGridSizes,
 			triangle: legacyGridSizes.triangle,
 		})
+	})
+
+	it('migrates pre-Hexagram-size saved MD values to LG to preserve the old rendered size', () => {
+		const previouslySaved = baseState({
+			gridSizes: { ...defaultGridSizes, hexagram: 'md' },
+		})
+		savePersistedState(previouslySaved)
+		const legacy = JSON.parse(localStorage.getItem(STORAGE_KEY)!) as Record<
+			string,
+			unknown
+		>
+		legacy.version = 1
+		localStorage.setItem(STORAGE_KEY, JSON.stringify(legacy))
+
+		expect(loadInitialAppState().gridSizes.hexagram).toBe('lg')
 	})
 
 	it.each([{ hexagon: 'extra-large' }, { circleRings: 'lg' }])(

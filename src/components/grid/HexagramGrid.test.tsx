@@ -2,6 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AppStateProvider } from '@state/AppContext'
+import {
+	HEXAGRAM_GRID_SIZES,
+	computeGridAspectRatio,
+	getGroupIds,
+} from '@geometry/hexagramGrid'
 import HexagramGrid from './HexagramGrid'
 
 describe('HexagramGrid', () => {
@@ -47,4 +52,26 @@ describe('HexagramGrid', () => {
 		await user.keyboard(' ')
 		expect(tile.getAttribute('fill')).not.toBe(fillAfterEnter)
 	})
+
+	it.each(Object.entries(HEXAGRAM_GRID_SIZES))(
+		'renders the %s grid at subdivision %s',
+		(_size, gridSize) => {
+			const { container } = render(<HexagramGrid gridSize={gridSize} />, {
+				wrapper: AppStateProvider,
+			})
+			expect(container.querySelectorAll('polygon')).toHaveLength(
+				12 * gridSize ** 2,
+			)
+			expect(screen.getAllByRole('button')).toHaveLength(
+				getGroupIds(gridSize).length,
+			)
+			expect(
+				screen.getByRole('group', {
+					name: 'Kaleidoscope hexagram grid',
+				}),
+			).toHaveStyle({
+				'--grid-aspect-ratio': String(computeGridAspectRatio(gridSize)),
+			})
+		},
+	)
 })

@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import type { Ref } from 'react'
 import {
 	HEXAGRAM_GRID_SIZE,
+	computeGridAspectRatio,
 	generateHexagramCells,
 } from '@geometry/hexagramGrid'
 import {
@@ -32,6 +33,10 @@ function HexagramGrid({
 		[gridSize, triangleSize],
 	)
 	const cells = useMemo(() => generateHexagramCells(gridSize), [gridSize])
+	const sizingAspectRatio = useMemo(
+		() => computeGridAspectRatio(gridSize),
+		[gridSize],
+	)
 	const { polygons, viewBox } = useMemo(() => {
 		const corners = cells.map(cell => hexagramStarCellCorners(cell, layout))
 		const { minX, minY, maxX, maxY } = hexagramBoundingBox(corners)
@@ -53,7 +58,7 @@ function HexagramGrid({
 			cells={polygons}
 			viewBox={viewBox}
 			svgRef={svgRef}
-			sizingAspectRatio={0.866}
+			sizingAspectRatio={sizingAspectRatio}
 			label="Kaleidoscope hexagram grid"
 			instructions="Tab to move between triangles. Press Enter or Space to paint the focused triangle with the current color."
 		/>

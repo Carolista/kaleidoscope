@@ -12,13 +12,13 @@ import { createInitialAppState } from '../state/appReducer'
 
 const STORAGE_KEY = 'kaleidoscope:design'
 
-// Bumping this invalidates persisted designs whose shape no longer matches
-// what loadPersistedState expects. There is no general migration framework;
-// backward-compatible optional fields are defaulted inline.
-const STORAGE_VERSION = 1
+// Backward-compatible changes are migrated inline; incompatible payloads are
+// rejected when their version is not recognized.
+const LEGACY_STORAGE_VERSION = 1
+const STORAGE_VERSION = 2
 
 interface PersistedDesign {
-	readonly version: typeof STORAGE_VERSION
+	readonly version: typeof LEGACY_STORAGE_VERSION | typeof STORAGE_VERSION
 	readonly schemeName: string
 	readonly currentColor: string
 	readonly darkMode: boolean
@@ -60,6 +60,13 @@ function fromPersistedDesign(data: PersistedDesign): AppState | null {
 		? { ...defaultGridSizes, ...data.gridSizes }
 		: { ...defaultGridSizes, [gridShape]: legacyGridSizes[gridShape] }
 
+	if (
+		data.version === LEGACY_STORAGE_VERSION &&
+		data.gridSizes?.hexagram === 'md'
+	) {
+		gridSizes.hexagram = 'lg'
+	}
+
 	return {
 		currentScheme: scheme,
 		currentColor: data.currentColor,
@@ -86,7 +93,8 @@ function isHexColor(value: unknown): value is string {
 function isPersistedDesign(data: unknown): data is PersistedDesign {
 	if (!isRecord(data)) return false
 	return (
-		data.version === STORAGE_VERSION &&
+		(data.version === LEGACY_STORAGE_VERSION ||
+			data.version === STORAGE_VERSION) &&
 		typeof data.schemeName === 'string' &&
 		isHexColor(data.currentColor) &&
 		typeof data.darkMode === 'boolean' &&

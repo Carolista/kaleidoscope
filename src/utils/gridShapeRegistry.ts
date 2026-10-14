@@ -15,6 +15,7 @@ import {
 import {
 	computeGridAspectRatio as computeHexagramAspectRatio,
 	getGroupIds as getHexagramGroupIds,
+	HEXAGRAM_GRID_SIZES,
 } from '@geometry/hexagramGrid'
 import {
 	computeGridAspectRatio as computePinwheelAspectRatio,
@@ -25,6 +26,7 @@ import {
 	getGroupIds as getTriangleGroupIds,
 	TRIANGLE_GRID_SIZES,
 } from '@geometry/triangleGrid'
+import { defaultGridSizes } from '../data/gridSizes'
 import type { GridShapeId } from '../types/gridShape'
 import type { GridSize } from '../types/gridSize'
 
@@ -63,7 +65,7 @@ const shapeGeometry = {
 
 export function getGroupIdsForShape(
 	shape: GridShapeId,
-	gridSize: GridSize = 'md',
+	gridSize: GridSize = defaultGridSizes[shape],
 ): string[] {
 	if (shape === 'hexagon') {
 		return getHexagonGroupIds(HEXAGON_GRID_RADII[gridSize])
@@ -74,12 +76,15 @@ export function getGroupIdsForShape(
 	if (shape === 'diamondStar') {
 		return getDiamondStarGroupIds(DIAMOND_STAR_GRID_SIZES[gridSize])
 	}
+	if (shape === 'hexagram') {
+		return getHexagramGroupIds(HEXAGRAM_GRID_SIZES[gridSize])
+	}
 	return shapeGeometry[shape].getGroupIds()
 }
 
 export function computeAspectRatioForShape(
 	shape: GridShapeId,
-	gridSize: GridSize = 'md',
+	gridSize: GridSize = defaultGridSizes[shape],
 ): number {
 	if (shape === 'hexagon') {
 		return computeHexagonAspectRatio(HEXAGON_GRID_RADII[gridSize])
@@ -89,6 +94,9 @@ export function computeAspectRatioForShape(
 	}
 	if (shape === 'diamondStar') {
 		return computeDiamondStarAspectRatio(DIAMOND_STAR_GRID_SIZES[gridSize])
+	}
+	if (shape === 'hexagram') {
+		return computeHexagramAspectRatio(HEXAGRAM_GRID_SIZES[gridSize])
 	}
 	return shapeGeometry[shape].aspectRatio()
 }

@@ -306,6 +306,27 @@ describe('appReducer', () => {
 		expect(next.shapeGroupColors).toEqual({ '0': '#ff0000' })
 	})
 
+	it('SELECT_GRID_SIZE changes Hexagram subdivision while retaining overlapping groups', () => {
+		const removedGroupId = getGroupIdsForShape('hexagram', 'lg').find(
+			id => !getGroupIdsForShape('hexagram', 'sm').includes(id),
+		)!
+		const state = baseState({
+			gridShape: 'hexagram',
+			gridSizes: { ...defaultGridSizes, hexagram: 'lg' },
+			shapeGroupColors: {
+				'0': '#ff0000',
+				[removedGroupId]: '#00ff00',
+			},
+		})
+		const next = appReducer(state, {
+			type: 'SELECT_GRID_SIZE',
+			shape: 'hexagram',
+			size: 'sm',
+		})
+		expect(next.gridSizes.hexagram).toBe('sm')
+		expect(next.shapeGroupColors).toEqual({ '0': '#ff0000' })
+	})
+
 	it('SELECT_GRID_SIZE is undoable input and rejects sizes unavailable for that shape', () => {
 		const state = baseState()
 		expect(

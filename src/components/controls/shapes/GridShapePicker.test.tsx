@@ -60,6 +60,12 @@ describe('GridShapePicker', () => {
 			screen.getByRole('button', { name: 'Diamond Star LG' }),
 		).toBeEnabled()
 		expect(
+			screen.getByRole('button', { name: 'Hexagram SM' }),
+		).toBeEnabled()
+		expect(
+			screen.getByRole('button', { name: 'Hexagram LG' }),
+		).toHaveAttribute('aria-pressed', 'false')
+		expect(
 			screen.getByRole('button', { name: 'Circle Rings SM' }),
 		).toBeDisabled()
 	})

@@ -248,4 +248,25 @@ describe('App', () => {
 			screen.getAllByRole('button', { name: /Paint tile/ }),
 		).toHaveLength(6)
 	})
+
+	it('switches to the selected Hexagram size and renders its tile count', async () => {
+		seedSavedDesign()
+		mockUseIsTouchDevice.mockReturnValue(false)
+		const user = userEvent.setup()
+		renderApp()
+
+		await user.click(
+			screen.getByRole('button', { name: 'Select a different shape' }),
+		)
+		await user.click(screen.getByRole('button', { name: 'Hexagram SM' }))
+		await user.click(screen.getByRole('button', { name: 'Switch' }))
+
+		const hexagramGrid = screen.getByRole('group', {
+			name: 'Kaleidoscope hexagram grid',
+		})
+		expect(hexagramGrid.querySelectorAll('polygon')).toHaveLength(48)
+		expect(
+			screen.getAllByRole('button', { name: /Paint tile/ }),
+		).toHaveLength(6)
+	})
 })

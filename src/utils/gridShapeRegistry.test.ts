@@ -10,6 +10,7 @@ import { defaultGridSizes } from '@data/gridSizes'
 import { HEXAGON_GRID_RADII } from '@geometry/hexagonGrid'
 import { TRIANGLE_GRID_SIZES } from '@geometry/triangleGrid'
 import { DIAMOND_STAR_GRID_SIZES } from '@geometry/diamondStarGrid'
+import { HEXAGRAM_GRID_SIZES } from '@geometry/hexagramGrid'
 import {
 	computeAspectRatioForShape,
 	getGroupIdsForShape,
@@ -36,7 +37,9 @@ describe('gridShapeRegistry', () => {
 						? TRIANGLE_GRID_SIZES[size]
 						: id === 'diamondStar'
 							? DIAMOND_STAR_GRID_SIZES[size]
-							: undefined
+							: id === 'hexagram'
+								? HEXAGRAM_GRID_SIZES[size]
+								: undefined
 			expect(getGroupIdsForShape(id)).toEqual(
 				gridSize === undefined
 					? geometry[id].getGroupIds()
@@ -85,6 +88,21 @@ describe('gridShapeRegistry', () => {
 		)
 		expect(computeAspectRatioForShape('diamondStar', 'lg')).toBe(
 			diamondStar.computeGridAspectRatio(5),
+		)
+	})
+
+	it('uses the selected Hexagram size when computing groups and aspect ratio', () => {
+		expect(getGroupIdsForShape('hexagram', 'sm')).toEqual(
+			hexagram.getGroupIds(2),
+		)
+		expect(getGroupIdsForShape('hexagram', 'md')).toEqual(
+			hexagram.getGroupIds(3),
+		)
+		expect(getGroupIdsForShape('hexagram', 'lg')).toEqual(
+			hexagram.getGroupIds(4),
+		)
+		expect(computeAspectRatioForShape('hexagram', 'md')).toBe(
+			hexagram.computeGridAspectRatio(3),
 		)
 	})
 })
