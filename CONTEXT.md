@@ -104,6 +104,9 @@ changes should be applied to all four SVG assets.
   the destination. Standard boxes are 2.5rem; undo/redo use 1.875rem.
 - Shared controls are **app-shared**, not provider-independent primitives:
   icon tinting intentionally reads app state.
+- Shared `Checkbox` keeps a native, labelled input beneath a custom box, with
+  visible keyboard focus and a checked duotone icon tinted by the active palette.
+  Confirmation preferences and the save-image grid-line option use it.
 - kebab-case preferred over camelCase for directory naming convention.
 - CSS Module class names are camelCase so they can be read as `styles.itemTitle`
   rather than `styles['item-title']`. Custom properties, element ids, and data
@@ -117,11 +120,11 @@ changes should be applied to all four SVG assets.
 | [components/grid/](./src/components/grid/) | Shape adapters, shared `GridView`, polygon/circle cells |
 | [components/controls/](./src/components/controls/) | Toolbar, pickers, and modal content |
 | [components/intro/](./src/components/intro/) | First-visit learn-by-doing sequence |
-| [components/shared/](./src/components/shared/) | Buttons, native `Modal`, `ModalHeader`, `ConfirmDialog` |
+| [components/shared/](./src/components/shared/) | Buttons, palette-aware `Checkbox`, native `Modal`, `ModalHeader`, `ConfirmDialog` |
 | [shape-geometry/](./src/shape-geometry/) | Shape-specific generation and layout (`@geometry`) |
 | [utils/](./src/utils/) | Shared math, symmetry, randomization, and geometry dispatch |
 | [state/](./src/state/) | App reducer, history wrapper, and Context |
-| [services/](./src/services/) | Persistence, confirmation preferences, PNG export |
+| [services/](./src/services/) | Persistence, confirmation/export preferences, PNG export |
 | [hooks/](./src/hooks/) | React lifecycle and interaction logic |
 | [data/](./src/data/) | Palettes and supported-shape definitions |
 | [types/](./src/types/) | Domain types, imported from individual modules |
@@ -245,6 +248,14 @@ symmetry engine. One representative per group is clickable.
 
 - Export clones the SVG, inlines strokes, forces polygons/circles opaque, and
   rasterizes against theme base. Default longest PNG dimension: 1600px.
+- **Include grid lines** defaults to checked. Changes are immediately remembered
+  in `kaleidoscope:export:includeGridLines`, independently of the design, and
+  restored on future visits. Unchecking removes cell strokes, not geometric gaps.
+- Opening Save Image generates the selected version. Each lined/line-free PNG
+  is generated at most once per opening, including while requests are in flight;
+  toggling back reuses its preview. Download/share use the selected version.
+  Closing discards both previews and revokes their URLs; reopening generates
+  from the current design and theme.
 - The preview reserves the selected shape and size's geometry-derived aspect ratio. Generation failures show an
   error; share failures retain preview/download/retry. Share cancellation is quiet.
   Share appears only when file sharing is supported; download is enabled when ready.

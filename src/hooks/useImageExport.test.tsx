@@ -132,6 +132,162 @@ describe('useImageExport', () => {
 		)
 	})
 
+	it('generates each variant once and downloads the selected cached PNG', async () => {
+		const withoutLinesBlob = new Blob(['without-lines'], {
+			type: 'image/png',
+		})
+		mockExportSvgAsPngBlob
+			.mockResolvedValueOnce(pngBlob)
+			.mockResolvedValueOnce(withoutLinesBlob)
+		vi.mocked(URL.createObjectURL)
+			.mockReturnValueOnce('blob:with-lines')
+			.mockReturnValueOnce('blob:without-lines')
+		const svgRef = svgRefWith(createSvg())
+		const { result, rerender, unmount } = renderHook(
+			({ includeGridLines }) =>
+				useImageExport(svgRef, true, '#fff', includeGridLines),
+			{ initialProps: { includeGridLines: true } },
+		)
+		await waitFor(() =>
+			expect(result.current.exportState).toMatchObject({
+				url: 'blob:with-lines',
+			}),
+		)
+		rerender({ includeGridLines: false })
+		expect(result.current.exportState.status).toBe('generating')
+		await waitFor(() =>
+			expect(result.current.exportState).toMatchObject({
+				url: 'blob:without-lines',
+				blob: withoutLinesBlob,
+			}),
+		)
+		expect(mockExportSvgAsPngBlob).toHaveBeenNthCalledWith(
+			1,
+			svgRef.current,
+			{ backgroundColor: '#fff', includeGridLines: true },
+		)
+		expect(mockExportSvgAsPngBlob).toHaveBeenNthCalledWith(
+			2,
+			svgRef.current,
+			{ backgroundColor: '#fff', includeGridLines: false },
+		)
+		for (const includeGridLines of [true, false, true, false]) {
+			rerender({ includeGridLines })
+			expect(result.current.exportState).toMatchObject({
+				url: includeGridLines
+					? 'blob:with-lines'
+					: 'blob:without-lines',
+			})
+		}
+		expect(mockExportSvgAsPngBlob).toHaveBeenCalledTimes(2)
+		expect(URL.revokeObjectURL).not.toHaveBeenCalled()
+		const click = vi
+			.spyOn(HTMLAnchorElement.prototype, 'click')
+			.mockImplementation(function (this: HTMLAnchorElement) {
+				expect(this.href).toBe('blob:without-lines')
+				expect(this.download).toMatch(/^kaleidoscope-.*\.png$/)
+			})
+		act(() => result.current.handleDownload())
+		expect(click).toHaveBeenCalledOnce()
+		unmount()
+		expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:with-lines')
+		expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:without-lines')
+		expect(URL.revokeObjectURL).toHaveBeenCalledTimes(2)
+	})
+
+	it('reuses in-flight generation and never shows a late result for the other variant', async () => {
+		let resolveWithLines!: (blob: Blob) => void
+		let resolveWithoutLines!: (blob: Blob) => void
+		mockExportSvgAsPngBlob
+			.mockReturnValueOnce(
+				new Promise(resolve => {
+					resolveWithLines = resolve
+				}),
+			)
+			.mockReturnValueOnce(
+				new Promise(resolve => {
+					resolveWithoutLines = resolve
+				}),
+			)
+		vi.mocked(URL.createObjectURL)
+			.mockReturnValueOnce('blob:without-lines')
+			.mockReturnValueOnce('blob:with-lines')
+		const { result, rerender } = renderHook(
+			({ includeGridLines }) =>
+				useImageExport(
+					svgRefWith(createSvg()),
+					true,
+					'#fff',
+					includeGridLines,
+				),
+			{ initialProps: { includeGridLines: true } },
+		)
+		rerender({ includeGridLines: false })
+		rerender({ includeGridLines: true })
+		rerender({ includeGridLines: false })
+		await act(async () => resolveWithoutLines(pngBlob))
+		await act(async () => resolveWithLines(pngBlob))
+		expect(result.current.exportState).toMatchObject({
+			url: 'blob:without-lines',
+		})
+		rerender({ includeGridLines: true })
+		expect(result.current.exportState).toMatchObject({
+			url: 'blob:with-lines',
+		})
+		expect(mockExportSvgAsPngBlob).toHaveBeenCalledTimes(2)
+	})
+
+	it('discards both previews on close and exports the current design when reopened', async () => {
+		mockExportSvgAsPngBlob.mockResolvedValue(pngBlob)
+		vi.mocked(URL.createObjectURL)
+			.mockReturnValueOnce('blob:with-lines')
+			.mockReturnValueOnce('blob:without-lines')
+		const svgRef = svgRefWith(createSvg())
+		const { result, rerender } = renderHook(
+			({ open, includeGridLines, backgroundColor }) =>
+				useImageExport(svgRef, open, backgroundColor, includeGridLines),
+			{
+				initialProps: {
+					open: true,
+					includeGridLines: true,
+					backgroundColor: '#fff',
+				},
+			},
+		)
+		await waitFor(() =>
+			expect(result.current.exportState.status).toBe('ready'),
+		)
+		rerender({
+			open: true,
+			includeGridLines: false,
+			backgroundColor: '#fff',
+		})
+		await waitFor(() =>
+			expect(result.current.exportState.status).toBe('ready'),
+		)
+		rerender({
+			open: false,
+			includeGridLines: false,
+			backgroundColor: '#fff',
+		})
+		expect(URL.revokeObjectURL).toHaveBeenCalledTimes(2)
+		svgRef.current = createSvg()
+		rerender({
+			open: true,
+			includeGridLines: false,
+			backgroundColor: '#222',
+		})
+		expect(result.current.exportState.status).toBe('generating')
+		await waitFor(() =>
+			expect(result.current.exportState.status).toBe('ready'),
+		)
+		expect(mockExportSvgAsPngBlob).toHaveBeenLastCalledWith(
+			svgRef.current,
+			{ backgroundColor: '#222', includeGridLines: false },
+		)
+		expect(mockExportSvgAsPngBlob).toHaveBeenCalledTimes(3)
+	})
+
 	it('clicks a temporary download link with the generated url/filename', async () => {
 		mockExportSvgAsPngBlob.mockResolvedValue(pngBlob)
 		const { result } = renderHook(() =>
@@ -183,6 +339,44 @@ describe('useImageExport', () => {
 
 			await act(() => result.current.handleShare())
 			expect(share).toHaveBeenCalledOnce()
+			expect(share.mock.calls[0][0].files[0]).toMatchObject({
+				type: 'image/png',
+				size: pngBlob.size,
+			})
+		})
+
+		it('shares the selected line-free PNG after toggling from the lined preview', async () => {
+			const withoutLinesBlob = new Blob(['line-free-png'], {
+				type: 'image/png',
+			})
+			mockExportSvgAsPngBlob
+				.mockResolvedValueOnce(pngBlob)
+				.mockResolvedValueOnce(withoutLinesBlob)
+			const share = vi.fn().mockResolvedValue(undefined)
+			Object.assign(navigator, {
+				share,
+				canShare: vi.fn(() => true),
+			})
+			const { result, rerender } = renderHook(
+				({ includeGridLines }) =>
+					useImageExport(
+						svgRefWith(createSvg()),
+						true,
+						'#fff',
+						includeGridLines,
+					),
+				{ initialProps: { includeGridLines: true } },
+			)
+			await waitFor(() => expect(result.current.canShare).toBe(true))
+			rerender({ includeGridLines: false })
+			expect(result.current.canShare).toBe(false)
+			await waitFor(() => expect(result.current.canShare).toBe(true))
+
+			await act(() => result.current.handleShare())
+			expect(share.mock.calls[0][0].files[0]).toMatchObject({
+				type: 'image/png',
+				size: withoutLinesBlob.size,
+			})
 		})
 
 		it('swallows an AbortError from a cancelled share sheet', async () => {
@@ -246,6 +440,7 @@ describe('useImageExport', () => {
 				status: 'ready',
 				shareError: undefined,
 			})
+			expect(URL.revokeObjectURL).not.toHaveBeenCalled()
 		})
 	})
 })

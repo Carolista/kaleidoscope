@@ -1,9 +1,7 @@
 import { useId, useState } from 'react'
-import { faSquareCheck } from '@fortawesome/sharp-duotone-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { useDuotoneIconTint } from '@hooks/useDuotoneIconTint'
 import { dismissConfirmDialog } from '@services/confirmDialogPreferences'
 import Button from './Button'
+import Checkbox from './Checkbox'
 import styles from './ConfirmDialog.module.css'
 import Modal from './Modal'
 
@@ -34,7 +32,6 @@ function ConfirmDialog({
 }: ConfirmDialogProps) {
 	const titleId = useId()
 	const [dontShowAgain, setDontShowAgain] = useState(false)
-	const duotoneTint = useDuotoneIconTint()
 
 	function handleConfirm() {
 		if (dontShowAgainKey && dontShowAgain) {
@@ -64,32 +61,12 @@ function ConfirmDialog({
 			<p className={styles.message}>{message}</p>
 			<div className={styles.bottomRow}>
 				{dontShowAgainKey && (
-					<label className={styles.dontShowAgain}>
-						<span
-							className={
-								dontShowAgain
-									? styles.checkboxBox
-									: `${styles.checkboxBox} ${styles.checkboxBoxEmpty}`
-							}
-						>
-							<input
-								type="checkbox"
-								className={styles.checkboxInput}
-								checked={dontShowAgain}
-								onChange={event =>
-									setDontShowAgain(event.target.checked)
-								}
-							/>
-							{dontShowAgain && (
-								<FontAwesomeIcon
-									icon={faSquareCheck}
-									aria-hidden="true"
-									style={duotoneTint(faSquareCheck)}
-								/>
-							)}
-						</span>
-						Don't show this again
-					</label>
+					<Checkbox
+						className={styles.dontShowAgain}
+						label="Don't show this again"
+						checked={dontShowAgain}
+						onChange={setDontShowAgain}
+					/>
 				)}
 				<div className={styles.actions}>
 					<Button variant="outline" onClick={handleCancel}>

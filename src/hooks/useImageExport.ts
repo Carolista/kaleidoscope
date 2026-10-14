@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import {
 	buildExportFilename,
@@ -31,56 +31,95 @@ function canShareFiles(file: File): boolean {
 	)
 }
 
-// Renders `svg` to a PNG blob whenever `open` becomes true, and exposes
-// download/share actions built on top of the result. Pulled out of
-// SaveImageModal so that component stays focused on markup/presentation.
+type Variant = 'withLines' | 'withoutLines'
+
+interface ExportSession {
+	active: boolean
+	readonly svg: SVGSVGElement | null
+	readonly backgroundColor: string
+	readonly requested: Set<Variant>
+	readonly urls: Set<string>
+}
+
 export function useImageExport(
 	svgRef: RefObject<SVGSVGElement | null>,
 	open: boolean,
 	backgroundColor: string,
+	includeGridLines = true,
 ): UseImageExportResult {
-	const [exportState, setExportState] = useState<ExportState>({
-		status: 'generating',
-	})
+	const [previews, setPreviews] = useState<
+		Partial<Record<Variant, ExportState>>
+	>({})
+	const [previousOpen, setPreviousOpen] = useState(open)
+	if (previousOpen !== open) {
+		setPreviousOpen(open)
+		setPreviews({})
+	}
+	const sessionRef = useRef<ExportSession | null>(null)
+	const variant = includeGridLines ? 'withLines' : 'withoutLines'
+	const exportState: ExportState = open
+		? (previews[variant] ?? { status: 'generating' })
+		: { status: 'generating' }
 
 	useEffect(() => {
 		if (!open) return
-		const svg = svgRef.current
-		if (!svg) {
-			setExportState({ status: 'error' })
-			return
+		const session: ExportSession = {
+			active: true,
+			svg: svgRef.current,
+			backgroundColor,
+			requested: new Set(),
+			urls: new Set(),
 		}
-
-		let cancelled = false
-		setExportState({ status: 'generating' })
-
-		exportSvgAsPngBlob(svg, { backgroundColor })
-			.then(blob => {
-				if (cancelled) return
-				setExportState({
-					status: 'ready',
-					blob,
-					url: URL.createObjectURL(blob),
-					filename: buildExportFilename(),
-				})
-			})
-			.catch(() => {
-				if (!cancelled) setExportState({ status: 'error' })
-			})
+		sessionRef.current = session
 
 		return () => {
-			cancelled = true
+			session.active = false
+			for (const url of session.urls) URL.revokeObjectURL(url)
+			sessionRef.current = null
 		}
-		// Only regenerate when the modal opens; the design underneath
-		// shouldn't change while this preview is up.
+		// Capture the design and background for this modal opening.
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [open])
 
 	useEffect(() => {
-		if (exportState.status !== 'ready') return
-		const { url } = exportState
-		return () => URL.revokeObjectURL(url)
-	}, [exportState])
+		const session = sessionRef.current
+		if (!open || !session || session.requested.has(variant)) return
+		session.requested.add(variant)
+		if (!session.svg) {
+			setPreviews(current => ({
+				...current,
+				[variant]: { status: 'error' },
+			}))
+			return
+		}
+
+		exportSvgAsPngBlob(session.svg, {
+			backgroundColor: session.backgroundColor,
+			includeGridLines,
+		})
+			.then(blob => {
+				if (!session.active) return
+				const url = URL.createObjectURL(blob)
+				session.urls.add(url)
+				setPreviews(current => ({
+					...current,
+					[variant]: {
+						status: 'ready',
+						blob,
+						url,
+						filename: buildExportFilename(),
+					},
+				}))
+			})
+			.catch(() => {
+				if (session.active) {
+					setPreviews(current => ({
+						...current,
+						[variant]: { status: 'error' },
+					}))
+				}
+			})
+	}, [open, includeGridLines, variant])
 
 	function handleDownload() {
 		if (exportState.status !== 'ready') return
@@ -99,7 +138,11 @@ export function useImageExport(
 		const file = new File([exportState.blob], exportState.filename, {
 			type: 'image/png',
 		})
-		setExportState({ ...exportState, shareError: undefined })
+		const session = sessionRef.current
+		setPreviews(current => ({
+			...current,
+			[variant]: { ...exportState, shareError: undefined },
+		}))
 		try {
 			await navigator.share({
 				files: [file],
@@ -108,15 +151,21 @@ export function useImageExport(
 		} catch (error) {
 			// AbortError just means the user cancelled the share sheet.
 			if (error instanceof Error && error.name === 'AbortError') return
-			setExportState(current =>
-				current.status === 'ready' && current.url === exportState.url
+			if (!session?.active) return
+			setPreviews(current => {
+				const preview = current[variant]
+				return preview?.status === 'ready' &&
+					preview.url === exportState.url
 					? {
 							...current,
-							shareError:
-								'Sorry, sharing failed. You can try again or download your image instead.',
+							[variant]: {
+								...preview,
+								shareError:
+									'Sorry, sharing failed. You can try again or download your image instead.',
+							},
 						}
-					: current,
-			)
+					: current
+			})
 		}
 	}
 

@@ -44,7 +44,7 @@ Today, the application reflects how my engineering approach has evolved. It has 
 - **Multiple color palettes:** Pick from curated schemes, then choose a color to paint with. Palette changes carry the color pattern over across all boards.
 - **Design controls:** Randomize or reset the current board, or undo and redo edits and board switches in one session-wide history.
 - **Light and dark themes:** Switch the surrounding canvas theme; tiles painted with the theme colors adapt across all boards. Board switches never change your theme.
-- **Save and share:** Export a crisp PNG of the complete design, download it, or share it where the browser supports file sharing.
+- **Save and share:** Compare PNG previews with or without grid lines, then download your chosen version or share it where the browser supports file sharing. Your grid-line preference is remembered across designs and visits.
 - **Mouse, touch, and keyboard interaction:** Hover reveals the editable wedge on mouse and trackpad; touch users can toggle it. Grid tiles can also be reached with Tab and painted with Enter or Space. Focus outlines remain visible for keyboard navigation without lingering after mouse clicks or taps.
 - **Mobile-friendly modals:** Titles and close controls stay visible while content scrolls, with edge indicators for more options and background scrolling locked.
 - **Automatic save:** All board patterns, your active board, per-shape size choices, and preferences are restored from browser storage on your next visit. Undo history starts fresh each session.
@@ -60,7 +60,7 @@ This project has been a chance to build both a creative user experience and the 
 - **Reusable SVG grid rendering:** Six different geometric layouts share a common rendering and interaction layer.
 - **Geometry-based symmetry:** Cells are grouped by their rotational and reflective relationships, so one paint action updates the matching parts of a design.
 - **Typed state and history:** TypeScript models the app state, while reducer-based updates keep design actions predictable and support undo/redo.
-- **Thoughtful image export:** The app turns its live SVG into a standalone PNG, carrying over styling and exporting the complete design rather than the on-screen editable-area highlight.
+- **Thoughtful image export:** The app turns its live SVG into a standalone PNG, exporting the complete design rather than the on-screen editable-area highlight. Lined and line-free previews are cached while the save dialog is open for instant switching after generation.
 - **Accessible interaction:** Controls have accessible names and states, and grid tiles support keyboard use with screen-reader announcements.
 - **Tested behavior:** Vitest and Testing Library cover application state, geometry, controls, persistence, and image-export behavior.
 

@@ -1,6 +1,7 @@
 export interface ExportImageOptions {
 	readonly backgroundColor: string
 	readonly maxDimension?: number
+	readonly includeGridLines?: boolean
 }
 
 const DEFAULT_MAX_DIMENSION = 1600
@@ -21,6 +22,7 @@ export async function exportSvgAsPngBlob(
 	{
 		backgroundColor,
 		maxDimension = DEFAULT_MAX_DIMENSION,
+		includeGridLines = true,
 	}: ExportImageOptions,
 ): Promise<Blob> {
 	const { width: viewBoxWidth, height: viewBoxHeight } = svg.viewBox.baseVal
@@ -28,7 +30,7 @@ export async function exportSvgAsPngBlob(
 	const width = Math.round(viewBoxWidth * scale)
 	const height = Math.round(viewBoxHeight * scale)
 
-	const clone = buildExportClone(svg, width, height)
+	const clone = buildExportClone(svg, width, height, includeGridLines)
 
 	const svgUrl = URL.createObjectURL(
 		new Blob([new XMLSerializer().serializeToString(clone)], {
@@ -60,11 +62,12 @@ export function buildExportClone(
 	svg: SVGSVGElement,
 	width: number,
 	height: number,
+	includeGridLines = true,
 ): SVGSVGElement {
 	const clone = svg.cloneNode(true) as SVGSVGElement
 	clone.setAttribute('width', String(width))
 	clone.setAttribute('height', String(height))
-	inlineCellStrokes(svg, clone)
+	inlineCellStrokes(svg, clone, includeGridLines)
 	forceFullOpacity(clone)
 	return clone
 }
@@ -86,7 +89,11 @@ function forceFullOpacity(clonedSvg: SVGSVGElement) {
 // serialized on its own — so bake the live computed stroke style into
 // every cloned cell as plain attributes instead of relying on a
 // stylesheet that won't travel with it.
-function inlineCellStrokes(liveSvg: SVGSVGElement, clonedSvg: SVGSVGElement) {
+function inlineCellStrokes(
+	liveSvg: SVGSVGElement,
+	clonedSvg: SVGSVGElement,
+	includeGridLines: boolean,
+) {
 	const sampleCell = liveSvg.querySelector('polygon, circle')
 	if (!sampleCell) return
 	const computed = getComputedStyle(sampleCell)
@@ -94,9 +101,17 @@ function inlineCellStrokes(liveSvg: SVGSVGElement, clonedSvg: SVGSVGElement) {
 	const strokeWidth = parseFloat(computed.strokeWidth)
 	const strokeLinejoin = computed.strokeLinejoin
 
-	for (const cell of clonedSvg.querySelectorAll('polygon, circle')) {
-		cell.setAttribute('stroke', stroke)
-		cell.setAttribute('stroke-width', String(strokeWidth))
+	for (const cell of clonedSvg.querySelectorAll<SVGElement>(
+		'polygon, circle',
+	)) {
+		cell.style.removeProperty('stroke')
+		cell.style.removeProperty('stroke-width')
+		cell.style.removeProperty('stroke-linejoin')
+		cell.setAttribute('stroke', includeGridLines ? stroke : 'none')
+		cell.setAttribute(
+			'stroke-width',
+			includeGridLines ? String(strokeWidth) : '0',
+		)
 		cell.setAttribute('stroke-linejoin', strokeLinejoin)
 	}
 }
