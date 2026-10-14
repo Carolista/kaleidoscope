@@ -4,6 +4,7 @@ import { supportedGridShapes } from '../data/gridShapes'
 import { defaultGridSizes } from '../data/gridSizes'
 import { legacyGridSizes } from '../data/gridSizes'
 import type { AppState } from '../types/appState'
+import { appReducer } from '../state/appReducer'
 import {
 	loadInitialAppState,
 	savePersistedState,
@@ -20,6 +21,7 @@ function baseState(overrides: Partial<AppState> = {}): AppState {
 		showEditableArea: true,
 		gridShape: 'hexagon',
 		gridSizes: { ...defaultGridSizes },
+		savedBoards: {},
 		shapeGroupColors: {},
 		...overrides,
 	}
@@ -28,6 +30,88 @@ function baseState(overrides: Partial<AppState> = {}): AppState {
 describe('storageService', () => {
 	beforeEach(() => {
 		localStorage.clear()
+	})
+
+	it('round-trips all 18 boards and restores each board after reload', () => {
+		let saved = baseState()
+		const boards = supportedGridShapes.flatMap(({ id }) =>
+			(['sm', 'md', 'lg'] as const).map(size => ({ shape: id, size })),
+		)
+		boards.forEach(({ shape, size }, index) => {
+			saved = appReducer(saved, {
+				type: 'SELECT_GRID_SHAPE',
+				shape,
+				size,
+			})
+			saved = appReducer(saved, {
+				type: 'SELECT_COLOR',
+				color: `#${index.toString(16).padStart(6, '0')}`,
+			})
+			saved = appReducer(saved, {
+				type: 'PAINT_SHAPE_GROUP',
+				groupId: '0',
+			})
+		})
+		savePersistedState(saved)
+		let restored = loadInitialAppState()
+		expect(restored).toEqual(saved)
+		boards.forEach(({ shape, size }, index) => {
+			restored = appReducer(restored, {
+				type: 'SELECT_GRID_SHAPE',
+				shape,
+				size,
+			})
+			expect(restored.shapeGroupColors).toEqual({
+				'0': `#${index.toString(16).padStart(6, '0')}`,
+			})
+		})
+	})
+
+	it.each([1, 2, 3, 4])(
+		'migrates version %s active paint without copying it to other boards',
+		version => {
+			localStorage.setItem(
+				STORAGE_KEY,
+				JSON.stringify({
+					version,
+					schemeName: colorSchemes[0].name,
+					currentColor: '#123456',
+					darkMode: false,
+					gridShape: 'triangle',
+					gridSizes: { ...defaultGridSizes, triangle: 'sm' },
+					shapeGroupColors: { '0': '#123456' },
+				}),
+			)
+			const restored = loadInitialAppState()
+			expect(restored.shapeGroupColors).toEqual({ '0': '#123456' })
+			expect(restored.savedBoards).toEqual({})
+			const switched = appReducer(restored, {
+				type: 'SELECT_GRID_SIZE',
+				shape: 'triangle',
+				size: 'md',
+			})
+			expect(switched.shapeGroupColors).toEqual({})
+			expect(switched.savedBoards['triangle:sm']).toEqual({
+				'0': '#123456',
+			})
+		},
+	)
+
+	it.each([
+		null,
+		[],
+		{ 'unknown:sm': {} },
+		{ 'triangle:xl': {} },
+		{ 'triangle:sm': [] },
+		{ 'triangle:sm': { a: 'red' } },
+		{ 'hexagon:md': {} },
+	])('rejects invalid version-5 inactive boards %j', savedBoards => {
+		savePersistedState(baseState())
+		const payload = JSON.parse(localStorage.getItem(STORAGE_KEY)!)
+		payload.savedBoards = savedBoards
+		localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
+		expect(loadInitialAppState().savedBoards).toEqual({})
+		expect(loadInitialAppState().darkMode).toBe(true)
 	})
 
 	it('loadInitialAppState falls back to a fresh random state when nothing is saved', () => {
@@ -115,6 +199,7 @@ describe('storageService', () => {
 				showEditableArea: true,
 				gridShape: 'hexagon',
 				gridSizes: { ...defaultGridSizes },
+				savedBoards: {},
 				shapeGroupColors: {},
 			})
 			expect(colorSchemes).toContain(state.currentScheme)
@@ -191,6 +276,7 @@ describe('storageService', () => {
 			unknown
 		>
 		delete legacy.gridSizes
+		legacy.version = 4
 		legacy.gridShape = 'triangle'
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(legacy))
 		expect(loadInitialAppState().gridSizes).toEqual({

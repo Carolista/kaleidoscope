@@ -31,6 +31,7 @@ beforeEach(() => {
 		showEditableArea: true,
 		gridShape: 'hexagon',
 		gridSizes: { ...defaultGridSizes },
+		savedBoards: {},
 		shapeGroupColors: {},
 	})
 	mockUseIsTouchDevice.mockReturnValue(false)

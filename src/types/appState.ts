@@ -2,6 +2,10 @@ import type { ColorScheme } from './colorScheme'
 import type { GridShapeId } from './gridShape'
 import type { GridSize } from './gridSize'
 
+export type BoardId = `${GridShapeId}:${GridSize}`
+export type PaintMap = Readonly<Record<string, string>>
+export type SavedBoards = Readonly<Partial<Record<BoardId, PaintMap>>>
+
 export interface AppState {
 	readonly currentScheme: ColorScheme
 	readonly currentColor: string
@@ -12,15 +16,12 @@ export interface AppState {
 	// rely on hover instead.
 	readonly showEditableArea: boolean
 	// Which grid shape is currently selected (hexagon, triangle, ...).
-	// Switching shapes resets `shapeGroupColors`, since a group id from one
-	// shape's symmetry grouping has no meaning for another's.
 	readonly gridShape: GridShapeId
 	// Size choices are remembered independently for each shape.
 	readonly gridSizes: Readonly<Record<GridShapeId, GridSize>>
-	// Keyed by the current shape's cell `groupId`; a group with no entry
-	// is shown in the default/accent color. Originally named
-	// `hexGroupColors` from when hexagon was the only shape; renamed once the
-	// app grew multiple shapes, since the field itself has always just
-	// been a generic map keyed by group id.
-	readonly shapeGroupColors: Readonly<Record<string, string>>
+	// Active board paint; absent groups display accent.
+	readonly shapeGroupColors: PaintMap
+	// Inactive boards only. Switching stashes the outgoing board and removes
+	// the incoming board here, so there is never a second copy of active paint.
+	readonly savedBoards: SavedBoards
 }

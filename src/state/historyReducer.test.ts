@@ -14,12 +14,47 @@ function baseState(overrides: Partial<AppState> = {}): AppState {
 		showEditableArea: true,
 		gridShape: 'hexagon',
 		gridSizes: { ...defaultGridSizes },
+		savedBoards: {},
 		shapeGroupColors: {},
 		...overrides,
 	}
 }
 
 describe('historyReducer', () => {
+	it('starts all restored boards at the session baseline and follows exact board/edit steps', () => {
+		const state = baseState({
+			savedBoards: { 'triangle:sm': { '0': '#123456' } },
+		})
+		let history = createInitialHistoryState(state)
+		expect(history.past).toEqual([])
+		history = historyReducer(history, {
+			type: 'SELECT_GRID_SHAPE',
+			shape: 'triangle',
+			size: 'sm',
+		})
+		expect(history.present.shapeGroupColors).toEqual({ '0': '#123456' })
+		history = historyReducer(history, { type: 'RESET_DESIGN' })
+		history = historyReducer(history, {
+			type: 'SELECT_GRID_SHAPE',
+			shape: 'hexagon',
+			size: 'md',
+		})
+		history = historyReducer(history, { type: 'TOGGLE_DARK_MODE' })
+		history = historyReducer(history, { type: 'UNDO' })
+		expect(history.present.gridShape).toBe('triangle')
+		expect(history.present.darkMode).toBe(true)
+		expect(history.present.shapeGroupColors).toEqual({})
+		history = historyReducer(history, { type: 'UNDO' })
+		expect(history.present.shapeGroupColors).toEqual({ '0': '#123456' })
+		history = historyReducer(history, { type: 'UNDO' })
+		expect(history.present.gridShape).toBe('hexagon')
+		expect(history.present.savedBoards).toEqual(state.savedBoards)
+		expect(history.past).toEqual([])
+		history = historyReducer(history, { type: 'REDO' })
+		expect(history.present.gridShape).toBe('triangle')
+		expect(history.present.darkMode).toBe(true)
+	})
+
 	const noOpActions: AppAction[] = [
 		{ type: 'SELECT_GRID_SHAPE', shape: 'hexagon' },
 		{ type: 'RESET_DESIGN' },
@@ -229,7 +264,7 @@ describe('historyReducer', () => {
 		expect(history.future).toHaveLength(1)
 	})
 
-	it('undoes and redoes hexagon size changes together with their retained paint', () => {
+	it('undoes and redoes board switches together with all saved paint', () => {
 		const outerGroupId = getGroupIdsForShape('hexagon', 'lg').find(
 			id => !getGroupIdsForShape('hexagon', 'sm').includes(id),
 		)!
@@ -246,7 +281,10 @@ describe('historyReducer', () => {
 			size: 'sm',
 		})
 		expect(history.present.gridSizes.hexagon).toBe('sm')
-		expect(history.present.shapeGroupColors).toEqual({ '0,0': '#ff0000' })
+		expect(history.present.shapeGroupColors).toEqual({})
+		expect(history.present.savedBoards['hexagon:lg']).toEqual(
+			state.shapeGroupColors,
+		)
 
 		history = historyReducer(history, { type: 'UNDO' })
 		expect(history.present.gridSizes.hexagon).toBe('lg')
@@ -254,7 +292,10 @@ describe('historyReducer', () => {
 
 		history = historyReducer(history, { type: 'REDO' })
 		expect(history.present.gridSizes.hexagon).toBe('sm')
-		expect(history.present.shapeGroupColors).toEqual({ '0,0': '#ff0000' })
+		expect(history.present.shapeGroupColors).toEqual({})
+		expect(history.present.savedBoards['hexagon:lg']).toEqual(
+			state.shapeGroupColors,
+		)
 	})
 
 	it('undoes a shape and size selection as one action', () => {

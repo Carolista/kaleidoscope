@@ -1,5 +1,5 @@
 import { colorSchemes } from '../data/colorSchemes'
-import type { AppState } from '../types/appState'
+import type { AppState, BoardId, PaintMap } from '../types/appState'
 import type { ColorScheme } from '../types/colorScheme'
 import type { GridShapeId } from '../types/gridShape'
 import type { GridSize } from '../types/gridSize'
@@ -37,10 +37,11 @@ export function createInitialAppState(): AppState {
 		gridShape: 'hexagon',
 		gridSizes: { ...defaultGridSizes },
 		shapeGroupColors: {},
+		savedBoards: {},
 	}
 }
 
-function withGridSize(
+function switchBoard(
 	state: AppState,
 	shape: GridShapeId,
 	size: GridSize,
@@ -52,16 +53,52 @@ function withGridSize(
 		return state
 	}
 	const gridSizes = { ...state.gridSizes, [shape]: size }
-	let shapeGroupColors = state.shapeGroupColors
-	if (shape === state.gridShape) {
-		const groupIds = new Set(getGroupIdsForShape(shape, size))
-		shapeGroupColors = Object.fromEntries(
-			Object.entries(shapeGroupColors).filter(([groupId]) =>
-				groupIds.has(groupId),
-			),
-		)
+	if (shape !== state.gridShape) {
+		return { ...state, gridSizes }
 	}
-	return { ...state, gridSizes, shapeGroupColors }
+	return activateBoard(state, shape, size)
+}
+
+function activateBoard(
+	state: AppState,
+	shape: GridShapeId,
+	size: GridSize,
+): AppState {
+	const outgoing: BoardId = `${state.gridShape}:${state.gridSizes[state.gridShape]}`
+	const incoming: BoardId = `${shape}:${size}`
+	if (outgoing === incoming) return state
+	const savedBoards = {
+		...state.savedBoards,
+		[outgoing]: state.shapeGroupColors,
+	}
+	const shapeGroupColors = savedBoards[incoming] ?? {}
+	delete savedBoards[incoming]
+	return {
+		...state,
+		gridShape: shape,
+		gridSizes: { ...state.gridSizes, [shape]: size },
+		shapeGroupColors,
+		savedBoards,
+	}
+}
+
+function mapPaint(
+	state: AppState,
+	transform: (color: string) => string,
+): Pick<AppState, 'shapeGroupColors' | 'savedBoards'> {
+	const remap = (paint: PaintMap) =>
+		Object.fromEntries(
+			Object.entries(paint).map(([id, color]) => [id, transform(color)]),
+		)
+	return {
+		shapeGroupColors: remap(state.shapeGroupColors),
+		savedBoards: Object.fromEntries(
+			Object.entries(state.savedBoards).map(([id, paint]) => [
+				id,
+				remap(paint),
+			]),
+		),
+	}
 }
 
 export function appReducer(state: AppState, action: AppAction): AppState {
@@ -72,20 +109,15 @@ export function appReducer(state: AppState, action: AppAction): AppState {
 			// Remap any tile painted with one of the old scheme's colors to the
 			// color at the same position in the new scheme, so the design's
 			// pattern carries over. Tiles painted base/accent are left as-is.
-			const shapeGroupColors = Object.fromEntries(
-				Object.entries(state.shapeGroupColors).map(
-					([groupId, color]) => {
-						const colorIndex = oldColors.indexOf(color)
-						if (colorIndex === -1) return [groupId, color]
-						return [groupId, newColors[colorIndex]]
-					},
-				),
-			)
+			const paint = mapPaint(state, color => {
+				const colorIndex = oldColors.indexOf(color)
+				return colorIndex === -1 ? color : newColors[colorIndex]
+			})
 			return {
 				...state,
 				currentScheme: action.scheme,
 				currentColor: newColors[0],
-				shapeGroupColors,
+				...paint,
 			}
 		}
 
@@ -112,20 +144,12 @@ export function appReducer(state: AppState, action: AppAction): AppState {
 			const darkMode = !state.darkMode
 			const oldTheme = getThemeColors(state.darkMode)
 			const newTheme = getThemeColors(darkMode)
-			// Flip any hexagons that were painted exactly the old base/accent color,
-			// so they track the new theme instead of freezing at a stale color.
-			const shapeGroupColors = Object.fromEntries(
-				Object.entries(state.shapeGroupColors).map(
-					([groupId, color]) => {
-						if (color === oldTheme.base)
-							return [groupId, newTheme.base]
-						if (color === oldTheme.accent)
-							return [groupId, newTheme.accent]
-						return [groupId, color]
-					},
-				),
-			)
-			return { ...state, darkMode, shapeGroupColors }
+			const paint = mapPaint(state, color => {
+				if (color === oldTheme.base) return newTheme.base
+				if (color === oldTheme.accent) return newTheme.accent
+				return color
+			})
+			return { ...state, darkMode, ...paint }
 		}
 
 		case 'TOGGLE_EDITABLE_AREA':
@@ -149,7 +173,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
 		}
 
 		case 'SELECT_GRID_SIZE':
-			return withGridSize(state, action.shape, action.size)
+			return switchBoard(state, action.shape, action.size)
 
 		case 'SELECT_GRID_SHAPE': {
 			if (
@@ -160,16 +184,13 @@ export function appReducer(state: AppState, action: AppAction): AppState {
 			}
 			if (action.shape === state.gridShape) {
 				if (action.size === undefined) return state
-				return withGridSize(state, action.shape, action.size)
+				return switchBoard(state, action.shape, action.size)
 			}
-			const nextState = {
-				...state,
-				gridShape: action.shape,
-				shapeGroupColors: {},
-			}
-			return action.size === undefined
-				? nextState
-				: withGridSize(nextState, action.shape, action.size)
+			return activateBoard(
+				state,
+				action.shape,
+				action.size ?? state.gridSizes[action.shape],
+			)
 		}
 
 		default:

@@ -1,15 +1,10 @@
-import { useState } from 'react'
 import { gridShapes } from '@data/gridShapes'
 import { availableGridSizes, gridSizeOptions } from '@data/gridSizes'
-import { isConfirmDialogDismissed } from '@services/confirmDialogPreferences'
 import { useAppState } from '@state/useAppState'
 import type { GridShapeId } from '@appTypes/gridShape'
 import type { GridSize } from '@appTypes/gridSize'
-import { ConfirmDialog } from '@shared'
 import GridShapeIcon from './GridShapeIcon'
 import styles from './GridShapePicker.module.css'
-
-const DONT_SHOW_AGAIN_KEY = 'switch-grid-shape'
 
 export interface GridShapePickerProps {
 	// Called after a shape or size selection takes effect, so the containing
@@ -17,19 +12,8 @@ export interface GridShapePickerProps {
 	readonly onSelected?: () => void
 }
 
-// Selecting a different shape than the current one discards the design
-// (a group id from one shape's symmetry grouping has no meaning for
-// another's), so — like ResetDesignButton — a pick is staged behind a
-// confirmation dialog rather than applied immediately.
 function GridShapePicker({ onSelected }: GridShapePickerProps) {
 	const { state, selectGridShape, selectGridSize } = useAppState()
-	const [pending, setPending] = useState<{
-		readonly shape: GridShapeId
-		readonly size: GridSize
-	} | null>(null)
-	const pendingOption = gridShapes.find(
-		option => option.id === pending?.shape,
-	)
 
 	function chooseSize(shape: GridShapeId, size: GridSize) {
 		if (shape === state.gridShape) {
@@ -38,12 +22,8 @@ function GridShapePicker({ onSelected }: GridShapePickerProps) {
 			onSelected?.()
 			return
 		}
-		if (isConfirmDialogDismissed(DONT_SHOW_AGAIN_KEY)) {
-			selectGridShape(shape, size)
-			onSelected?.()
-		} else {
-			setPending({ shape, size })
-		}
+		selectGridShape(shape, size)
+		onSelected?.()
 	}
 
 	return (
@@ -86,22 +66,6 @@ function GridShapePicker({ onSelected }: GridShapePickerProps) {
 					</li>
 				))}
 			</ul>
-			<ConfirmDialog
-				open={pendingOption !== undefined}
-				title="Confirm Shape Change"
-				message={`Switching to the ${pendingOption?.label ?? ''} grid will reset your current design. You can undo this afterward if you change your mind.`}
-				confirmLabel="Switch"
-				cancelLabel="Cancel"
-				dontShowAgainKey={DONT_SHOW_AGAIN_KEY}
-				onConfirm={() => {
-					if (pendingOption && pending) {
-						selectGridShape(pending.shape, pending.size)
-					}
-					setPending(null)
-					onSelected?.()
-				}}
-				onCancel={() => setPending(null)}
-			/>
 		</>
 	)
 }

@@ -40,7 +40,7 @@ describe('GridShapeButton', () => {
 		)
 	})
 
-	it('closes automatically once a shape switch is confirmed', async () => {
+	it('closes automatically after switching boards without confirmation', async () => {
 		const user = userEvent.setup()
 		render(<GridShapeButton />, { wrapper: AppStateProvider })
 
@@ -48,7 +48,6 @@ describe('GridShapeButton', () => {
 			screen.getByRole('button', { name: 'Select a different shape' }),
 		)
 		await user.click(screen.getByRole('button', { name: 'Triangle (M)' }))
-		await user.click(screen.getByRole('button', { name: 'Switch' }))
 
 		await waitFor(() =>
 			expect(

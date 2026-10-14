@@ -40,39 +40,50 @@ Hexagon padding and circle-radius bounds remain separate from polygon bounds.
 
 ### Chosen shapes and density
 
-- **Hexagon:** radius 7 replaces the original radius 9 on every device.
-  169 cells/20 groups are easier to paint on small screens; a larger option remains deferred.
-- **Triangle:** equilateral size-10 lattice, 100 cells/22 groups, with D3 symmetry.
+- **Hexagon:** radii 3/4/6; medium is the default. Large uses radius 6
+  rather than the former radius 7 to keep density more manageable.
+- **Triangle:** equilateral size-4/7/10 lattices with D3 symmetry. Small matches
+  the intro; large preserves the previous regular grid; medium is the default.
 - **Diamond star:** whole rhombi, not half-diamond triangle slivers.
-  Four subdivisions per axis give 96 cells/10 groups. Widening the point angle
+  Three/four/five subdivisions per axis are available; medium retains the
+  previous 96 cells/10 groups. Widening the point angle
   from 30 to 45 degrees improved touch targets without losing the star silhouette.
 - **Hexagram:** a central hexagon plus six equilateral points, subdivided into
   equilateral triangles. Six triangles meeting only at the center would form a
-  hexagon, not a star. Size 4 gives 192 cells/20 groups.
+  hexagon, not a star. Sizes 2/3/4 are available; large remains the default
+  with 192 cells/20 groups.
 - **Circle rings:** ring `n` has `6n` circles. The center and first ring share a
   minimum diameter; later rings grow by `1/12` of it per step. Spacing factor
   `1.04` satisfies within-ring and between-ring non-overlap constraints.
-  Six rings give 127 cells/16 groups. Seven forced overly subtle growth or tight spacing.
+  Three/four/six rings are available; large remains the default with
+  127 cells/16 groups. Seven forced overly subtle growth or tight spacing.
 - **Pinwheel:** eight unequal-sided spokes with uniform 2:1 parallelogram cells,
-  three steps per axis: 72 cells/9 groups. Equal-sided rhombi looked like a star.
+  2 x 2, 2 x 3, or 3 x 3 steps per spoke. Large remains the default with
+  72 cells/9 groups. Equal-sided rhombi looked like a star.
   Gaps between blades are intentional; asymmetry comes from unequal side lengths,
   not unequal default step counts.
 
 Circle sizing was reviewed at the 560px grid cap for roughly 30px minimum
 diameters. This is not a minimum touch-target guarantee at narrower rendered sizes.
 Correct orbit counts and non-overlap alone do not establish visual usability.
+Large Diamond Star tiles can feel small on mobile; density tuning remains
+deferred pending further hands-on testing.
 
 Shape-picker previews use each shape's real geometry at a small size, not
 hand-drawn paths. Stroke width scales with preview width for consistent appearance.
 Supported shapes and picker visibility are distinct so hiding an option does not
 invalidate saved designs. Exhaustive mappings make missing implementations detectable.
 
+Use three scaled versions of the same preview icon rather than visible shape
+names or size abbreviations. Equal square buttons keep touch targets consistent;
+icon scale conveys size, while accessible names and tooltips retain identification.
+
 ## State, history, and storage
 
 ### Design edits versus tool choices
 
-History wraps the app reducer with snapshots of scheme, shape, and paint map.
-This keeps painting, palette changes, shape changes, randomization, and reset
+History wraps the app reducer with snapshots of scheme, shape, per-shape sizes,
+and paint map. This keeps painting, palette changes, shape/size changes, randomization, and reset
 undoable without restoring old tool/view settings.
 
 - History is unlimited for the session and not persisted.
@@ -83,6 +94,9 @@ undoable without restoring old tool/view settings.
   and neutral base/accent selections.
 - Changing shape clears paint because group IDs have shape-specific meanings;
   the previous shape/design remains recoverable through undo.
+- Resizing keeps paint for shared group IDs, rather than clearing the design.
+  Removed groups are trimmed; undo can restore them. A shape-and-size selection
+  is one history step, and each shape remembers its size independently.
 - **Accepted edge case:** dark-mode toggles remap present base/accent colors but
   not historical snapshots. Undo across a toggle can restore old neutral colors.
   Do not silently change this policy.
@@ -97,6 +111,10 @@ Versioned loading rejects unusable payloads and falls back to a fresh design.
 Arrays are not paint records; colors must be exact six-digit hex. Palette
 membership and group-ID filtering are separate concerns and remain unrestricted.
 Keep backward-compatible defaults for optional shape/editable-area fields.
+Persist per-shape sizes and migrate earlier effective sizes rather than
+silently shrinking returning users' designs. Version 4 accepts versions 1-3:
+old placeholder medium values for Hexagram, Circle Rings, and Pinwheel map
+to large only in versions predating that shape's size choices.
 
 Storage is best-effort: unavailable/full storage must not crash the toy.
 No debounce is needed for deliberate user actions. The historical
@@ -118,6 +136,11 @@ saved scheme, so random initial selection was removed.
   tradeoff; other icon buttons use 2.5rem.
 - Use native `<dialog>` for modal focus/backdrop/cancel behavior, with parent-controlled
   opening/closing. Custom confirmation UI replaces `window.confirm`.
+- Keep modal headers stationary and use one viewport-bounded scrolling body.
+  Conditional edge fades and chevrons make hidden content discoverable without
+  permanent instructions. Background scroll locking preserves page position;
+  a shared lock count prevents a nested confirmation from unlocking its picker.
+  Contain scroll gestures at the body's boundaries and make overflow keyboard-focusable.
 - Reset and shape-change opt-outs are independent. Only confirming with the
   checkbox checked saves the preference; canceling clears the checkbox.
   Pickers close after selection.
