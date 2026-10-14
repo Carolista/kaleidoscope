@@ -17,6 +17,10 @@ implementation and working agreements, see [CONTEXT.md](./CONTEXT.md).
   generation, unusual bounds, modal widths, and content layouts local.
 - Shared controls intentionally depend on app state for icon tinting.
   Provider-independent wrappers or dependency injection would solve no current need.
+- Reuse the palette-aware custom `Checkbox` for confirmation preferences and
+  export options. Keep its native input for labelling and keyboard interaction;
+  the decorative checkmark uses the same duotone tint as other app icons.
+  Call sites retain their own placement and text sizing.
 - Use **scheme** in code and **palette** in UI; reserve **theme** for dark/light mode.
   This replaces the ambiguous `ColorThemeButton`/`ColorThemeModal` names.
   Folder aliases and geometry export names were not broadly renamed.
@@ -218,6 +222,17 @@ Clone the live SVG, bake in strokes, force all polygon/circle cells opaque, and
 rasterize with theme base behind it. Editable-area dimming is a view aid, not
 part of the exported design. Reserve preview dimensions before generation to
 avoid modal resizing.
+
+Let users compare PNG previews with and without grid lines before downloading
+or sharing. Keep lines on for the initial default to preserve existing exports,
+then remember changes immediately in a separate browser preference across all
+designs and visits. This is an export choice, not a design edit or undo step.
+Removing strokes leaves intentional spacing between cells/blades intact.
+
+Generate each version lazily and cache both for one modal opening, including
+in-flight requests, so repeated toggles never duplicate rasterization. Do not
+cache across openings: the design or theme may have changed. Download and share
+always use the selected preview, and closing releases every cached object URL.
 
 Generation errors must replace the spinner. Share failures must be visible
 without losing preview, download, or retry; canceled shares stay quiet.

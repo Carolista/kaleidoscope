@@ -83,4 +83,41 @@ describe('buildExportClone', () => {
 		const circle = clone.querySelector('circle') as SVGCircleElement
 		expect(circle.style.opacity).toBe('1')
 	})
+
+	it.each(['polygon', 'circle'])(
+		'preserves the live %s strokes by default and removes them only from the line-free clone',
+		cellType => {
+			const svg =
+				cellType === 'polygon'
+					? buildSvgWithDimmedPolygon()
+					: buildSvgWithDimmedCircle()
+			const cell = svg.querySelector<SVGElement>(cellType)!
+			cell.setAttribute('fill', '#123456')
+			cell.style.stroke = '#abcdef'
+			cell.style.strokeWidth = '1'
+			cell.style.strokeLinejoin = 'round'
+			const liveStroke = getComputedStyle(cell).stroke
+
+			const withLines = buildExportClone(svg, 100, 100).querySelector(
+				cellType,
+			)!
+			expect(withLines).toHaveAttribute('stroke', liveStroke)
+			expect(withLines).toHaveAttribute('stroke-width', '1')
+
+			const withoutLines = buildExportClone(
+				svg,
+				100,
+				100,
+				false,
+			).querySelector<SVGElement>(cellType)!
+			expect(withoutLines).toHaveAttribute('stroke', 'none')
+			expect(withoutLines).toHaveAttribute('stroke-width', '0')
+			expect(withoutLines).toHaveAttribute('fill', '#123456')
+			expect(withoutLines).toHaveStyle({ opacity: '1' })
+			expect(withoutLines.style.stroke).toBe('')
+			expect(withoutLines.style.strokeWidth).toBe('')
+			expect(cell).not.toHaveAttribute('stroke')
+			expect(cell).toHaveStyle({ opacity: '0.2' })
+		},
+	)
 })

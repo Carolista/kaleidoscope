@@ -1,10 +1,14 @@
 import type { RefObject } from 'react'
-import { useId, useMemo } from 'react'
+import { useId, useMemo, useState } from 'react'
 import { useAppState } from '@state/useAppState'
 import { getThemeColors } from '@state/theme'
 import { useImageExport } from '@hooks/useImageExport'
 import { computeAspectRatioForShape } from '@utils/gridShapeRegistry'
-import { Button, Modal, ModalHeader } from '@shared'
+import {
+	getIncludeGridLines,
+	saveIncludeGridLines,
+} from '../../services/imageExportPreferences'
+import { Button, Checkbox, Modal, ModalHeader } from '@shared'
 import styles from './SaveImageModal.module.css'
 
 export interface SaveImageModalProps {
@@ -15,11 +19,13 @@ export interface SaveImageModalProps {
 
 function SaveImageModal({ open, svgRef, onClose }: SaveImageModalProps) {
 	const titleId = useId()
+	const [includeGridLines, setIncludeGridLines] =
+		useState(getIncludeGridLines)
 	const { state } = useAppState()
 	const gridSize = state.gridSizes[state.gridShape]
 	const { base } = getThemeColors(state.darkMode)
 	const { exportState, canShare, handleDownload, handleShare } =
-		useImageExport(svgRef, open, base)
+		useImageExport(svgRef, open, base, includeGridLines)
 	// Reflects the current shape's fixed proportions, which the export
 	// service also rasterizes from, so the preview box is already sized
 	// correctly before the image exists.
@@ -43,15 +49,26 @@ function SaveImageModal({ open, svgRef, onClose }: SaveImageModalProps) {
 				/>
 			}
 		>
+			<Checkbox
+				className={styles.gridLinesToggle}
+				label="Include grid lines"
+				checked={includeGridLines}
+				onChange={checked => {
+					setIncludeGridLines(checked)
+					saveIncludeGridLines(checked)
+				}}
+			/>
 			<div
 				className={styles.preview}
 				style={{ aspectRatio: previewAspectRatio }}
 			>
 				{exportState.status === 'generating' && (
-					<p>Generating image…</p>
+					<p role="status">Generating image…</p>
 				)}
 				{exportState.status === 'error' && (
-					<p>Sorry, something went wrong generating the image.</p>
+					<p role="alert">
+						Sorry, something went wrong generating the image.
+					</p>
 				)}
 				{exportState.status === 'ready' && (
 					<img
