@@ -171,23 +171,38 @@ symmetry engine. One representative per group is clickable.
   [colorSchemes.ts](./src/data/colorSchemes.ts) and its first color selected.
 - Painting toggles a group back to accent when its current color is selected again.
   Unpainted groups also display accent.
-- Scheme changes remap painted palette colors by position and select the first
-  new color. Shape changes clear the design.
-- Resizing the active shape retains paint for shared group IDs and removes
-  paint for groups absent at the new size. Switching shape and size is one undo step.
+- Each of the 18 shape/size combinations has an independent paint map. Switching
+  boards saves the outgoing pattern and restores the incoming one; unvisited
+  boards start empty. Paint is never copied between sizes or shapes.
+- Palette and theme are global, not board-specific. Scheme changes remap painted
+  palette colors by position on all boards and select the first new color.
+  Explicit dark/light toggles remap neutral base/accent paint on all boards;
+  switching boards and undo/redo never change the theme.
+- Reset and randomize affect only the active board. Switching shape and size
+  together is one undo step.
 - Undoable: paint, scheme, shape, grid size, randomize, reset. Current color, dark mode,
   and editable-area visibility are tool/view choices, not undo stops.
-- History is unlimited, session-only. Unchanged designs preserve undo/redo;
-  real design edits clear redo. Snapshot restoration reconciles unavailable
+- History is one unlimited, session-only chronological timeline across all boards,
+  including switches. Restored boards form the session's starting baseline;
+  history itself is not restored. Snapshots include active and inactive paint.
+  Unchanged designs preserve undo/redo; real design edits clear redo.
+  Snapshot restoration reconciles unavailable
   selected palette colors by position, preserving available and neutral selections.
-- Autosave writes version 4 to `kaleidoscope:design` on state changes. It saves
+- Theme toggles do not remap historical snapshots, so undo across a toggle can
+  restore older literal neutral colors without changing the current theme.
+- Autosave writes version 5 to `kaleidoscope:design` on state changes. It saves
   scheme name, selected color, dark mode, shape, per-shape sizes,
-  editable-area preference, and paint map.
-- Versions 1-3 remain loadable. Missing size data restores the active shape's
+  editable-area preference, and all board paint maps in one record.
+  `shapeGroupColors` holds active paint; `savedBoards` holds inactive paint keyed
+  by stable `shape:size` IDs (for example, `triangle:sm`), never duplicating the
+  active board.
+- Versions 1-4 remain loadable. Their single paint map belongs only to the original
+  effective active board; other boards start empty. Missing size data restores the active shape's
   legacy size. Earlier placeholder medium values for Hexagram (v1), Circle Rings
   (v1-2), and Pinwheel (v1-3) migrate to large to preserve their previous grids.
 - Loading rejects malformed records, arrays, invalid six-digit hex colors,
-  unknown versions/shapes/schemes; fallback is a fresh design. Missing historical
+  unknown versions/shapes/schemes, invalid board keys, and duplicate active-board
+  entries; fallback is a fresh design. Missing historical
   shape/visibility fields default to hexagon/true. Storage failures never crash the app.
 - Colors retain case and need not belong to the current palette. Unknown group IDs
   are retained; no palette-color migration is implemented.
@@ -203,8 +218,9 @@ symmetry engine. One representative per group is clickable.
   with sequential Tab navigation and Enter/Space painting. Decorative cells/icons
   are hidden from assistive technology; a live region announces painting.
 - Retain visible focus indicators and unique dialog/instruction label IDs.
-- Native dialogs provide modal focus behavior. Reset/shape confirmations have
-  independent persistent opt-outs, saved only on confirmation.
+- Native dialogs provide modal focus behavior. Reset confirmation has a
+  persistent opt-out, saved only on confirmation. Board switches are immediate
+  and non-destructive, so no shape-change confirmation is needed.
 - The shape picker uses three scaled versions of each icon (32/48/64px) in
   equal 88px square buttons, without visible shape or size text. Accessible
   names and tooltips identify shape and size as S/M/L. Rows wrap at narrow widths.

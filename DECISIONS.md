@@ -83,20 +83,28 @@ icon scale conveys size, while accessible names and tooltips retain identificati
 ### Design edits versus tool choices
 
 History wraps the app reducer with snapshots of scheme, shape, per-shape sizes,
-and paint map. This keeps painting, palette changes, shape/size changes, randomization, and reset
+and all board paint maps. This keeps painting, palette changes, shape/size changes, randomization, and reset
 undoable without restoring old tool/view settings.
 
-- History is unlimited for the session and not persisted.
+- History is one unlimited chronological timeline for the session, not a separate
+  stack per board, and is not persisted. All restored boards form the initial
+  baseline; undo follows subsequent edits and switches in order.
 - No-op designs neither add snapshots nor clear redo. Scheme reselection still
   resets the selected paint color, but that tool-only change preserves history.
 - If snapshot restoration makes a selected palette color unavailable, follow
   its position into the restored palette. Keep colors already available there
   and neutral base/accent selections.
-- Changing shape clears paint because group IDs have shape-specific meanings;
-  the previous shape/design remains recoverable through undo.
-- Resizing keeps paint for shared group IDs, rather than clearing the design.
-  Removed groups are trimmed; undo can restore them. A shape-and-size selection
-  is one history step, and each shape remembers its size independently.
+- Each shape/size combination is an independent board, so returning to any of the
+  18 boards resumes its pattern without partially matching group IDs or clearing
+  another design. Unvisited boards start empty. A shape-and-size selection is
+  one history step, and each shape remembers its size independently.
+- Palette and theme remain global rather than being restored per board. Palette
+  changes remap painted palette colors by position on active and inactive boards,
+  preserving non-palette literal colors. Explicit theme toggles remap neutral
+  base/accent paint on all boards; board switches and undo/redo leave the theme
+  setting alone.
+- Reset and randomize affect only the active board; snapshots preserve the
+  inactive boards as well.
 - **Accepted edge case:** dark-mode toggles remap present base/accent colors but
   not historical snapshots. Undo across a toggle can restore old neutral colors.
   Do not silently change this policy.
@@ -112,9 +120,18 @@ Arrays are not paint records; colors must be exact six-digit hex. Palette
 membership and group-ID filtering are separate concerns and remain unrestricted.
 Keep backward-compatible defaults for optional shape/editable-area fields.
 Persist per-shape sizes and migrate earlier effective sizes rather than
-silently shrinking returning users' designs. Version 4 accepts versions 1-3:
+silently shrinking returning users' designs. Version 5 accepts versions 1-4:
 old placeholder medium values for Hexagram, Circle Rings, and Pinwheel map
 to large only in versions predating that shape's size choices.
+
+Keep all boards and global settings in one versioned `kaleidoscope:design`
+record so a save captures palette remapping and board switches together.
+Board keys use stable shape and size IDs, not visible labels. Active paint stays
+in `shapeGroupColors` for existing rendering consumers; `savedBoards` holds only
+inactive boards, avoiding two copies of the active pattern. Validate board keys,
+paint maps, and colors, and reject inactive entries duplicating the active board.
+Older single-design records migrate paint only to their original effective
+active board; do not invent patterns for other boards.
 
 Storage is best-effort: unavailable/full storage must not crash the toy.
 No debounce is needed for deliberate user actions. The historical
@@ -141,8 +158,10 @@ saved scheme, so random initial selection was removed.
   permanent instructions. Background scroll locking preserves page position;
   a shared lock count prevents a nested confirmation from unlocking its picker.
   Contain scroll gestures at the body's boundaries and make overflow keyboard-focusable.
-- Reset and shape-change opt-outs are independent. Only confirming with the
-  checkbox checked saves the preference; canceling clears the checkbox.
+- Reset retains its confirmation and opt-out. Only confirming with the checkbox
+  checked saves the preference; canceling clears the checkbox. Board switches
+  no longer need destructive-action confirmation because every pattern is
+  retained; any old shape-change opt-out is no longer consulted.
   Pickers close after selection.
 - Touch devices get an initially enabled, persisted editable-area toggle;
   desktop uses pointer hover. Both dim non-clickable cells.
