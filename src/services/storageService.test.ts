@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { colorSchemes } from '../data/colorSchemes'
 import { supportedGridShapes } from '../data/gridShapes'
+import { defaultGridSizes } from '../data/gridSizes'
 import type { AppState } from '../types/appState'
 import {
 	loadInitialAppState,
@@ -17,6 +18,7 @@ function baseState(overrides: Partial<AppState> = {}): AppState {
 		darkMode: false,
 		showEditableArea: true,
 		gridShape: 'hexagon',
+		gridSizes: { ...defaultGridSizes },
 		shapeGroupColors: {},
 		...overrides,
 	}
@@ -111,6 +113,7 @@ describe('storageService', () => {
 				darkMode: true,
 				showEditableArea: true,
 				gridShape: 'hexagon',
+				gridSizes: { ...defaultGridSizes },
 				shapeGroupColors: {},
 			})
 			expect(colorSchemes).toContain(state.currentScheme)
@@ -168,6 +171,37 @@ describe('storageService', () => {
 				shapeGroupColors: { a: '#123456' },
 			}),
 		)
+	})
+
+	it('round-trips per-shape grid sizes and defaults missing sizes for older saved designs', () => {
+		const saved = baseState({
+			gridSizes: { ...defaultGridSizes, hexagon: 'lg' },
+		})
+		savePersistedState(saved)
+		expect(loadInitialAppState()).toEqual(saved)
+
+		const legacy = JSON.parse(localStorage.getItem(STORAGE_KEY)!) as Record<
+			string,
+			unknown
+		>
+		delete legacy.gridSizes
+		localStorage.setItem(STORAGE_KEY, JSON.stringify(legacy))
+		expect(loadInitialAppState().gridSizes).toEqual(defaultGridSizes)
+	})
+
+	it('rejects invalid persisted grid sizes', () => {
+		localStorage.setItem(
+			STORAGE_KEY,
+			JSON.stringify({
+				version: 1,
+				schemeName: colorSchemes[0].name,
+				currentColor: '#123456',
+				darkMode: false,
+				gridSizes: { hexagon: 'extra-large' },
+				shapeGroupColors: {},
+			}),
+		)
+		expect(loadInitialAppState().gridSizes).toEqual(defaultGridSizes)
 	})
 
 	it('falls back to a fresh random state when the saved scheme name no longer exists', () => {

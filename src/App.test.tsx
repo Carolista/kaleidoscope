@@ -5,6 +5,7 @@ import { AppStateProvider } from './state/AppContext'
 import App from './App'
 import { useIsTouchDevice } from './hooks/useIsTouchDevice'
 import { supportedGridShapes } from './data/gridShapes'
+import { defaultGridSizes } from './data/gridSizes'
 import { colorSchemes } from './data/colorSchemes'
 import { savePersistedState } from './services/storageService'
 
@@ -84,6 +85,7 @@ describe('App', () => {
 				darkMode: true,
 				showEditableArea: true,
 				gridShape: id,
+				gridSizes: { ...defaultGridSizes },
 				shapeGroupColors: {},
 			})
 			mockUseIsTouchDevice.mockReturnValue(false)
@@ -208,7 +210,7 @@ describe('App', () => {
 		await user.click(
 			screen.getByRole('button', { name: 'Select a different shape' }),
 		)
-		await user.click(screen.getByRole('button', { name: 'Triangle' }))
+		await user.click(screen.getByRole('button', { name: 'Triangle MD' }))
 		await user.click(screen.getByRole('button', { name: 'Switch' }))
 
 		expect(

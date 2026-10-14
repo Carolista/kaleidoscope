@@ -1,8 +1,7 @@
 .dialog {
-	width: 20rem;
+	width: 42rem;
 }
 
 .content {
-	display: flex;
-	justify-content: center;
+	display: block;
 }

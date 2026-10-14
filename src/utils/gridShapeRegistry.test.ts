@@ -30,4 +30,13 @@ describe('gridShapeRegistry', () => {
 			)
 		},
 	)
+
+	it('uses the selected hexagon size when computing its aspect ratio', () => {
+		expect(computeAspectRatioForShape('hexagon', 'sm')).toBe(
+			hexagon.computeGridAspectRatio(3),
+		)
+		expect(computeAspectRatioForShape('hexagon', 'lg')).toBe(
+			hexagon.computeGridAspectRatio(6),
+		)
+	})
 })

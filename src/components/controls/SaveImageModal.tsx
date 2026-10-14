@@ -23,8 +23,12 @@ function SaveImageModal({ open, svgRef, onClose }: SaveImageModalProps) {
 	// service also rasterizes from, so the preview box is already sized
 	// correctly before the image exists.
 	const previewAspectRatio = useMemo(
-		() => computeAspectRatioForShape(state.gridShape),
-		[state.gridShape],
+		() =>
+			computeAspectRatioForShape(
+				state.gridShape,
+				state.gridSizes[state.gridShape],
+			),
+		[state.gridShape, state.gridSizes],
 	)
 
 	return (

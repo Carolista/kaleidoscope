@@ -9,6 +9,7 @@ import {
 import {
 	computeGridAspectRatio as computeHexagonAspectRatio,
 	getGroupIds as getHexagonGroupIds,
+	HEXAGON_GRID_RADII,
 } from '@geometry/hexagonGrid'
 import {
 	computeGridAspectRatio as computeHexagramAspectRatio,
@@ -23,6 +24,7 @@ import {
 	getGroupIds as getTriangleGroupIds,
 } from '@geometry/triangleGrid'
 import type { GridShapeId } from '../types/gridShape'
+import type { GridSize } from '../types/gridSize'
 
 const shapeGeometry = {
 	hexagon: {
@@ -57,10 +59,22 @@ const shapeGeometry = {
 	}
 >
 
-export function getGroupIdsForShape(shape: GridShapeId): string[] {
+export function getGroupIdsForShape(
+	shape: GridShapeId,
+	gridSize: GridSize = 'md',
+): string[] {
+	if (shape === 'hexagon') {
+		return getHexagonGroupIds(HEXAGON_GRID_RADII[gridSize])
+	}
 	return shapeGeometry[shape].getGroupIds()
 }
 
-export function computeAspectRatioForShape(shape: GridShapeId): number {
+export function computeAspectRatioForShape(
+	shape: GridShapeId,
+	gridSize: GridSize = 'md',
+): number {
+	if (shape === 'hexagon') {
+		return computeHexagonAspectRatio(HEXAGON_GRID_RADII[gridSize])
+	}
 	return shapeGeometry[shape].aspectRatio()
 }

@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { AppStateProvider } from '@state/AppContext'
 import { useAppState } from '@state/useAppState'
 import { gridShapes } from '@data/gridShapes'
+import { defaultGridSizes, gridSizeOptions } from '@data/gridSizes'
 import { colorSchemes } from '@data/colorSchemes'
 import { savePersistedState } from '@services/storageService'
 import GridShapePicker from './GridShapePicker'
@@ -30,37 +31,49 @@ describe('GridShapePicker', () => {
 			darkMode: true,
 			showEditableArea: true,
 			gridShape: 'hexagon',
+			gridSizes: { ...defaultGridSizes },
 			shapeGroupColors: {},
 		})
 	})
-	it('renders one button per grid shape, with hexagon pressed by default', () => {
+	it('renders each shape with size options and selects Hexagon MD by default', () => {
 		render(<GridShapePicker />, { wrapper: AppStateProvider })
-		const hexagon = screen.getByRole('button', { name: 'Hexagon' })
-		const triangle = screen.getByRole('button', { name: 'Triangle' })
-		expect(screen.getAllByRole('button')).toHaveLength(gridShapes.length)
+		const hexagon = screen.getByRole('button', { name: 'Hexagon MD' })
+		const triangle = screen.getByRole('button', { name: 'Triangle MD' })
+		expect(screen.getAllByRole('button')).toHaveLength(
+			gridShapes.length * gridSizeOptions.length,
+		)
 		for (const { label } of gridShapes) {
-			expect(
-				screen.getByRole('button', { name: label }),
-			).toBeInTheDocument()
+			for (const { label: sizeLabel } of gridSizeOptions) {
+				expect(
+					screen.getByRole('button', {
+						name: `${label} ${sizeLabel}`,
+					}),
+				).toBeInTheDocument()
+			}
 		}
 		expect(hexagon).toHaveAttribute('aria-pressed', 'true')
 		expect(triangle).toHaveAttribute('aria-pressed', 'false')
+		expect(
+			screen.getByRole('button', { name: 'Triangle SM' }),
+		).toBeDisabled()
+		expect(
+			screen.getByRole('button', { name: 'Triangle MD' }),
+		).toBeEnabled()
 	})
 
 	it('clicking a different shape opens a confirmation dialog rather than switching immediately', async () => {
 		const user = userEvent.setup()
 		render(<GridShapePicker />, { wrapper: AppStateProvider })
 
-		await user.click(screen.getByRole('button', { name: 'Triangle' }))
+		await user.click(screen.getByRole('button', { name: 'Triangle MD' }))
 
 		expect(
 			screen.getByRole('dialog', { name: 'Confirm Shape Change' }),
 		).toBeInTheDocument()
 		// Not switched yet, since the dialog hasn't been confirmed.
-		expect(screen.getByRole('button', { name: 'Hexagon' })).toHaveAttribute(
-			'aria-pressed',
-			'true',
-		)
+		expect(
+			screen.getByRole('button', { name: 'Hexagon MD' }),
+		).toHaveAttribute('aria-pressed', 'true')
 	})
 
 	it('confirming the dialog switches the shape and resets the design', async () => {
@@ -71,11 +84,11 @@ describe('GridShapePicker', () => {
 		await user.click(screen.getByRole('button', { name: 'Paint' }))
 		expect(screen.getByTestId('count')).toHaveTextContent('1')
 
-		await user.click(screen.getByRole('button', { name: 'Triangle' }))
+		await user.click(screen.getByRole('button', { name: 'Triangle MD' }))
 		await user.click(screen.getByRole('button', { name: 'Switch' }))
 
 		expect(
-			screen.getByRole('button', { name: 'Triangle' }),
+			screen.getByRole('button', { name: 'Triangle MD' }),
 		).toHaveAttribute('aria-pressed', 'true')
 		expect(screen.getByTestId('count')).toHaveTextContent('0')
 		expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
@@ -87,13 +100,12 @@ describe('GridShapePicker', () => {
 
 		await user.click(screen.getByRole('button', { name: 'Paint' }))
 		expect(screen.getByTestId('count')).toHaveTextContent('1')
-		await user.click(screen.getByRole('button', { name: 'Triangle' }))
+		await user.click(screen.getByRole('button', { name: 'Triangle MD' }))
 		await user.click(screen.getByRole('button', { name: 'Cancel' }))
 
-		expect(screen.getByRole('button', { name: 'Hexagon' })).toHaveAttribute(
-			'aria-pressed',
-			'true',
-		)
+		expect(
+			screen.getByRole('button', { name: 'Hexagon MD' }),
+		).toHaveAttribute('aria-pressed', 'true')
 		expect(
 			screen.queryByRole('dialog', { name: 'Confirm Shape Change' }),
 		).not.toBeInTheDocument()
@@ -107,7 +119,7 @@ describe('GridShapePicker', () => {
 			wrapper: AppStateProvider,
 		})
 
-		await user.click(screen.getByRole('button', { name: 'Triangle' }))
+		await user.click(screen.getByRole('button', { name: 'Triangle MD' }))
 		expect(onSelected).not.toHaveBeenCalled()
 		await user.click(screen.getByRole('button', { name: 'Switch' }))
 		expect(onSelected).toHaveBeenCalledTimes(1)
@@ -120,21 +132,22 @@ describe('GridShapePicker', () => {
 		render(<GridShapePicker onSelected={onSelected} />, {
 			wrapper: AppStateProvider,
 		})
-		await user.click(screen.getByRole('button', { name: 'Triangle' }))
+		await user.click(screen.getByRole('button', { name: 'Triangle MD' }))
 		await user.click(screen.getByRole('checkbox'))
 		await user.click(screen.getByRole('button', { name: 'Cancel' }))
 		expect(onSelected).not.toHaveBeenCalled()
 		expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 
-		await user.click(screen.getByRole('button', { name: 'Diamond Star' }))
+		await user.click(
+			screen.getByRole('button', { name: 'Diamond Star MD' }),
+		)
 		expect(
 			screen.getByRole('dialog', { name: 'Confirm Shape Change' }),
 		).toBeInTheDocument()
 		expect(screen.getByRole('checkbox')).not.toBeChecked()
-		expect(screen.getByRole('button', { name: 'Hexagon' })).toHaveAttribute(
-			'aria-pressed',
-			'true',
-		)
+		expect(
+			screen.getByRole('button', { name: 'Hexagon MD' }),
+		).toHaveAttribute('aria-pressed', 'true')
 		expect(onSelected).not.toHaveBeenCalled()
 	})
 
@@ -142,24 +155,23 @@ describe('GridShapePicker', () => {
 		const user = userEvent.setup()
 		render(<GridShapePicker />, { wrapper: AppStateProvider })
 
-		await user.click(screen.getByRole('button', { name: 'Triangle' }))
+		await user.click(screen.getByRole('button', { name: 'Triangle MD' }))
 		await user.click(
 			screen.getByRole('checkbox', { name: "Don't show this again" }),
 		)
 		await user.click(screen.getByRole('button', { name: 'Switch' }))
 		expect(
-			screen.getByRole('button', { name: 'Triangle' }),
+			screen.getByRole('button', { name: 'Triangle MD' }),
 		).toHaveAttribute('aria-pressed', 'true')
 
 		// Switch back to hexagon with no dialog this time.
-		await user.click(screen.getByRole('button', { name: 'Hexagon' }))
+		await user.click(screen.getByRole('button', { name: 'Hexagon MD' }))
 		expect(
 			screen.queryByRole('dialog', { name: 'Confirm Shape Change' }),
 		).not.toBeInTheDocument()
-		expect(screen.getByRole('button', { name: 'Hexagon' })).toHaveAttribute(
-			'aria-pressed',
-			'true',
-		)
+		expect(
+			screen.getByRole('button', { name: 'Hexagon MD' }),
+		).toHaveAttribute('aria-pressed', 'true')
 	})
 
 	it('clicking the already-current shape does not open a confirmation dialog', async () => {
@@ -167,11 +179,27 @@ describe('GridShapePicker', () => {
 		render(<Harness />, { wrapper: AppStateProvider })
 
 		await user.click(screen.getByRole('button', { name: 'Paint' }))
-		await user.click(screen.getByRole('button', { name: 'Hexagon' }))
+		await user.click(screen.getByRole('button', { name: 'Hexagon MD' }))
 
 		expect(
 			screen.queryByRole('dialog', { name: 'Confirm Shape Change' }),
 		).not.toBeInTheDocument()
 		expect(screen.getByTestId('count')).toHaveTextContent('1')
+	})
+
+	it('changes the selected hexagon size directly and preserves its design', async () => {
+		const user = userEvent.setup()
+		render(<Harness />, { wrapper: AppStateProvider })
+
+		await user.click(screen.getByRole('button', { name: 'Paint' }))
+		await user.click(screen.getByRole('button', { name: 'Hexagon SM' }))
+
+		expect(
+			screen.getByRole('button', { name: 'Hexagon SM' }),
+		).toHaveAttribute('aria-pressed', 'true')
+		expect(screen.getByTestId('count')).toHaveTextContent('1')
+		expect(
+			screen.queryByRole('dialog', { name: 'Confirm Shape Change' }),
+		).not.toBeInTheDocument()
 	})
 })

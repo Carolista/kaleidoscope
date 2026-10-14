@@ -1,5 +1,6 @@
 import type { AppState } from '../types/appState'
 import type { AppAction } from './appReducer'
+import { supportedGridShapes } from '../data/gridShapes'
 import { appReducer } from './appReducer'
 import { getThemeColors } from './theme'
 
@@ -12,11 +13,12 @@ const UNDOABLE_ACTION_TYPES = new Set<AppAction['type']>([
 	'RESET_DESIGN',
 	'RANDOMIZE_DESIGN',
 	'SELECT_GRID_SHAPE',
+	'SELECT_GRID_SIZE',
 ])
 
 type DesignSnapshot = Pick<
 	AppState,
-	'currentScheme' | 'gridShape' | 'shapeGroupColors'
+	'currentScheme' | 'gridShape' | 'gridSizes' | 'shapeGroupColors'
 >
 
 export interface HistoryState {
@@ -36,6 +38,7 @@ function snapshotOf(state: AppState): DesignSnapshot {
 	return {
 		currentScheme: state.currentScheme,
 		gridShape: state.gridShape,
+		gridSizes: state.gridSizes,
 		shapeGroupColors: state.shapeGroupColors,
 	}
 }
@@ -43,6 +46,9 @@ function snapshotOf(state: AppState): DesignSnapshot {
 function sameDesign(previous: AppState, next: AppState): boolean {
 	if (
 		previous.gridShape !== next.gridShape ||
+		supportedGridShapes.some(
+			({ id }) => previous.gridSizes[id] !== next.gridSizes[id],
+		) ||
 		previous.currentScheme.name !== next.currentScheme.name ||
 		!previous.currentScheme.colors.every(
 			(color, index) => color === next.currentScheme.colors[index],

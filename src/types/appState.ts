@@ -1,5 +1,6 @@
 import type { ColorScheme } from './colorScheme'
 import type { GridShapeId } from './gridShape'
+import type { GridSize } from './gridSize'
 
 export interface AppState {
 	readonly currentScheme: ColorScheme
@@ -14,6 +15,8 @@ export interface AppState {
 	// Switching shapes resets `shapeGroupColors`, since a group id from one
 	// shape's symmetry grouping has no meaning for another's.
 	readonly gridShape: GridShapeId
+	// Size choices are remembered independently for each shape.
+	readonly gridSizes: Readonly<Record<GridShapeId, GridSize>>
 	// Keyed by the current shape's cell `groupId`; a group with no entry
 	// is shown in the default/accent color. Originally named
 	// `hexGroupColors` from when hexagon was the only shape; renamed once the

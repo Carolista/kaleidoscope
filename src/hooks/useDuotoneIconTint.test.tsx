@@ -3,6 +3,7 @@ import { act, renderHook } from '@testing-library/react'
 import { faXmark } from '@fortawesome/pro-solid-svg-icons'
 import { faPalette, faShapes } from '@fortawesome/sharp-duotone-solid-svg-icons'
 import { colorSchemes } from '@data/colorSchemes'
+import { defaultGridSizes } from '@data/gridSizes'
 import { AppStateProvider } from '@state/AppContext'
 import { useAppState } from '@state/useAppState'
 import { savePersistedState } from '@services/storageService'
@@ -18,6 +19,7 @@ describe('useDuotoneIconTint', () => {
 			darkMode: true,
 			showEditableArea: true,
 			gridShape: 'hexagon',
+			gridSizes: { ...defaultGridSizes },
 			shapeGroupColors: {},
 		})
 	})

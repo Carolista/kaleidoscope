@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import type { Ref } from 'react'
 import {
+	computeGridAspectRatio,
 	HEXAGON_GRID_RADIUS,
 	generateHexagonCells,
 } from '@geometry/hexagonGrid'
@@ -33,6 +34,10 @@ function HexagonGrid({
 		[hexSize],
 	)
 	const cells = useMemo(() => generateHexagonCells(radius), [radius])
+	const sizingAspectRatio = useMemo(
+		() => computeGridAspectRatio(radius),
+		[radius],
+	)
 	const { polygons, viewBox } = useMemo(() => {
 		const centers = cells.map(cell => axialToPixel(cell, layout))
 		const { minX, minY, maxX, maxY } = boundingBox(centers, layout)
@@ -54,7 +59,7 @@ function HexagonGrid({
 			cells={polygons}
 			viewBox={viewBox}
 			svgRef={svgRef}
-			sizingAspectRatio={0.8763}
+			sizingAspectRatio={sizingAspectRatio}
 			label="Kaleidoscope hexagon grid"
 			instructions="Tab to move between hexagons. Press Enter or Space to paint the focused hexagon with the current color."
 		/>

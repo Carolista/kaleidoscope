@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { colorSchemes } from '../data/colorSchemes'
+import { defaultGridSizes } from '../data/gridSizes'
 import type { AppState } from '../types/appState'
 import type { AppAction } from './appReducer'
 import { getGroupIdsForShape } from '../utils/gridShapeRegistry'
@@ -12,6 +13,7 @@ function baseState(overrides: Partial<AppState> = {}): AppState {
 		darkMode: false,
 		showEditableArea: true,
 		gridShape: 'hexagon',
+		gridSizes: { ...defaultGridSizes },
 		shapeGroupColors: {},
 		...overrides,
 	}
@@ -225,6 +227,49 @@ describe('historyReducer', () => {
 		expect(history.present.shapeGroupColors).toEqual({})
 		expect(history.past).toHaveLength(0)
 		expect(history.future).toHaveLength(1)
+	})
+
+	it('undoes and redoes hexagon size changes together with their retained paint', () => {
+		const outerGroupId = getGroupIdsForShape('hexagon', 'lg').find(
+			id => !getGroupIdsForShape('hexagon', 'sm').includes(id),
+		)!
+		const state = baseState({
+			gridSizes: { ...defaultGridSizes, hexagon: 'lg' },
+			shapeGroupColors: {
+				'0,0': '#ff0000',
+				[outerGroupId]: '#00ff00',
+			},
+		})
+		let history = historyReducer(createInitialHistoryState(state), {
+			type: 'SELECT_GRID_SIZE',
+			shape: 'hexagon',
+			size: 'sm',
+		})
+		expect(history.present.gridSizes.hexagon).toBe('sm')
+		expect(history.present.shapeGroupColors).toEqual({ '0,0': '#ff0000' })
+
+		history = historyReducer(history, { type: 'UNDO' })
+		expect(history.present.gridSizes.hexagon).toBe('lg')
+		expect(history.present.shapeGroupColors).toEqual(state.shapeGroupColors)
+
+		history = historyReducer(history, { type: 'REDO' })
+		expect(history.present.gridSizes.hexagon).toBe('sm')
+		expect(history.present.shapeGroupColors).toEqual({ '0,0': '#ff0000' })
+	})
+
+	it('undoes a shape and size selection as one action', () => {
+		const state = baseState({ gridShape: 'triangle' })
+		const history = historyReducer(createInitialHistoryState(state), {
+			type: 'SELECT_GRID_SHAPE',
+			shape: 'hexagon',
+			size: 'sm',
+		})
+		expect(history.past).toHaveLength(1)
+		expect(history.present.gridShape).toBe('hexagon')
+		expect(history.present.gridSizes.hexagon).toBe('sm')
+		expect(
+			historyReducer(history, { type: 'UNDO' }).present.gridShape,
+		).toBe('triangle')
 	})
 
 	it('REDO reapplies an undone design and moves it back to past', () => {

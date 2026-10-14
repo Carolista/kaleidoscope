@@ -27,6 +27,7 @@ import { hasPersistedDesign } from './services/storageService'
 import { getThemeColors } from './state/theme'
 import { useAppState } from './state/useAppState'
 import type { GridShapeId } from './types/gridShape'
+import { HEXAGON_GRID_RADII } from '@geometry/hexagonGrid'
 
 const gridComponents = {
 	hexagon: HexagonGrid,
@@ -82,7 +83,16 @@ function App() {
 					<IntroSequence onContinue={() => setShowIntro(false)} />
 				) : (
 					<>
-						<Grid svgRef={svgRef} />
+						{state.gridShape === 'hexagon' ? (
+							<HexagonGrid
+								radius={
+									HEXAGON_GRID_RADII[state.gridSizes.hexagon]
+								}
+								svgRef={svgRef}
+							/>
+						) : (
+							<Grid svgRef={svgRef} />
+						)}
 						<div
 							role="group"
 							aria-label="Controls"

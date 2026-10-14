@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { colorSchemes } from '../data/colorSchemes'
+import { defaultGridSizes } from '../data/gridSizes'
+import { getGroupIdsForShape } from '../utils/gridShapeRegistry'
 import { appReducer, createInitialAppState } from './appReducer'
 import type { AppState } from '../types/appState'
 
@@ -11,6 +13,7 @@ describe('createInitialAppState', () => {
 		expect(state.darkMode).toBe(true)
 		expect(state.showEditableArea).toBe(true)
 		expect(state.gridShape).toBe('hexagon')
+		expect(state.gridSizes).toEqual(defaultGridSizes)
 		expect(state.shapeGroupColors).toEqual({})
 	})
 })
@@ -22,6 +25,7 @@ function baseState(overrides: Partial<AppState> = {}): AppState {
 		darkMode: false,
 		showEditableArea: true,
 		gridShape: 'hexagon',
+		gridSizes: { ...defaultGridSizes },
 		shapeGroupColors: {},
 		...overrides,
 	}
@@ -238,5 +242,36 @@ describe('appReducer', () => {
 			shape: 'hexagon',
 		})
 		expect(next).toBe(state)
+	})
+
+	it('SELECT_GRID_SIZE changes the hexagon radius and keeps paint for groups shared by both sizes', () => {
+		const removedGroupId = getGroupIdsForShape('hexagon', 'lg').find(
+			id => !getGroupIdsForShape('hexagon', 'sm').includes(id),
+		)!
+		const state = baseState({
+			gridSizes: { ...defaultGridSizes, hexagon: 'lg' },
+			shapeGroupColors: {
+				'0,0': '#ff0000',
+				[removedGroupId]: '#00ff00',
+			},
+		})
+		const next = appReducer(state, {
+			type: 'SELECT_GRID_SIZE',
+			shape: 'hexagon',
+			size: 'sm',
+		})
+		expect(next.gridSizes.hexagon).toBe('sm')
+		expect(next.shapeGroupColors).toEqual({ '0,0': '#ff0000' })
+	})
+
+	it('SELECT_GRID_SIZE is undoable input and rejects sizes unavailable for that shape', () => {
+		const state = baseState()
+		expect(
+			appReducer(state, {
+				type: 'SELECT_GRID_SIZE',
+				shape: 'triangle',
+				size: 'sm',
+			}),
+		).toBe(state)
 	})
 })

@@ -2,14 +2,14 @@ import type { AppState } from '../types/appState'
 import type { GridShapeId } from '../types/gridShape'
 import { colorSchemes } from '../data/colorSchemes'
 import { isGridShapeId } from '../data/gridShapes'
+import { defaultGridSizes, isGridSize } from '../data/gridSizes'
 import { createInitialAppState } from '../state/appReducer'
 
 const STORAGE_KEY = 'kaleidoscope:design'
 
-// Bumping this invalidates any previously-persisted design whose shape no
-// longer matches what loadPersistedState expects, rather than risking a
-// crash trying to parse it. No migration logic yet since this is the
-// first version.
+// Bumping this invalidates persisted designs whose shape no longer matches
+// what loadPersistedState expects. There is no general migration framework;
+// backward-compatible optional fields are defaulted inline.
 const STORAGE_VERSION = 1
 
 interface PersistedDesign {
@@ -24,6 +24,8 @@ interface PersistedDesign {
 	// Optional for the same reason (falls back to 'hexagon', the only
 	// shape that existed before this field was added).
 	readonly gridShape?: GridShapeId
+	// Older saved designs use the default medium size for every shape.
+	readonly gridSizes?: Partial<AppState['gridSizes']>
 	readonly shapeGroupColors: Readonly<Record<string, string>>
 }
 
@@ -35,6 +37,7 @@ function toPersistedDesign(state: AppState): PersistedDesign {
 		darkMode: state.darkMode,
 		showEditableArea: state.showEditableArea,
 		gridShape: state.gridShape,
+		gridSizes: state.gridSizes,
 		shapeGroupColors: state.shapeGroupColors,
 	}
 }
@@ -53,6 +56,7 @@ function fromPersistedDesign(data: PersistedDesign): AppState | null {
 		darkMode: data.darkMode,
 		showEditableArea: data.showEditableArea ?? true,
 		gridShape: data.gridShape ?? 'hexagon',
+		gridSizes: { ...defaultGridSizes, ...data.gridSizes },
 		shapeGroupColors: { ...data.shapeGroupColors },
 	}
 }
@@ -79,6 +83,11 @@ function isPersistedDesign(data: unknown): data is PersistedDesign {
 		(data.showEditableArea === undefined ||
 			typeof data.showEditableArea === 'boolean') &&
 		(data.gridShape === undefined || isGridShapeId(data.gridShape)) &&
+		(data.gridSizes === undefined ||
+			(isRecord(data.gridSizes) &&
+				Object.entries(data.gridSizes).every(
+					([shape, size]) => isGridShapeId(shape) && isGridSize(size),
+				))) &&
 		isRecord(data.shapeGroupColors) &&
 		Object.values(data.shapeGroupColors).every(isHexColor)
 	)

@@ -13,9 +13,9 @@ const grids = [
 	{
 		name: 'hexagon',
 		component: HexagonGrid,
-		cells: 169,
-		tiles: 20,
-		ratio: 0.8763,
+		cells: 61,
+		tiles: 9,
+		ratio: 0.8829238853601823,
 	},
 	{
 		name: 'triangle',
