@@ -1,5 +1,6 @@
 import type { Point } from '../types/geometry'
 import type { CircleRingsCell } from '../types/circleRings'
+import type { GridSize } from '../types/gridSize'
 import { groupCells } from '@utils/groupCells'
 import { assignSymmetryGroups } from '@utils/symmetry'
 import {
@@ -17,6 +18,11 @@ import type { CircleRingsLayout } from './circleRingsLayout'
 // size increase ring-to-ring while keeping that floor. Yields 16
 // clickable groups (see circleRingsGrid.test.ts).
 export const CIRCLE_RINGS_GRID_SIZE = 6
+export const CIRCLE_RINGS_GRID_SIZES: Record<GridSize, number> = {
+	sm: 3,
+	md: 4,
+	lg: CIRCLE_RINGS_GRID_SIZE,
+}
 
 const CENTER: Point = { x: 0, y: 0 }
 // A fixed, abstract layout (ring-1 bandwidth 1) used only to compute

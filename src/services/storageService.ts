@@ -15,10 +15,14 @@ const STORAGE_KEY = 'kaleidoscope:design'
 // Backward-compatible changes are migrated inline; incompatible payloads are
 // rejected when their version is not recognized.
 const LEGACY_STORAGE_VERSION = 1
-const STORAGE_VERSION = 2
+const PREVIOUS_STORAGE_VERSION = 2
+const STORAGE_VERSION = 3
 
 interface PersistedDesign {
-	readonly version: typeof LEGACY_STORAGE_VERSION | typeof STORAGE_VERSION
+	readonly version:
+		| typeof LEGACY_STORAGE_VERSION
+		| typeof PREVIOUS_STORAGE_VERSION
+		| typeof STORAGE_VERSION
 	readonly schemeName: string
 	readonly currentColor: string
 	readonly darkMode: boolean
@@ -66,6 +70,12 @@ function fromPersistedDesign(data: PersistedDesign): AppState | null {
 	) {
 		gridSizes.hexagram = 'lg'
 	}
+	if (
+		data.version < STORAGE_VERSION &&
+		data.gridSizes?.circleRings === 'md'
+	) {
+		gridSizes.circleRings = 'lg'
+	}
 
 	return {
 		currentScheme: scheme,
@@ -94,6 +104,7 @@ function isPersistedDesign(data: unknown): data is PersistedDesign {
 	if (!isRecord(data)) return false
 	return (
 		(data.version === LEGACY_STORAGE_VERSION ||
+			data.version === PREVIOUS_STORAGE_VERSION ||
 			data.version === STORAGE_VERSION) &&
 		typeof data.schemeName === 'string' &&
 		isHexColor(data.currentColor) &&

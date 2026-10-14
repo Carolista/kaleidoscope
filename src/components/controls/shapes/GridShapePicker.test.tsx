@@ -7,6 +7,7 @@ import { gridShapes } from '@data/gridShapes'
 import { defaultGridSizes, gridSizeOptions } from '@data/gridSizes'
 import { colorSchemes } from '@data/colorSchemes'
 import { savePersistedState } from '@services/storageService'
+import { getGroupIdsForShape } from '@utils/gridShapeRegistry'
 import GridShapePicker from './GridShapePicker'
 
 function Harness() {
@@ -14,6 +15,13 @@ function Harness() {
 	return (
 		<>
 			<button onClick={() => paintShapeGroup('0,0')}>Paint</button>
+			<button
+				onClick={() =>
+					paintShapeGroup(getGroupIdsForShape('circleRings', 'sm')[0])
+				}
+			>
+				Paint Circle
+			</button>
 			<span data-testid="count">
 				{Object.keys(state.shapeGroupColors).length}
 			</span>
@@ -67,7 +75,10 @@ describe('GridShapePicker', () => {
 		).toHaveAttribute('aria-pressed', 'false')
 		expect(
 			screen.getByRole('button', { name: 'Circle Rings SM' }),
-		).toBeDisabled()
+		).toBeEnabled()
+		expect(
+			screen.getByRole('button', { name: 'Circle Rings LG' }),
+		).toHaveAttribute('aria-pressed', 'false')
 	})
 
 	it('clicking a different shape opens a confirmation dialog rather than switching immediately', async () => {
@@ -205,6 +216,28 @@ describe('GridShapePicker', () => {
 
 		expect(
 			screen.getByRole('button', { name: 'Hexagon SM' }),
+		).toHaveAttribute('aria-pressed', 'true')
+		expect(screen.getByTestId('count')).toHaveTextContent('1')
+		expect(
+			screen.queryByRole('dialog', { name: 'Confirm Shape Change' }),
+		).not.toBeInTheDocument()
+	})
+
+	it('changes the selected Circle Rings size directly and preserves shared paint', async () => {
+		const user = userEvent.setup()
+		render(<Harness />, { wrapper: AppStateProvider })
+
+		await user.click(
+			screen.getByRole('button', { name: 'Circle Rings MD' }),
+		)
+		await user.click(screen.getByRole('button', { name: 'Switch' }))
+		await user.click(screen.getByRole('button', { name: 'Paint Circle' }))
+		await user.click(
+			screen.getByRole('button', { name: 'Circle Rings SM' }),
+		)
+
+		expect(
+			screen.getByRole('button', { name: 'Circle Rings SM' }),
 		).toHaveAttribute('aria-pressed', 'true')
 		expect(screen.getByTestId('count')).toHaveTextContent('1')
 		expect(

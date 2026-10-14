@@ -31,6 +31,7 @@ import { HEXAGON_GRID_RADII } from '@geometry/hexagonGrid'
 import { TRIANGLE_GRID_SIZES } from '@geometry/triangleGrid'
 import { DIAMOND_STAR_GRID_SIZES } from '@geometry/diamondStarGrid'
 import { HEXAGRAM_GRID_SIZES } from '@geometry/hexagramGrid'
+import { CIRCLE_RINGS_GRID_SIZES } from '@geometry/circleRingsGrid'
 
 const gridComponents = {
 	hexagon: HexagonGrid,
@@ -117,6 +118,15 @@ function App() {
 							<HexagonGrid
 								radius={
 									HEXAGON_GRID_RADII[state.gridSizes.hexagon]
+								}
+								svgRef={svgRef}
+							/>
+						) : state.gridShape === 'circleRings' ? (
+							<CircleRingsGrid
+								ringCount={
+									CIRCLE_RINGS_GRID_SIZES[
+										state.gridSizes.circleRings
+									]
 								}
 								svgRef={svgRef}
 							/>

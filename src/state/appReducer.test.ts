@@ -327,12 +327,40 @@ describe('appReducer', () => {
 		expect(next.shapeGroupColors).toEqual({ '0': '#ff0000' })
 	})
 
+	it('SELECT_GRID_SIZE changes Circle Rings ring count while retaining overlapping groups', () => {
+		const smallGroupIds = getGroupIdsForShape('circleRings', 'sm')
+		const largeGroupIds = getGroupIdsForShape('circleRings', 'lg')
+		const retainedGroupId = largeGroupIds.find(id =>
+			smallGroupIds.includes(id),
+		)!
+		const removedGroupId = largeGroupIds.find(
+			id => !smallGroupIds.includes(id),
+		)!
+		const state = baseState({
+			gridShape: 'circleRings',
+			gridSizes: { ...defaultGridSizes, circleRings: 'lg' },
+			shapeGroupColors: {
+				[retainedGroupId]: '#ff0000',
+				[removedGroupId]: '#00ff00',
+			},
+		})
+		const next = appReducer(state, {
+			type: 'SELECT_GRID_SIZE',
+			shape: 'circleRings',
+			size: 'sm',
+		})
+		expect(next.gridSizes.circleRings).toBe('sm')
+		expect(next.shapeGroupColors).toEqual({
+			[retainedGroupId]: '#ff0000',
+		})
+	})
+
 	it('SELECT_GRID_SIZE is undoable input and rejects sizes unavailable for that shape', () => {
 		const state = baseState()
 		expect(
 			appReducer(state, {
 				type: 'SELECT_GRID_SIZE',
-				shape: 'circleRings',
+				shape: 'pinwheel',
 				size: 'sm',
 			}),
 		).toBe(state)

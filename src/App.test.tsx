@@ -98,6 +98,28 @@ describe('App', () => {
 		},
 	)
 
+	it('renders the selected Circle Rings size', () => {
+		savePersistedState({
+			currentScheme: colorSchemes[0],
+			currentColor: colorSchemes[0].colors[0],
+			darkMode: true,
+			showEditableArea: true,
+			gridShape: 'circleRings',
+			gridSizes: { ...defaultGridSizes, circleRings: 'sm' },
+			shapeGroupColors: {},
+		})
+		mockUseIsTouchDevice.mockReturnValue(false)
+		renderApp()
+
+		expect(
+			screen
+				.getByRole('group', {
+					name: 'Kaleidoscope circle rings grid',
+				})
+				.querySelectorAll('circle'),
+		).toHaveLength(37)
+	})
+
 	it('dismisses the controls modal via its close button after the intro', async () => {
 		mockUseIsTouchDevice.mockReturnValue(false)
 		const user = userEvent.setup()

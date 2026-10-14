@@ -15,7 +15,7 @@ export const availableGridSizes: Record<GridShapeId, readonly GridSize[]> = {
 	triangle: ['sm', 'md', 'lg'],
 	diamondStar: ['sm', 'md', 'lg'],
 	hexagram: ['sm', 'md', 'lg'],
-	circleRings: ['md'],
+	circleRings: ['sm', 'md', 'lg'],
 	pinwheel: ['md'],
 }
 
@@ -24,7 +24,7 @@ export const defaultGridSizes: Record<GridShapeId, GridSize> = {
 	triangle: 'md',
 	diamondStar: 'md',
 	hexagram: 'lg',
-	circleRings: 'md',
+	circleRings: 'lg',
 	pinwheel: 'md',
 }
 
@@ -33,7 +33,7 @@ export const legacyGridSizes: Record<GridShapeId, GridSize> = {
 	triangle: 'lg',
 	diamondStar: 'md',
 	hexagram: 'lg',
-	circleRings: 'md',
+	circleRings: 'lg',
 	pinwheel: 'md',
 }
 

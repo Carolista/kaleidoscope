@@ -1,6 +1,7 @@
 import {
 	computeGridAspectRatio as computeCircleRingsAspectRatio,
 	getGroupIds as getCircleRingsGroupIds,
+	CIRCLE_RINGS_GRID_SIZES,
 } from '@geometry/circleRingsGrid'
 import {
 	computeGridAspectRatio as computeDiamondStarAspectRatio,
@@ -79,6 +80,9 @@ export function getGroupIdsForShape(
 	if (shape === 'hexagram') {
 		return getHexagramGroupIds(HEXAGRAM_GRID_SIZES[gridSize])
 	}
+	if (shape === 'circleRings') {
+		return getCircleRingsGroupIds(CIRCLE_RINGS_GRID_SIZES[gridSize])
+	}
 	return shapeGeometry[shape].getGroupIds()
 }
 
@@ -97,6 +101,9 @@ export function computeAspectRatioForShape(
 	}
 	if (shape === 'hexagram') {
 		return computeHexagramAspectRatio(HEXAGRAM_GRID_SIZES[gridSize])
+	}
+	if (shape === 'circleRings') {
+		return computeCircleRingsAspectRatio(CIRCLE_RINGS_GRID_SIZES[gridSize])
 	}
 	return shapeGeometry[shape].aspectRatio()
 }

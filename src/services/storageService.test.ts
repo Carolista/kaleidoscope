@@ -214,7 +214,7 @@ describe('storageService', () => {
 		expect(loadInitialAppState().gridSizes.hexagram).toBe('lg')
 	})
 
-	it.each([{ hexagon: 'extra-large' }, { circleRings: 'lg' }])(
+	it.each([{ hexagon: 'extra-large' }, { pinwheel: 'lg' }])(
 		'rejects invalid or unavailable persisted grid sizes',
 		gridSizes => {
 			localStorage.setItem(
@@ -231,6 +231,23 @@ describe('storageService', () => {
 			expect(loadInitialAppState().gridSizes).toEqual(defaultGridSizes)
 		},
 	)
+
+	it('migrates pre-Circle-Rings-size MD values to LG to preserve the previous grid', () => {
+		localStorage.setItem(
+			STORAGE_KEY,
+			JSON.stringify({
+				version: 2,
+				schemeName: colorSchemes[0].name,
+				currentColor: '#123456',
+				darkMode: false,
+				gridShape: 'circleRings',
+				gridSizes: { ...defaultGridSizes, circleRings: 'md' },
+				shapeGroupColors: {},
+			}),
+		)
+
+		expect(loadInitialAppState().gridSizes.circleRings).toBe('lg')
+	})
 
 	it('falls back to a fresh random state when the saved scheme name no longer exists', () => {
 		localStorage.setItem(

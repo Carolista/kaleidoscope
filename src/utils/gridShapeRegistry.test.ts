@@ -11,6 +11,7 @@ import { HEXAGON_GRID_RADII } from '@geometry/hexagonGrid'
 import { TRIANGLE_GRID_SIZES } from '@geometry/triangleGrid'
 import { DIAMOND_STAR_GRID_SIZES } from '@geometry/diamondStarGrid'
 import { HEXAGRAM_GRID_SIZES } from '@geometry/hexagramGrid'
+import { CIRCLE_RINGS_GRID_SIZES } from '@geometry/circleRingsGrid'
 import {
 	computeAspectRatioForShape,
 	getGroupIdsForShape,
@@ -39,7 +40,9 @@ describe('gridShapeRegistry', () => {
 							? DIAMOND_STAR_GRID_SIZES[size]
 							: id === 'hexagram'
 								? HEXAGRAM_GRID_SIZES[size]
-								: undefined
+								: id === 'circleRings'
+									? CIRCLE_RINGS_GRID_SIZES[size]
+									: undefined
 			expect(getGroupIdsForShape(id)).toEqual(
 				gridSize === undefined
 					? geometry[id].getGroupIds()
@@ -103,6 +106,21 @@ describe('gridShapeRegistry', () => {
 		)
 		expect(computeAspectRatioForShape('hexagram', 'md')).toBe(
 			hexagram.computeGridAspectRatio(3),
+		)
+	})
+
+	it('uses the selected Circle Rings size when computing groups and aspect ratio', () => {
+		expect(getGroupIdsForShape('circleRings', 'sm')).toEqual(
+			circleRings.getGroupIds(3),
+		)
+		expect(getGroupIdsForShape('circleRings', 'md')).toEqual(
+			circleRings.getGroupIds(4),
+		)
+		expect(getGroupIdsForShape('circleRings', 'lg')).toEqual(
+			circleRings.getGroupIds(6),
+		)
+		expect(computeAspectRatioForShape('circleRings', 'sm')).toBe(
+			circleRings.computeGridAspectRatio(3),
 		)
 	})
 })
