@@ -20,6 +20,7 @@ import {
 	PinwheelGrid,
 	TriangleGrid,
 } from '@grid'
+import GridTransition from './components/grid/GridTransition'
 import Footer from './components/layout/Footer'
 import Header from './components/layout/Header'
 import IntroSequence from './components/intro/IntroSequence'
@@ -88,59 +89,65 @@ function App() {
 					<IntroSequence onContinue={() => setShowIntro(false)} />
 				) : (
 					<>
-						{state.gridShape === 'triangle' ? (
-							<TriangleGrid
-								gridSize={
-									TRIANGLE_GRID_SIZES[
-										state.gridSizes.triangle
-									]
-								}
-								svgRef={svgRef}
-							/>
-						) : state.gridShape === 'diamondStar' ? (
-							<DiamondStarGrid
-								gridSize={
-									DIAMOND_STAR_GRID_SIZES[
-										state.gridSizes.diamondStar
-									]
-								}
-								svgRef={svgRef}
-							/>
-						) : state.gridShape === 'hexagram' ? (
-							<HexagramGrid
-								gridSize={
-									HEXAGRAM_GRID_SIZES[
-										state.gridSizes.hexagram
-									]
-								}
-								svgRef={svgRef}
-							/>
-						) : state.gridShape === 'hexagon' ? (
-							<HexagonGrid
-								radius={
-									HEXAGON_GRID_RADII[state.gridSizes.hexagon]
-								}
-								svgRef={svgRef}
-							/>
-						) : state.gridShape === 'circleRings' ? (
-							<CircleRingsGrid
-								ringCount={
-									CIRCLE_RINGS_GRID_SIZES[
-										state.gridSizes.circleRings
-									]
-								}
-								svgRef={svgRef}
-							/>
-						) : state.gridShape === 'pinwheel' ? (
-							<PinwheelGrid
-								{...PINWHEEL_GRID_SIZES[
-									state.gridSizes.pinwheel
-								]}
-								svgRef={svgRef}
-							/>
-						) : (
-							<Grid svgRef={svgRef} />
-						)}
+						<GridTransition
+							gridKey={`${state.gridShape}:${state.gridSizes[state.gridShape]}`}
+						>
+							{state.gridShape === 'triangle' ? (
+								<TriangleGrid
+									gridSize={
+										TRIANGLE_GRID_SIZES[
+											state.gridSizes.triangle
+										]
+									}
+									svgRef={svgRef}
+								/>
+							) : state.gridShape === 'diamondStar' ? (
+								<DiamondStarGrid
+									gridSize={
+										DIAMOND_STAR_GRID_SIZES[
+											state.gridSizes.diamondStar
+										]
+									}
+									svgRef={svgRef}
+								/>
+							) : state.gridShape === 'hexagram' ? (
+								<HexagramGrid
+									gridSize={
+										HEXAGRAM_GRID_SIZES[
+											state.gridSizes.hexagram
+										]
+									}
+									svgRef={svgRef}
+								/>
+							) : state.gridShape === 'hexagon' ? (
+								<HexagonGrid
+									radius={
+										HEXAGON_GRID_RADII[
+											state.gridSizes.hexagon
+										]
+									}
+									svgRef={svgRef}
+								/>
+							) : state.gridShape === 'circleRings' ? (
+								<CircleRingsGrid
+									ringCount={
+										CIRCLE_RINGS_GRID_SIZES[
+											state.gridSizes.circleRings
+										]
+									}
+									svgRef={svgRef}
+								/>
+							) : state.gridShape === 'pinwheel' ? (
+								<PinwheelGrid
+									{...PINWHEEL_GRID_SIZES[
+										state.gridSizes.pinwheel
+									]}
+									svgRef={svgRef}
+								/>
+							) : (
+								<Grid svgRef={svgRef} />
+							)}
+						</GridTransition>
 						<div
 							role="group"
 							aria-label="Controls"

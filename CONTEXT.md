@@ -243,6 +243,11 @@ symmetry engine. One representative per group is clickable.
 - Backgrounds are literal inline colors with no transitions: synchronous
   bootstrap on `html`, render on `.page`, `useLayoutEffect` on `html`/`body`.
   Descendants use `--base`/`--accent`. Button hover backgrounds also snap instantly.
+- Grid swaps animate via `GridTransition` (keyed on shape + size): the old grid
+  shrinks to its center with a slight turn, then the new one grows from center with a
+  soft overshoot. The old grid is an inert, `aria-hidden` DOM clone; timings and
+  easing are constants at the top of the component. Skipped on first render and
+  under `prefers-reduced-motion`.
 
 ### Export and randomization
 

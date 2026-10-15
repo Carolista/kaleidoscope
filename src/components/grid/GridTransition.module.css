@@ -1,0 +1,8 @@
+.stage {
+	position: relative;
+	width: 100%;
+}
+
+.layer {
+	transform-origin: center;
+}
