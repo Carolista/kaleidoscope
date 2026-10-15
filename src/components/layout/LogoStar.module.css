@@ -7,7 +7,7 @@
 	margin-left: -0.145838em;
 	margin-right: -0.065838em;
 	transform-origin: center;
-	animation: arrive 1.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+	animation: arrive 2s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes arrive {

@@ -1,14 +1,39 @@
+import type { Ref } from 'react'
 import styles from './Header.module.css'
 import LogoStar from './LogoStar'
 
-function Header() {
+interface HeaderProps {
+	readonly titleRef?: Ref<HTMLHeadingElement>
+	readonly isOpening?: boolean
+	readonly isMoving?: boolean
+	readonly onStarSpinComplete?: () => void
+}
+
+function Header({
+	titleRef,
+	isOpening = false,
+	isMoving = false,
+	onStarSpinComplete,
+}: HeaderProps) {
+	const titleClasses = [
+		styles.title,
+		isOpening && styles.openingTitle,
+		isMoving && styles.movingTitle,
+	]
+		.filter(Boolean)
+		.join(' ')
+
 	return (
 		<header>
-			<h1 className={styles.title} aria-label="Kaleidoscope">
+			<h1
+				ref={titleRef}
+				className={titleClasses}
+				aria-label="Kaleidoscope"
+			>
 				<span className={styles.letters} aria-hidden="true">
 					KALEID
 				</span>
-				<LogoStar />
+				<LogoStar onSpinComplete={onStarSpinComplete} />
 				<span className={styles.letters} aria-hidden="true">
 					SCOPE
 				</span>

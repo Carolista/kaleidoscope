@@ -4,7 +4,8 @@
 	   caps out at 560px wide once the viewport reaches 608px; see
 	   HexGrid.module.css), so the title reaches its min/max at the same
 	   breakpoints instead of sitting flat while the grid keeps resizing. */
-	font-size: clamp(1.75rem, 0.917rem + 4.17vw, 2.5rem);
+	--title-size: clamp(1.75rem, 0.917rem + 4.17vw, 2.5rem);
+	font-size: var(--title-size);
 	margin: 0;
 	color: var(--accent, #222);
 	font-family: 'Righteous', sans-serif;
@@ -13,10 +14,31 @@
 	white-space: nowrap;
 }
 
+.openingTitle {
+	--title-size: clamp(2.5rem, 8vw, 5rem);
+	position: fixed;
+	z-index: 1;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	transform-origin: center;
+}
+
+.movingTitle {
+	position: relative;
+	z-index: 1;
+}
+
 .letters {
 	letter-spacing: 0.04em;
 }
 
 .letters:first-child {
 	margin-right: -0.04em;
+}
+
+@media screen and (max-width: 480px) {
+	.openingTitle {
+		--title-size: clamp(1.75rem, 0.917rem + 4.17vw, 2.5rem);
+	}
 }

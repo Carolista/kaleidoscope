@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AppStateProvider } from './state/AppContext'
 import App from './App'
+import styles from './App.module.css'
+import headerStyles from './components/layout/Header.module.css'
 import { useIsTouchDevice } from './hooks/useIsTouchDevice'
 import { supportedGridShapes } from './data/gridShapes'
 import { defaultGridSizes } from './data/gridSizes'
@@ -50,6 +52,89 @@ describe('App', () => {
 		expect(
 			screen.queryByRole('heading', { name: 'Controls' }),
 		).not.toBeInTheDocument()
+	})
+
+	it('moves the centered logo and reveals the page after the star finishes spinning', () => {
+		const originalAnimate = Element.prototype.animate
+		const animation = {
+			cancel: vi.fn(),
+			onfinish: null as Animation['onfinish'],
+		} as unknown as Animation
+		const animate = vi.fn(() => animation)
+		Object.defineProperty(Element.prototype, 'animate', {
+			configurable: true,
+			value: animate,
+		})
+		vi.stubGlobal('matchMedia', () => ({ matches: false }))
+		mockUseIsTouchDevice.mockReturnValue(false)
+
+		const view = renderApp()
+		const page = screen.getByRole('main').parentElement
+		const title = screen.getByRole('heading', { name: 'Kaleidoscope' })
+		const removeClass = vi.spyOn(title.classList, 'remove')
+		const rect = (
+			left: number,
+			top: number,
+			width: number,
+			height: number,
+		) =>
+			({
+				left,
+				top,
+				width,
+				height,
+				right: left + width,
+				bottom: top + height,
+				x: left,
+				y: top,
+				toJSON: () => ({}),
+			}) as DOMRect
+		vi.spyOn(title, 'getBoundingClientRect')
+			.mockReturnValueOnce(rect(20, 30, 180, 45))
+			.mockReturnValueOnce(rect(200, 300, 360, 90))
+
+		try {
+			expect(page).toHaveClass(styles.opening)
+			fireEvent.animationEnd(title.querySelector('img')!)
+
+			expect(page).toHaveClass(styles.revealing)
+			expect(removeClass).toHaveBeenCalledWith(headerStyles.openingTitle)
+			expect(title).toHaveClass(headerStyles.movingTitle)
+			expect(animate).toHaveBeenCalledWith(
+				[
+					{
+						transform: 'translate(-180px, -270px) scale(0.5, 0.5)',
+					},
+					{ transform: 'none' },
+				],
+				expect.objectContaining({
+					duration: 1400,
+					fill: 'both',
+				}),
+			)
+			expect(title).not.toHaveClass(headerStyles.openingTitle)
+
+			act(() =>
+				animation.onfinish?.call(
+					animation,
+					new Event('finish') as AnimationPlaybackEvent,
+				),
+			)
+			expect(page).not.toHaveClass(styles.opening)
+			expect(page).not.toHaveClass(styles.revealing)
+			expect(title).not.toHaveClass(headerStyles.movingTitle)
+		} finally {
+			view.unmount()
+			if (originalAnimate) {
+				Object.defineProperty(Element.prototype, 'animate', {
+					configurable: true,
+					value: originalAnimate,
+				})
+			} else {
+				delete (Element.prototype as Partial<Element>).animate
+			}
+			vi.unstubAllGlobals()
+		}
 	})
 
 	it('reveals the full app with the controls modal open after completing the intro', async () => {

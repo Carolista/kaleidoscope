@@ -17,6 +17,25 @@
      nothing left to animate out of sync. */
 }
 
+.opening > :not(header) {
+	opacity: 0;
+	pointer-events: none;
+}
+
+.revealing > :not(header) {
+	animation: reveal 2s ease-out both;
+}
+
+@keyframes reveal {
+	from {
+		opacity: 0;
+	}
+
+	to {
+		opacity: 1;
+	}
+}
+
 .app {
 	flex-grow: 1;
 	display: flex;
