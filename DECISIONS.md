@@ -197,6 +197,14 @@ header sizes, and rendering hints or a thin stroke did not visibly improve them.
 Align the four side-petal tips with the lettering's upper/lower bounds and favor
 optical spacing toward the curved D over equal numeric gaps.
 
+**Opening logo:** animate the existing heading rather than duplicate the mark.
+Wait for the star's actual animation-end event instead of duplicating its CSS
+duration in a timer. Measure the centered and final header bounds, then animate
+the heading's translation and scale back to its normal layout (FLIP). Keep the
+content's 2-second opacity transition independent of the 1.4-second logo move;
+removing a reveal-animation class when the logo lands would truncate the fade.
+Skip the entrance for reduced motion or missing Web Animations API support.
+
 Render individually imported Font Awesome definitions through `FontAwesomeIcon`,
 replacing the earlier Kit-script approach. Import core CSS once and disable
 automatic injection. The unused Kit package and registry entry were removed.

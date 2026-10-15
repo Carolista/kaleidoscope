@@ -76,6 +76,14 @@ the six petal colors stay fixed. The star's side tips align with the lettering's
 upper/lower bounds, and spacing shifts it slightly toward the curved D for
 optical balance. The combined mark has one accessible heading name.
 
+On each page load, the logo starts centered over the theme's base color.
+The reusable `LogoStar` spins and scales in for 2 seconds; its animation-end
+event starts a 1.4-second move into the header. The opening logo stays at header
+size through 480px and starts larger above that width. Page content fades in
+with an independent 2-second opacity transition, so the logo settling does not
+cut the fade short. Reduced-motion users see the final layout immediately;
+the entrance is also skipped when the Web Animations API is unavailable.
+
 [public/logo-black.svg](./public/logo-black.svg) and
 [public/logo-white.svg](./public/logo-white.svg) are transparent, standalone
 logos with Righteous lettering converted to paths so no font installation is

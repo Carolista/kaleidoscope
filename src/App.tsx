@@ -23,6 +23,7 @@ import {
 import GridTransition from './components/grid/GridTransition'
 import Footer from './components/layout/Footer'
 import Header from './components/layout/Header'
+import headerStyles from './components/layout/Header.module.css'
 import IntroSequence from './components/intro/IntroSequence'
 import { hasPersistedDesign } from './services/storageService'
 import { getThemeColors } from './state/theme'
@@ -51,9 +52,32 @@ function App() {
 	const { state } = useAppState()
 	const { base, accent } = getThemeColors(state.darkMode)
 	const svgRef = useRef<SVGSVGElement>(null)
+	const titleRef = useRef<HTMLHeadingElement>(null)
+	const titleAnimationRef = useRef<Animation | null>(null)
+	const entranceStartedRef = useRef(false)
+	const [canAnimateEntrance] = useState(
+		() =>
+			!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches &&
+			typeof Element.prototype.animate === 'function',
+	)
+	const [entrance, setEntrance] = useState<'opening' | 'moving' | 'complete'>(
+		canAnimateEntrance ? 'opening' : 'complete',
+	)
 	const Grid = gridComponents[state.gridShape]
 	const [isFirstVisit] = useState(() => !hasPersistedDesign())
 	const [showIntro, setShowIntro] = useState(isFirstVisit)
+
+	useLayoutEffect(() => {
+		if (!canAnimateEntrance) return
+		const title = titleRef.current
+		if (!title) return
+
+		return () => {
+			titleAnimationRef.current?.cancel()
+			titleAnimationRef.current = null
+			title.style.transformOrigin = ''
+		}
+	}, [canAnimateEntrance])
 
 	useLayoutEffect(() => {
 		// `--base`/`--accent` are set inline below, but CSS custom properties
@@ -72,9 +96,59 @@ function App() {
 		document.body.style.backgroundColor = base
 	}, [base])
 
+	function handleStarSpinComplete() {
+		if (
+			!canAnimateEntrance ||
+			entranceStartedRef.current ||
+			window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+		) {
+			return
+		}
+
+		const title = titleRef.current
+		if (!title) {
+			setEntrance('complete')
+			return
+		}
+
+		entranceStartedRef.current = true
+		const start = title.getBoundingClientRect()
+		title.classList.remove(headerStyles.openingTitle)
+		const target = title.getBoundingClientRect()
+		if (
+			start.width === 0 ||
+			start.height === 0 ||
+			target.width === 0 ||
+			target.height === 0
+		) {
+			setEntrance('complete')
+			return
+		}
+
+		title.style.transformOrigin = 'top left'
+
+		const transform = `translate(${start.left - target.left}px, ${start.top - target.top}px) scale(${start.width / target.width}, ${start.height / target.height})`
+		const animation = title.animate(
+			[{ transform }, { transform: 'none' }],
+			{
+				duration: 1400,
+				easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+				fill: 'both',
+			},
+		)
+		titleAnimationRef.current = animation
+		animation.onfinish = () => {
+			title.style.transformOrigin = ''
+			animation.cancel()
+			titleAnimationRef.current = null
+			setEntrance('complete')
+		}
+		setEntrance('moving')
+	}
+
 	return (
 		<div
-			className={styles.page}
+			className={`${styles.page}${entrance === 'opening' ? ` ${styles.opening}` : ''}`}
 			style={
 				{
 					'--base': base,
@@ -83,7 +157,12 @@ function App() {
 				} as CSSProperties
 			}
 		>
-			<Header />
+			<Header
+				titleRef={titleRef}
+				isOpening={entrance === 'opening'}
+				isMoving={entrance === 'moving'}
+				onStarSpinComplete={handleStarSpinComplete}
+			/>
 			<main className={styles.app}>
 				{showIntro ? (
 					<IntroSequence onContinue={() => setShowIntro(false)} />

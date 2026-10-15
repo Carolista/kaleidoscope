@@ -17,6 +17,21 @@
      nothing left to animate out of sync. */
 }
 
+.page > :not(header) {
+	transition: opacity 2s ease-out;
+}
+
+.opening > :not(header) {
+	opacity: 0;
+	pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.page > :not(header) {
+		transition: none;
+	}
+}
+
 .app {
 	flex-grow: 1;
 	display: flex;

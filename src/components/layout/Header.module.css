@@ -4,13 +4,29 @@
 	   caps out at 560px wide once the viewport reaches 608px; see
 	   HexGrid.module.css), so the title reaches its min/max at the same
 	   breakpoints instead of sitting flat while the grid keeps resizing. */
-	font-size: clamp(1.75rem, 0.917rem + 4.17vw, 2.5rem);
+	--title-size: clamp(1.75rem, 0.917rem + 4.17vw, 2.5rem);
+	font-size: var(--title-size);
 	margin: 0;
 	color: var(--accent, #222);
 	font-family: 'Righteous', sans-serif;
 	font-weight: 400;
 	line-height: 1;
 	white-space: nowrap;
+}
+
+.openingTitle {
+	--title-size: clamp(2.5rem, 8vw, 5rem);
+	position: fixed;
+	z-index: 1;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	transform-origin: center;
+}
+
+.movingTitle {
+	position: relative;
+	z-index: 1;
 }
 
 .letters {
@@ -21,13 +37,8 @@
 	margin-right: -0.04em;
 }
 
-.star {
-	/* Side tips span half the star's height. Match that span to the
-	   Righteous capitals, accounting for the favicon's viewBox padding. */
-	width: 1.508203em;
-	height: 1.508203em;
-	vertical-align: -0.406836em;
-	/* Shift toward the curved D for optical, rather than numeric, balance. */
-	margin-left: -0.145838em;
-	margin-right: -0.065838em;
+@media screen and (max-width: 480px) {
+	.openingTitle {
+		--title-size: clamp(1.75rem, 0.917rem + 4.17vw, 2.5rem);
+	}
 }
