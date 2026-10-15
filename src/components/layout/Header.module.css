@@ -20,14 +20,3 @@
 .letters:first-child {
 	margin-right: -0.04em;
 }
-
-.star {
-	/* Side tips span half the star's height. Match that span to the
-	   Righteous capitals, accounting for the favicon's viewBox padding. */
-	width: 1.508203em;
-	height: 1.508203em;
-	vertical-align: -0.406836em;
-	/* Shift toward the curved D for optical, rather than numeric, balance. */
-	margin-left: -0.145838em;
-	margin-right: -0.065838em;
-}

@@ -1,4 +1,5 @@
 import styles from './Header.module.css'
+import LogoStar from './LogoStar'
 
 function Header() {
 	return (
@@ -7,12 +8,7 @@ function Header() {
 				<span className={styles.letters} aria-hidden="true">
 					KALEID
 				</span>
-				<img
-					className={styles.star}
-					src={`${import.meta.env.BASE_URL}favicon.svg`}
-					alt=""
-					aria-hidden="true"
-				/>
+				<LogoStar />
 				<span className={styles.letters} aria-hidden="true">
 					SCOPE
 				</span>

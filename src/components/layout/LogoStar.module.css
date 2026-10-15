@@ -1,0 +1,27 @@
+.star {
+	/* Side tips span half the star's height; account for the favicon viewBox padding. */
+	width: 1.508203em;
+	height: 1.508203em;
+	vertical-align: -0.406836em;
+	/* Shift toward the curved D for optical, rather than numeric, balance. */
+	margin-left: -0.145838em;
+	margin-right: -0.065838em;
+	transform-origin: center;
+	animation: arrive 1.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes arrive {
+	from {
+		transform: rotate(-1turn) scale(0);
+	}
+
+	to {
+		transform: rotate(0turn) scale(1);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.star {
+		animation: none;
+	}
+}
