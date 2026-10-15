@@ -1,6 +1,6 @@
 import type { Ref } from 'react'
 import styles from './Header.module.css'
-import LogoStar from './LogoStar'
+import { LogoStar } from '@shared'
 
 interface HeaderProps {
 	readonly titleRef?: Ref<HTMLHeadingElement>
@@ -33,7 +33,10 @@ function Header({
 				<span className={styles.letters} aria-hidden="true">
 					KALEID
 				</span>
-				<LogoStar onSpinComplete={onStarSpinComplete} />
+				<LogoStar
+					className={styles.star}
+					onSpinComplete={onStarSpinComplete}
+				/>
 				<span className={styles.letters} aria-hidden="true">
 					SCOPE
 				</span>

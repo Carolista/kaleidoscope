@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useImageExport } from '@hooks/useImageExport'
 import { renderWithProvider } from '@test/renderWithProvider'
@@ -39,6 +39,7 @@ describe('SaveImageModal', () => {
 
 		expect(screen.getByRole('alert')).toHaveTextContent('sharing failed')
 		expect(screen.getByRole('img')).toHaveAttribute('src', 'blob:preview')
+		expect(screen.queryByRole('status')).not.toBeInTheDocument()
 		expect(screen.getByRole('button', { name: 'Share' })).toBeEnabled()
 		const download = screen.getByRole('button', { name: 'Download' })
 		expect(download).toBeEnabled()
@@ -65,6 +66,7 @@ describe('SaveImageModal', () => {
 			screen.getByText(/something went wrong generating/),
 		).toBeInTheDocument()
 		expect(screen.queryByText('Generating image…')).not.toBeInTheDocument()
+		expect(screen.queryByRole('status')).not.toBeInTheDocument()
 		expect(screen.getByRole('button', { name: 'Download' })).toBeDisabled()
 		expect(
 			screen.queryByRole('button', { name: 'Share' }),
@@ -85,6 +87,11 @@ describe('SaveImageModal', () => {
 		const toggle = screen.getByRole('checkbox', {
 			name: 'Include grid lines',
 		})
+		const status = screen.getByRole('status')
+		expect(status).toHaveTextContent('Generating image…')
+		expect(
+			within(status).getByRole('presentation', { hidden: true }),
+		).toHaveAttribute('src', `${import.meta.env.BASE_URL}favicon.svg`)
 		expect(toggle).toBeChecked()
 		const user = userEvent.setup()
 		for (const checked of [false, true, false]) {

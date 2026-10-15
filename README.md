@@ -45,7 +45,7 @@ Today, the application reflects how my engineering approach has evolved. It has 
 - **Multiple color palettes:** Pick from curated schemes, then choose a color to paint with. Palette changes carry the color pattern over across all boards.
 - **Design controls:** Randomize or reset the current board, or undo and redo edits and board switches in one session-wide history.
 - **Light and dark themes:** Switch the surrounding canvas theme; tiles painted with the theme colors adapt across all boards. Board switches never change your theme.
-- **Save and share:** Compare PNG previews with or without grid lines, then download your chosen version or share it where the browser supports file sharing. Your grid-line preference is remembered across designs and visits.
+- **Save and share:** Compare PNG previews with or without grid lines, then download your chosen version or share it where the browser supports file sharing. A pulsing logo star indicates image generation and respects reduced-motion preferences. Your grid-line preference is remembered across designs and visits.
 - **Mouse, touch, and keyboard interaction:** Hover reveals the editable wedge on mouse and trackpad; touch users can toggle it. Grid tiles can also be reached with Tab and painted with Enter or Space. Focus outlines remain visible for keyboard navigation without lingering after mouse clicks or taps.
 - **Mobile-friendly modals:** Titles and close controls stay visible while content scrolls, with edge indicators for more options and background scrolling locked.
 - **Automatic save:** All board patterns, your active board, per-shape size choices, and preferences are restored from browser storage on your next visit. Undo history starts fresh each session.
