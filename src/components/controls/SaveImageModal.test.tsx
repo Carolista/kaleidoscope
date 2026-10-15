@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { screen, within } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { act, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useImageExport } from '@hooks/useImageExport'
 import { renderWithProvider } from '@test/renderWithProvider'
@@ -9,6 +9,23 @@ vi.mock('@hooks/useImageExport')
 const mockUseImageExport = vi.mocked(useImageExport)
 
 describe('SaveImageModal', () => {
+	const originalAnimate = Object.getOwnPropertyDescriptor(
+		HTMLDialogElement.prototype,
+		'animate',
+	)
+
+	afterEach(() => {
+		if (originalAnimate) {
+			Object.defineProperty(
+				HTMLDialogElement.prototype,
+				'animate',
+				originalAnimate,
+			)
+		} else {
+			Reflect.deleteProperty(HTMLDialogElement.prototype, 'animate')
+		}
+	})
+
 	beforeEach(() => {
 		mockUseImageExport.mockReset()
 		localStorage.clear()
@@ -118,5 +135,57 @@ describe('SaveImageModal', () => {
 			expect.any(String),
 			false,
 		)
+	})
+
+	it('keeps the export session alive until its closing animation finishes', () => {
+		const animations: {
+			cancel: () => void
+			onfinish: (() => void) | null
+		}[] = []
+		Object.defineProperty(HTMLDialogElement.prototype, 'animate', {
+			configurable: true,
+			value: () => {
+				const animation = {
+					cancel: vi.fn(),
+					onfinish: null as (() => void) | null,
+				}
+				animations.push(animation)
+				return animation
+			},
+		})
+		mockUseImageExport.mockReturnValue({
+			exportState: {
+				status: 'ready',
+				blob: new Blob(['png']),
+				url: 'blob:preview',
+				filename: 'design.png',
+			},
+			canShare: false,
+			handleDownload: vi.fn(),
+			handleShare: vi.fn(),
+		})
+		const svgRef = { current: null }
+		const { rerender } = renderWithProvider(
+			<SaveImageModal open svgRef={svgRef} onClose={() => {}} />,
+		)
+		act(() => animations[0].onfinish?.())
+		rerender(
+			<SaveImageModal open={false} svgRef={svgRef} onClose={() => {}} />,
+		)
+		expect(mockUseImageExport).toHaveBeenLastCalledWith(
+			svgRef,
+			true,
+			expect.any(String),
+			true,
+		)
+		expect(screen.getByRole('img')).toHaveAttribute('src', 'blob:preview')
+		act(() => animations[1].onfinish?.())
+		expect(mockUseImageExport).toHaveBeenLastCalledWith(
+			svgRef,
+			false,
+			expect.any(String),
+			true,
+		)
+		expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 	})
 })

@@ -68,6 +68,24 @@
 .dialog::backdrop {
 	background: rgb(0 0 0 / 50%);
 	touch-action: none;
+	opacity: 1;
+	transition: opacity var(--modal-duration, 400ms) ease;
+}
+
+.dialog[data-closing='true']::backdrop {
+	opacity: 0;
+}
+
+@starting-style {
+	.dialog[open]::backdrop {
+		opacity: 0;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.dialog::backdrop {
+		transition: none;
+	}
 }
 
 @media screen and (max-width: 400px) {

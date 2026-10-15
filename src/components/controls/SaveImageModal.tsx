@@ -19,13 +19,16 @@ export interface SaveImageModalProps {
 
 function SaveImageModal({ open, svgRef, onClose }: SaveImageModalProps) {
 	const titleId = useId()
+	// Keep the preview URL alive until the dialog has finished fading out.
+	const [previewOpen, setPreviewOpen] = useState(open)
+	if (open && !previewOpen) setPreviewOpen(true)
 	const [includeGridLines, setIncludeGridLines] =
 		useState(getIncludeGridLines)
 	const { state } = useAppState()
 	const gridSize = state.gridSizes[state.gridShape]
 	const { base } = getThemeColors(state.darkMode)
 	const { exportState, canShare, handleDownload, handleShare } =
-		useImageExport(svgRef, open, base, includeGridLines)
+		useImageExport(svgRef, open || previewOpen, base, includeGridLines)
 	// Reflects the current shape's fixed proportions, which the export
 	// service also rasterizes from, so the preview box is already sized
 	// correctly before the image exists.
@@ -38,6 +41,7 @@ function SaveImageModal({ open, svgRef, onClose }: SaveImageModalProps) {
 		<Modal
 			open={open}
 			onClose={onClose}
+			onAfterClose={() => setPreviewOpen(false)}
 			labelledBy={titleId}
 			className={styles.dialog}
 			header={
