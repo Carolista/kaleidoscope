@@ -1,6 +1,9 @@
 import { render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import GridTransition from './GridTransition'
+import { supportedGridShapes } from '@data/gridShapes'
+import { availableGridSizes } from '@data/gridSizes'
+import { computeAspectRatioForShape } from '@utils/gridShapeRegistry'
 
 type FakeAnimation = { cancel: () => void; onfinish: (() => void) | null }
 
@@ -65,11 +68,37 @@ describe('GridTransition', () => {
 		expect(clone.inert).toBe(true)
 		expect(screen.getByText('new grid')).toBeInTheDocument()
 
-		// exit, enter, and the height easing
-		expect(animations).toHaveLength(3)
+		expect(animations).toHaveLength(2)
 		animations[0].onfinish?.()
 		expect(stage.children).toHaveLength(1)
 		expect(stage.firstElementChild).toHaveTextContent('new grid')
+	})
+
+	it('reserves the same tallest-grid aspect ratio across replacements', () => {
+		const { rerender, container } = render(
+			<GridTransition gridKey="triangle:sm">
+				<p>triangle</p>
+			</GridTransition>,
+		)
+		const stage = container.firstElementChild as HTMLElement
+		const ratio = Number(
+			stage.style.getPropertyValue('--stage-aspect-ratio'),
+		)
+		const ratios = supportedGridShapes.flatMap(({ id }) =>
+			availableGridSizes[id].map(size =>
+				computeAspectRatioForShape(id, size),
+			),
+		)
+		expect(ratio).toBe(Math.min(...ratios))
+		expect(ratio).toBeCloseTo(Math.sqrt(3) / 2, 12)
+		rerender(
+			<GridTransition gridKey="hexagram:lg">
+				<p>hexagram</p>
+			</GridTransition>,
+		)
+		expect(
+			Number(stage.style.getPropertyValue('--stage-aspect-ratio')),
+		).toBe(ratio)
 	})
 
 	it('drops a pending copy when replaced again mid-transition', () => {

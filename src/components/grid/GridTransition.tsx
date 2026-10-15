@@ -1,5 +1,8 @@
 import { useCallback, useLayoutEffect, useRef } from 'react'
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
+import { supportedGridShapes } from '@data/gridShapes'
+import { availableGridSizes } from '@data/gridSizes'
+import { computeAspectRatioForShape } from '@utils/gridShapeRegistry'
 import styles from './GridTransition.module.css'
 
 // Tuning knobs for the swap. The outgoing grid gathers itself into the
@@ -9,10 +12,16 @@ export const EXIT_MS = 420
 export const ENTER_MS = 760
 const EXIT_EASING = 'cubic-bezier(0.5, 0, 0.75, 0.4)'
 const ENTER_EASING = 'cubic-bezier(0.34, 1.2, 0.64, 1)'
-const HEIGHT_EASING = 'cubic-bezier(0.4, 0, 0.2, 1)'
 const EXIT_TURN_DEG = -24
 const ENTER_TURN_DEG = 24
 const MIN_SCALE = 0.02
+const STAGE_ASPECT_RATIO = Math.min(
+	...supportedGridShapes.flatMap(({ id }) =>
+		availableGridSizes[id].map(size =>
+			computeAspectRatioForShape(id, size),
+		),
+	),
+)
 
 interface Snapshot {
 	readonly clone: HTMLElement
@@ -140,31 +149,24 @@ function GridTransition({ gridKey, children }: GridTransitionProps) {
 			layer.style.pointerEvents = ''
 		}
 
-		// Hold the old height while it shrinks, then ease the layout (and the
-		// controls below) to the new grid's height instead of snapping.
-		const height = stage.animate(
-			[
-				{ minHeight: `${snapshot.height}px` },
-				{
-					minHeight: `${snapshot.height}px`,
-					offset: EXIT_MS / (EXIT_MS + ENTER_MS),
-				},
-				{ minHeight: '0px' },
-			],
-			{ duration: EXIT_MS + ENTER_MS, easing: HEIGHT_EASING },
-		)
-
 		return () => {
 			exit.cancel()
 			enter.cancel()
-			height.cancel()
 			clone.remove()
 			layer.style.pointerEvents = ''
 		}
 	}, [gridKey])
 
 	return (
-		<div ref={stageRef} className={styles.stage}>
+		<div
+			ref={stageRef}
+			className={styles.stage}
+			style={
+				{
+					'--stage-aspect-ratio': STAGE_ASPECT_RATIO,
+				} as CSSProperties
+			}
+		>
 			<div key={gridKey} ref={layerCallbackRef} className={styles.layer}>
 				{children}
 			</div>

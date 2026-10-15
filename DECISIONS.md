@@ -218,9 +218,11 @@ slow and soft (about 420ms out, 760ms in, a few percent of overshoot, ±24° tur
 rather than snappy. The outgoing grid is cloned from the DOM in a React ref
 cleanup, because the grid components read live state and would otherwise repaint
 with the new design while shrinking. Animations use the Web Animations API, so no
-transition state lives in React or the reducer. The wrapper's min-height eases
-between grid heights so the controls below don't jump. Reduced-motion users get an
-instant swap.
+transition state lives in React or the reducer. The stage reserves a stable height
+using the smallest aspect ratio across all supported shapes and sizes (currently
+Diamond Star and Hexagram, width/height = sqrt(3)/2), subject to the same 560px
+width cap and viewport allowance as the grids. Each grid is centered in this area;
+the controls never move during swaps. Reduced-motion users get an instant swap.
 
 ## Export and randomization
 

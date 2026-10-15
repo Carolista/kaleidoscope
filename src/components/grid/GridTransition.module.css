@@ -1,8 +1,18 @@
 .stage {
 	position: relative;
+	display: flex;
+	align-items: center;
 	width: 100%;
+	/* Match GridView's width cap and viewport allowance, reserving the
+	   tallest supported grid's height regardless of the active shape. */
+	aspect-ratio: var(--stage-aspect-ratio);
+	max-height: min(
+		calc(560px / var(--stage-aspect-ratio)),
+		calc(100vh - 226px)
+	);
 }
 
 .layer {
+	width: 100%;
 	transform-origin: center;
 }

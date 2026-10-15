@@ -247,7 +247,9 @@ symmetry engine. One representative per group is clickable.
   shrinks to its center with a slight turn, then the new one grows from center with a
   soft overshoot. The old grid is an inert, `aria-hidden` DOM clone; timings and
   easing are constants at the top of the component. Skipped on first render and
-  under `prefers-reduced-motion`.
+  under `prefers-reduced-motion`. The stage reserves the tallest supported
+  shape/size's height (within the existing width and viewport limits), with every
+  grid centered vertically and horizontally so controls stay stationary.
 
 ### Export and randomization
 
