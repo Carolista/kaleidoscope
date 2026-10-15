@@ -213,6 +213,17 @@ Button hover backgrounds also have no transition after a Chromium `color-mix()`
 animation issue. Modal header styles are shared, while layout-specific CSS stays
 local. The app's flex-grow rule is class-scoped, not a global `main` selector.
 
+**Grid swap animation:** the app is meant to feel relaxing, so the transition is
+slow and soft (about 420ms out, 760ms in, a few percent of overshoot, ±24° turn)
+rather than snappy. The outgoing grid is cloned from the DOM in a React ref
+cleanup, because the grid components read live state and would otherwise repaint
+with the new design while shrinking. Animations use the Web Animations API, so no
+transition state lives in React or the reducer. The stage reserves a stable height
+using the smallest aspect ratio across all supported shapes and sizes (currently
+Diamond Star and Hexagram, width/height = sqrt(3)/2), subject to the same 560px
+width cap and viewport allowance as the grids. Each grid is centered in this area;
+the controls never move during swaps. Reduced-motion users get an instant swap.
+
 ## Export and randomization
 
 Share images rather than design URLs. Offer PNG download plus file sharing when
