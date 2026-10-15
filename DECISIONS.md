@@ -161,6 +161,16 @@ saved scheme, so random initial selection was removed.
   Conditional edge fades and chevrons make hidden content discoverable without
   permanent instructions. Background scroll locking preserves page position;
   a shared lock count prevents a nested confirmation from unlocking its picker.
+- Animate all modals through the shared `Modal`: a slow fade, blur clearing, and
+  upward drift (1 second in, 500ms out; 8px blur and 200px travel). Keep the motion
+  distinct from the grid's scaling/rotation, without bounce. The Web Animations
+  API allows interrupted transitions to continue from their current appearance;
+  the backdrop uses a CSS opacity transition. Defer native close and scroll
+  unlocking until the exit finishes, and ignore dismissal/actions during closing.
+  The optional `onAfterClose` callback lets Save Image retain its export session
+  through the exit rather than flash a loading state or revoke the visible preview.
+  Skip panel animation for reduced motion or missing Web Animations API support;
+  reduced motion also disables backdrop transitions.
   Contain scroll gestures at the body's boundaries and make overflow keyboard-focusable.
 - Reset retains its confirmation and opt-out. Only confirming with the checkbox
   checked saves the preference; canceling clears the checkbox. Board switches
@@ -257,7 +267,8 @@ Removing strokes leaves intentional spacing between cells/blades intact.
 Generate each version lazily and cache both for one modal opening, including
 in-flight requests, so repeated toggles never duplicate rasterization. Do not
 cache across openings: the design or theme may have changed. Download and share
-always use the selected preview, and closing releases every cached object URL.
+always use the selected preview, and completion of the closing animation releases
+every cached object URL.
 
 Generation errors must replace the spinner. Share failures must be visible
 without losing preview, download, or retry; canceled shares stay quiet.

@@ -246,6 +246,13 @@ symmetry engine. One representative per group is clickable.
   overflowing bodies are keyboard-focusable. Scroll containment and shared
   background locking prevent page scrolling, including while confirmations
   are nested over pickers. Closing the last modal restores page scroll position.
+- Shared modals fade in while clearing an 8px blur and rising 200px over 1 second;
+  closing reverses the effect over 500ms. There is no scaling or bounce. The
+  backdrop fades with the panel. Native focus trapping and page scroll locking
+  remain active until the exit finishes; clicks during closing are ignored.
+  Interrupted animations resume from the current appearance. Reduced motion or
+  missing Web Animations API support skips the panel animation. Save Image keeps
+  its export session and preview URLs alive until the exit completes.
 - When the design storage key is absent at startup (checked before autosave; key
   existence, not payload validity), `App` shows the first-visit intro instead of the
   grid, controls, and footer. Intro state is local: a size-4 triangle grid with its

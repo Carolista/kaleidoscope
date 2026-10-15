@@ -1,7 +1,8 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import Modal from './Modal'
+import { StrictMode } from 'react'
+import Modal, { MODAL_ENTER_MS, MODAL_EXIT_MS } from './Modal'
 import styles from './Modal.module.css'
 
 describe('Modal', () => {
@@ -33,6 +34,148 @@ describe('Modal', () => {
 		)
 		expect(dialog).not.toHaveAttribute('open')
 		expect(onClose).not.toHaveBeenCalled()
+	})
+
+	describe('Modal transitions', () => {
+		const originalAnimate = Object.getOwnPropertyDescriptor(
+			Element.prototype,
+			'animate',
+		)
+		const animations: {
+			cancel: ReturnType<typeof vi.fn>
+			onfinish: (() => void) | null
+		}[] = []
+		const animate = vi.fn(() => {
+			const animation = {
+				cancel: vi.fn(),
+				onfinish: null as (() => void) | null,
+			}
+			animations.push(animation)
+			return animation
+		})
+
+		beforeEach(() => {
+			animations.length = 0
+			animate.mockClear()
+			Object.defineProperty(Element.prototype, 'animate', {
+				configurable: true,
+				writable: true,
+				value: animate,
+			})
+		})
+
+		afterEach(() => {
+			if (originalAnimate) {
+				Object.defineProperty(
+					Element.prototype,
+					'animate',
+					originalAnimate,
+				)
+			} else {
+				Reflect.deleteProperty(Element.prototype, 'animate')
+			}
+			vi.unstubAllGlobals()
+		})
+
+		function modal(open: boolean, onAfterClose = vi.fn()) {
+			return (
+				<Modal
+					open={open}
+					onClose={vi.fn()}
+					onAfterClose={onAfterClose}
+					labelledBy="animated-title"
+				>
+					<h2 id="animated-title">Animated modal</h2>
+				</Modal>
+			)
+		}
+
+		it('fades, clears blur, and rises, then keeps the dialog and scroll lock until exit finishes', () => {
+			const onAfterClose = vi.fn()
+			const { rerender } = render(modal(true, onAfterClose))
+			const dialog = screen.getByRole('dialog')
+			expect(animate).toHaveBeenLastCalledWith(
+				[
+					{
+						opacity: 0,
+						filter: 'blur(8px)',
+						transform: 'translateY(200px)',
+					},
+					{
+						opacity: 1,
+						filter: 'blur(0px)',
+						transform: 'translateY(0px)',
+					},
+				],
+				expect.objectContaining({ duration: MODAL_ENTER_MS }),
+			)
+			act(() => animations[0].onfinish?.())
+			rerender(modal(false, onAfterClose))
+			expect(dialog).toHaveAttribute('open')
+			expect(dialog).toHaveAttribute('data-closing', 'true')
+			expect(document.body.style.position).toBe('fixed')
+			expect(onAfterClose).not.toHaveBeenCalled()
+			expect(animate).toHaveBeenLastCalledWith(
+				expect.any(Array),
+				expect.objectContaining({ duration: MODAL_EXIT_MS }),
+			)
+			act(() => animations[1].onfinish?.())
+			expect(dialog).not.toHaveAttribute('open')
+			expect(document.body.style.position).toBe('')
+			expect(onAfterClose).toHaveBeenCalledOnce()
+		})
+
+		it('cancels interrupted animations and allows reopening during exit', () => {
+			const onAfterClose = vi.fn()
+			const { rerender, unmount } = render(modal(true, onAfterClose))
+			rerender(modal(false, onAfterClose))
+			expect(animations[0].cancel).toHaveBeenCalledOnce()
+			expect(animations[0].onfinish).toBeNull()
+			rerender(modal(true, onAfterClose))
+			expect(animations[1].cancel).toHaveBeenCalledOnce()
+			expect(animations[1].onfinish).toBeNull()
+			act(() => animations[2].onfinish?.())
+			expect(screen.getByRole('dialog')).toHaveAttribute('open')
+			expect(document.body.style.position).toBe('fixed')
+			expect(onAfterClose).not.toHaveBeenCalled()
+			rerender(modal(false, onAfterClose))
+			unmount()
+			expect(animations[3].cancel).toHaveBeenCalledOnce()
+			expect(animations[3].onfinish).toBeNull()
+			expect(document.body.style.position).toBe('')
+		})
+
+		it('closes immediately without animation for reduced motion', () => {
+			vi.stubGlobal('matchMedia', () => ({ matches: true }))
+			const onAfterClose = vi.fn()
+			const { rerender } = render(modal(true, onAfterClose))
+			const dialog = screen.getByRole('dialog')
+			rerender(modal(false, onAfterClose))
+			expect(animate).not.toHaveBeenCalled()
+			expect(dialog).not.toHaveAttribute('open')
+			expect(onAfterClose).toHaveBeenCalledOnce()
+			expect(document.body.style.position).toBe('')
+		})
+
+		it('keeps the underlying modal locked when a nested dialog finishes closing', () => {
+			const first = render(modal(true))
+			act(() => animations[0].onfinish?.())
+			const second = render(modal(true))
+			act(() => animations[1].onfinish?.())
+			second.rerender(modal(false))
+			act(() => animations[2].onfinish?.())
+			expect(document.body.style.position).toBe('fixed')
+			first.unmount()
+			expect(document.body.style.position).toBe('')
+		})
+
+		it('retains its scroll lock after Strict Mode effect replay', () => {
+			const { unmount } = render(<StrictMode>{modal(true)}</StrictMode>)
+			expect(screen.getByRole('dialog')).toHaveAttribute('open')
+			expect(document.body.style.position).toBe('fixed')
+			unmount()
+			expect(document.body.style.position).toBe('')
+		})
 	})
 
 	it('requests dismissal on native cancel but leaves closing to the parent', () => {

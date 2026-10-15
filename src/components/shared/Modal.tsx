@@ -1,10 +1,24 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import styles from './Modal.module.css'
+
+export const MODAL_ENTER_MS = 1000
+export const MODAL_EXIT_MS = 500
+const REST_FRAME = {
+	opacity: 1,
+	filter: 'blur(0px)',
+	transform: 'translateY(0px)',
+}
+const HIDDEN_FRAME = {
+	opacity: 0,
+	filter: 'blur(8px)',
+	transform: 'translateY(200px)',
+}
 
 export interface ModalProps {
 	readonly open: boolean
 	readonly onClose: () => void
+	readonly onAfterClose?: () => void
 	// id of the element (usually a heading) that labels this dialog for assistive tech.
 	readonly labelledBy: string
 	// Extra class merged onto the `<dialog>` element, e.g. to set a width.
@@ -67,6 +81,7 @@ function lockPageScroll() {
 function Modal({
 	open,
 	onClose,
+	onAfterClose,
 	labelledBy,
 	className,
 	header,
@@ -75,6 +90,9 @@ function Modal({
 	const dialogRef = useRef<HTMLDialogElement>(null)
 	const scrollRef = useRef<HTMLDivElement>(null)
 	const contentRef = useRef<HTMLDivElement>(null)
+	const animationRef = useRef<Animation | null>(null)
+	const unlockRef = useRef<(() => void) | undefined>(undefined)
+	const afterCloseRef = useRef(onAfterClose)
 	const [edges, setEdges] = useState({ above: false, below: false })
 
 	function updateEdges() {
@@ -91,18 +109,80 @@ function Modal({
 	}
 
 	useLayoutEffect(() => {
-		if (!open) return
-		return lockPageScroll()
-	}, [open])
+		afterCloseRef.current = onAfterClose
+	}, [onAfterClose])
 
-	useEffect(() => {
-		const dialog = dialogRef.current
-		if (!dialog) return
+	useLayoutEffect(
+		() => () => {
+			if (animationRef.current) {
+				animationRef.current.onfinish = null
+				animationRef.current.cancel()
+				animationRef.current = null
+			}
+			unlockRef.current?.()
+			unlockRef.current = undefined
+		},
+		[],
+	)
 
-		if (open && !dialog.open) {
-			dialog.showModal()
-		} else if (!open && dialog.open) {
+	useLayoutEffect(() => {
+		const dialog = dialogRef.current!
+		if (!open && !dialog.open) return
+
+		const interrupted = animationRef.current
+		const current = getComputedStyle(dialog)
+		const start = interrupted
+			? {
+					opacity: current.opacity,
+					filter: current.filter,
+					transform: current.transform,
+				}
+			: open
+				? HIDDEN_FRAME
+				: REST_FRAME
+		if (interrupted) {
+			interrupted.onfinish = null
+			interrupted.cancel()
+			animationRef.current = null
+		}
+
+		function finishClose() {
 			dialog.close()
+			unlockRef.current?.()
+			unlockRef.current = undefined
+			afterCloseRef.current?.()
+		}
+
+		dialog.dataset.closing = String(!open)
+		if (open) {
+			unlockRef.current ??= lockPageScroll()
+			if (!dialog.open) dialog.showModal()
+		}
+		const reducedMotion = window.matchMedia?.(
+			'(prefers-reduced-motion: reduce)',
+		).matches
+		if (reducedMotion || typeof dialog.animate !== 'function') {
+			if (!open) finishClose()
+			return
+		}
+
+		const duration = open ? MODAL_ENTER_MS : MODAL_EXIT_MS
+		dialog.style.setProperty('--modal-duration', `${duration}ms`)
+		const animation = dialog.animate(
+			[start, open ? REST_FRAME : HIDDEN_FRAME],
+			{
+				duration,
+				easing: open
+					? 'cubic-bezier(0.16, 1, 0.3, 1)'
+					: 'cubic-bezier(0.4, 0, 1, 1)',
+				fill: 'forwards',
+			},
+		)
+		animationRef.current = animation
+		animation.onfinish = () => {
+			animationRef.current = null
+			if (!open) finishClose()
+			animation.cancel()
 		}
 	}, [open])
 
@@ -124,6 +204,12 @@ function Modal({
 	return (
 		<dialog
 			ref={dialogRef}
+			onClickCapture={event => {
+				if (!open) {
+					event.preventDefault()
+					event.stopPropagation()
+				}
+			}}
 			className={[styles.dialog, className].filter(Boolean).join(' ')}
 			aria-labelledby={labelledBy}
 			onCancel={event => {
@@ -131,11 +217,11 @@ function Modal({
 				// (driven by the parent flipping `open`) stays the single source
 				// of truth for when the dialog actually closes.
 				event.preventDefault()
-				onClose()
+				if (open) onClose()
 			}}
 			onClick={event => {
 				// Native backdrop clicks target the dialog, not its contents.
-				if (event.target === dialogRef.current) onClose()
+				if (open && event.target === dialogRef.current) onClose()
 			}}
 		>
 			{header && <div className={styles.header}>{header}</div>}
