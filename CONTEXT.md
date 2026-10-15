@@ -84,6 +84,12 @@ with an independent 2-second opacity transition, so the logo settling does not
 cut the fade short. Reduced-motion users see the final layout immediately;
 the entrance is also skipped when the Web Animations API is unavailable.
 
+`LogoStar` lives in `components/shared` with `arrive` (default) and `pulse`
+animation modes; wordmark sizing and optical spacing stay in `Header`.
+The shared `Spinner` uses the pulse mode above the Save Image modal's
+"Generating image…" status. It alternates a half-turn and scale from 0.05 to 1
+over 1.2 seconds per direction. Reduced-motion users see a static star.
+
 [public/logo-black.svg](./public/logo-black.svg) and
 [public/logo-white.svg](./public/logo-white.svg) are transparent, standalone
 logos with Righteous lettering converted to paths so no font installation is

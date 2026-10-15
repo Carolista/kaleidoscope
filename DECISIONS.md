@@ -205,6 +205,12 @@ content's 2-second opacity transition independent of the 1.4-second logo move;
 removing a reveal-animation class when the logo lands would truncate the fade.
 Skip the entrance for reduced motion or missing Web Animations API support.
 
+**Loading star:** share the favicon rendering and named CSS animation modes in
+`LogoStar`, with a small `Spinner` wrapper for loading placement. Keep wordmark
+alignment in `Header` so loading indicators do not inherit optical offsets.
+The Save Image modal pairs the decorative, pulsing star with its existing live
+status text; reduced motion disables the animation without hiding that status.
+
 Render individually imported Font Awesome definitions through `FontAwesomeIcon`,
 replacing the earlier Kit-script approach. Import core CSS once and disable
 automatic injection. The unused Kit package and registry entry were removed.
