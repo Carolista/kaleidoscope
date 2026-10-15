@@ -148,7 +148,7 @@ function App() {
 
 	return (
 		<div
-			className={`${styles.page}${entrance === 'opening' ? ` ${styles.opening}` : entrance === 'moving' ? ` ${styles.revealing}` : ''}`}
+			className={`${styles.page}${entrance === 'opening' ? ` ${styles.opening}` : ''}`}
 			style={
 				{
 					'--base': base,

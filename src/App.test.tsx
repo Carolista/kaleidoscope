@@ -97,7 +97,7 @@ describe('App', () => {
 			expect(page).toHaveClass(styles.opening)
 			fireEvent.animationEnd(title.querySelector('img')!)
 
-			expect(page).toHaveClass(styles.revealing)
+			expect(page).not.toHaveClass(styles.opening)
 			expect(removeClass).toHaveBeenCalledWith(headerStyles.openingTitle)
 			expect(title).toHaveClass(headerStyles.movingTitle)
 			expect(animate).toHaveBeenCalledWith(
@@ -121,7 +121,6 @@ describe('App', () => {
 				),
 			)
 			expect(page).not.toHaveClass(styles.opening)
-			expect(page).not.toHaveClass(styles.revealing)
 			expect(title).not.toHaveClass(headerStyles.movingTitle)
 		} finally {
 			view.unmount()
