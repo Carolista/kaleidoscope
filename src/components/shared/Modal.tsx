@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import styles from './Modal.module.css'
+import CloseButton from './CloseButton'
 
 export const MODAL_ENTER_MS = 1000
 export const MODAL_EXIT_MS = 500
@@ -24,6 +25,8 @@ export interface ModalProps {
 	// Extra class merged onto the `<dialog>` element, e.g. to set a width.
 	readonly className?: string
 	readonly header?: ReactNode
+	readonly size?: 'md' | 'sm'
+	readonly closeLabel?: string
 	readonly children: ReactNode
 }
 
@@ -85,6 +88,8 @@ function Modal({
 	labelledBy,
 	className,
 	header,
+	size = 'md',
+	closeLabel = 'Close dialog',
 	children,
 }: ModalProps) {
 	const dialogRef = useRef<HTMLDialogElement>(null)
@@ -210,7 +215,9 @@ function Modal({
 					event.stopPropagation()
 				}
 			}}
-			className={[styles.dialog, className].filter(Boolean).join(' ')}
+			className={[styles.dialog, size === 'sm' && styles.small, className]
+				.filter(Boolean)
+				.join(' ')}
 			aria-labelledby={labelledBy}
 			onCancel={event => {
 				// Native Esc-to-close; prevent the default close so our effect
@@ -224,6 +231,15 @@ function Modal({
 				if (open && event.target === dialogRef.current) onClose()
 			}}
 		>
+			{size === 'sm' && (
+				<div className={styles.cornerClose}>
+					<CloseButton
+						label={closeLabel}
+						onClick={onClose}
+						size="sm"
+					/>
+				</div>
+			)}
 			{header && <div className={styles.header}>{header}</div>}
 			<div className={styles.body}>
 				<div

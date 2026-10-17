@@ -1,4 +1,6 @@
 import type { Ref } from 'react'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faPaintbrush, faPuzzlePiece } from '@fortawesome/pro-solid-svg-icons'
 import styles from './Header.module.css'
 import { LogoStar } from '@shared'
 
@@ -7,6 +9,8 @@ interface HeaderProps {
 	readonly isOpening?: boolean
 	readonly isMoving?: boolean
 	readonly onStarSpinComplete?: () => void
+	readonly mode?: 'zen' | 'puzzle'
+	readonly onModeChange?: (mode: 'zen' | 'puzzle') => void
 }
 
 function Header({
@@ -14,6 +18,8 @@ function Header({
 	isOpening = false,
 	isMoving = false,
 	onStarSpinComplete,
+	mode = 'zen',
+	onModeChange,
 }: HeaderProps) {
 	const titleClasses = [
 		styles.title,
@@ -24,7 +30,7 @@ function Header({
 		.join(' ')
 
 	return (
-		<header>
+		<header className={styles.header}>
 			<h1
 				ref={titleRef}
 				className={titleClasses}
@@ -41,6 +47,39 @@ function Header({
 					SCOPE
 				</span>
 			</h1>
+			{onModeChange && (
+				<nav
+					aria-label="Play mode"
+					className={`${styles.modeSwitch}${isOpening ? ` ${styles.openingSwitch}` : ''}`}
+				>
+					<button
+						type="button"
+						aria-label="Zen Mode"
+						title="Zen Mode"
+						aria-pressed={mode === 'zen'}
+						onClick={() => onModeChange('zen')}
+						disabled={isOpening}
+					>
+						<FontAwesomeIcon
+							icon={faPaintbrush}
+							aria-hidden="true"
+						/>
+					</button>
+					<button
+						type="button"
+						aria-label="Puzzle Mode"
+						title="Puzzle Mode"
+						aria-pressed={mode === 'puzzle'}
+						onClick={() => onModeChange('puzzle')}
+						disabled={isOpening}
+					>
+						<FontAwesomeIcon
+							icon={faPuzzlePiece}
+							aria-hidden="true"
+						/>
+					</button>
+				</nav>
+			)}
 		</header>
 	)
 }

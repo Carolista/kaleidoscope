@@ -25,6 +25,7 @@ import Footer from './components/layout/Footer'
 import Header from './components/layout/Header'
 import headerStyles from './components/layout/Header.module.css'
 import IntroSequence from './components/intro/IntroSequence'
+import PuzzleMode from './components/puzzle/PuzzleMode'
 import { hasPersistedDesign } from './services/storageService'
 import { getThemeColors } from './state/theme'
 import { useAppState } from './state/useAppState'
@@ -66,6 +67,7 @@ function App() {
 	const Grid = gridComponents[state.gridShape]
 	const [isFirstVisit] = useState(() => !hasPersistedDesign())
 	const [showIntro, setShowIntro] = useState(isFirstVisit)
+	const [mode, setMode] = useState<'zen' | 'puzzle'>('zen')
 
 	useLayoutEffect(() => {
 		if (!canAnimateEntrance) return
@@ -162,105 +164,109 @@ function App() {
 				isOpening={entrance === 'opening'}
 				isMoving={entrance === 'moving'}
 				onStarSpinComplete={handleStarSpinComplete}
+				mode={mode}
+				onModeChange={setMode}
 			/>
 			<main className={styles.app}>
-				{showIntro ? (
-					<IntroSequence onContinue={() => setShowIntro(false)} />
-				) : (
-					<>
-						<GridTransition
-							gridKey={`${state.gridShape}:${state.gridSizes[state.gridShape]}`}
-						>
-							{state.gridShape === 'triangle' ? (
-								<TriangleGrid
-									gridSize={
-										TRIANGLE_GRID_SIZES[
-											state.gridSizes.triangle
-										]
-									}
-									svgRef={svgRef}
-								/>
-							) : state.gridShape === 'diamondStar' ? (
-								<DiamondStarGrid
-									gridSize={
-										DIAMOND_STAR_GRID_SIZES[
-											state.gridSizes.diamondStar
-										]
-									}
-									svgRef={svgRef}
-								/>
-							) : state.gridShape === 'hexagram' ? (
-								<HexagramGrid
-									gridSize={
-										HEXAGRAM_GRID_SIZES[
-											state.gridSizes.hexagram
-										]
-									}
-									svgRef={svgRef}
-								/>
-							) : state.gridShape === 'hexagon' ? (
-								<HexagonGrid
-									radius={
-										HEXAGON_GRID_RADII[
-											state.gridSizes.hexagon
-										]
-									}
-									svgRef={svgRef}
-								/>
-							) : state.gridShape === 'circleRings' ? (
-								<CircleRingsGrid
-									ringCount={
-										CIRCLE_RINGS_GRID_SIZES[
-											state.gridSizes.circleRings
-										]
-									}
-									svgRef={svgRef}
-								/>
-							) : state.gridShape === 'pinwheel' ? (
-								<PinwheelGrid
-									{...PINWHEEL_GRID_SIZES[
-										state.gridSizes.pinwheel
-									]}
-									svgRef={svgRef}
-								/>
-							) : (
-								<Grid svgRef={svgRef} />
-							)}
-						</GridTransition>
-						<div
-							role="group"
-							aria-label="Controls"
-							className={styles.controlRows}
-						>
-							<div className={styles.colorRow}>
-								<ColorOptions />
-							</div>
-							<UndoRedoButtons />
+				<PuzzleMode hidden={mode !== 'puzzle'} />
+				{mode === 'zen' &&
+					(showIntro ? (
+						<IntroSequence onContinue={() => setShowIntro(false)} />
+					) : (
+						<>
+							<GridTransition
+								gridKey={`${state.gridShape}:${state.gridSizes[state.gridShape]}`}
+							>
+								{state.gridShape === 'triangle' ? (
+									<TriangleGrid
+										gridSize={
+											TRIANGLE_GRID_SIZES[
+												state.gridSizes.triangle
+											]
+										}
+										svgRef={svgRef}
+									/>
+								) : state.gridShape === 'diamondStar' ? (
+									<DiamondStarGrid
+										gridSize={
+											DIAMOND_STAR_GRID_SIZES[
+												state.gridSizes.diamondStar
+											]
+										}
+										svgRef={svgRef}
+									/>
+								) : state.gridShape === 'hexagram' ? (
+									<HexagramGrid
+										gridSize={
+											HEXAGRAM_GRID_SIZES[
+												state.gridSizes.hexagram
+											]
+										}
+										svgRef={svgRef}
+									/>
+								) : state.gridShape === 'hexagon' ? (
+									<HexagonGrid
+										radius={
+											HEXAGON_GRID_RADII[
+												state.gridSizes.hexagon
+											]
+										}
+										svgRef={svgRef}
+									/>
+								) : state.gridShape === 'circleRings' ? (
+									<CircleRingsGrid
+										ringCount={
+											CIRCLE_RINGS_GRID_SIZES[
+												state.gridSizes.circleRings
+											]
+										}
+										svgRef={svgRef}
+									/>
+								) : state.gridShape === 'pinwheel' ? (
+									<PinwheelGrid
+										{...PINWHEEL_GRID_SIZES[
+											state.gridSizes.pinwheel
+										]}
+										svgRef={svgRef}
+									/>
+								) : (
+									<Grid svgRef={svgRef} />
+								)}
+							</GridTransition>
 							<div
 								role="group"
-								aria-label="Settings and Actions"
-								className={styles.buttonGroup}
+								aria-label="Controls"
+								className={styles.controlRows}
 							>
-								<div className={styles.buttonRow}>
-									<EditableAreaToggle />
-									<ColorSchemeButton />
-									<RandomizeDesignButton />
-									<ResetDesignButton />
+								<div className={styles.colorRow}>
+									<ColorOptions />
 								</div>
-								<div className={styles.buttonRow}>
-									<GridShapeButton />
-									<SaveImageButton svgRef={svgRef} />
-									<DarkModeToggle />
-									<ControlsInfoButton
-										initialOpen={isFirstVisit}
-									/>
+								<UndoRedoButtons />
+								<div
+									role="group"
+									aria-label="Settings and Actions"
+									className={styles.buttonGroup}
+								>
+									<div className={styles.buttonRow}>
+										<EditableAreaToggle />
+										<ColorSchemeButton />
+										<RandomizeDesignButton />
+										<ResetDesignButton />
+									</div>
+									<div className={styles.buttonRow}>
+										<GridShapeButton />
+										<SaveImageButton svgRef={svgRef} />
+										<DarkModeToggle />
+										<ControlsInfoButton
+											initialOpen={isFirstVisit}
+										/>
+									</div>
 								</div>
 							</div>
-						</div>
-					</>
-				)}
+						</>
+					))}
 			</main>
-			{!showIntro && <Footer />}
+			{(mode === 'puzzle' || !showIntro) && <Footer />}
 		</div>
 	)
 }

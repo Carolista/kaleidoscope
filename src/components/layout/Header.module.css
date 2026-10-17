@@ -1,10 +1,58 @@
+.header {
+	--title-size: clamp(1.7rem, 0.125rem + 6.25vw, 2.5rem);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem;
+	width: 100%;
+	min-height: 1.55em;
+	font-size: var(--title-size);
+}
+
+.modeSwitch {
+	display: flex;
+	flex-shrink: 0;
+	margin-left: auto;
+	height: 0.78em;
+	border: 1px solid var(--accent);
+	border-radius: 4px;
+	overflow: hidden;
+}
+
+.modeSwitch button {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	aspect-ratio: 1;
+	padding: 0;
+	font-size: inherit;
+	border: none;
+	background: transparent;
+	color: var(--accent);
+	cursor: pointer;
+}
+
+.modeSwitch svg {
+	height: 0.48em;
+	width: 0.55em;
+}
+
+.modeSwitch button[aria-pressed='true'] {
+	background: var(--accent);
+	color: var(--base);
+}
+
+.modeSwitch button:focus-visible {
+	outline: 2px dashed currentColor;
+	outline-offset: -3px;
+}
+
+.openingSwitch {
+	visibility: hidden;
+}
+
 .title {
-	/* Scales continuously between viewport widths 320px and 608px — the
-	   same range over which the grid itself actively shrinks/grows (grid
-	   caps out at 560px wide once the viewport reaches 608px; see
-	   HexGrid.module.css), so the title reaches its min/max at the same
-	   breakpoints instead of sitting flat while the grid keeps resizing. */
-	--title-size: clamp(1.75rem, 0.917rem + 4.17vw, 2.5rem);
 	font-size: var(--title-size);
 	margin: 0;
 	color: var(--accent, #222);
@@ -49,6 +97,6 @@
 
 @media screen and (max-width: 480px) {
 	.openingTitle {
-		--title-size: clamp(1.75rem, 0.917rem + 4.17vw, 2.5rem);
+		--title-size: inherit;
 	}
 }

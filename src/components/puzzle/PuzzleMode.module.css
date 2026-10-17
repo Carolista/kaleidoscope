@@ -1,0 +1,182 @@
+.puzzle {
+	display: grid;
+	justify-items: center;
+	gap: 1rem;
+	width: 100%;
+	color: var(--accent);
+}
+
+.puzzle[hidden] {
+	display: none;
+}
+
+.goalAndPieces {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	align-items: center;
+	gap: 0.5rem;
+	width: fit-content;
+	max-width: 100%;
+}
+
+.target {
+	width: 120px;
+	margin: 0;
+	text-align: center;
+}
+
+.board {
+	width: 100%;
+	justify-self: center;
+}
+
+.gridGraphic {
+	display: block;
+	width: 100%;
+	overflow: visible;
+}
+
+.targetCell,
+.mirrorCell,
+.wedgeCell,
+.pieceTile {
+	stroke: var(--accent);
+	stroke-width: 0.6;
+	stroke-linejoin: round;
+}
+
+.mutedMirrorCell {
+	opacity: 0.25;
+}
+
+.pieceOutline,
+.selectedOutline {
+	fill: none;
+	pointer-events: none;
+	stroke-linejoin: round;
+	stroke-linecap: round;
+}
+
+.outlineHalo {
+	stroke: var(--base);
+	stroke-width: 4;
+}
+
+.outlineEdge {
+	stroke: var(--accent);
+	stroke-width: 1.5;
+}
+
+.selectedOutline .outlineEdge {
+	stroke-width: 2.5;
+	stroke-dasharray: 3 2;
+}
+
+.wedgeCell {
+	stroke-width: 1.5;
+	cursor: pointer;
+	touch-action: none;
+}
+
+.wedgeCell:hover {
+	fill: #808080;
+}
+
+.wedgeCell:focus:not(:focus-visible) {
+	outline: none;
+}
+
+.wedgeCell:focus-visible {
+	outline: 3px solid var(--accent);
+	outline-offset: -2px;
+}
+
+.draggedPiece {
+	position: fixed;
+	z-index: 10;
+	pointer-events: none;
+	overflow: visible;
+}
+
+.tray {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: center;
+	gap: 0;
+	width: 100%;
+}
+
+.piece {
+	display: flex;
+	flex: 0 0 auto;
+	align-items: center;
+	justify-content: center;
+	min-width: 44px;
+	min-height: 44px;
+	padding: 0.5rem;
+	border: 2px solid transparent;
+	border-radius: 6px;
+	background: transparent;
+	color: var(--accent);
+	font: inherit;
+	cursor: grab;
+	touch-action: none;
+	user-select: none;
+}
+
+.piece svg {
+	display: block;
+	overflow: visible;
+}
+
+.piece[aria-pressed='true'],
+.piece:focus-visible {
+	border-color: var(--accent);
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+
+.piece:hover:not(:disabled) {
+	background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.piece:disabled {
+	cursor: default;
+	opacity: 0.45;
+}
+
+.piece:disabled svg {
+	filter: grayscale(0.8);
+}
+
+.visuallyHidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+	border: 0;
+}
+
+.actions {
+	display: flex;
+	justify-content: center;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.75rem;
+}
+
+.seed {
+	max-width: 100%;
+	overflow-wrap: anywhere;
+}
+
+@media screen and (max-width: 480px) {
+	.target {
+		width: 96px;
+	}
+}

@@ -4,8 +4,32 @@ import userEvent from '@testing-library/user-event'
 import { StrictMode } from 'react'
 import Modal, { MODAL_ENTER_MS, MODAL_EXIT_MS } from './Modal'
 import styles from './Modal.module.css'
+import { renderWithProvider } from '@test/renderWithProvider'
 
 describe('Modal', () => {
+	it('offers a small variant with a compact labelled corner close control', async () => {
+		const onClose = vi.fn()
+		renderWithProvider(
+			<Modal
+				open
+				onClose={onClose}
+				size="sm"
+				closeLabel="Close celebration"
+				labelledBy="small-title"
+				header={<h2 id="small-title">Congrats!</h2>}
+			>
+				<button type="button">Next Puzzle</button>
+			</Modal>,
+		)
+		expect(screen.getByRole('dialog', { name: 'Congrats!' })).toHaveClass(
+			styles.small,
+		)
+		const close = screen.getByRole('button', { name: 'Close celebration' })
+		expect(close).toHaveStyle('--icon-button-size: 1.875rem')
+		await userEvent.setup().click(close)
+		expect(onClose).toHaveBeenCalledOnce()
+	})
+
 	it('synchronizes native open state with its controlled prop and labels its content', () => {
 		const onClose = vi.fn()
 		const content = <h2 id="modal-title">Test modal</h2>

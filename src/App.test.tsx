@@ -54,6 +54,33 @@ describe('App', () => {
 		).not.toBeInTheDocument()
 	})
 
+	it('switches modes without changing or clearing the Zen design', async () => {
+		seedSavedDesign()
+		mockUseIsTouchDevice.mockReturnValue(false)
+		const user = userEvent.setup()
+		renderApp()
+		await user.click(
+			screen.getByRole('button', { name: 'Paint tile 1 of 9' }),
+		)
+		const savedZenDesign = localStorage.getItem('kaleidoscope:design')
+		await user.click(screen.getByRole('button', { name: 'Puzzle Mode' }))
+		expect(
+			screen.getByRole('img', { name: 'Target design' }),
+		).toBeInTheDocument()
+		expect(
+			screen.queryByRole('group', { name: 'Controls' }),
+		).not.toBeInTheDocument()
+		expect(localStorage.getItem('kaleidoscope:design')).toBe(savedZenDesign)
+		await user.click(screen.getByRole('button', { name: 'Zen Mode' }))
+		expect(
+			screen.getByRole('button', { name: 'Paint tile 1 of 9' }),
+		).toBeInTheDocument()
+		expect(localStorage.getItem('kaleidoscope:design')).toBe(savedZenDesign)
+		expect(
+			screen.queryByRole('img', { name: 'Target design' }),
+		).not.toBeInTheDocument()
+	})
+
 	it('moves the centered logo and reveals the page after the star finishes spinning', () => {
 		const originalAnimate = Element.prototype.animate
 		const animation = {

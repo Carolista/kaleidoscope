@@ -49,6 +49,7 @@ Today, the application reflects how my engineering approach has evolved. It has 
 - **Mouse, touch, and keyboard interaction:** Hover reveals the editable wedge on mouse and trackpad; touch users can toggle it. Grid tiles can also be reached with Tab and painted with Enter or Space. Focus outlines remain visible for keyboard navigation without lingering after mouse clicks or taps.
 - **Mobile-friendly modals:** Dialogs gently drift into focus and fade away on close, with animations skipped for reduced-motion preferences. Titles and close controls stay visible while content scrolls, with edge indicators for more options and background scrolling locked through closing.
 - **Automatic save:** All board patterns, your active board, per-shape size choices, and preferences are restored from browser storage on your next visit. Undo history starts fresh each session.
+- **Puzzle Mode prototype:** Switch between Zen Mode and a small hexagon puzzle. Arrange three connected pieces to match a Cabo-palette target, with mirrored placement, mouse/touch dragging, and keyboard-friendly select-and-place controls. Puzzle progress survives mode switches but is intentionally not saved across reloads.
 
 <!-- ## Visuals -->
 
@@ -64,6 +65,36 @@ This project has been a chance to build both a creative user experience and the 
 - **Thoughtful image export:** The app turns its live SVG into a standalone PNG, exporting the complete design rather than the on-screen editable-area highlight. Lined and line-free previews are cached while the save dialog is open for instant switching after generation.
 - **Accessible interaction:** Controls have accessible names and states, and grid tiles support keyboard use with screen-reader announcements.
 - **Tested behavior:** Vitest and Testing Library cover application state, geometry, controls, persistence, and image-export behavior.
+
+## Puzzle Mode prototype
+
+The header switch opens a session-only proof of concept; it does not change or
+overwrite saved Zen designs. Pieces may be placed anywhere they fit within the
+six-tile symmetry wedge without overlapping. A puzzle is solved when all six
+tiles match the target colors, not merely when every piece has been placed.
+Use the rotate icon to restart the current puzzle. On completion, a small
+**Congrats!** dialog offers **Next Puzzle**. Closing it leaves the solved design
+visible, with a **Next puzzle** button below the board. Rotation, accounts, rewards, sets/packs, and puzzle
+persistence are not included yet.
+
+Placed pieces are outlined on the board and disabled/desaturated in the tray;
+move them directly from the board or return them to the tray. Mirrored tiles
+stay muted until completion, when the full design is revealed and piece
+interaction and outlines are removed. Restart makes the board editable again.
+The goal image and uniformly scaled pieces share a compact row above the
+full-width playable board. Visible instructions and piece labels are omitted;
+controls retain accessible names and placement feedback is announced to screen
+readers.
+
+[`generateHexPuzzle(seed, scheme)`](./src/puzzles/hexPuzzle.ts) produces a
+serializable, deterministic puzzle definition with the target, fixed-orientation
+colored piece offsets, and a known solution. The current version uses the small
+hexagon and connected pieces of one, two, and three tiles; the UI passes the Cabo
+palette. Future set/pack authoring can call this pure generator with explicit
+seeds and store the generated definitions. Save the complete versioned
+definition, not just a seed, so a future generator change cannot alter a
+published puzzle. This is not yet an authoring tool or a difficulty/uniqueness
+certifier.
 
 ## Working with AI
 

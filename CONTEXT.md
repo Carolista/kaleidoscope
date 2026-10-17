@@ -9,6 +9,12 @@ A coloring toy: paint one tile and its symmetry group updates across the grid.
 Includes preset palettes, six shapes with three sizes each, dark/light mode, undo/redo, autosave,
 and PNG download/share.
 
+The header switches between the existing Zen Mode and a session-only Puzzle Mode
+prototype. Puzzle Mode uses the small hexagon, Cabo palette, and connected
+1/2/3-tile pieces placed in the six-tile symmetry wedge. Its independent local
+React state survives mode switches but not reloads; it never persists over Zen
+designs. See [README.md](./README.md#puzzle-mode-prototype) for scope.
+
 Live: https://codewithcarrie.com/kaleidoscope/
 
 The modern app lives in [src/](./src). Leave the original
@@ -75,6 +81,9 @@ the favicon replacing the first O. Letter color follows the app's theme accent;
 the six petal colors stay fixed. The star's side tips align with the lettering's
 upper/lower bounds, and spacing shifts it slightly toward the curved D for
 optical balance. The combined mark has one accessible heading name.
+The header places the logo at the left and a compact icon-only mode switch at
+the right. Solid paintbrush/puzzle-piece icons use square segments sized with
+the logo lettering; accessible names and tooltips retain the mode names.
 
 On each page load, the logo starts centered over the theme's base color.
 The reusable `LogoStar` spins and scales in for 2 seconds; its animation-end
@@ -83,6 +92,14 @@ size through 480px and starts larger above that width. Page content fades in
 with an independent 2-second opacity transition, so the logo settling does not
 cut the fade short. Reduced-motion users see the final layout immediately;
 the entrance is also skipped when the Web Animations API is unavailable.
+The animation measures its final bounds, including the left-aligned destination.
+
+Puzzle Mode places the goal image and equal-scale tray pieces in a compact row
+above the full-width board. A small shared modal celebrates completion with a
+centered Mr Dafoe heading and Next Puzzle action; dismissing it preserves the
+solved design. The on-page Next puzzle button appears only after completion.
+The rotate icon restarts the current puzzle. Placement feedback remains in a
+nonvisual status region rather than visible instruction/status blocks.
 
 `LogoStar` lives in `components/shared` with `arrive` (default) and `pulse`
 animation modes; wordmark sizing and optical spacing stay in `Header`.
@@ -140,6 +157,8 @@ changes should be applied to all four SVG assets.
 | [state/](./src/state/) | App reducer, history wrapper, and Context |
 | [services/](./src/services/) | Persistence, confirmation/export preferences, PNG export |
 | [hooks/](./src/hooks/) | React lifecycle and interaction logic |
+| [puzzles/](./src/puzzles/) | Pure seeded puzzle generation, placement validation, and completion |
+| [components/puzzle/](./src/components/puzzle/) | Puzzle target, board, tray, and pointer/keyboard interaction |
 | [data/](./src/data/) | Palettes and supported-shape definitions |
 | [types/](./src/types/) | Domain types, imported from individual modules |
 
