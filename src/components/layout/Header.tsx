@@ -1,4 +1,6 @@
 import type { Ref } from 'react'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faPaintbrush, faPuzzlePiece } from '@fortawesome/pro-solid-svg-icons'
 import styles from './Header.module.css'
 import { LogoStar } from '@shared'
 
@@ -52,19 +54,29 @@ function Header({
 				>
 					<button
 						type="button"
+						aria-label="Zen Mode"
+						title="Zen Mode"
 						aria-pressed={mode === 'zen'}
 						onClick={() => onModeChange('zen')}
 						disabled={isOpening}
 					>
-						Zen Mode
+						<FontAwesomeIcon
+							icon={faPaintbrush}
+							aria-hidden="true"
+						/>
 					</button>
 					<button
 						type="button"
+						aria-label="Puzzle Mode"
+						title="Puzzle Mode"
 						aria-pressed={mode === 'puzzle'}
 						onClick={() => onModeChange('puzzle')}
 						disabled={isOpening}
 					>
-						Puzzle Mode
+						<FontAwesomeIcon
+							icon={faPuzzlePiece}
+							aria-hidden="true"
+						/>
 					</button>
 				</nav>
 			)}

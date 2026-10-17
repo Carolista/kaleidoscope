@@ -72,14 +72,19 @@ The header switch opens a session-only proof of concept; it does not change or
 overwrite saved Zen designs. Pieces may be placed anywhere they fit within the
 six-tile symmetry wedge without overlapping. A puzzle is solved when all six
 tiles match the target colors, not merely when every piece has been placed.
-Use **Restart** to clear placements or **New puzzle** for another generated target
-and piece partition. Rotation, accounts, rewards, sets/packs, and puzzle
+Use the rotate icon to restart the current puzzle. On completion, a small
+**Congrats!** dialog offers **Next Puzzle**. Closing it leaves the solved design
+visible, with a **Next puzzle** button below the board. Rotation, accounts, rewards, sets/packs, and puzzle
 persistence are not included yet.
 
 Placed pieces are outlined on the board and disabled/desaturated in the tray;
 move them directly from the board or return them to the tray. Mirrored tiles
 stay muted until completion, when the full design is revealed and piece
 interaction and outlines are removed. Restart makes the board editable again.
+The goal image and uniformly scaled pieces share a compact row above the
+full-width playable board. Visible instructions and piece labels are omitted;
+controls retain accessible names and placement feedback is announced to screen
+readers.
 
 [`generateHexPuzzle(seed, scheme)`](./src/puzzles/hexPuzzle.ts) produces a
 serializable, deterministic puzzle definition with the target, fixed-orientation

@@ -62,12 +62,12 @@ export function PieceGraphic({
 	}
 }) {
 	const grabbed = drag ? axialToPixel(drag.offset, layout) : null
+	const viewBox = viewBoxFor(piece.tiles)
+	const [, , width, height] = viewBox.split(' ').map(Number)
 	return (
 		<svg
 			viewBox={
-				grabbed
-					? `${grabbed.x - 0.5} ${grabbed.y - 0.5} 1 1`
-					: viewBoxFor(piece.tiles)
+				grabbed ? `${grabbed.x - 0.5} ${grabbed.y - 0.5} 1 1` : viewBox
 			}
 			className={drag ? styles.draggedPiece : undefined}
 			style={
@@ -78,7 +78,7 @@ export function PieceGraphic({
 							width: drag.scale,
 							height: drag.scale,
 						}
-					: undefined
+					: { width, height }
 			}
 			aria-hidden="true"
 		>
@@ -137,7 +137,7 @@ export default function HexPuzzleBoard({
 		<svg
 			ref={svgRef}
 			viewBox={viewBoxFor(cells)}
-			className={styles.board}
+			className={styles.gridGraphic}
 			role={target ? 'img' : 'group'}
 			aria-label={target ? 'Target design' : 'Puzzle board'}
 		>

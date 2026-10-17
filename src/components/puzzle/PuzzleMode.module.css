@@ -10,29 +10,13 @@
 	display: none;
 }
 
-.introduction {
-	text-align: center;
-}
-
-.introduction h2 {
-	font-family: 'Righteous', sans-serif;
-	font-size: 1.25rem;
-	font-weight: 400;
-	margin: 0 0 0.5rem;
-}
-
-.introduction p,
-.instructions {
-	margin: 0;
-	line-height: 1.5;
-}
-
-.boards {
+.goalAndPieces {
 	display: grid;
-	grid-template-columns: 120px minmax(0, 1fr);
-	align-items: start;
-	gap: 1rem;
-	width: 100%;
+	grid-template-columns: auto minmax(0, 1fr);
+	align-items: center;
+	gap: 0.5rem;
+	width: fit-content;
+	max-width: 100%;
 }
 
 .target {
@@ -41,17 +25,12 @@
 	text-align: center;
 }
 
-.target figcaption {
-	font-size: 0.875rem;
-}
-
-.playBoard {
+.board {
 	width: 100%;
-	max-width: 360px;
 	justify-self: center;
 }
 
-.board {
+.gridGraphic {
 	display: block;
 	width: 100%;
 	overflow: visible;
@@ -119,30 +98,22 @@
 	overflow: visible;
 }
 
-.instructions {
-	max-width: 32rem;
-	text-align: center;
-	font-size: 0.925rem;
-}
-
 .tray {
 	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
 	justify-content: center;
-	gap: 0.75rem;
+	gap: 0;
 	width: 100%;
-	padding: 0.75rem;
-	border: 1px dashed var(--accent);
-	border-radius: 8px;
 }
 
 .piece {
 	display: flex;
-	flex-direction: column;
+	flex: 0 0 auto;
 	align-items: center;
-	gap: 0.25rem;
-	width: 30%;
-	max-width: 130px;
-	min-height: 120px;
+	justify-content: center;
+	min-width: 44px;
+	min-height: 44px;
 	padding: 0.5rem;
 	border: 2px solid transparent;
 	border-radius: 6px;
@@ -155,8 +126,7 @@
 }
 
 .piece svg {
-	width: 100%;
-	height: 64px;
+	display: block;
 	overflow: visible;
 }
 
@@ -180,15 +150,16 @@
 	filter: grayscale(0.8);
 }
 
-.status,
-.solved {
-	margin: 0;
-	text-align: center;
-	min-height: 3rem;
-}
-
-.solved {
-	font-weight: 700;
+.visuallyHidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+	border: 0;
 }
 
 .actions {
@@ -205,17 +176,7 @@
 }
 
 @media screen and (max-width: 480px) {
-	.boards {
-		grid-template-columns: 1fr;
-		justify-items: center;
-		gap: 0.75rem;
-	}
-
 	.target {
 		width: 96px;
-	}
-
-	.playBoard {
-		max-width: 300px;
 	}
 }

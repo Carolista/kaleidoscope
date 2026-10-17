@@ -14,6 +14,25 @@
 	flex-direction: column;
 }
 
+.small {
+	width: 280px;
+	padding: 2rem 1.5rem 1.5rem;
+	text-align: center;
+}
+
+.small .header h2 {
+	font-family: 'Mr Dafoe', cursive;
+	font-size: 3rem;
+	font-weight: 400;
+	margin: 0 0 1.25rem;
+}
+
+.cornerClose {
+	position: absolute;
+	top: 0.25rem;
+	right: 0.25rem;
+}
+
 .header {
 	flex: none;
 }

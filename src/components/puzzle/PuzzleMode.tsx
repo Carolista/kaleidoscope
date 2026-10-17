@@ -1,9 +1,11 @@
-import { useRef, useState } from 'react'
-import type { PointerEvent } from 'react'
-import { Button } from '@shared'
+import type { AxialCoord } from '@appTypes/hexagon'
 import { DarkModeToggle } from '@controls'
 import { colorSchemes } from '@data/colorSchemes'
-import type { AxialCoord } from '@appTypes/hexagon'
+import { faRotate } from '@fortawesome/sharp-duotone-solid-svg-icons'
+import { Button, IconButton, Modal } from '@shared'
+import type { PointerEvent } from 'react'
+import { useId, useRef, useState } from 'react'
+import type { PuzzlePiece, PuzzlePlacements } from '../../puzzles/hexPuzzle'
 import {
 	coordinateKey,
 	generateHexPuzzle,
@@ -12,7 +14,6 @@ import {
 	pieceCells,
 	placePuzzlePiece,
 } from '../../puzzles/hexPuzzle'
-import type { PuzzlePiece, PuzzlePlacements } from '../../puzzles/hexPuzzle'
 import HexPuzzleBoard, { PieceGraphic } from './HexPuzzleBoard'
 import styles from './PuzzleMode.module.css'
 
@@ -47,6 +48,8 @@ export default function PuzzleMode({
 	)
 	const [placements, setPlacements] = useState<PuzzlePlacements>({})
 	const [selectedId, setSelectedId] = useState<string | null>(null)
+	const [showCongrats, setShowCongrats] = useState(false)
+	const congratsTitleId = useId()
 	const [message, setMessage] = useState('Choose a piece to get started.')
 	const [drag, setDrag] = useState<DragState | null>(null)
 	const dragRef = useRef<DragState | null>(null)
@@ -54,7 +57,6 @@ export default function PuzzleMode({
 	const suppressClickRef = useRef(false)
 	const colors = getPuzzleColors(puzzle, placements)
 	const solved = isPuzzleSolved(puzzle, placements)
-	const selectedPiece = puzzle.pieces.find(piece => piece.id === selectedId)
 
 	function selectPiece(id: string) {
 		if (solved) return
@@ -78,6 +80,7 @@ export default function PuzzleMode({
 		}
 		setPlacements(result.placements)
 		setSelectedId(null)
+		setShowCongrats(isPuzzleSolved(puzzle, result.placements))
 		setMessage(
 			Object.keys(result.placements).length === puzzle.pieces.length &&
 				!isPuzzleSolved(puzzle, result.placements)
@@ -204,6 +207,7 @@ export default function PuzzleMode({
 	}
 
 	function reset(newPuzzle: boolean) {
+		setShowCongrats(false)
 		if (newPuzzle) {
 			setPuzzle(generateHexPuzzle(createPuzzleSeed(), colorSchemes[1]))
 		}
@@ -240,112 +244,98 @@ export default function PuzzleMode({
 				setMessage('Drag cancelled. Your piece has not moved.')
 			}}
 		>
-			<div className={styles.introduction}>
-				<h2>Match the kaleidoscope</h2>
-				<p>
-					Fill the outlined wedge to recreate the target. Each piece
-					mirrors across the whole board.
-				</p>
-			</div>
-			<div className={styles.boards}>
+			<div className={styles.goalAndPieces}>
 				<figure className={styles.target}>
 					<HexPuzzleBoard
 						radius={puzzle.radius}
 						colors={puzzle.target}
 						target
 					/>
-					<figcaption>Target · {puzzle.schemeName} · Easy</figcaption>
 				</figure>
-				<div className={styles.playBoard}>
-					<HexPuzzleBoard
-						svgRef={boardRef}
-						radius={puzzle.radius}
-						colors={colors}
-						solved={solved}
-						pieces={puzzle.pieces}
-						placements={placements}
-						selectedId={selectedId}
-						onActivate={activateCell}
-						onGrab={(event, cell) => {
-							const piece = pieceAt(cell)
-							if (!piece) return
-							const anchor = placements[piece.id]
-							startDrag(event, piece, {
-								q: cell.q - anchor.q,
-								r: cell.r - anchor.r,
-							})
-						}}
-					/>
+				<div
+					className={styles.tray}
+					role="group"
+					aria-label="Puzzle pieces"
+					data-puzzle-tray=""
+				>
+					{puzzle.pieces.map((piece, index) => (
+						<button
+							type="button"
+							key={piece.id}
+							className={styles.piece}
+							aria-label={`Select piece ${index + 1}, ${piece.tiles.length} ${piece.tiles.length === 1 ? 'tile' : 'tiles'}, ${placements[piece.id] ? 'on board' : 'in tray'}`}
+							aria-pressed={selectedId === piece.id}
+							disabled={Boolean(placements[piece.id])}
+							onClick={() => selectPiece(piece.id)}
+							onPointerDown={event => {
+								const tileIndex =
+									event.target instanceof Element
+										? Number(
+												event.target
+													.closest(
+														'[data-piece-tile]',
+													)
+													?.getAttribute(
+														'data-piece-tile',
+													) ?? 0,
+											)
+										: 0
+								startDrag(event, piece, piece.tiles[tileIndex])
+							}}
+						>
+							<PieceGraphic piece={piece} />
+						</button>
+					))}
 				</div>
 			</div>
-			<div
-				className={styles.tray}
-				role="group"
-				aria-label="Puzzle pieces"
-				data-puzzle-tray=""
-			>
-				{puzzle.pieces.map((piece, index) => (
-					<button
-						type="button"
-						key={piece.id}
-						className={styles.piece}
-						aria-label={`Select piece ${index + 1}, ${piece.tiles.length} ${piece.tiles.length === 1 ? 'tile' : 'tiles'}, ${placements[piece.id] ? 'on board' : 'in tray'}`}
-						aria-pressed={selectedId === piece.id}
-						disabled={Boolean(placements[piece.id])}
-						onClick={() => selectPiece(piece.id)}
-						onPointerDown={event => {
-							const tileIndex =
-								event.target instanceof Element
-									? Number(
-											event.target
-												.closest('[data-piece-tile]')
-												?.getAttribute(
-													'data-piece-tile',
-												) ?? 0,
-										)
-									: 0
-							startDrag(event, piece, piece.tiles[tileIndex])
-						}}
-					>
-						<PieceGraphic piece={piece} />
-						<span>Piece {index + 1}</span>
-						<small>
-							{`${piece.tiles.length} ${piece.tiles.length === 1 ? 'tile' : 'tiles'}`}
-						</small>
-					</button>
-				))}
+			<div className={styles.board}>
+				<HexPuzzleBoard
+					svgRef={boardRef}
+					radius={puzzle.radius}
+					colors={colors}
+					solved={solved}
+					pieces={puzzle.pieces}
+					placements={placements}
+					selectedId={selectedId}
+					onActivate={activateCell}
+					onGrab={(event, cell) => {
+						const piece = pieceAt(cell)
+						if (!piece) return
+						const anchor = placements[piece.id]
+						startDrag(event, piece, {
+							q: cell.q - anchor.q,
+							r: cell.r - anchor.r,
+						})
+					}}
+				/>
 			</div>
-			<p className={styles.instructions}>
-				Drag pieces into the wedge, or select a piece and then a tile.
-				Pieces are already rotated correctly. Select or drag a placed
-				piece directly on the board to move it or return it to the tray.
-			</p>
-			<p role="status" className={solved ? styles.solved : styles.status}>
+
+			<div role="status" className={styles.visuallyHidden}>
 				{solved
 					? 'Puzzle solved! Your design matches the target.'
 					: message}
-			</p>
-			<div className={styles.actions}>
-				<Button
-					variant="outline"
-					disabled={
-						solved ||
-						!selectedPiece ||
-						!placements[selectedPiece.id]
-					}
-					onClick={() =>
-						selectedPiece && returnToTray(selectedPiece.id)
-					}
-				>
-					Return selected piece
-				</Button>
-				<Button variant="outline" onClick={() => reset(false)}>
-					Restart
-				</Button>
-				<Button onClick={() => reset(true)}>New puzzle</Button>
-				<DarkModeToggle />
 			</div>
-			<small className={styles.seed}>POC · Seed: {puzzle.seed}</small>
+			<div className={styles.actions}>
+				<DarkModeToggle />
+				{solved && (
+					<Button onClick={() => reset(true)}>Next puzzle</Button>
+				)}
+				<IconButton
+					icon={faRotate}
+					label="Restart"
+					onClick={() => reset(false)}
+				/>
+			</div>
+			<Modal
+				open={showCongrats && !hidden}
+				onClose={() => setShowCongrats(false)}
+				labelledBy={congratsTitleId}
+				size="sm"
+				closeLabel="Close congratulations"
+				header={<h2 id={congratsTitleId}>Congrats!</h2>}
+			>
+				<Button onClick={() => reset(true)}>Next Puzzle</Button>
+			</Modal>
 			{drag?.moved && !hidden && (
 				<PieceGraphic piece={drag.piece} drag={drag} />
 			)}

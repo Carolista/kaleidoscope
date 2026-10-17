@@ -5,6 +5,15 @@ import { renderWithProvider } from '@test/renderWithProvider'
 import CloseButton from './CloseButton'
 
 describe('CloseButton', () => {
+	it('supports the existing small icon-button size', () => {
+		renderWithProvider(
+			<CloseButton label="Close" onClick={() => {}} size="sm" />,
+		)
+		expect(screen.getByRole('button', { name: 'Close' })).toHaveStyle(
+			'--icon-button-size: 1.875rem',
+		)
+	})
+
 	it('renders with its label as the accessible name and fires onClick', async () => {
 		const user = userEvent.setup()
 		const onClick = vi.fn()

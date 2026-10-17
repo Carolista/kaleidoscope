@@ -81,6 +81,9 @@ the favicon replacing the first O. Letter color follows the app's theme accent;
 the six petal colors stay fixed. The star's side tips align with the lettering's
 upper/lower bounds, and spacing shifts it slightly toward the curved D for
 optical balance. The combined mark has one accessible heading name.
+The header places the logo at the left and a compact icon-only mode switch at
+the right. Solid paintbrush/puzzle-piece icons use square segments sized with
+the logo lettering; accessible names and tooltips retain the mode names.
 
 On each page load, the logo starts centered over the theme's base color.
 The reusable `LogoStar` spins and scales in for 2 seconds; its animation-end
@@ -89,6 +92,14 @@ size through 480px and starts larger above that width. Page content fades in
 with an independent 2-second opacity transition, so the logo settling does not
 cut the fade short. Reduced-motion users see the final layout immediately;
 the entrance is also skipped when the Web Animations API is unavailable.
+The animation measures its final bounds, including the left-aligned destination.
+
+Puzzle Mode places the goal image and equal-scale tray pieces in a compact row
+above the full-width board. A small shared modal celebrates completion with a
+centered Mr Dafoe heading and Next Puzzle action; dismissing it preserves the
+solved design. The on-page Next puzzle button appears only after completion.
+The rotate icon restarts the current puzzle. Placement feedback remains in a
+nonvisual status region rather than visible instruction/status blocks.
 
 `LogoStar` lives in `components/shared` with `arrive` (default) and `pulse`
 animation modes; wordmark sizing and optical spacing stay in `Header`.

@@ -42,6 +42,13 @@ implementation and working agreements, see [CONTEXT.md](./CONTEXT.md).
   pointer, not as an offset translucent copy or snapped preview. Muted mirrored
   tiles reveal full color on completion; placed tray entries are disabled and
   desaturated until returned.
+- Keep the goal image and uniformly scaled tray pieces together above the
+  full-width board, without visible instructions or piece labels. Celebrate a
+  solve with the reusable small Modal variant: centered Mr Dafoe heading,
+  compact corner close control, and Next Puzzle action. Dismissal preserves the
+  solved board; the on-page next-puzzle action is available only after a solve.
+- Keep existing Modal defaults unchanged. `size="sm"` supplies the simplified
+  celebration layout, and CloseButton reuses IconButton's existing small size.
 - Generate new seeds with `crypto.getRandomValues`, which works over local
   network HTTP. `crypto.randomUUID` requires a secure context and can prevent
   even Zen Mode from mounting when the puzzle component initializes.
