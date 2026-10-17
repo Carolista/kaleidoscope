@@ -1,8 +1,55 @@
 # Supabase foundation
 
-This is the initial database foundation, not an app integration. The current app
-still uses its local catalogs and storage. No Supabase client dependency, key,
-remote connection, image bucket, or payment integration is included.
+The admin sign-in entry point uses Supabase Auth and the generated database types.
+The player app still uses its local catalogs and storage. No image bucket,
+payment integration, or player progress/sync operations are included.
+
+## Connect admin sign-in
+
+1. Copy the root `.env.example` to `.env.local` (ignored by git).
+2. In the Supabase Dashboard's project connection/API-key settings, find the
+   project URL and **publishable** key (`sb_publishable_...`). Set:
+
+   ```dotenv
+   VITE_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+   VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_YOUR_KEY
+   ```
+
+3. Restart Vite after changing environment variables.
+4. Visit `/#/admin` on the local development server, or
+   `/kaleidoscope/#/admin` on the deployed site. Hash routing avoids requiring
+   a server-side SPA rewrite on GitHub Pages.
+5. Sign in with the Auth email/password used to bootstrap your admin assignment.
+   The page verifies the current account against the RLS-protected `admin_account`
+   table before showing the workspace placeholder. There are no authoring tools
+   in this step. A normal account receives an explicit access-denied message.
+
+Use only the publishable key. Vite embeds `VITE_` variables in browser assets;
+they are not secrets, and authorization comes from RLS. Never put a secret/
+service-role key, database password, or access token in these variables. The
+client intentionally rejects secret keys and legacy JWT keys.
+
+Admin login uses email/password only, with no signup, OAuth, password-reset,
+guest-save import, or player progression writes. Existing sessions are restored,
+and refreshed/replaced identities are rechecked. Auth storage is separate from
+the design save. Sign-out affects this device, not all other sessions. Browser
+storage holds a session token: sign out on shared devices.
+
+The lazy-loaded admin route does not initialize Supabase for normal player
+visits. Missing configuration shows a setup error on the admin page without
+breaking the existing Zen/Puzzle app. The UI check is not a replacement for RLS.
+
+### Database TypeScript types
+
+`src/types/database.ts` is generated from the hosted database using the Dashboard's
+TypeScript type export, then formatted with the project's Prettier settings.
+It is used by `createClient<Database>`; do not hand-edit generated table shapes.
+Regenerate it after every applied migration. Extra generated schema/type helpers
+may appear in the export; application queries default to `public`.
+
+This step needs no CLI or schema change. Deployment environment configuration is
+separate from local `.env.local`; add these same public build variables to the
+deployment build when admin access is ready to deploy.
 
 ## Apply using the Dashboard
 
@@ -247,8 +294,9 @@ The app continues behaving exactly as before until intentionally integrated.
 
 ## Still required before player integration
 
-- Auth flows, protected admin UI, explicit guest import, and generated TypeScript
-  database types; install `@supabase/supabase-js` when wiring those.
+- Player Auth/registration flows, explicit guest import, and admin authoring UI.
+  Admin sign-in and the typed Supabase client are now available; regenerate
+  TypeScript database types after each applied schema change.
 - Structurally and geometrically validated authoring plus the expanded generator,
   rotation controls, and slot-based save/render migration.
 - Atomic completion validation, route evaluation, and idempotent grants; never

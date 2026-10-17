@@ -1,0 +1,45 @@
+.page {
+	max-width: 42rem;
+	margin: 0 auto;
+	padding: 2rem 1.25rem;
+	background: #fafafa;
+	color: #202020;
+	min-height: 100vh;
+}
+
+.form {
+	display: grid;
+	gap: 0.75rem;
+	max-width: 26rem;
+}
+
+.page input,
+.page button {
+	font: inherit;
+	padding: 0.75rem;
+	border: 1px solid #606060;
+	border-radius: 0.375rem;
+}
+
+.page button {
+	cursor: pointer;
+	margin-block: 0.5rem;
+}
+
+.page button:disabled {
+	cursor: wait;
+	opacity: 0.65;
+}
+
+.page a {
+	color: #165970;
+}
+
+.page :focus-visible {
+	outline: 3px solid #165970;
+	outline-offset: 3px;
+}
+
+.page [role='alert'] {
+	color: #9c2424;
+}
