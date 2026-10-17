@@ -1,3 +1,42 @@
+.header {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 1rem;
+}
+
+.modeSwitch {
+	display: flex;
+	border: 1px solid var(--accent);
+	border-radius: 6px;
+	overflow: hidden;
+}
+
+.modeSwitch button {
+	min-height: 44px;
+	padding: 0.5rem 1rem;
+	font-family: 'Righteous', sans-serif;
+	font-size: 0.875rem;
+	border: none;
+	background: transparent;
+	color: var(--accent);
+	cursor: pointer;
+}
+
+.modeSwitch button[aria-pressed='true'] {
+	background: var(--accent);
+	color: var(--base);
+}
+
+.modeSwitch button:focus-visible {
+	outline: 2px dashed currentColor;
+	outline-offset: -5px;
+}
+
+.openingSwitch {
+	visibility: hidden;
+}
+
 .title {
 	/* Scales continuously between viewport widths 320px and 608px — the
 	   same range over which the grid itself actively shrinks/grows (grid

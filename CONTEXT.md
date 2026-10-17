@@ -9,6 +9,12 @@ A coloring toy: paint one tile and its symmetry group updates across the grid.
 Includes preset palettes, six shapes with three sizes each, dark/light mode, undo/redo, autosave,
 and PNG download/share.
 
+The header switches between the existing Zen Mode and a session-only Puzzle Mode
+prototype. Puzzle Mode uses the small hexagon, Cabo palette, and connected
+1/2/3-tile pieces placed in the six-tile symmetry wedge. Its independent local
+React state survives mode switches but not reloads; it never persists over Zen
+designs. See [README.md](./README.md#puzzle-mode-prototype) for scope.
+
 Live: https://codewithcarrie.com/kaleidoscope/
 
 The modern app lives in [src/](./src). Leave the original
@@ -140,6 +146,8 @@ changes should be applied to all four SVG assets.
 | [state/](./src/state/) | App reducer, history wrapper, and Context |
 | [services/](./src/services/) | Persistence, confirmation/export preferences, PNG export |
 | [hooks/](./src/hooks/) | React lifecycle and interaction logic |
+| [puzzles/](./src/puzzles/) | Pure seeded puzzle generation, placement validation, and completion |
+| [components/puzzle/](./src/components/puzzle/) | Puzzle target, board, tray, and pointer/keyboard interaction |
 | [data/](./src/data/) | Palettes and supported-shape definitions |
 | [types/](./src/types/) | Domain types, imported from individual modules |
 

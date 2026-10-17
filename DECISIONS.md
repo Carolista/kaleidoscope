@@ -25,6 +25,27 @@ implementation and working agreements, see [CONTEXT.md](./CONTEXT.md).
   This replaces the ambiguous `ColorThemeButton`/`ColorThemeModal` names.
   Folder aliases and geometry export names were not broadly renamed.
 
+## Puzzle Mode prototype
+
+- Keep puzzle placements separate from Zen reducer/history/storage. The puzzle
+  stays mounted across mode switches, but progress is intentionally session-only.
+- Start with the small hexagon's six representative cells and connected pieces
+  of one, two, and three tiles. Use Cabo for this POC; defer rotation and
+  set/pack authoring.
+- Generate repeatable versioned definitions from explicit seeds. Publish full
+  definitions rather than seeds alone; generator changes must not rewrite
+  published puzzles. Generation guarantees a solution, not a unique solution
+  or certified difficulty.
+- Accept any non-overlapping placement inside the wedge. Match the completed
+  colors to determine success, then remove interaction and piece/wedge outlines.
+- Render the dragged piece at board scale with the grabbed tile centered on the
+  pointer, not as an offset translucent copy or snapped preview. Muted mirrored
+  tiles reveal full color on completion; placed tray entries are disabled and
+  desaturated until returned.
+- Generate new seeds with `crypto.getRandomValues`, which works over local
+  network HTTP. `crypto.randomUUID` requires a secure context and can prevent
+  even Zen Mode from mounting when the puzzle component initializes.
+
 ## Geometry and shape design
 
 ### Symmetry
