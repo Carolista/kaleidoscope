@@ -9,6 +9,7 @@ import {
 	faPalette,
 	faXmark,
 	faSquareArrowLeft,
+	faLayerGroup,
 } from '@fortawesome/pro-solid-svg-icons'
 import type { Database } from '../../types/database'
 import {
@@ -37,6 +38,12 @@ import styles from './AdminPortal.module.css'
 import Checkbox from '../shared/Checkbox'
 import AdminIconButton from './AdminIconButton'
 import PuzzleDraftForm from './PuzzleDraftForm'
+import PuzzleSetLibrary from './PuzzleSetLibrary'
+import {
+	loadDraftSets,
+	manageDraftSet,
+	type DraftSet,
+} from '../../services/puzzleSets'
 import useUnsavedDraft, { confirmDiscardDraft } from './useUnsavedDraft'
 
 function message(cause: unknown) {
@@ -342,12 +349,16 @@ export default function PuzzleDraftLibrary({
 	const [reload, setReload] = useState(0)
 	const [filter, setFilter] = useState('all')
 	const [status, setStatus] = useState('')
+	const [showSets, setShowSets] = useState(false)
 	const [checkedIds, setCheckedIds] = useState<ReadonlySet<string>>(new Set())
 	const [action, setAction] = useState<{
-		kind: 'delete' | 'palette'
+		kind: 'delete' | 'palette' | 'set'
 		ids: readonly string[]
 	} | null>(null)
 	const [bulkPaletteId, setBulkPaletteId] = useState('')
+	const [draftSets, setDraftSets] = useState<readonly DraftSet[]>([])
+	const [setsLoading, setSetsLoading] = useState(false)
+	const [bulkSetId, setBulkSetId] = useState('')
 	const [bulkBusy, setBulkBusy] = useState(false)
 	const bulkWorking = useRef(false)
 	const actionPanel = useRef<HTMLDivElement>(null)
@@ -355,6 +366,23 @@ export default function PuzzleDraftLibrary({
 	useEffect(() => {
 		if (action) actionPanel.current?.focus()
 	}, [action])
+	useEffect(() => {
+		if (action?.kind !== 'set') return
+		let active = true
+		void loadDraftSets(client)
+			.then(sets => {
+				if (active) setDraftSets(sets)
+			})
+			.catch((cause: unknown) => {
+				if (active) setError(message(cause))
+			})
+			.finally(() => {
+				if (active) setSetsLoading(false)
+			})
+		return () => {
+			active = false
+		}
+	}, [action, client])
 	useEffect(() => {
 		let active = true
 		async function load() {
@@ -401,10 +429,16 @@ export default function PuzzleDraftLibrary({
 	const checked = visible.filter(draft => checkedIds.has(draft.row.id))
 	const allChecked = visible.length > 0 && checked.length === visible.length
 	const hasAssigned = checked.some(draft => draft.assigned)
-	function startAction(kind: 'delete' | 'palette', ids: readonly string[]) {
+	function startAction(
+		kind: 'delete' | 'palette' | 'set',
+		ids: readonly string[],
+	) {
 		setError('')
 		setStatus('')
 		setBulkPaletteId('')
+		setBulkSetId('')
+		setSetsLoading(kind === 'set')
+		setDraftSets([])
 		setAction({ kind, ids })
 	}
 	async function applyAction() {
@@ -416,21 +450,36 @@ export default function PuzzleDraftLibrary({
 			setError('Choose a palette before applying changes.')
 			return
 		}
+		if (
+			action.kind === 'set' &&
+			!draftSets.some(set => set.row.id === bulkSetId)
+		) {
+			setError('Choose a draft set before assigning puzzles.')
+			return
+		}
 		bulkWorking.current = true
 		setBulkBusy(true)
 		setError('')
 		try {
-			await bulkPuzzleDrafts(
-				client,
-				action.ids,
-				action.kind === 'delete'
-					? { kind: 'delete' }
-					: { kind: 'palette', paletteId: bulkPaletteId },
-			)
+			if (action.kind === 'set') {
+				await manageDraftSet(client, bulkSetId, {
+					kind: 'append',
+					puzzleIds: action.ids,
+				})
+			} else
+				await bulkPuzzleDrafts(
+					client,
+					action.ids,
+					action.kind === 'delete'
+						? { kind: 'delete' }
+						: { kind: 'palette', paletteId: bulkPaletteId },
+				)
 			setStatus(
-				action.kind === 'delete'
-					? `Deleted ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'}.`
-					: `Updated the palette for ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'}.`,
+				action.kind === 'set'
+					? `Assigned ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'} to set.`
+					: action.kind === 'delete'
+						? `Deleted ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'}.`
+						: `Updated the palette for ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'}.`,
 			)
 			setCheckedIds(new Set())
 			setAction(null)
@@ -441,6 +490,20 @@ export default function PuzzleDraftLibrary({
 			bulkWorking.current = false
 			setBulkBusy(false)
 		}
+	}
+	if (showSets) {
+		return (
+			<PuzzleSetLibrary
+				client={client}
+				onDirtyChange={onDirtyChange}
+				onBack={() => {
+					setShowSets(false)
+					setCheckedIds(new Set())
+					setAction(null)
+					setReload(value => value + 1)
+				}}
+			/>
+		)
 	}
 	if (selected) {
 		return (
@@ -485,6 +548,16 @@ export default function PuzzleDraftLibrary({
 			<div className={styles.galleryHeading}>
 				<h2 id="draft-library-title">Puzzle drafts</h2>
 				<div className={styles.galleryControls}>
+					<AdminIconButton
+						icon={faLayerGroup}
+						label="Manage sets"
+						disabled={bulkBusy}
+						onClick={() => {
+							setShowSets(true)
+							setAction(null)
+							setStatus('')
+						}}
+					/>
 					{onNew && (
 						<AdminIconButton
 							icon={faPlusLarge}
@@ -561,6 +634,25 @@ export default function PuzzleDraftLibrary({
 									({checked.length} drafts selected)
 								</span>
 								<AdminIconButton
+									icon={faLayerGroup}
+									label="Assign to set"
+									disabled={
+										bulkBusy ||
+										hasAssigned ||
+										checked.some(
+											draft =>
+												draft.row.usage !==
+												'collection',
+										)
+									}
+									onClick={() =>
+										startAction(
+											'set',
+											checked.map(draft => draft.row.id),
+										)
+									}
+								/>
+								<AdminIconButton
 									icon={faPalette}
 									label="Change palette"
 									disabled={bulkBusy}
@@ -600,22 +692,35 @@ export default function PuzzleDraftLibrary({
 							Unassign selected drafts before deleting them.
 						</p>
 					)}
+					{checked.some(
+						draft =>
+							draft.assigned || draft.row.usage !== 'collection',
+					) && (
+						<p className={styles.rotationHelp}>
+							Only unassigned Set/pack drafts can be assigned to a
+							set.
+						</p>
+					)}
 					{action && (
 						<div
 							role="group"
 							ref={actionPanel}
 							tabIndex={-1}
 							aria-label={
-								action.kind === 'delete'
-									? 'Confirm gallery deletion'
-									: 'Change selected palettes'
+								action.kind === 'set'
+									? 'Assign selected puzzles to set'
+									: action.kind === 'delete'
+										? 'Confirm gallery deletion'
+										: 'Change selected palettes'
 							}
 							className={styles.bulkPanel}
 						>
 							<p>
-								{action.kind === 'delete'
-									? `Permanently delete ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'}?`
-									: `Change palette for ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'}?`}
+								{action.kind === 'set'
+									? `Assign ${action.ids.length} drafts to a set?`
+									: action.kind === 'delete'
+										? `Permanently delete ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'}?`
+										: `Change palette for ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'}?`}
 							</p>
 							<ul>
 								{drafts
@@ -628,6 +733,46 @@ export default function PuzzleDraftLibrary({
 										</li>
 									))}
 							</ul>
+							{action.kind === 'set' &&
+								(setsLoading ? (
+									<p role="status">Loading draft sets...</p>
+								) : (
+									<>
+										<label htmlFor="bulk-set">
+											Draft set
+										</label>
+										<select
+											id="bulk-set"
+											value={bulkSetId}
+											disabled={bulkBusy}
+											onChange={event =>
+												setBulkSetId(event.target.value)
+											}
+										>
+											<option value="">
+												Choose a set
+											</option>
+											{draftSets.map(set => (
+												<option
+													key={set.row.id}
+													value={set.row.id}
+												>
+													{set.row.name} (
+													{set.row.kind},{' '}
+													{set.members.length}{' '}
+													puzzles)
+												</option>
+											))}
+										</select>
+										{!draftSets.length && !error && (
+											<p>
+												Create a draft set using Manage
+												sets, then select puzzles to
+												assign.
+											</p>
+										)}
+									</>
+								))}
 							{action.kind === 'palette' && (
 								<fieldset
 									className={styles.palettePicker}
@@ -686,15 +831,19 @@ export default function PuzzleDraftLibrary({
 								disabled={
 									bulkBusy ||
 									(action.kind === 'palette' &&
-										!bulkPaletteId)
+										!bulkPaletteId) ||
+									(action.kind === 'set' &&
+										(setsLoading || !bulkSetId))
 								}
 								onClick={() => {
 									void applyAction()
 								}}
 							>
-								{action.kind === 'delete'
-									? 'Confirm delete'
-									: 'Apply palette'}
+								{action.kind === 'set'
+									? 'Assign puzzles'
+									: action.kind === 'delete'
+										? 'Confirm delete'
+										: 'Apply palette'}
 							</button>
 							<button
 								type="button"
@@ -809,11 +958,20 @@ export default function PuzzleDraftLibrary({
 									<span className={styles.assignment}>
 										{draft.row.usage === 'daily'
 											? 'Daily'
-											: 'Set/pack'}{' '}
+											: draft.collectionKind === 'core'
+												? 'Core'
+												: draft.collectionKind ===
+													  'reward'
+													? 'Reward'
+													: draft.collectionKind ===
+														  'paid'
+														? 'Pack'
+														: 'Set/pack'}{' '}
 										·{' '}
-										{draft.assigned
-											? 'Assigned'
-											: 'Unassigned'}
+										{draft.collectionName ??
+											(draft.assigned
+												? 'Assigned'
+												: 'Unassigned')}
 									</span>
 								</li>
 							)

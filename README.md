@@ -110,7 +110,20 @@ Palette changes require Apply; deletion confirms count and names. Bulk operation
 are all-or-nothing, with database release/reference checks. Assigned drafts cannot
 be deleted or switch intended use.
 
-Playtest placements remain memory-only. Publishing, assignments, player progress,
+**Manage sets** creates named Core, Reward, or Paid hexagon draft sets with no
+fixed puzzle count. Select unassigned Set/pack drafts in the puzzle gallery and
+use **Assign to set** to append them atomically. Assigned cards show their set
+name and Core/Reward/Pack type.
+
+Draft-set cards use two equal columns above 640px and one below, with a thumbnail
+on the left and edit/delete controls and details on the right. The set editor
+shows every member's saved-design thumbnail beside its name, up/down controls,
+and square-minus removal button. Reordering/removal save immediately; name edits
+use **Save name**. Removing a member or confirming set deletion preserves the
+puzzles and their private solutions. Scheduled/live content and dependent
+progression/routes/rewards remain protected by database checks.
+
+Playtest placements remain memory-only. Publishing, player progress,
 and changes to Zen saves are not included. See
 [Supabase instructions](./supabase/README.md) for required migrations and tests.
 
@@ -142,7 +155,7 @@ seeds and store the generated definitions. Save the complete versioned
 definition, not just a seed, so a future generator change cannot alter a
 published puzzle. The admin lab wraps the expanded generator with a version-2
 palette-slot authoring model and private solution metadata. Draft persistence
-is still pending; neither generator certifies difficulty or uniqueness.
+is available in the admin portal; neither generator certifies difficulty or uniqueness.
 
 ## Working with AI
 

@@ -7,6 +7,8 @@ import { puzzleDraftArgs, type PuzzleUsage } from './puzzleDrafts'
 export interface LibraryDraft {
 	readonly row: Tables<'puzzles'>
 	readonly assigned: boolean
+	readonly collectionName: string | null
+	readonly collectionKind: string | null
 	readonly puzzle: AuthoredHexPuzzle
 }
 
@@ -18,7 +20,7 @@ export async function loadPuzzleDrafts(
 		const { data, error } = await client
 			.from('puzzles')
 			.select(
-				'*, puzzle_authoring(*), collection_puzzles(puzzle_id), daily_puzzles(id)',
+				'*, puzzle_authoring(*), collection_puzzles(puzzle_id, puzzle_collections(name, kind)), daily_puzzles(id)',
 			)
 			.eq('shape_id', 'hexagon')
 			.is('published_at', null)
@@ -27,11 +29,24 @@ export async function loadPuzzleDrafts(
 		if (error) throw new Error(`Unable to load drafts: ${error.message}`)
 		if (!data) throw new Error('The draft library returned no data.')
 		for (const row of data) {
+			if (
+				row.collection_puzzles.some(
+					member => !member.puzzle_collections,
+				)
+			) {
+				throw new Error(
+					'A puzzle set assignment could not be resolved. Refresh the catalog.',
+				)
+			}
 			drafts.push({
 				row,
 				assigned:
 					row.collection_puzzles.length > 0 ||
 					row.daily_puzzles.length > 0,
+				collectionName:
+					row.collection_puzzles[0]?.puzzle_collections?.name ?? null,
+				collectionKind:
+					row.collection_puzzles[0]?.puzzle_collections?.kind ?? null,
 				puzzle: readAuthoredHexPuzzle(row, row.puzzle_authoring),
 			})
 		}

@@ -57,10 +57,12 @@ implementation and working agreements, see [CONTEXT.md](./CONTEXT.md).
 
 The admin lab supports six exact hexagon recipes: small without rotation (easy),
 small with rotation or medium without (moderate), medium with rotation or large
-without (hard), and large with rotation (super hard). Labels do not certify human
+without (hard), and large with rotation (challenging). Labels do not certify human
 difficulty or uniqueness. Save complete version-2 palette-slot definitions, with
 palette ID/recipe and private seed/generator/known solution metadata separate.
 Resolve stable ordered slots against current palette colors, including duplicates.
+Use Challenging as the displayed top-tier label; retain the existing
+`super-hard-large` recipe ID and `super_hard` database value for compatibility.
 
 Browse using visual palettes and one-click Randomize, not manual seed editing.
 Palette changes recolor the existing layout without resetting placements.
@@ -109,7 +111,25 @@ filter; switching filters or explicitly refreshing clears it. Confirm palette
 changes with Apply and deletions with count/names. Bulk changes are all-or-nothing
 admin RPC transactions under the catalog lock, with write-time release/reference
 rechecks. Assigned drafts cannot be deleted, but unpublished palette edits remain
-allowed. Starter/set/route/core/reward/release tools follow; styling is still evolving.
+allowed.
+
+Draft sets have a Core, Reward, or Paid role chosen at creation, not an Undecided
+state. Do not enforce a fixed count while 12 versus 18 remains undecided.
+Membership is exclusive; append eligible unassigned Set/pack drafts in selection
+order. Rename explicitly, but save member ordering/removal immediately.
+Keep existing selection mode separate from catalog ordering; do not imply that
+reordering enforces a player's completion sequence.
+
+Use visual landscape cards with two equal desktop columns, collapsing at 640px.
+Place the representative thumbnail on the left, actions top right, and details
+bottom right. Show every member's saved design in the editor so ordering is
+visual, not name-dependent. Square-minus means remove membership, distinct from
+clearing gallery selection. Never regenerate stored designs for thumbnails.
+Confirmed deletion removes only the draft set and its memberships, preserving
+all puzzles/private solutions. Reject release and progression/route/reward/grant
+dependencies instead of silently cascading meaningful configuration away.
+Keep mutations atomic under caller RLS, explicit admin checks, READ COMMITTED
+isolation, and the catalog lock. Starter/route/core/reward/release tools follow.
 
 ## Geometry and shape design
 

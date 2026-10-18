@@ -56,7 +56,7 @@ export const HEX_PUZZLE_RECIPES = [
 	},
 	{
 		id: 'super-hard-large',
-		label: 'SUPER HARD (L+)',
+		label: 'CHALLENGING (L+)',
 		size: 'lg',
 		rotation: true,
 		difficulty: 'super_hard',

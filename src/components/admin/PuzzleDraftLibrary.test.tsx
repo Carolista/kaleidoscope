@@ -21,6 +21,13 @@ const mocks = vi.hoisted(() => ({
 	bulk: vi.fn(),
 	replace: vi.fn(),
 	seeds: vi.fn(),
+	loadSets: vi.fn(),
+	manageSet: vi.fn(),
+}))
+vi.mock('../../services/puzzleSets', () => ({
+	loadDraftSets: (...args: unknown[]) => mocks.loadSets(...args),
+	manageDraftSet: (...args: unknown[]) => mocks.manageSet(...args),
+	deleteDraftSet: vi.fn(),
 }))
 vi.mock('../../services/puzzleLibrary', () => ({
 	loadPuzzleDrafts: (...args: unknown[]) => mocks.load(...args),
@@ -73,6 +80,8 @@ const draft: LibraryDraft = {
 		release_at: null,
 	},
 	assigned: false,
+	collectionName: null,
+	collectionKind: null,
 	puzzle,
 }
 beforeEach(() => {
@@ -83,6 +92,21 @@ beforeEach(() => {
 	mocks.bulk.mockResolvedValue(undefined)
 	mocks.replace.mockResolvedValue(undefined)
 	mocks.seeds.mockResolvedValue({ data: [], error: null })
+	mocks.loadSets.mockResolvedValue([
+		{
+			row: {
+				id: 'set',
+				name: 'First set',
+				kind: 'core',
+				shape_id: 'hexagon',
+				selection_mode: 'any',
+				published_at: null,
+				release_at: null,
+			},
+			members: [],
+		},
+	])
+	mocks.manageSet.mockResolvedValue(undefined)
 })
 afterEach(() => vi.restoreAllMocks())
 function setup() {
@@ -101,6 +125,136 @@ async function open() {
 	return screen.getByRole('article', { name: 'Edit Saved art' })
 }
 describe('draft library', () => {
+	it.each([
+		['core', 'Core'],
+		['reward', 'Reward'],
+		['paid', 'Pack'],
+	] as const)(
+		'labels assigned %s cards as %s beside the set name',
+		async (kind, label) => {
+			mocks.load.mockResolvedValue([
+				{
+					...draft,
+					assigned: true,
+					collectionName: 'My set',
+					collectionKind: kind,
+				},
+			])
+			setup()
+			expect(
+				await screen.findByText(`${label} · My set`),
+			).toBeInTheDocument()
+		},
+	)
+	it('assigns selected puzzles to a draft set atomically, preserves failed selections, and shows membership after reload', async () => {
+		setup()
+		fireEvent.click(
+			await screen.findByRole('checkbox', {
+				name: 'Select draft Saved art',
+			}),
+		)
+		fireEvent.click(screen.getByRole('button', { name: 'Assign to set' }))
+		const picker = await screen.findByLabelText('Draft set')
+		const apply = screen.getByRole('button', { name: 'Assign puzzles' })
+		expect(apply).toBeDisabled()
+		fireEvent.change(picker, { target: { value: 'set' } })
+		expect(mocks.manageSet).not.toHaveBeenCalled()
+		mocks.manageSet.mockRejectedValueOnce(
+			new Error('Puzzle assigned in another tab'),
+		)
+		fireEvent.click(apply)
+		expect(await screen.findByRole('alert')).toHaveTextContent(
+			'Puzzle assigned in another tab',
+		)
+		expect(
+			screen.getByRole('checkbox', { name: 'Select draft Saved art' }),
+		).toBeChecked()
+		expect(picker).toHaveValue('set')
+		mocks.load.mockResolvedValue([
+			{
+				...draft,
+				assigned: true,
+				collectionName: 'First set',
+				collectionKind: 'core',
+			},
+		])
+		fireEvent.click(apply)
+		fireEvent.click(apply)
+		await screen.findByText('Assigned 1 draft to set.')
+		expect(mocks.manageSet).toHaveBeenCalledTimes(2)
+		expect(mocks.manageSet).toHaveBeenLastCalledWith(
+			expect.anything(),
+			'set',
+			{ kind: 'append', puzzleIds: ['draft-id'] },
+		)
+		await screen.findByText(/Core · First set/)
+		expect(
+			screen.queryByRole('group', { name: 'Bulk draft actions' }),
+		).not.toBeInTheDocument()
+	})
+	it('blocks assignment of daily or already assigned puzzles and opens the set workspace', async () => {
+		mocks.load.mockResolvedValue([
+			{ ...draft, row: { ...draft.row, usage: 'daily' } },
+		])
+		setup()
+		fireEvent.click(
+			await screen.findByRole('checkbox', {
+				name: 'Select draft Saved art',
+			}),
+		)
+		expect(
+			screen.getByRole('button', { name: 'Assign to set' }),
+		).toBeDisabled()
+		fireEvent.click(screen.getByRole('button', { name: 'Manage sets' }))
+		await screen.findByRole('button', { name: 'Edit set First set' })
+		fireEvent.click(screen.getByRole('button', { name: 'Back to library' }))
+		await screen.findByRole('checkbox', { name: 'Select draft Saved art' })
+		expect(
+			screen.queryByRole('group', { name: 'Bulk draft actions' }),
+		).not.toBeInTheDocument()
+		mocks.load.mockResolvedValue([
+			{
+				...draft,
+				assigned: true,
+				collectionName: 'First set',
+				collectionKind: 'core',
+			},
+		])
+		fireEvent.click(screen.getByRole('button', { name: 'Refresh drafts' }))
+		fireEvent.click(
+			await screen.findByRole('checkbox', {
+				name: 'Select draft Saved art',
+			}),
+		)
+		expect(
+			screen.getByRole('button', { name: 'Assign to set' }),
+		).toBeDisabled()
+	})
+	it('surfaces set lookup failures without losing selected puzzles', async () => {
+		mocks.loadSets.mockRejectedValueOnce(
+			new Error('Set catalog unavailable'),
+		)
+		setup()
+		fireEvent.click(
+			await screen.findByRole('checkbox', {
+				name: 'Select draft Saved art',
+			}),
+		)
+		fireEvent.click(screen.getByRole('button', { name: 'Assign to set' }))
+		expect(await screen.findByRole('alert')).toHaveTextContent(
+			'Set catalog unavailable',
+		)
+		expect(
+			screen.getByRole('button', { name: 'Assign puzzles' }),
+		).toBeDisabled()
+		expect(
+			screen.getByRole('checkbox', { name: 'Select draft Saved art' }),
+		).toBeChecked()
+		fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Assign to set' }))
+		await screen.findByLabelText('Draft set')
+		expect(mocks.loadSets).toHaveBeenCalledTimes(2)
+	})
 	it('previews replacements without writes, excludes saved/previewed seeds, and saves the exact replacement under the existing ID', async () => {
 		mocks.seeds.mockResolvedValue({
 			data: [{ seed: '00000001000000010000000100000001' }],

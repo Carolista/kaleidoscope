@@ -1002,6 +1002,20 @@ export type Database = {
 				}
 				Returns: string
 			}
+			manage_draft_set: {
+				Args: {
+					p_id: string
+					p_action: string
+					p_name?: string
+					p_kind?: string
+					p_puzzle_ids?: string[]
+				}
+				Returns: string
+			}
+			delete_draft_set: {
+				Args: { p_id: string }
+				Returns: string
+			}
 			replace_hex_puzzle_draft: {
 				Args: {
 					p_id: string

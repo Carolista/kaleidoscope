@@ -186,7 +186,15 @@ describe('draft library database requests', () => {
 					{
 						...base,
 						id: 'set',
-						collection_puzzles: [{ puzzle_id: 'set' }],
+						collection_puzzles: [
+							{
+								puzzle_id: 'set',
+								puzzle_collections: {
+									name: 'First set',
+									kind: 'core',
+								},
+							},
+						],
 					},
 					{
 						...base,
@@ -211,6 +219,15 @@ describe('draft library database requests', () => {
 		expect(drafts.find(value => value.row.id === 'set')?.assigned).toBe(
 			true,
 		)
+		expect(
+			drafts.find(value => value.row.id === 'set')?.collectionName,
+		).toBe('First set')
+		expect(
+			drafts.find(value => value.row.id === 'set')?.collectionKind,
+		).toBe('core')
+		expect(
+			drafts.find(value => value.row.id === 'id-0')?.collectionKind,
+		).toBeNull()
 		expect(drafts.find(value => value.row.id === 'daily')?.assigned).toBe(
 			true,
 		)

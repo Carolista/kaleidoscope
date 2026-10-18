@@ -49,7 +49,7 @@ changing its seed, layout, or placements.
 | Moderate | Small (6 wedge tiles) | Yes |
 | Hard | Large (16 wedge tiles) | No |
 | Hard | Medium (9 wedge tiles) | Yes |
-| Super hard | Large (16 wedge tiles) | Yes |
+| Challenging | Large (16 wedge tiles) | Yes |
 
 Seeds are generated automatically using browser cryptographic randomness and are
 not displayed or entered manually.
@@ -124,8 +124,26 @@ available for unused drafts. The database rechecks these rules at write time,
 including content that was assigned or scheduled after the library loaded.
 
 Scheduled/live puzzles are excluded from this draft library and cannot be edited
-or deleted through its RPCs. Assignment, scheduling, rewards, and publishing tools
-follow separately. No player attempts, completions, reward grants, guest imports,
+or deleted through its RPCs. Draft set assembly is available through **Manage sets**:
+create a named hexagon set with a Core progression, Reward, or Paid role, then use
+gallery selection and **Assign to set** to append unassigned Set/pack drafts.
+No puzzle count is enforced; 12, 18, or other counts remain possible. Cards show
+the assigned set name with its Core, Reward, or Pack type (unassigned puzzles keep
+Set/pack, and daily puzzles keep Daily). In the set workspace, rename the set, move members up/down,
+or remove them without deleting their saved designs. Each member shows its saved
+target thumbnail beside its name and order controls; the square-minus icon
+removes it from the set only. Ordering/removal save
+immediately; a changed set name requires **Save name** and is guarded on exit.
+The set role is chosen at creation and is not reclassified by this tool.
+Draft sets use landscape cards: the first ordered member's saved-design thumbnail
+spans the left column, with square Edit/Delete icons at the top right and name,
+Core/Reward/Pack type and member count aligned bottom right. Empty sets show a placeholder. Thumbnails
+resolve current Supabase palette colors without regenerating designs.
+The large **New set** plus opens creation. Deleting a set requires confirmation
+and unassigns its puzzles without deleting their designs or private solutions.
+Qualifying routes, core sequence, rewards, pricing/shop products, selection rules,
+scheduling, and publishing tools follow separately.
+No player attempts, completions, reward grants, guest imports,
 or Zen autosaves are written.
 
 Select card checkboxes for **Change palette** or **Delete selected**. **Select all
@@ -337,6 +355,56 @@ Replacement uses the same saved-seed exclusions as creation; its mounted editor 
 excludes the original seed and any replacement seeds already previewed per recipe.
 Replacing a design removes its old persistent seed exclusion unless another saved
 puzzle still uses it; mounted preview history continues to exclude it until leaving.
+
+## Apply draft set assembly
+
+After the design-replacement migration:
+
+1. Run the complete
+   [20261018060000_assemble_puzzle_sets.sql](./migrations/20261018060000_assemble_puzzle_sets.sql)
+   once in SQL Editor as `postgres`. Do not rerun earlier migrations.
+2. Run [assemble_puzzle_sets.sql](./tests/assemble_puzzle_sets.sql) as `postgres`,
+   without an automatic RLS wrapper. Expect **36 PASS results**; fixtures roll back.
+3. Open **Manage sets**, create a set, return to the gallery, select unassigned
+   Set/pack drafts, and use **Assign to set**. Open the set to check membership,
+   reorder, rename, and remove a puzzle. Confirm removal leaves the puzzle in the
+   gallery and restores its unassigned edit/replacement/deletion controls.
+
+The `manage_draft_set` RPC creates/renames draft hexagon sets or atomically appends,
+removes, and reorders memberships under caller RLS, explicit admin authorization,
+READ COMMITTED isolation, and the catalog lock. Set roles use the existing
+Core/Reward/Paid schema; no tables or fixed-size constraints are added. Selection
+mode retains its existing `any` default; catalog ordering does not enforce a player
+completion order. Price/product and route configuration are not changed here.
+
+Only unpublished sets are managed. Appending requires unassigned, unpublished,
+same-shape Set/pack puzzles; daily drafts are ineligible. Puzzle membership remains
+exclusive across sets. Stale or invalid IDs and write failures reject the whole
+batch. Removal refuses prepared puzzles or qualifying-route dependencies rather
+than silently deleting references. Reordering preserves existing routes and
+requires the exact current membership; removals compact positions without deleting
+puzzles or authoring records. Set and membership reads paginate rather than
+silently truncating after 1000 rows.
+
+## Apply draft set deletion
+
+After the set-assembly migration:
+
+1. Run the complete
+   [20261018070000_delete_draft_set.sql](./migrations/20261018070000_delete_draft_set.sql)
+   once as `postgres`. Do not rerun earlier migrations.
+2. Run [delete_draft_set.sql](./tests/delete_draft_set.sql) as `postgres`, without
+   an automatic RLS wrapper. Expect **15 PASS results**; fixtures roll back.
+3. In **Manage sets**, use a card's trash icon. Cancel first to verify no change;
+   then confirm deletion of an expendable set. Returning to the puzzle library
+   reloads assignments: all former members remain available as unassigned puzzles.
+
+`delete_draft_set` requires admin authorization and caller RLS, READ COMMITTED
+isolation, and the catalog lock. It atomically removes memberships and the set
+only; all puzzle/authoring rows remain intact. Scheduled/live sets, prepared member
+puzzles, progression steps, qualifying routes, reward rules/targets, qualifications,
+and grants block deletion. Meaningful dependent configuration is not silently
+cascaded away. Failures retain the UI confirmation for retry.
 
 ## Apply gallery bulk actions
 
@@ -562,8 +630,8 @@ The app continues behaving exactly as before until intentionally integrated.
 
 - Player Auth/registration flows, explicit guest import, and the rest of the admin
   authoring workspace. Admin sign-in, generated types, and six-recipe isolated
-  playtesting are available; atomic draft saving/library, starter selection,
-  set/routes/core/reward/release tools are still pending.
+  playtesting, atomic draft saving/library, and draft set assembly/deletion are
+  available; starter selection, routes/core/reward/release tools remain pending.
 - Server-side structural/geometric authoring validation and slot-based saved-content
   integration into player mode. The admin engine and palette-slot rendering adapter
   exist; the player POC remains local. Regenerate types when public schema changes.

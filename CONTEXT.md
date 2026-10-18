@@ -54,7 +54,18 @@ swatch selection and Apply; card/bulk deletion confirms count and names.
 Admin-only RPCs apply batches atomically under the catalog lock, rechecking release
 and references. Assigned drafts cannot switch use or delete; scheduled/live rows
 are excluded. Saved seed exclusions derive from surviving authoring records.
-Assignment, publishing, starter, set/route/core, and reward tools remain deferred.
+Manage sets creates/renames Core, Reward, or Paid hexagon draft sets with flexible
+member counts. Gallery **Assign to set** appends unassigned Set/pack drafts;
+membership is exclusive. Assigned cards show the set name and Core/Reward/Pack.
+Set cards use two equal columns above 640px, one at/below, with left thumbnails
+and right-aligned actions/details. The editor shows each member's stored-design
+thumbnail in current Supabase palette colors beside reorder and square-minus
+removal controls. Ordering/removal save immediately; names require Save name.
+Confirmed set deletion unassigns members but preserves puzzles/private solutions.
+Admin/invoker-RLS RPCs recheck release/reference state under the catalog lock;
+scheduled/live sets, prepared members, and dependent progression/routes/rewards,
+qualifications or grants block deletion. Membership reads paginate.
+Publishing, starter, route/core progression, and reward tools remain deferred.
 
 In rotation-enabled playtests, click/tap a tray piece to rotate 60 degrees;
 dragging moves it without rotating. Double-click/double-tap a board piece or drag
