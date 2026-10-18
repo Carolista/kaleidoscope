@@ -10,6 +10,7 @@ import {
 	deletePuzzleDraft,
 	editPuzzleDraft,
 	loadPuzzleDrafts,
+	bulkPuzzleDrafts,
 } from './puzzleLibrary'
 
 const palette = {
@@ -87,6 +88,43 @@ describe('saved puzzle decoding', () => {
 	})
 })
 describe('draft library database requests', () => {
+	it('sends one atomic bulk request and requires confirmation of every selected ID', async () => {
+		const rpc = vi.fn().mockResolvedValue({ data: ['b', 'a'], error: null })
+		await bulkPuzzleDrafts(mockClient({ rpc }), ['a', 'b'], {
+			kind: 'palette',
+			paletteId: 'cabo',
+		})
+		expect(rpc).toHaveBeenCalledExactlyOnceWith('bulk_puzzle_drafts', {
+			p_ids: ['a', 'b'],
+			p_action: 'palette',
+			p_palette_id: 'cabo',
+		})
+		rpc.mockResolvedValue({ data: ['a', 'b'], error: null })
+		await bulkPuzzleDrafts(mockClient({ rpc }), ['a', 'b'], {
+			kind: 'delete',
+		})
+		expect(rpc).toHaveBeenLastCalledWith('bulk_puzzle_drafts', {
+			p_ids: ['a', 'b'],
+			p_action: 'delete',
+		})
+		for (const data of [null, ['a'], ['a', 'a'], ['a', 'c']]) {
+			rpc.mockResolvedValue({ data, error: null })
+			await expect(
+				bulkPuzzleDrafts(mockClient({ rpc }), ['a', 'b'], {
+					kind: 'delete',
+				}),
+			).rejects.toThrow('not confirmed')
+		}
+		rpc.mockResolvedValue({
+			data: null,
+			error: { message: 'Assigned draft: Example' },
+		})
+		await expect(
+			bulkPuzzleDrafts(mockClient({ rpc }), ['a', 'b'], {
+				kind: 'delete',
+			}),
+		).rejects.toThrow('Assigned draft: Example')
+	})
 	it('paginates drafts and correctly recognizes empty versus assigned relationships', async () => {
 		const { row, authoring } = fixture()
 		const base = {
@@ -149,12 +187,10 @@ describe('draft library database requests', () => {
 			eq: vi.fn().mockReturnThis(),
 			is: vi.fn().mockReturnThis(),
 			order: vi.fn().mockReturnThis(),
-			range: vi
-				.fn()
-				.mockResolvedValue({
-					data: null,
-					error: { message: 'Offline' },
-				}),
+			range: vi.fn().mockResolvedValue({
+				data: null,
+				error: { message: 'Offline' },
+			}),
 		}
 		await expect(
 			loadPuzzleDrafts(

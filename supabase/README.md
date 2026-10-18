@@ -83,7 +83,8 @@ After generating, enter a **Puzzle name**, choose **Intended use** (Set/pack or
 Daily), and press **Save draft**. Apply the draft-saving migration below first.
 The save atomically creates an unpublished, unassigned puzzle and its private
 authoring record; it does not save playtest placements. A successful save locks
-the draft fields and palette until the next randomization. Repeated clicks are
+the draft fields until the next randomization. Palette and recipe stay available
+for the next generation without changing the saved preview. Repeated clicks are
 blocked while saving, and retrying an unchanged failed request reuses its ID.
 Errors preserve the preview and form values.
 
@@ -95,15 +96,18 @@ still applies until leaving/reloading the lab. A failed seed read blocks
 randomization with an error rather than silently ignoring saved puzzles.
 
 Saved drafts survive reload/sign-out, but unsaved previews and playtest placements
-do not. The **Puzzle drafts** library below the lab shows unpublished hexagon
-drafts with target thumbnails, recipe/use labels, and assignment status. Filter
-by Set/pack or Daily; refresh to pick up changes from another tab. Successful lab
-saves refresh the library automatically.
+do not. The admin workspace opens in the **Puzzle drafts** library, showing
+unpublished hexagon drafts with target thumbnails, recipe/use labels, and
+assignment status. Filter by Set/pack or Daily; refresh to pick up changes from
+another tab. **New puzzle** opens the creation workspace; **Back to library**
+returns to browsing.
 
-Open a thumbnail to playtest the stored definition (not a regenerated seed).
+Cards are not navigation links. Their square, icon-only controls provide the
+shared custom selection checkbox, a blue classic Edit icon, and a red classic
+Delete icon. Use **Edit** to playtest the stored definition (not a regenerated seed).
 Edit its name, visual palette selection, or intended use and press **Save changes**.
 Palette selection recolors without resetting playtest state. Changes remain local
-until saved; switching drafts or refreshing discards unsaved edits. Unassigned
+until saved; leaving an unsaved workspace warns before discarding edits. Unassigned
 unpublished drafts can switch intended use; assigned drafts must first be
 unassigned elsewhere. **Delete draft** requires explicit confirmation and is only
 available for unused drafts. The database rechecks these rules at write time,
@@ -113,6 +117,19 @@ Scheduled/live puzzles are excluded from this draft library and cannot be edited
 or deleted through its RPCs. Assignment, scheduling, rewards, and publishing tools
 follow separately. No player attempts, completions, reward grants, guest imports,
 or Zen autosaves are written.
+
+Select card checkboxes for **Change palette** or **Delete selected**. **Select all
+shown** affects the current filter only, with a mixed state for partial selection;
+changing the filter or explicitly refreshing clears selection. Bulk palette changes
+use visual swatches and an explicit **Apply palette** action. Card and bulk deletion
+require a confirmation listing the count and names. Assigned drafts cannot be
+deleted, but can receive a palette change while unpublished. Apply the bulk-action
+migration below before using gallery deletion or bulk actions.
+
+Each bulk operation is one all-or-nothing database transaction. Missing, assigned
+(for deletion), or scheduled/live puzzles reject the batch. The database rechecks
+these rules even if the library view has become stale. Errors preserve selection
+and the pending action; successful operations clear selection and reload the list.
 
 The authoring model separates the version-2 slot-based public definition
 (`version`, `geometry`, `target`, `pieces`) from palette/recipe metadata and private
@@ -285,6 +302,25 @@ be deleted, and scheduled/live content is rejected. Deletion cascades to the
 private authoring row, removing that row's persistent saved-seed exclusion.
 Other saved uses of the same seed/recipe and current session preview history
 still exclude it.
+
+## Apply gallery bulk actions
+
+After the draft-library migration:
+
+1. Run
+   [20261018040000_bulk_puzzle_drafts.sql](./migrations/20261018040000_bulk_puzzle_drafts.sql)
+   once in SQL Editor as `postgres`. Do not rerun earlier migrations.
+2. Run [bulk_puzzle_drafts.sql](./tests/bulk_puzzle_drafts.sql) as `postgres`,
+   without an automatic RLS wrapper. Expect **26 PASS results**; fixtures roll back.
+3. Refresh the gallery, select a few drafts, apply a palette, and verify their
+   thumbnails. Test card deletion and bulk deletion only on unwanted drafts.
+
+The `bulk_puzzle_drafts` RPC uses caller RLS, an explicit admin check, the existing
+catalog lock, and per-row release/reference validation. It accepts distinct,
+nonempty IDs and either `palette` (requiring a palette ID) or `delete`. Definitions,
+recipes, intended uses, and private provenance are unchanged by palette updates.
+Deletion cascades to private authoring, as with individual draft deletion. No
+player permissions are added.
 
 ## Bootstrap the one admin
 

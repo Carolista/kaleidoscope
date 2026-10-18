@@ -28,6 +28,8 @@
 	position: absolute;
 	inset: 0;
 	margin: 0;
+	padding: 0;
+	border: 0;
 	opacity: 0;
 	cursor: pointer;
 }
@@ -39,4 +41,19 @@
 
 .box svg {
 	pointer-events: none;
+}
+
+.mixed {
+	width: 0.625rem;
+	height: 2px;
+	background: currentColor;
+}
+
+.disabled,
+.disabled .input {
+	cursor: default;
+}
+
+.disabled {
+	opacity: 0.65;
 }

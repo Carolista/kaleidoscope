@@ -20,13 +20,29 @@ types, and a database-backed singleton admin check. Its temporary hexagon lab
 supports all six size/rotation recipes, visual Supabase palettes (including
 drafts), and one-click randomization. Version-2 definitions use ordered palette
 slots, with private seed/generator/solution data kept separate. Playtests are
-memory-only: no draft saves, player progress writes, or Zen autosaves.
+memory-only, while named Set/pack or Daily drafts save atomically to Supabase.
+No player progress writes or Zen autosaves occur.
 See [Supabase instructions](./supabase/README.md) for current scope.
 
 The authoring controls use two columns from 640px: palette refresh/picker on the
 left, recipe/randomize on the right; narrower screens stack them. The preview
 omits repeated recipe/palette labels and the seed. Sign-out sits above the
 workspace beside the signed-in account.
+
+The portal starts in the draft gallery; New puzzle and Edit open dedicated views.
+Saved definitions reopen without regeneration. Creation stays open after saving,
+with palette/recipe choices available for the next generation without changing the
+saved preview. Name/use/save share a 2fr/1fr/1fr row from 640px, stacked below.
+Leaving unsaved work warns before discarding.
+
+Gallery cards are not links: small square controls provide the custom checkbox,
+blue classic Edit icon, and red classic Delete icon. Select all shown supports a
+mixed state; filters/explicit refresh clear selection. Bulk palette changes require
+swatch selection and Apply; card/bulk deletion confirms count and names.
+Admin-only RPCs apply batches atomically under the catalog lock, rechecking release
+and references. Assigned drafts cannot switch use or delete; scheduled/live rows
+are excluded. Saved seed exclusions derive from surviving authoring records.
+Assignment, publishing, starter, set/route/core, and reward tools remain deferred.
 
 In rotation-enabled playtests, click/tap a tray piece to rotate 60 degrees;
 dragging moves it without rotating. Double-click/double-tap a board piece or drag

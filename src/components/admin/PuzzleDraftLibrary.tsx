@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faPenToSquare, faTrashCan } from '@fortawesome/pro-solid-svg-icons'
 import type { Database } from '../../types/database'
 import {
 	renderAuthoredHexPuzzle,
@@ -9,6 +11,7 @@ import {
 	deletePuzzleDraft,
 	editPuzzleDraft,
 	loadPuzzleDrafts,
+	bulkPuzzleDrafts,
 	type LibraryDraft,
 } from '../../services/puzzleLibrary'
 import type { PuzzleUsage } from '../../services/puzzleDrafts'
@@ -16,6 +19,7 @@ import HexPuzzleBoard from '../puzzle/HexPuzzleBoard'
 import PuzzleMode from '../puzzle/PuzzleMode'
 import paletteStyles from '../controls/color-schemes/SchemePicker.module.css'
 import styles from './AdminPortal.module.css'
+import Checkbox from '../shared/Checkbox'
 import useUnsavedDraft, { confirmDiscardDraft } from './useUnsavedDraft'
 
 function message(cause: unknown) {
@@ -265,19 +269,43 @@ export default function PuzzleDraftLibrary({
 	const [drafts, setDrafts] = useState<readonly LibraryDraft[]>([])
 	const [selectedId, setSelectedId] = useState<string | null>(null)
 	const [loading, setLoading] = useState(true)
+	const [loadFailed, setLoadFailed] = useState(false)
 	const [error, setError] = useState('')
 	const [reload, setReload] = useState(0)
 	const [filter, setFilter] = useState('all')
 	const [status, setStatus] = useState('')
+	const [checkedIds, setCheckedIds] = useState<ReadonlySet<string>>(new Set())
+	const [action, setAction] = useState<{
+		kind: 'delete' | 'palette'
+		ids: readonly string[]
+	} | null>(null)
+	const [bulkPaletteId, setBulkPaletteId] = useState('')
+	const [bulkBusy, setBulkBusy] = useState(false)
+	const bulkWorking = useRef(false)
+	const actionPanel = useRef<HTMLDivElement>(null)
+	useUnsavedDraft(bulkBusy, onDirtyChange)
+	useEffect(() => {
+		if (action) actionPanel.current?.focus()
+	}, [action])
 	useEffect(() => {
 		let active = true
 		async function load() {
 			setLoading(true)
+			setLoadFailed(false)
 			setError('')
 			try {
 				const next = await loadPuzzleDrafts(client)
 				if (active) {
 					setDrafts(next)
+					setCheckedIds(
+						previous =>
+							new Set(
+								[...previous].filter(id =>
+									next.some(draft => draft.row.id === id),
+								),
+							),
+					)
+					setAction(null)
 					setSelectedId(previous =>
 						next.some(draft => draft.row.id === previous)
 							? previous
@@ -285,7 +313,10 @@ export default function PuzzleDraftLibrary({
 					)
 				}
 			} catch (cause) {
-				if (active) setError(message(cause))
+				if (active) {
+					setError(message(cause))
+					setLoadFailed(true)
+				}
 			} finally {
 				if (active) setLoading(false)
 			}
@@ -299,6 +330,50 @@ export default function PuzzleDraftLibrary({
 	const visible = drafts.filter(
 		value => filter === 'all' || value.row.usage === filter,
 	)
+	const checked = visible.filter(draft => checkedIds.has(draft.row.id))
+	const allChecked = visible.length > 0 && checked.length === visible.length
+	const hasAssigned = checked.some(draft => draft.assigned)
+	function startAction(kind: 'delete' | 'palette', ids: readonly string[]) {
+		setError('')
+		setStatus('')
+		setBulkPaletteId('')
+		setAction({ kind, ids })
+	}
+	async function applyAction() {
+		if (!action || bulkWorking.current) return
+		if (
+			action.kind === 'palette' &&
+			!palettes.some(palette => palette.id === bulkPaletteId)
+		) {
+			setError('Choose a palette before applying changes.')
+			return
+		}
+		bulkWorking.current = true
+		setBulkBusy(true)
+		setError('')
+		try {
+			await bulkPuzzleDrafts(
+				client,
+				action.ids,
+				action.kind === 'delete'
+					? { kind: 'delete' }
+					: { kind: 'palette', paletteId: bulkPaletteId },
+			)
+			setStatus(
+				action.kind === 'delete'
+					? `Deleted ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'}.`
+					: `Updated the palette for ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'}.`,
+			)
+			setCheckedIds(new Set())
+			setAction(null)
+			setReload(value => value + 1)
+		} catch (cause) {
+			setError(message(cause))
+		} finally {
+			bulkWorking.current = false
+			setBulkBusy(false)
+		}
+	}
 	if (selected) {
 		return (
 			<>
@@ -341,14 +416,18 @@ export default function PuzzleDraftLibrary({
 		<section aria-labelledby="draft-library-title">
 			<h2 id="draft-library-title">Puzzle drafts</h2>
 			{onNew && (
-				<button type="button" onClick={onNew}>
+				<button type="button" disabled={bulkBusy} onClick={onNew}>
 					New puzzle
 				</button>
 			)}
 			<button
 				type="button"
-				disabled={loading}
-				onClick={() => setReload(value => value + 1)}
+				disabled={loading || bulkBusy}
+				onClick={() => {
+					setCheckedIds(new Set())
+					setAction(null)
+					setReload(value => value + 1)
+				}}
 			>
 				Refresh drafts
 			</button>
@@ -356,9 +435,12 @@ export default function PuzzleDraftLibrary({
 			<select
 				id="draft-filter"
 				value={filter}
+				disabled={bulkBusy}
 				onChange={event => {
 					setFilter(event.target.value)
 					setSelectedId(null)
+					setCheckedIds(new Set())
+					setAction(null)
 				}}
 			>
 				<option value="all">All uses</option>
@@ -369,8 +451,186 @@ export default function PuzzleDraftLibrary({
 			{status && <p role="status">{status}</p>}
 			{loading ? (
 				<p role="status">Loading puzzle drafts...</p>
-			) : error ? null : (
+			) : loadFailed ? null : (
 				<>
+					{visible.length > 0 && (
+						<Checkbox
+							plain
+							label="Select all shown"
+							checked={allChecked}
+							indeterminate={checked.length > 0 && !allChecked}
+							disabled={bulkBusy}
+							onChange={value => {
+								setCheckedIds(
+									new Set(
+										value
+											? visible.map(draft => draft.row.id)
+											: [],
+									),
+								)
+								setAction(null)
+							}}
+						/>
+					)}
+					{checked.length > 0 && (
+						<div
+							className={styles.bulkToolbar}
+							role="group"
+							aria-label="Bulk draft actions"
+						>
+							<strong>{checked.length} drafts selected</strong>
+							<button
+								type="button"
+								disabled={bulkBusy}
+								onClick={() =>
+									startAction(
+										'palette',
+										checked.map(draft => draft.row.id),
+									)
+								}
+							>
+								Change palette
+							</button>
+							<button
+								type="button"
+								disabled={bulkBusy || hasAssigned}
+								title={
+									hasAssigned
+										? 'Unassign selected drafts before deleting.'
+										: undefined
+								}
+								onClick={() =>
+									startAction(
+										'delete',
+										checked.map(draft => draft.row.id),
+									)
+								}
+							>
+								Delete selected
+							</button>
+							<button
+								type="button"
+								disabled={bulkBusy}
+								onClick={() => {
+									setCheckedIds(new Set())
+									setAction(null)
+								}}
+							>
+								Clear selection
+							</button>
+							{hasAssigned && (
+								<p>
+									Unassign selected drafts before deleting
+									them.
+								</p>
+							)}
+						</div>
+					)}
+					{action && (
+						<div
+							role="group"
+							ref={actionPanel}
+							tabIndex={-1}
+							aria-label={
+								action.kind === 'delete'
+									? 'Confirm gallery deletion'
+									: 'Change selected palettes'
+							}
+							className={styles.bulkPanel}
+						>
+							<p>
+								{action.kind === 'delete'
+									? `Permanently delete ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'}?`
+									: `Change palette for ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'}?`}
+							</p>
+							<ul>
+								{drafts
+									.filter(draft =>
+										action.ids.includes(draft.row.id),
+									)
+									.map(draft => (
+										<li key={draft.row.id}>
+											{draft.row.name}
+										</li>
+									))}
+							</ul>
+							{action.kind === 'palette' && (
+								<fieldset
+									className={styles.palettePicker}
+									disabled={bulkBusy}
+								>
+									<legend>Bulk palette</legend>
+									<ul className={paletteStyles.list}>
+										{palettes.map(palette => (
+											<li key={palette.id}>
+												<button
+													type="button"
+													className={
+														styles.paletteOption
+													}
+													aria-pressed={
+														bulkPaletteId ===
+														palette.id
+													}
+													aria-label={`Apply ${palette.name} to selected drafts`}
+													onClick={() =>
+														setBulkPaletteId(
+															palette.id,
+														)
+													}
+												>
+													<span
+														className={
+															styles.paletteColors
+														}
+														aria-hidden="true"
+													>
+														{palette.colors.map(
+															(color, index) => (
+																<span
+																	key={index}
+																	className={
+																		paletteStyles.swatch
+																	}
+																	style={{
+																		backgroundColor:
+																			color,
+																	}}
+																/>
+															),
+														)}
+													</span>
+													<span>{palette.name}</span>
+												</button>
+											</li>
+										))}
+									</ul>
+								</fieldset>
+							)}
+							<button
+								type="button"
+								disabled={
+									bulkBusy ||
+									(action.kind === 'palette' &&
+										!bulkPaletteId)
+								}
+								onClick={() => {
+									void applyAction()
+								}}
+							>
+								{action.kind === 'delete'
+									? 'Confirm delete'
+									: 'Apply palette'}
+							</button>
+							<button
+								type="button"
+								disabled={bulkBusy}
+								onClick={() => setAction(null)}
+							>
+								Cancel
+							</button>
+						</div>
+					)}
 					{!visible.length && <p>No drafts match this view.</p>}
 					<ul className={styles.draftList}>
 						{visible.map(draft => {
@@ -381,44 +641,104 @@ export default function PuzzleDraftLibrary({
 								? renderAuthoredHexPuzzle(draft.puzzle, palette)
 								: null
 							return (
-								<li key={draft.row.id}>
-									<button
-										type="button"
-										aria-pressed={
-											selectedId === draft.row.id
-										}
-										aria-label={`Open draft ${draft.row.name}`}
-										onClick={() => {
-											setStatus('')
-											setSelectedId(draft.row.id)
-										}}
-									>
-										{preview ? (
-											<span
+								<li
+									key={draft.row.id}
+									className={styles.draftCard}
+									aria-label={`Draft ${draft.row.name}`}
+									data-selected={checkedIds.has(draft.row.id)}
+								>
+									<div className={styles.cardActions}>
+										<Checkbox
+											plain
+											hideLabel
+											label={`Select draft ${draft.row.name}`}
+											className={styles.cardCheckbox}
+											checked={checkedIds.has(
+												draft.row.id,
+											)}
+											disabled={bulkBusy}
+											onChange={value => {
+												setCheckedIds(previous => {
+													const next = new Set(
+														previous,
+													)
+													if (value)
+														next.add(draft.row.id)
+													else
+														next.delete(
+															draft.row.id,
+														)
+													return next
+												})
+												setAction(null)
+											}}
+										/>
+										<button
+											type="button"
+											className={`${styles.cardAction} ${styles.editAction}`}
+											disabled={bulkBusy}
+											aria-label={`Edit draft ${draft.row.name}`}
+											title={`Edit ${draft.row.name}`}
+											onClick={() => {
+												setStatus('')
+												setAction(null)
+												setSelectedId(draft.row.id)
+											}}
+										>
+											<FontAwesomeIcon
+												icon={faPenToSquare}
 												aria-hidden="true"
-												className={styles.thumbnail}
-											>
-												<HexPuzzleBoard
-													target
-													radius={preview.radius}
-													colors={preview.target}
-												/>
-											</span>
-										) : (
-											<span>Palette unavailable</span>
-										)}
-										<strong>{draft.row.name}</strong>
-										<span>{draft.puzzle.recipe.label}</span>
-										<span>
-											{draft.row.usage === 'daily'
-												? 'Daily'
-												: 'Set/pack'}{' '}
-											·{' '}
-											{draft.assigned
-												? 'Assigned'
-												: 'Unassigned'}
+											/>
+										</button>
+										<button
+											type="button"
+											className={`${styles.cardAction} ${styles.deleteAction}`}
+											disabled={
+												bulkBusy || draft.assigned
+											}
+											aria-label={`Delete draft ${draft.row.name}`}
+											title={
+												draft.assigned
+													? 'Unassign this draft before deleting.'
+													: `Delete ${draft.row.name}`
+											}
+											onClick={() =>
+												startAction('delete', [
+													draft.row.id,
+												])
+											}
+										>
+											<FontAwesomeIcon
+												icon={faTrashCan}
+												aria-hidden="true"
+											/>
+										</button>
+									</div>
+									{preview ? (
+										<span
+											aria-hidden="true"
+											className={styles.thumbnail}
+										>
+											<HexPuzzleBoard
+												target
+												radius={preview.radius}
+												colors={preview.target}
+											/>
 										</span>
-									</button>
+									) : (
+										<span>Palette unavailable</span>
+									)}
+									<strong>{draft.row.name}</strong>
+									<span>{draft.puzzle.recipe.label}</span>
+									<span>
+										{draft.row.usage === 'daily'
+											? 'Daily'
+											: 'Set/pack'}{' '}
+										·{' '}
+										{draft.assigned
+											? 'Assigned'
+											: 'Unassigned'}
+									</span>
 								</li>
 							)
 						})}

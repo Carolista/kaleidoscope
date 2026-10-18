@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { screen } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { colorSchemes } from '@data/colorSchemes'
 import { useAppState } from '@state/useAppState'
@@ -9,6 +9,40 @@ import { renderWithProvider } from '@test/renderWithProvider'
 import Checkbox from './Checkbox'
 
 describe('Checkbox', () => {
+	it('supports icon-only mixed and disabled selection without player state', async () => {
+		const onChange = vi.fn()
+		const { rerender } = render(
+			<Checkbox
+				plain
+				hideLabel
+				label="Select draft"
+				checked={false}
+				indeterminate
+				onChange={onChange}
+			/>,
+		)
+		const checkbox = screen.getByRole('checkbox', { name: 'Select draft' })
+		expect(checkbox).toBePartiallyChecked()
+		expect(screen.queryByText('Select draft')).not.toBeInTheDocument()
+		const user = userEvent.setup()
+		await user.click(checkbox)
+		expect(onChange).toHaveBeenCalledWith(true)
+		rerender(
+			<Checkbox
+				plain
+				hideLabel
+				label="Select draft"
+				checked
+				disabled
+				onChange={onChange}
+			/>,
+		)
+		expect(checkbox).toBeChecked()
+		expect(checkbox).not.toBePartiallyChecked()
+		expect(checkbox).toBeDisabled()
+		await user.click(checkbox)
+		expect(onChange).toHaveBeenCalledTimes(1)
+	})
 	beforeEach(() => localStorage.clear())
 
 	it('toggles through its label and keyboard while keeping the icon decorative', async () => {

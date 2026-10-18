@@ -68,7 +68,7 @@ This project has been a chance to build both a creative user experience and the 
 
 ## Puzzle Mode prototype
 
-The upcoming database foundation and Dashboard setup instructions are documented
+The database foundation and Dashboard setup instructions are documented
 in [supabase/README.md](./supabase/README.md). Admin sign-in is available at
 `#/admin` after local configuration; the player prototype below remains local
 and unchanged.
@@ -76,7 +76,7 @@ and unchanged.
 The admin **Hexagon puzzle lab** supports all six size/rotation recipes, a visual
 Supabase palette picker, and one-click randomization. Previously previewed seeds
 are skipped per recipe during the lab session; seeds are not displayed.
-Saved-puzzle exclusions will follow with draft saving.
+Saved puzzles supply persistent exclusions across palettes and intended uses.
 Palette changes recolor the same design without resetting placements.
 At wider widths, palette controls sit beside recipe/randomize controls; on narrow
 screens they stack. Sign-out sits above the workspace beside the signed-in account.
@@ -86,8 +86,22 @@ Double-click/double-tap board pieces or drag back to return them to the tray.
 Keyboard users can rotate/select with Enter/Space, activate a board tile to place,
 and use Delete/Backspace on an occupied tile to return its piece. Square tray
 slots stay fixed through rotation and use one subtle selected border.
-This temporary lab is memory-only: no publishing, saved drafts, player progress,
-or changes to Zen saves. See [Supabase instructions](./supabase/README.md).
+The admin workspace opens with a draft gallery. **New puzzle** and each card's
+**Edit** button open dedicated creation/editing views. Save named Set/pack or Daily
+drafts atomically; reopening uses the stored definition rather than regeneration.
+After saving, palette/recipe choices apply to the next generation without changing
+the saved puzzle. Wide metadata rows use name/use/save columns; narrow screens stack.
+Unsaved work is guarded when leaving the workspace.
+
+Non-clickable cards have custom selection checkboxes and small blue Edit/red Delete
+icons. Select all shown or individual drafts to change palettes or delete in bulk.
+Palette changes require Apply; deletion confirms count and names. Bulk operations
+are all-or-nothing, with database release/reference checks. Assigned drafts cannot
+be deleted or switch intended use.
+
+Playtest placements remain memory-only. Publishing, assignments, player progress,
+and changes to Zen saves are not included. See
+[Supabase instructions](./supabase/README.md) for required migrations and tests.
 
 The header switch opens a session-only proof of concept; it does not change or
 overwrite saved Zen designs. Pieces may be placed anywhere they fit within the

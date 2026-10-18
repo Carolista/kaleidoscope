@@ -969,6 +969,14 @@ export type Database = {
 			[_ in never]: never
 		}
 		Functions: {
+			bulk_puzzle_drafts: {
+				Args: {
+					p_ids: string[]
+					p_action: string
+					p_palette_id?: string
+				}
+				Returns: string[]
+			}
 			save_hex_puzzle_draft: {
 				Args: {
 					p_id: string

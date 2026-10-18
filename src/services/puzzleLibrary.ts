@@ -67,3 +67,30 @@ export async function deletePuzzleDraft(
 	if (error) throw new Error(`Unable to delete draft: ${error.message}`)
 	if (data !== id) throw new Error('The draft deletion was not confirmed.')
 }
+
+export async function bulkPuzzleDrafts(
+	client: SupabaseClient<Database>,
+	ids: readonly string[],
+	action:
+		| { readonly kind: 'delete' }
+		| { readonly kind: 'palette'; readonly paletteId: string },
+): Promise<void> {
+	const { data, error } = await client.rpc('bulk_puzzle_drafts', {
+		p_ids: [...ids],
+		p_action: action.kind,
+		...(action.kind === 'palette'
+			? { p_palette_id: action.paletteId }
+			: {}),
+	})
+	if (error) throw new Error(`Unable to apply bulk action: ${error.message}`)
+	if (
+		!data ||
+		data.length !== ids.length ||
+		new Set(data).size !== ids.length ||
+		ids.some(id => !data.includes(id))
+	) {
+		throw new Error(
+			'The bulk action was not confirmed. Refresh the library before retrying.',
+		)
+	}
+}

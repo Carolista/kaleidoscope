@@ -17,11 +17,13 @@ const mocks = vi.hoisted(() => ({
 	load: vi.fn(),
 	edit: vi.fn(),
 	remove: vi.fn(),
+	bulk: vi.fn(),
 }))
 vi.mock('../../services/puzzleLibrary', () => ({
 	loadPuzzleDrafts: (...args: unknown[]) => mocks.load(...args),
 	editPuzzleDraft: (...args: unknown[]) => mocks.edit(...args),
 	deletePuzzleDraft: (...args: unknown[]) => mocks.remove(...args),
+	bulkPuzzleDrafts: (...args: unknown[]) => mocks.bulk(...args),
 }))
 vi.mock('../../services/supabaseClient', () => ({
 	getSupabaseClient: () => ({}),
@@ -65,6 +67,7 @@ beforeEach(() => {
 	mocks.load.mockResolvedValue([draft])
 	mocks.edit.mockResolvedValue(undefined)
 	mocks.remove.mockResolvedValue(undefined)
+	mocks.bulk.mockResolvedValue(undefined)
 })
 afterEach(() => vi.restoreAllMocks())
 function setup() {
@@ -78,17 +81,192 @@ function setup() {
 }
 async function open() {
 	fireEvent.click(
-		await screen.findByRole('button', { name: 'Open draft Saved art' }),
+		await screen.findByRole('button', { name: 'Edit draft Saved art' }),
 	)
 	return screen.getByRole('article', { name: 'Edit Saved art' })
 }
 describe('draft library', () => {
+	it('selects only shown drafts, reports mixed selection, and clears hidden selections on filter changes', async () => {
+		const daily = {
+			...draft,
+			row: {
+				...draft.row,
+				id: 'daily',
+				name: 'Daily art',
+				usage: 'daily',
+			},
+		}
+		mocks.load.mockResolvedValue([draft, daily])
+		setup()
+		const first = await screen.findByRole('checkbox', {
+			name: 'Select draft Saved art',
+		})
+		fireEvent.click(first)
+		expect(
+			screen.getByRole('checkbox', { name: 'Select all shown' }),
+		).toBePartiallyChecked()
+		expect(screen.queryByRole('article')).not.toBeInTheDocument()
+		fireEvent.click(
+			screen.getByRole('checkbox', { name: 'Select all shown' }),
+		)
+		expect(first).toBeChecked()
+		expect(
+			screen.getByRole('checkbox', { name: 'Select draft Daily art' }),
+		).toBeChecked()
+		expect(screen.getByText('2 drafts selected')).toBeInTheDocument()
+		fireEvent.change(screen.getByLabelText('Show drafts'), {
+			target: { value: 'daily' },
+		})
+		expect(
+			screen.queryByRole('group', { name: 'Bulk draft actions' }),
+		).not.toBeInTheDocument()
+		fireEvent.click(
+			screen.getByRole('checkbox', { name: 'Select all shown' }),
+		)
+		fireEvent.click(screen.getByRole('button', { name: 'Delete selected' }))
+		const confirmation = screen.getByRole('group', {
+			name: 'Confirm gallery deletion',
+		})
+		expect(confirmation).toHaveTextContent('Daily art')
+		expect(confirmation).not.toHaveTextContent('Saved art')
+		mocks.load.mockResolvedValue([draft])
+		fireEvent.click(
+			within(confirmation).getByRole('button', {
+				name: 'Confirm delete',
+			}),
+		)
+		await waitFor(() =>
+			expect(mocks.bulk).toHaveBeenCalledWith(
+				expect.anything(),
+				['daily'],
+				{ kind: 'delete' },
+			),
+		)
+		await screen.findByText('Deleted 1 draft.')
+		expect(
+			screen.queryByRole('group', { name: 'Bulk draft actions' }),
+		).not.toBeInTheDocument()
+	})
+	it('confirms card deletion without opening the editor, and cancels without writes', async () => {
+		setup()
+		fireEvent.click(
+			await screen.findByRole('button', {
+				name: 'Delete draft Saved art',
+			}),
+		)
+		expect(screen.queryByRole('article')).not.toBeInTheDocument()
+		expect(
+			screen.getByRole('group', { name: 'Confirm gallery deletion' }),
+		).toHaveTextContent('Saved art')
+		expect(mocks.bulk).not.toHaveBeenCalled()
+		fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+		expect(
+			screen.queryByRole('group', { name: 'Confirm gallery deletion' }),
+		).not.toBeInTheDocument()
+		expect(mocks.bulk).not.toHaveBeenCalled()
+	})
+	it('requires palette selection and Apply, preserves failed actions, and blocks duplicates while applying', async () => {
+		setup()
+		fireEvent.click(
+			await screen.findByRole('checkbox', {
+				name: 'Select draft Saved art',
+			}),
+		)
+		fireEvent.click(screen.getByRole('button', { name: 'Change palette' }))
+		expect(
+			screen.getByRole('button', { name: 'Apply palette' }),
+		).toBeDisabled()
+		fireEvent.click(
+			screen.getByRole('button', {
+				name: 'Apply Other to selected drafts',
+			}),
+		)
+		expect(mocks.bulk).not.toHaveBeenCalled()
+		mocks.bulk.mockRejectedValueOnce(
+			new Error('A selected puzzle is now live'),
+		)
+		fireEvent.click(screen.getByRole('button', { name: 'Apply palette' }))
+		expect(await screen.findByRole('alert')).toHaveTextContent('now live')
+		expect(
+			screen.getByRole('checkbox', { name: 'Select draft Saved art' }),
+		).toBeChecked()
+		expect(
+			screen.getByRole('button', {
+				name: 'Apply Other to selected drafts',
+			}),
+		).toHaveAttribute('aria-pressed', 'true')
+		let finish: (() => void) | undefined
+		mocks.bulk.mockReturnValueOnce(
+			new Promise<void>(resolve => {
+				finish = resolve
+			}),
+		)
+		const apply = screen.getByRole('button', { name: 'Apply palette' })
+		fireEvent.click(apply)
+		fireEvent.click(apply)
+		expect(mocks.bulk).toHaveBeenCalledTimes(2)
+		expect(
+			screen.getByRole('button', { name: 'Edit draft Saved art' }),
+		).toBeDisabled()
+		expect(
+			screen.getByRole('button', { name: 'Refresh drafts' }),
+		).toBeDisabled()
+		expect(
+			screen.getByRole('checkbox', { name: 'Select draft Saved art' }),
+		).toBeDisabled()
+		if (!finish) throw new Error('Action did not start')
+		finish()
+		await screen.findByText('Updated the palette for 1 draft.')
+		expect(mocks.bulk).toHaveBeenLastCalledWith(
+			expect.anything(),
+			['draft-id'],
+			{ kind: 'palette', paletteId: 'other' },
+		)
+	})
+	it('blocks card and bulk deletion of assigned drafts but allows bulk palette changes', async () => {
+		mocks.load.mockResolvedValue([{ ...draft, assigned: true }])
+		setup()
+		expect(
+			await screen.findByRole('button', {
+				name: 'Delete draft Saved art',
+			}),
+		).toBeDisabled()
+		fireEvent.click(
+			screen.getByRole('checkbox', { name: 'Select draft Saved art' }),
+		)
+		expect(
+			screen.getByRole('button', { name: 'Delete selected' }),
+		).toBeDisabled()
+		expect(
+			screen.getByRole('button', { name: 'Change palette' }),
+		).toBeEnabled()
+		fireEvent.click(screen.getByRole('button', { name: 'Clear selection' }))
+		expect(
+			screen.getByRole('checkbox', { name: 'Select draft Saved art' }),
+		).not.toBeChecked()
+	})
 	it('shows thumbnails, filters intended use, and reopens the stored design for playtesting', async () => {
 		setup()
 		const thumbnail = await screen.findByRole('button', {
-			name: 'Open draft Saved art',
+			name: 'Edit draft Saved art',
 		})
-		expect(thumbnail.querySelectorAll('polygon').length).toBeGreaterThan(0)
+		const card = thumbnail.closest('li')!
+		expect(card.querySelectorAll('polygon').length).toBeGreaterThan(0)
+		fireEvent.click(card.querySelector('svg[aria-label="Target design"]')!)
+		expect(screen.queryByRole('article')).not.toBeInTheDocument()
+		expect(thumbnail.querySelector('svg')).toHaveAttribute(
+			'data-prefix',
+			'fas',
+		)
+		expect(thumbnail.querySelector('svg')).toHaveAttribute(
+			'data-icon',
+			'pen-to-square',
+		)
+		expect(
+			within(card)
+				.getByRole('button', { name: 'Delete draft Saved art' })
+				.querySelector('svg'),
+		).toHaveAttribute('data-icon', 'trash-can')
 		const editor = await open()
 		expect(
 			screen.queryByRole('heading', { name: 'Puzzle drafts' }),
@@ -105,12 +283,12 @@ describe('draft library', () => {
 			within(editor).getAllByRole('button', { name: /^Select piece/ }),
 		).toHaveLength(puzzle.definition.pieces.length)
 		fireEvent.click(screen.getByRole('button', { name: 'Back to library' }))
-		await screen.findByRole('button', { name: 'Open draft Saved art' })
+		await screen.findByRole('button', { name: 'Edit draft Saved art' })
 		fireEvent.change(screen.getByLabelText('Show drafts'), {
 			target: { value: 'daily' },
 		})
 		expect(
-			screen.queryByRole('button', { name: 'Open draft Saved art' }),
+			screen.queryByRole('button', { name: 'Edit draft Saved art' }),
 		).not.toBeInTheDocument()
 		expect(
 			screen.getByText('No drafts match this view.'),
@@ -175,7 +353,7 @@ describe('draft library', () => {
 			screen.getByRole('button', { name: 'Back to library' }),
 		).toBeDisabled()
 		expect(
-			screen.queryByRole('button', { name: 'Open draft Saved art' }),
+			screen.queryByRole('button', { name: 'Edit draft Saved art' }),
 		).not.toBeInTheDocument()
 		if (!finish) throw new Error('Save did not start')
 		finish()
@@ -256,6 +434,6 @@ describe('draft library', () => {
 			'Network unavailable',
 		)
 		fireEvent.click(screen.getByRole('button', { name: 'Refresh drafts' }))
-		await screen.findByRole('button', { name: 'Open draft Saved art' })
+		await screen.findByRole('button', { name: 'Edit draft Saved art' })
 	})
 })

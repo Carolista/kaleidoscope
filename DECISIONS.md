@@ -68,7 +68,7 @@ Group palette refresh/picker separately from recipe/randomize controls, in two
 columns from 640px and stacked below. Avoid repeated preview headings, palette
 names, and displayed seeds; keep compact gesture help and sign-out above the
 workspace.
-Skip previewed seeds by shape/exact recipe for the mounted lab session. Future
+Skip previewed seeds by shape/exact recipe for the mounted lab session. Current
 persistent exclusions derive from saved puzzles, not a separate blacklist table;
 deleting an unused draft frees its seed unless another saved row still uses it.
 Different seeds can yield visually identical designs.
@@ -78,8 +78,23 @@ double-click/double-tap or dragging back, preserving orientation; no board rotat
 or separate rotate/return buttons. Keyboard equivalents remain available.
 Stable square containers reserve all orientations at consistent tile scale,
 with one subtle selected/focus border. The first-rotation set tutorial is deferred.
-The admin lab does not mount Zen state or write player progress. Draft saving,
-library, starter/set/route/core/reward/release tools follow; layout is temporary.
+The admin lab does not mount Zen state or write player progress. Named drafts
+save public definitions and private authoring atomically, with idempotent retry
+IDs. Intended use can switch between Set/pack and Daily while unassigned.
+Scheduled/live content is not managed through the draft-only editing/deletion RPCs.
+
+Use a library-first flow with dedicated New/Edit workspaces. Saving a new puzzle
+stays in creation; palette/recipe controls then configure the next generation,
+not the saved preview. Editing uses stored definitions and preserves playtest
+state across metadata saves. Guard unsaved work when leaving.
+
+Keep gallery cards non-clickable, with small square custom checkboxes and classic
+blue pen-to-square/red trash-can icon buttons. Selection applies to the shown
+filter; switching filters or explicitly refreshing clears it. Confirm palette
+changes with Apply and deletions with count/names. Bulk changes are all-or-nothing
+admin RPC transactions under the catalog lock, with write-time release/reference
+rechecks. Assigned drafts cannot be deleted, but unpublished palette edits remain
+allowed. Starter/set/route/core/reward/release tools follow; styling is still evolving.
 
 ## Geometry and shape design
 
