@@ -34,6 +34,9 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../../services/supabaseClient', () => ({
 	getSupabaseClient: () => ({ from: mocks.from, rpc: mocks.rpc }),
 }))
+vi.mock('../../services/puzzleLibrary', () => ({
+	loadPuzzleDrafts: async () => [],
+}))
 
 const originalHitTest = Object.getOwnPropertyDescriptor(
 	document,
@@ -62,6 +65,7 @@ function setup(
 		data: [{ ...palette, colors: [...palette.colors] }],
 		error: null as { message: string } | null,
 	},
+	startCreating = true,
 ) {
 	vi.spyOn(crypto, 'getRandomValues').mockImplementation(values => {
 		if (!(values instanceof Uint32Array))
@@ -86,6 +90,8 @@ function setup(
 		return { select: () => query }
 	})
 	const view = render(<PuzzleAuthoring client={getSupabaseClient()} />)
+	if (startCreating)
+		fireEvent.click(screen.getByRole('button', { name: 'New puzzle' }))
 	return { ...view, order }
 }
 
@@ -96,6 +102,90 @@ async function randomize() {
 }
 
 describe('admin puzzle lab', () => {
+	it('starts in the library and warns before discarding an unsaved new puzzle', async () => {
+		setup(undefined, false)
+		expect(
+			screen.getByRole('heading', { name: 'Puzzle drafts' }),
+		).toBeInTheDocument()
+		expect(screen.queryByLabelText('Recipe')).not.toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: 'New puzzle' }))
+		await screen.findByLabelText('Recipe')
+		await randomize()
+		const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+		const unload = new Event('beforeunload', { cancelable: true })
+		window.dispatchEvent(unload)
+		expect(unload.defaultPrevented).toBe(true)
+		fireEvent.click(screen.getByRole('button', { name: 'Back to library' }))
+		expect(confirm).toHaveBeenCalledOnce()
+		expect(
+			screen.getByRole('heading', { name: 'New puzzle' }),
+		).toBeInTheDocument()
+		confirm.mockReturnValue(true)
+		fireEvent.click(screen.getByRole('button', { name: 'Back to library' }))
+		expect(
+			screen.getByRole('heading', { name: 'Puzzle drafts' }),
+		).toBeInTheDocument()
+	})
+
+	it('lets the next palette change after save without changing the saved preview or writing again', async () => {
+		const second = {
+			...palette,
+			id: 'other',
+			name: 'Other palette',
+			colors: Array(5).fill('#abcdef'),
+		}
+		setup({
+			data: [{ ...palette, colors: [...palette.colors] }, second],
+			error: null,
+		})
+		await screen.findByLabelText('Recipe')
+		await randomize()
+		const original = screen.getByRole('img', {
+			name: 'Target design',
+		}).innerHTML
+		const metadataForm = screen.getByRole('form', {
+			name: 'Save puzzle draft',
+		})
+		expect(metadataForm).toHaveClass(styles.metadataForm)
+		expect(metadataForm.children).toHaveLength(3)
+		expect(screen.getByLabelText('Puzzle name').parentElement).toHaveClass(
+			styles.metadataField,
+		)
+		fireEvent.change(screen.getByLabelText('Puzzle name'), {
+			target: { value: 'Saved design' },
+		})
+		fireEvent.click(screen.getByRole('button', { name: 'Save draft' }))
+		await screen.findByText(/Saved "Saved design"/)
+		const unload = new Event('beforeunload', { cancelable: true })
+		window.dispatchEvent(unload)
+		expect(unload.defaultPrevented).toBe(false)
+		const nextPalette = screen.getByRole('button', {
+			name: 'Select the Other palette color palette',
+		})
+		expect(nextPalette).toBeEnabled()
+		fireEvent.click(nextPalette)
+		expect(nextPalette).toHaveAttribute('aria-pressed', 'true')
+		expect(
+			screen.getByRole('img', { name: 'Target design' }).innerHTML,
+		).toBe(original)
+		expect(mocks.rpc).toHaveBeenCalledTimes(1)
+		expect(
+			screen.getByRole('button', { name: 'Save draft' }),
+		).toBeDisabled()
+		vi.mocked(crypto.getRandomValues).mockImplementation(values => {
+			if (!(values instanceof Uint32Array))
+				throw new Error('Expected seed words')
+			values.fill(2)
+			return values
+		})
+		await randomize()
+		for (const polygon of screen
+			.getByRole('img', { name: 'Target design' })
+			.querySelectorAll('polygon')) {
+			expect(polygon).toHaveAttribute('fill', '#abcdef')
+		}
+	})
+
 	it.each(['collection', 'daily'] as const)(
 		'saves the exact preview as an unpublished %s draft without saving playtest placements',
 		async usage => {

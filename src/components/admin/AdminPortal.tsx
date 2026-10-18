@@ -4,6 +4,7 @@ import type { Database } from '../../types/database'
 import { getSupabaseClient } from '../../services/supabaseClient'
 import styles from './AdminPortal.module.css'
 import PuzzleAuthoring from './PuzzleAuthoring'
+import { confirmDiscardDraft } from './useUnsavedDraft'
 
 type RoleCheck =
 	| { token: string; status: 'allowed' }
@@ -12,8 +13,10 @@ type RoleCheck =
 
 function AdminSession({
 	client,
+	onDirtyChange,
 }: {
 	readonly client: SupabaseClient<Database>
+	readonly onDirtyChange?: (dirty: boolean) => void
 }) {
 	const [session, setSession] = useState<Session | null>(null)
 	const [loading, setLoading] = useState(true)
@@ -21,6 +24,11 @@ function AdminSession({
 	const [error, setError] = useState('')
 	const [busy, setBusy] = useState(false)
 	const [retry, setRetry] = useState(0)
+	const [dirty, setDirty] = useState(false)
+	useEffect(() => {
+		onDirtyChange?.(dirty)
+		return () => onDirtyChange?.(false)
+	}, [dirty, onDirtyChange])
 
 	useEffect(() => {
 		let active = true
@@ -118,6 +126,7 @@ function AdminSession({
 	}
 
 	async function signOut() {
+		if (dirty && !confirmDiscardDraft()) return
 		setBusy(true)
 		setError('')
 		try {
@@ -192,12 +201,13 @@ function AdminSession({
 						<section aria-labelledby="admin-ready">
 							<h2 id="admin-ready">Admin access verified</h2>
 							<p>
-								Your workspace is connected. Catalog, set, and
-								reward tools will be added after the puzzle lab.
+								Browse puzzle drafts or create a new design. Set
+								and reward tools will follow.
 							</p>
 							<PuzzleAuthoring
 								key={session.user.id}
 								client={client}
+								onDirtyChange={setDirty}
 							/>
 						</section>
 					) : checkedRole.status === 'denied' ? (
@@ -228,7 +238,11 @@ function AdminSession({
 	)
 }
 
-export default function AdminPortal() {
+export default function AdminPortal({
+	onDirtyChange,
+}: {
+	readonly onDirtyChange?: (dirty: boolean) => void
+}) {
 	const [connection] = useState(() => {
 		try {
 			return { client: getSupabaseClient() }
@@ -246,7 +260,10 @@ export default function AdminPortal() {
 			<a href="#">Back to Kaleidoscope</a>
 			<h1>Kaleidoscope Admin</h1>
 			{connection.client ? (
-				<AdminSession client={connection.client} />
+				<AdminSession
+					client={connection.client}
+					onDirtyChange={onDirtyChange}
+				/>
 			) : (
 				<p role="alert">{connection.error}</p>
 			)}

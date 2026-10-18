@@ -95,11 +95,24 @@ still applies until leaving/reloading the lab. A failed seed read blocks
 randomization with an error rather than silently ignoring saved puzzles.
 
 Saved drafts survive reload/sign-out, but unsaved previews and playtest placements
-do not. The draft library, reopening/editing/deleting UI, sets, rewards, and release
-tools follow separately. Unassigned unpublished drafts can later switch intended
-use; existing references must be removed before switching assigned content, and
-live puzzles remain immutable. No player attempts, completions, reward grants,
-guest imports, or Zen autosaves are written.
+do not. The **Puzzle drafts** library below the lab shows unpublished hexagon
+drafts with target thumbnails, recipe/use labels, and assignment status. Filter
+by Set/pack or Daily; refresh to pick up changes from another tab. Successful lab
+saves refresh the library automatically.
+
+Open a thumbnail to playtest the stored definition (not a regenerated seed).
+Edit its name, visual palette selection, or intended use and press **Save changes**.
+Palette selection recolors without resetting playtest state. Changes remain local
+until saved; switching drafts or refreshing discards unsaved edits. Unassigned
+unpublished drafts can switch intended use; assigned drafts must first be
+unassigned elsewhere. **Delete draft** requires explicit confirmation and is only
+available for unused drafts. The database rechecks these rules at write time,
+including content that was assigned or scheduled after the library loaded.
+
+Scheduled/live puzzles are excluded from this draft library and cannot be edited
+or deleted through its RPCs. Assignment, scheduling, rewards, and publishing tools
+follow separately. No player attempts, completions, reward grants, guest imports,
+or Zen autosaves are written.
 
 The authoring model separates the version-2 slot-based public definition
 (`version`, `geometry`, `target`, `pieces`) from palette/recipe metadata and private
@@ -242,15 +255,36 @@ For projects that already applied both existing migrations:
    explicitly switches to `anon`/`authenticated` to check access. All 12 assertions
    should return `PASS`; the final `rollback` removes the fixtures.
 4. In the admin lab, randomize, name a puzzle, select its intended use, and save.
-   Confirm the unpublished-draft success message. The library UI is not available
-   yet, so saved rows currently appear in Dashboard Table Editor under `puzzles`
-   and `puzzle_authoring`.
+   Confirm the unpublished-draft success message. Saved rows appear in the draft
+   library and Dashboard Table Editor under `puzzles` and `puzzle_authoring`.
 
 This migration adds one `save_hex_puzzle_draft` RPC, no tables or player write
 permissions. It uses caller RLS plus an explicit admin check, the existing catalog
 transaction lock, and one transaction for both rows. Identical retries return the
 same ID; a different payload cannot overwrite an existing ID. Updated TypeScript
 types include the RPC signature.
+
+## Apply draft library editing/deletion
+
+After the atomic draft-saving migration:
+
+1. Run the complete
+   [20261018030000_manage_puzzle_drafts.sql](./migrations/20261018030000_manage_puzzle_drafts.sql)
+   once in SQL Editor as `postgres`. Do not rerun the earlier migrations.
+2. Run [manage_puzzle_drafts.sql](./tests/manage_puzzle_drafts.sql) in another query
+   as `postgres`, without an automatic RLS wrapper. Expect **21 PASS results**;
+   its fixtures roll back.
+3. Refresh the admin draft library, open a saved puzzle, change its name/palette
+   or intended use, save, and reopen to verify. Use an unwanted draft to test
+   deletion and its confirmation.
+
+The migration adds `edit_puzzle_draft` and `delete_puzzle_draft` RPCs with caller
+RLS, explicit admin checks, and the existing catalog lock. Metadata edits do not
+rewrite definitions or private provenance. Assigned drafts cannot switch use or
+be deleted, and scheduled/live content is rejected. Deletion cascades to the
+private authoring row, removing that row's persistent saved-seed exclusion.
+Other saved uses of the same seed/recipe and current session preview history
+still exclude it.
 
 ## Bootstrap the one admin
 

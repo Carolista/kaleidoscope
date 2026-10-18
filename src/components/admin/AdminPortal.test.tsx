@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js'
 import AdminPortal from './AdminPortal'
 
@@ -15,6 +15,9 @@ const mocks = vi.hoisted(() => ({
 }))
 
 let authCallback: (event: AuthChangeEvent, session: Session | null) => void
+vi.mock('../../services/puzzleLibrary', () => ({
+	loadPuzzleDrafts: async () => [],
+}))
 vi.mock('../../services/supabaseClient', () => ({
 	getSupabaseClient: () => mocks.getClient(),
 }))
@@ -45,6 +48,7 @@ beforeEach(() => {
 		data: { user_id: 'admin' },
 		error: null,
 	})
+	afterEach(() => vi.restoreAllMocks())
 	mocks.palettes.mockResolvedValue({ data: [], error: null })
 	mocks.from.mockImplementation((table: string) =>
 		table === 'palettes'
@@ -74,6 +78,60 @@ beforeEach(() => {
 })
 
 describe('AdminPortal', () => {
+	it('asks before signing out with an unsaved puzzle and preserves it when cancelled', async () => {
+		mocks.getSession.mockResolvedValue({
+			data: { session: session() },
+			error: null,
+		})
+		mocks.palettes.mockResolvedValue({
+			data: [
+				{
+					id: 'cabo',
+					name: 'Cabo',
+					colors: [
+						'#112233',
+						'#223344',
+						'#334455',
+						'#445566',
+						'#556677',
+					],
+				},
+			],
+			error: null,
+		})
+		const original = mocks.from.getMockImplementation()
+		mocks.from.mockImplementation((table: string) => {
+			if (table !== 'puzzle_authoring') return original?.(table)
+			const query = {
+				eq: vi.fn().mockReturnThis(),
+				order: vi.fn().mockReturnThis(),
+				range: vi.fn().mockResolvedValue({ data: [], error: null }),
+			}
+			return { select: () => query }
+		})
+		render(<AdminPortal />)
+		fireEvent.click(
+			await screen.findByRole('button', { name: 'New puzzle' }),
+		)
+		fireEvent.click(
+			await screen.findByRole('button', { name: 'Randomize puzzle' }),
+		)
+		await screen.findByLabelText('Puzzle name')
+		const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+		fireEvent.click(
+			screen.getByRole('button', { name: 'Sign out on this device' }),
+		)
+		expect(confirm).toHaveBeenCalledOnce()
+		expect(mocks.signOut).not.toHaveBeenCalled()
+		expect(screen.getByLabelText('Puzzle name')).toBeInTheDocument()
+		confirm.mockReturnValue(true)
+		fireEvent.click(
+			screen.getByRole('button', { name: 'Sign out on this device' }),
+		)
+		await screen.findByRole('button', { name: 'Sign in' })
+		expect(mocks.signOut).toHaveBeenCalledWith({ scope: 'local' })
+	})
+
 	it('explains missing configuration without a login form', () => {
 		mocks.getClient.mockImplementation(() => {
 			throw new Error('Missing configuration')
@@ -123,7 +181,7 @@ describe('AdminPortal', () => {
 			name: 'Sign out on this device',
 		})
 		const lab = await screen.findByRole('heading', {
-			name: 'Hexagon puzzle lab',
+			name: 'Puzzle drafts',
 		})
 		expect(
 			signOut.compareDocumentPosition(lab) &

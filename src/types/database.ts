@@ -985,6 +985,19 @@ export type Database = {
 				}
 				Returns: string
 			}
+			edit_puzzle_draft: {
+				Args: {
+					p_id: string
+					p_name: string
+					p_palette_id: string
+					p_usage: string
+				}
+				Returns: string
+			}
+			delete_puzzle_draft: {
+				Args: { p_id: string }
+				Returns: string
+			}
 		}
 		Enums: {
 			[_ in never]: never
