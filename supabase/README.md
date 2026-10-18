@@ -21,8 +21,8 @@ payment integration, or player progress/sync operations are included.
    a server-side SPA rewrite on GitHub Pages.
 5. Sign in with the Auth email/password used to bootstrap your admin assignment.
    The page verifies the current account against the RLS-protected `admin_account`
-   table before showing the workspace placeholder. There are no authoring tools
-   in this step. A normal account receives an explicit access-denied message.
+   table before showing the hexagon puzzle lab. A normal account receives an
+   explicit access-denied message.
 
 Use only the publishable key. Vite embeds `VITE_` variables in browser assets;
 they are not secrets, and authorization comes from RLS. Never put a secret/
@@ -35,6 +35,68 @@ and refreshed/replaced identities are rechecked. Auth storage is separate from
 the design save. Sign-out affects this device, not all other sessions. Browser
 storage holds a session token: sign out on shared devices.
 
+### Admin hexagon puzzle lab
+
+After sign-in, choose a palette from the visual Supabase swatch picker (including
+drafts), choose an exact recipe, and press **Randomize puzzle** as often as you
+like. Selecting another palette also recolors the current playtest without
+changing its seed, layout, or placements.
+
+| Difficulty | Board | Rotation |
+| --- | --- | --- |
+| Easy | Small (6 wedge tiles) | No |
+| Moderate | Medium (9 wedge tiles) | No |
+| Moderate | Small (6 wedge tiles) | Yes |
+| Hard | Large (16 wedge tiles) | No |
+| Hard | Medium (9 wedge tiles) | Yes |
+| Super hard | Large (16 wedge tiles) | Yes |
+
+Seeds are generated automatically using browser cryptographic randomness; the
+current seed remains visible for reference, not as a required text input.
+Already-previewed seeds are skipped per shape/exact recipe for this mounted lab
+session, even when switching palettes or recipes and back. Leaving/reloading the
+lab clears that history. Each randomization starts a fresh playtest.
+
+The same seed/recipe produces the same connected pieces and target slots.
+Different seeds can still produce identical designs; seed exclusion is not
+visual deduplication. Size/rotation define these recipe labels; the lab does not
+certify solve time, uniqueness, or human difficulty.
+
+Use the existing drag controls or select a piece then activate a wedge tile.
+In rotation recipes, click/tap a tray piece to rotate it 60 degrees (no reflection);
+dragging moves it without rotating. Rotation happens only in the tray.
+Double-click/double-tap an occupied board piece, or drag it back to the tray, to
+return it without losing orientation. Keyboard users activate a tray piece with
+Enter/Space to rotate/select, then activate a wedge tile to place; Delete/Backspace
+on an occupied board tile returns its piece. There are no rotation/return buttons.
+Invalid placements leave the board unchanged and show a message. **Restart**
+clears only the playtest. Square tray containers keep all six orientations at
+the same tile scale without changing size; selection has one subtle border.
+The first-rotation player-set tutorial is planned for later.
+
+**Refresh palettes** fetches current catalog colors. Active previews resolve
+their stable palette ID and ordered color slots against that result, so corrections
+update targets and pieces together without changing placement/layout. Failed reads
+show an error instead of silently falling back to the local player catalog.
+
+This milestone is an in-memory lab, not a saved draft library. Reloading or signing
+out discards generated puzzles and playtests. No database writes, player attempts,
+completions, reward grants, guest imports, or Zen autosaves occur. Atomic draft
+save/library/set/reward tools are the next authoring milestone.
+
+When draft saving is added, saved puzzle/authoring records will also supply the
+persistent excluded seeds keyed by shape and exact size/rotation recipe,
+independent of palette. No separate blacklist table is planned: saving reserves
+the seed, and deleting an unused draft frees it (unless another saved puzzle
+still uses that seed/recipe). Persistent exclusions are not implemented in this
+memory-only milestone.
+
+The authoring model separates the version-2 slot-based public definition
+(`version`, `geometry`, `target`, `pieces`) from palette/recipe metadata and private
+seed, generator version, and known solution. Persist the full definition when
+saving is added, not just its seed. The legacy player POC's default easy recipe
+and rendering adapter remain compatible; it is not switched to live content yet.
+
 The lazy-loaded admin route does not initialize Supabase for normal player
 visits. Missing configuration shows a setup error on the admin page without
 breaking the existing Zen/Puzzle app. The UI check is not a replacement for RLS.
@@ -44,7 +106,8 @@ breaking the existing Zen/Puzzle app. The UI check is not a replacement for RLS.
 `src/types/database.ts` is generated from the hosted database using the Dashboard's
 TypeScript type export, then formatted with the project's Prettier settings.
 It is used by `createClient<Database>`; do not hand-edit generated table shapes.
-Regenerate it after every applied migration. Extra generated schema/type helpers
+Regenerate it after migrations that change public tables, columns, or RPCs.
+Extra generated schema/type helpers
 may appear in the export; application queries default to `public`.
 
 This step needs no CLI or schema change. Deployment environment configuration is
@@ -52,6 +115,9 @@ separate from local `.env.local`; add these same public build variables to the
 deployment build when admin access is ready to deploy.
 
 ## Apply using the Dashboard
+
+For a project that already has the initial schema, use the follow-up instructions
+below. Do not rerun the initial migration.
 
 Use the new, empty **development** project, not a project containing existing
 application data. No package installation is needed for these steps.
@@ -88,6 +154,68 @@ They insert temporary test identities into `auth.users` inside a transaction,
 temporarily replace the admin assignment, and restore everything by rolling
 back. They do not call Auth endpoints or test real JWT issuance, signup emails,
 PostgREST schema exposure, or browser sessions. Test those during integration.
+
+## Follow-up: edit scheduled content until release
+
+After applying the initial migration, run
+[20261018010000_prerelease_editing.sql](./migrations/20261018010000_prerelease_editing.sql)
+once in a new SQL Editor query using the database-owner role. Copy the entire
+file, including `begin;` and `commit;`. No credentials or application configuration
+changes are needed.
+
+Then run the entire
+[pre-release lifecycle test file](./tests/prerelease_editing.sql) in a separate
+query. Its fixtures and temporary admin replacement are rolled back. It should
+finish with `All pre-release lifecycle assertions passed; fixtures will be rolled
+back.` If a query errors, stop and run `rollback;` before continuing.
+
+The original `initial_schema.sql` test is a historical regression test for the
+initial migration **before** this follow-up. It backdates seeded catalog releases
+as part of fixture setup, which the new live-release guards intentionally block.
+Do not rerun that historical fixture script against an upgraded project; use the
+follow-up tests instead. Local migration validation runs the original suite before
+upgrading and then the lifecycle suite afterward.
+
+The follow-up adds no tables, columns, public RPCs, or RLS permissions, so existing
+generated database types remain valid. It does not add admin authoring UI or
+player progress/save operations.
+
+### Lifecycle after the follow-up
+
+| State | Admin operations |
+| --- | --- |
+| Draft | Edit, assign/unassign, delete subject to references |
+| Scheduled (`published_at` set, `release_at` in future) | Edit content/configuration, reschedule, cancel back to draft, or delete subject to references |
+| Live (release instant reached) | Puzzle/set/core definitions and configuration are fixed; cannot reschedule, cancel, or delete |
+
+The guards inspect the **old** release state using database wall-clock time.
+Clearing publication fields or moving a live release into the future cannot
+reopen it. Moving membership between collections checks both old and new parents.
+Live palette color corrections remain allowed with revision/audit updates;
+live palette/shape/pack release metadata cannot be reset. Palette pack membership
+also freezes at release. Future daily assignments can be moved/cancelled, but
+released daily assignments stay fixed.
+
+Dependency checks cover both forward and reverse edits: a scheduled set cannot
+retain a cancelled/later puzzle, a prepared puzzle cannot lose its palette,
+shape, or authoring data, a prepared core cannot lose/reclassify its steps, and
+prepared rewards/palette packs need their contents ready by release.
+
+Checks run against the final transaction state. For example, to cancel a puzzle
+already used by a scheduled set, also return the dependent set (and scheduled core,
+if applicable) to draft **in the same transaction**. Leave the transaction
+consistent and commit. An error aborts the transaction; do not treat earlier
+successful statements as saved. Existing immediate publication checks still
+require preparing dependencies before preparing their parents.
+
+Catalog mutations acquire one database advisory transaction lock before row
+locks. This is deliberately a simple single-editor workflow: catalog writers
+serialize, but player data saves do not take this lock. Catalog edits require
+the default `READ COMMITTED` isolation so checks after waiting see current
+committed dependencies; stale-snapshot isolation modes are explicitly rejected.
+Keep authoring transactions short and surface database failures in the portal.
+The deferred global dependency checks prioritize consistency over bulk-write
+throughput; revisit only if real catalog size makes authoring slow.
 
 ## Bootstrap the one admin
 
@@ -269,13 +397,11 @@ publication checks contiguous steps and that its sets are published by launch.
 The migration does not publish incomplete example puzzles or invent content
 choices.
 
-Published puzzles, collections, their configuration, and the core sequence
-cannot be updated/deleted even by the app admin. Row locks on configuration
-changes serialize against publication of their parent. RLS admin CRUD does not
-override constraints/triggers. Prepare dates and membership before publication;
-the initial design also freezes a prepared puzzle/set before its future release.
-If rescheduling an already-prepared set is needed, agree a narrow scheduling-only
-operation in a later migration; do not disable immutability triggers.
+The initial migration freezes prepared content immediately. After applying the
+follow-up above, scheduled puzzles, collections, configuration, and the core
+sequence remain editable until their release instant. Once live they cannot be
+updated/deleted even by the app admin. RLS admin CRUD does not override database
+constraints/triggers; never disable the guards to work around a dependency error.
 
 Palette corrections are the deliberate exception: all rendering resolves the
 latest synchronized palette using stable slots. Already exported raster files
@@ -294,11 +420,13 @@ The app continues behaving exactly as before until intentionally integrated.
 
 ## Still required before player integration
 
-- Player Auth/registration flows, explicit guest import, and admin authoring UI.
-  Admin sign-in and the typed Supabase client are now available; regenerate
-  TypeScript database types after each applied schema change.
-- Structurally and geometrically validated authoring plus the expanded generator,
-  rotation controls, and slot-based save/render migration.
+- Player Auth/registration flows, explicit guest import, and the rest of the admin
+  authoring workspace. Admin sign-in, generated types, and six-recipe isolated
+  playtesting are available; atomic draft saving/library, starter selection,
+  set/routes/core/reward/release tools are still pending.
+- Server-side structural/geometric authoring validation and slot-based saved-content
+  integration into player mode. The admin engine and palette-slot rendering adapter
+  exist; the player POC remains local. Regenerate types when public schema changes.
 - Atomic completion validation, route evaluation, and idempotent grants; never
   accept a client assertion of qualification as sufficient evidence.
 - Concurrency-safe attempt save/conflict resolution, plus daily session
