@@ -3,6 +3,7 @@ import type { Session, SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '../../types/database'
 import { getSupabaseClient } from '../../services/supabaseClient'
 import styles from './AdminPortal.module.css'
+import PuzzleAuthoring from './PuzzleAuthoring'
 
 type RoleCheck =
 	| { token: string; status: 'allowed' }
@@ -180,13 +181,13 @@ function AdminSession({
 						<section aria-labelledby="admin-ready">
 							<h2 id="admin-ready">Admin access verified</h2>
 							<p>
-								Your workspace is connected. Catalog, puzzle,
-								set, and reward tools will be added next.
+								Your workspace is connected. Catalog, set, and
+								reward tools will be added after the puzzle lab.
 							</p>
-							<p>
-								Signing in does not import guest saves or record
-								player progress.
-							</p>
+							<PuzzleAuthoring
+								key={session.user.id}
+								client={client}
+							/>
 						</section>
 					) : checkedRole.status === 'denied' ? (
 						<p role="alert">

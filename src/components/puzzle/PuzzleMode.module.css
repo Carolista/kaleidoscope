@@ -32,7 +32,8 @@
 
 .gridGraphic {
 	display: block;
-	width: 100%;
+	width: 90%;
+    margin: auto;
 	overflow: visible;
 }
 
@@ -110,12 +111,13 @@
 .piece {
 	display: flex;
 	flex: 0 0 auto;
+	aspect-ratio: 1;
 	align-items: center;
 	justify-content: center;
 	min-width: 44px;
 	min-height: 44px;
 	padding: 0.5rem;
-	border: 2px solid transparent;
+	border: 1px solid transparent;
 	border-radius: 6px;
 	background: transparent;
 	color: var(--accent);
@@ -132,9 +134,8 @@
 
 .piece[aria-pressed='true'],
 .piece:focus-visible {
-	border-color: var(--accent);
-	outline: 2px solid var(--accent);
-	outline-offset: 2px;
+	border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+	outline: none;
 }
 
 .piece:hover:not(:disabled) {
@@ -176,6 +177,12 @@
 }
 
 @media screen and (max-width: 480px) {
+	.preview .goalAndPieces {
+		grid-template-columns: minmax(0, 1fr);
+		justify-items: center;
+		width: 100%;
+	}
+
 	.target {
 		width: 96px;
 	}

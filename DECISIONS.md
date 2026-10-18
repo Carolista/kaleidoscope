@@ -30,8 +30,8 @@ implementation and working agreements, see [CONTEXT.md](./CONTEXT.md).
 - Keep puzzle placements separate from Zen reducer/history/storage. The puzzle
   stays mounted across mode switches, but progress is intentionally session-only.
 - Start with the small hexagon's six representative cells and connected pieces
-  of one, two, and three tiles. Use Cabo for this POC; defer rotation and
-  set/pack authoring.
+  of one, two, and three tiles. Use Cabo for this player POC; expanded recipes
+  and rotation live in the separate admin lab first.
 - Generate repeatable versioned definitions from explicit seeds. Publish full
   definitions rather than seeds alone; generator changes must not rewrite
   published puzzles. Generation guarantees a solution, not a unique solution
@@ -52,6 +52,30 @@ implementation and working agreements, see [CONTEXT.md](./CONTEXT.md).
 - Generate new seeds with `crypto.getRandomValues`, which works over local
   network HTTP. `crypto.randomUUID` requires a secure context and can prevent
   even Zen Mode from mounting when the puzzle component initializes.
+
+## Admin authoring lab
+
+The admin lab supports six exact hexagon recipes: small without rotation (easy),
+small with rotation or medium without (moderate), medium with rotation or large
+without (hard), and large with rotation (super hard). Labels do not certify human
+difficulty or uniqueness. Save complete version-2 palette-slot definitions, with
+palette ID/recipe and private seed/generator/known solution metadata separate.
+Resolve stable ordered slots against current palette colors, including duplicates.
+
+Browse using visual palettes and one-click Randomize, not manual seed editing.
+Palette changes recolor the existing layout without resetting placements.
+Skip previewed seeds by shape/exact recipe for the mounted lab session. Future
+persistent exclusions derive from saved puzzles, not a separate blacklist table;
+deleting an unused draft frees its seed unless another saved row still uses it.
+Different seeds can yield visually identical designs.
+
+Tray clicks/taps rotate 60 degrees; dragging moves. Return board pieces via
+double-click/double-tap or dragging back, preserving orientation; no board rotation
+or separate rotate/return buttons. Keyboard equivalents remain available.
+Stable square containers reserve all orientations at consistent tile scale,
+with one subtle selected/focus border. The first-rotation set tutorial is deferred.
+The admin lab does not mount Zen state or write player progress. Draft saving,
+library, starter/set/route/core/reward/release tools follow; layout is temporary.
 
 ## Geometry and shape design
 

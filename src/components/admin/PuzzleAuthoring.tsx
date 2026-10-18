@@ -1,16 +1,16 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Database } from '../../types/database'
-import { HEX_PUZZLE_RECIPES } from '../../puzzles/hexPuzzle'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import {
 	generateAuthoredHexPuzzle,
 	renderAuthoredHexPuzzle,
-	type AuthoringPalette,
 	type AuthoredHexPuzzle,
+	type AuthoringPalette,
 } from '../../puzzles/hexAuthoring'
-import PuzzleMode from '../puzzle/PuzzleMode'
+import { HEX_PUZZLE_RECIPES } from '../../puzzles/hexPuzzle'
 import { createUnusedPuzzleSeed } from '../../puzzles/puzzleSeed'
+import type { Database } from '../../types/database'
 import paletteStyles from '../controls/color-schemes/SchemePicker.module.css'
+import PuzzleMode from '../puzzle/PuzzleMode'
 import styles from './AdminPortal.module.css'
 
 function messageFor(cause: unknown): string {
@@ -126,8 +126,7 @@ export default function PuzzleAuthoring({
 			<h2 id="puzzle-authoring-title">Hexagon puzzle lab</h2>
 			<p>
 				Generate and playtest all six recipes. This lab is temporary:
-				puzzles are not saved or published, and playtests never record
-				player progress.
+				puzzles are not saved or published.
 			</p>
 			{error && <p role="alert">{error}</p>}
 			<button
@@ -150,14 +149,6 @@ export default function PuzzleAuthoring({
 				</p>
 			) : (
 				<form onSubmit={generate} className={styles.form}>
-					<label htmlFor="puzzle-recipe">Recipe</label>
-					<select id="puzzle-recipe" name="recipe">
-						{HEX_PUZZLE_RECIPES.map(recipe => (
-							<option key={recipe.id} value={recipe.id}>
-								{recipe.label}
-							</option>
-						))}
-					</select>
 					<fieldset className={styles.palettePicker}>
 						<legend>Palette</legend>
 						<ul className={paletteStyles.list}>
@@ -211,6 +202,14 @@ export default function PuzzleAuthoring({
 							))}
 						</ul>
 					</fieldset>
+					<label htmlFor="puzzle-recipe">Recipe</label>
+					<select id="puzzle-recipe" name="recipe">
+						{HEX_PUZZLE_RECIPES.map(recipe => (
+							<option key={recipe.id} value={recipe.id}>
+								{recipe.label}
+							</option>
+						))}
+					</select>
 					<p>
 						Randomize to browse another puzzle. Seeds already
 						previewed for this recipe are skipped until you leave

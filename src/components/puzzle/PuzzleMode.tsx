@@ -5,7 +5,11 @@ import { faRotate } from '@fortawesome/sharp-duotone-solid-svg-icons'
 import { Button, IconButton, Modal } from '@shared'
 import type { PointerEvent } from 'react'
 import { useId, useRef, useState } from 'react'
-import type { PuzzlePiece, PuzzlePlacements } from '../../puzzles/hexPuzzle'
+import type {
+	HexPuzzle,
+	PuzzlePiece,
+	PuzzlePlacements,
+} from '../../puzzles/hexPuzzle'
 import {
 	coordinateKey,
 	generateHexPuzzle,
@@ -13,13 +17,16 @@ import {
 	isPuzzleSolved,
 	pieceCells,
 	placePuzzlePiece,
+	rotateCoordinate,
 } from '../../puzzles/hexPuzzle'
 import HexPuzzleBoard, { PieceGraphic } from './HexPuzzleBoard'
 import styles from './PuzzleMode.module.css'
+import { createPuzzleSeed } from '../../puzzles/puzzleSeed'
 
 interface DragState {
 	readonly piece: PuzzlePiece
 	readonly pointerId: number
+	readonly pointerType: string
 	readonly offset: AxialCoord
 	readonly startX: number
 	readonly startY: number
@@ -30,24 +37,28 @@ interface DragState {
 	readonly moved: boolean
 }
 
-function createPuzzleSeed(): string {
-	return Array.from(crypto.getRandomValues(new Uint32Array(4)), value =>
-		value.toString(16).padStart(8, '0'),
-	).join('')
-}
-
 export default function PuzzleMode({
 	hidden = false,
 	initialSeed,
+	previewPuzzle,
 }: {
 	readonly hidden?: boolean
 	readonly initialSeed?: string
+	readonly previewPuzzle?: HexPuzzle
 }) {
-	const [puzzle, setPuzzle] = useState(() =>
-		generateHexPuzzle(initialSeed ?? createPuzzleSeed(), colorSchemes[1]),
+	const [puzzle, setPuzzle] = useState(
+		() =>
+			previewPuzzle ??
+			generateHexPuzzle(
+				initialSeed ?? createPuzzleSeed(),
+				colorSchemes[1],
+			),
 	)
 	const [placements, setPlacements] = useState<PuzzlePlacements>({})
 	const [selectedId, setSelectedId] = useState<string | null>(null)
+	const [rotations, setRotations] = useState<
+		Readonly<Record<string, number>>
+	>({})
 	const [showCongrats, setShowCongrats] = useState(false)
 	const congratsTitleId = useId()
 	const [message, setMessage] = useState('Choose a piece to get started.')
@@ -55,8 +66,18 @@ export default function PuzzleMode({
 	const dragRef = useRef<DragState | null>(null)
 	const boardRef = useRef<SVGSVGElement>(null)
 	const suppressClickRef = useRef(false)
-	const colors = getPuzzleColors(puzzle, placements)
-	const solved = isPuzzleSolved(puzzle, placements)
+	const lastTouchTapRef = useRef<{ pieceId: string; time: number } | null>(
+		null,
+	)
+	const currentPuzzle = previewPuzzle ?? puzzle
+	const displayPieces = currentPuzzle.pieces.map(piece => ({
+		...piece,
+		tiles: piece.tiles.map(tile =>
+			rotateCoordinate(tile, rotations[piece.id] ?? 0),
+		),
+	}))
+	const colors = getPuzzleColors(currentPuzzle, placements)
+	const solved = isPuzzleSolved(currentPuzzle, placements)
 
 	function selectPiece(id: string) {
 		if (solved) return
@@ -72,7 +93,12 @@ export default function PuzzleMode({
 
 	function place(id: string, anchor: AxialCoord) {
 		if (solved) return
-		const result = placePuzzlePiece(puzzle, placements, id, anchor)
+		const result = placePuzzlePiece(currentPuzzle, placements, id, {
+			...anchor,
+			...(currentPuzzle.rotationAllowed
+				? { rotation: rotations[id] ?? 0 }
+				: {}),
+		})
 		if (!result.ok) {
 			setSelectedId(id)
 			setMessage(result.reason)
@@ -80,37 +106,45 @@ export default function PuzzleMode({
 		}
 		setPlacements(result.placements)
 		setSelectedId(null)
-		setShowCongrats(isPuzzleSolved(puzzle, result.placements))
+		setShowCongrats(
+			!previewPuzzle && isPuzzleSolved(currentPuzzle, result.placements),
+		)
 		setMessage(
-			Object.keys(result.placements).length === puzzle.pieces.length &&
-				!isPuzzleSolved(puzzle, result.placements)
+			Object.keys(result.placements).length ===
+				currentPuzzle.pieces.length &&
+				!isPuzzleSolved(currentPuzzle, result.placements)
 				? 'All pieces fit, but the colors do not match yet. Try rearranging them.'
 				: 'Piece placed. Choose another piece or move one already on the board.',
 		)
 	}
 
 	function pieceAt(cell: AxialCoord) {
-		return puzzle.pieces.find(piece => {
+		return displayPieces.find(piece => {
 			const anchor = placements[piece.id]
 			return (
 				anchor &&
-				pieceCells(piece, anchor).some(
+				pieceCells(piece, { q: anchor.q, r: anchor.r }).some(
 					tile => coordinateKey(tile) === coordinateKey(cell),
 				)
 			)
 		})
 	}
 
-	function activateCell(cell: AxialCoord) {
+	function activateCell(cell: AxialCoord, keyboard: boolean) {
 		if (solved) return
 		if (suppressClickRef.current) {
 			suppressClickRef.current = false
 			return
 		}
-		if (selectedId) place(selectedId, cell)
+		const occupied = pieceAt(cell)
+		if (
+			selectedId &&
+			occupied?.id !== selectedId &&
+			(keyboard || !currentPuzzle.rotationAllowed)
+		)
+			place(selectedId, cell)
 		else {
-			const piece = pieceAt(cell)
-			if (piece) selectPiece(piece.id)
+			if (occupied) selectPiece(occupied.id)
 			else setMessage('Choose a piece from the tray first.')
 		}
 	}
@@ -133,6 +167,7 @@ export default function PuzzleMode({
 		const next: DragState = {
 			piece,
 			pointerId: event.pointerId,
+			pointerType: event.pointerType,
 			offset,
 			startX: event.clientX,
 			startY: event.clientY,
@@ -179,7 +214,31 @@ export default function PuzzleMode({
 		if (!current) return
 		dragRef.current = null
 		setDrag(null)
-		if (!current.moved) return
+		if (!current.moved) {
+			if (
+				current.pointerType === 'touch' &&
+				placements[current.piece.id]
+			) {
+				const previous = lastTouchTapRef.current
+				if (
+					previous?.pieceId === current.piece.id &&
+					event.timeStamp - previous.time <= 350
+				) {
+					lastTouchTapRef.current = null
+					suppressClickRef.current = true
+					returnToTray(current.piece.id)
+				} else {
+					lastTouchTapRef.current = {
+						pieceId: current.piece.id,
+						time: event.timeStamp,
+					}
+				}
+			} else {
+				lastTouchTapRef.current = null
+			}
+			return
+		}
+		lastTouchTapRef.current = null
 		suppressClickRef.current = true
 		if (current.anchor) {
 			place(current.piece.id, current.anchor)
@@ -203,7 +262,27 @@ export default function PuzzleMode({
 		delete next[id]
 		setPlacements(next)
 		setSelectedId(null)
+		lastTouchTapRef.current = null
 		setMessage('Piece returned to the tray.')
+	}
+
+	function activateTrayPiece(id: string) {
+		if (solved || placements[id]) return
+		if (suppressClickRef.current) {
+			suppressClickRef.current = false
+			return
+		}
+		lastTouchTapRef.current = null
+		selectPiece(id)
+		if (currentPuzzle.rotationAllowed) {
+			setRotations(previous => ({
+				...previous,
+				[id]: ((previous[id] ?? 0) + 1) % 6,
+			}))
+			setMessage(
+				'Piece rotated 60 degrees. Drag it onto the board, or use keyboard placement.',
+			)
+		}
 	}
 
 	function reset(newPuzzle: boolean) {
@@ -212,17 +291,19 @@ export default function PuzzleMode({
 			setPuzzle(generateHexPuzzle(createPuzzleSeed(), colorSchemes[1]))
 		}
 		setPlacements({})
+		setRotations({})
 		setSelectedId(null)
 		dragRef.current = null
 		setDrag(null)
 		suppressClickRef.current = false
+		lastTouchTapRef.current = null
 		setMessage('Choose a piece to get started.')
 	}
 
 	return (
 		<section
 			hidden={hidden}
-			className={styles.puzzle}
+			className={`${styles.puzzle}${previewPuzzle ? ` ${styles.preview}` : ''}`}
 			aria-label="Puzzle Mode"
 			onPointerDownCapture={() => {
 				suppressClickRef.current = false
@@ -241,14 +322,16 @@ export default function PuzzleMode({
 				if (dragRef.current?.pointerId !== event.pointerId) return
 				dragRef.current = null
 				setDrag(null)
+				lastTouchTapRef.current = null
+				suppressClickRef.current = true
 				setMessage('Drag cancelled. Your piece has not moved.')
 			}}
 		>
 			<div className={styles.goalAndPieces}>
 				<figure className={styles.target}>
 					<HexPuzzleBoard
-						radius={puzzle.radius}
-						colors={puzzle.target}
+						radius={currentPuzzle.radius}
+						colors={currentPuzzle.target}
 						target
 					/>
 				</figure>
@@ -258,15 +341,20 @@ export default function PuzzleMode({
 					aria-label="Puzzle pieces"
 					data-puzzle-tray=""
 				>
-					{puzzle.pieces.map((piece, index) => (
+					{displayPieces.map((piece, index) => (
 						<button
 							type="button"
 							key={piece.id}
 							className={styles.piece}
 							aria-label={`Select piece ${index + 1}, ${piece.tiles.length} ${piece.tiles.length === 1 ? 'tile' : 'tiles'}, ${placements[piece.id] ? 'on board' : 'in tray'}`}
 							aria-pressed={selectedId === piece.id}
+							aria-description={
+								currentPuzzle.rotationAllowed
+									? 'Click or tap to rotate 60 degrees; drag to move. Keyboard: Enter or Space rotates, then activate a board tile to place.'
+									: undefined
+							}
 							disabled={Boolean(placements[piece.id])}
-							onClick={() => selectPiece(piece.id)}
+							onClick={() => activateTrayPiece(piece.id)}
 							onPointerDown={event => {
 								const tileIndex =
 									event.target instanceof Element
@@ -291,13 +379,17 @@ export default function PuzzleMode({
 			<div className={styles.board}>
 				<HexPuzzleBoard
 					svgRef={boardRef}
-					radius={puzzle.radius}
+					radius={currentPuzzle.radius}
 					colors={colors}
 					solved={solved}
-					pieces={puzzle.pieces}
+					pieces={currentPuzzle.pieces}
 					placements={placements}
 					selectedId={selectedId}
 					onActivate={activateCell}
+					onReturn={cell => {
+						const piece = pieceAt(cell)
+						if (piece) returnToTray(piece.id)
+					}}
 					onGrab={(event, cell) => {
 						const piece = pieceAt(cell)
 						if (!piece) return
@@ -310,32 +402,45 @@ export default function PuzzleMode({
 				/>
 			</div>
 
-			<div role="status" className={styles.visuallyHidden}>
+			<div
+				role="status"
+				className={previewPuzzle ? undefined : styles.visuallyHidden}
+			>
 				{solved
-					? 'Puzzle solved! Your design matches the target.'
+					? previewPuzzle
+						? 'Playtest solved! No player progress recorded.'
+						: 'Puzzle solved! Your design matches the target.'
 					: message}
 			</div>
 			<div className={styles.actions}>
-				<DarkModeToggle />
-				{solved && (
+				{!previewPuzzle && <DarkModeToggle />}
+				{solved && !previewPuzzle && (
 					<Button onClick={() => reset(true)}>Next puzzle</Button>
 				)}
-				<IconButton
-					icon={faRotate}
-					label="Restart"
-					onClick={() => reset(false)}
-				/>
+				{previewPuzzle ? (
+					<button type="button" onClick={() => reset(false)}>
+						Restart
+					</button>
+				) : (
+					<IconButton
+						icon={faRotate}
+						label="Restart"
+						onClick={() => reset(false)}
+					/>
+				)}
 			</div>
-			<Modal
-				open={showCongrats && !hidden}
-				onClose={() => setShowCongrats(false)}
-				labelledBy={congratsTitleId}
-				size="sm"
-				closeLabel="Close congratulations"
-				header={<h2 id={congratsTitleId}>Congrats!</h2>}
-			>
-				<Button onClick={() => reset(true)}>Next Puzzle</Button>
-			</Modal>
+			{!previewPuzzle && (
+				<Modal
+					open={showCongrats && !hidden}
+					onClose={() => setShowCongrats(false)}
+					labelledBy={congratsTitleId}
+					size="sm"
+					closeLabel="Close congratulations"
+					header={<h2 id={congratsTitleId}>Congrats!</h2>}
+				>
+					<Button onClick={() => reset(true)}>Next Puzzle</Button>
+				</Modal>
+			)}
 			{drag?.moved && !hidden && (
 				<PieceGraphic piece={drag.piece} drag={drag} />
 			)}

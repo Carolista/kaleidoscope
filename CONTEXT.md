@@ -15,6 +15,22 @@ prototype. Puzzle Mode uses the small hexagon, Cabo palette, and connected
 React state survives mode switches but not reloads; it never persists over Zen
 designs. See [README.md](./README.md#puzzle-mode-prototype) for scope.
 
+The separate `#/admin` portal uses Supabase password Auth, generated database
+types, and a database-backed singleton admin check. Its temporary hexagon lab
+supports all six size/rotation recipes, visual Supabase palettes (including
+drafts), and one-click randomization. Version-2 definitions use ordered palette
+slots, with private seed/generator/solution data kept separate. Playtests are
+memory-only: no draft saves, player progress writes, or Zen autosaves.
+See [Supabase instructions](./supabase/README.md) for current scope.
+
+In rotation-enabled playtests, click/tap a tray piece to rotate 60 degrees;
+dragging moves it without rotating. Double-click/double-tap a board piece or drag
+it back to return it to the tray, preserving orientation. Keyboard: Enter/Space
+rotates/selects in tray, board activation places, Delete/Backspace on an occupied
+tile returns its piece. Rotation happens only in the tray. Containers stay square
+across all orientations, with one subtle selected/focus border and normal disabled
+cursor. A first-rotation player-set tutorial is planned, not implemented.
+
 Live: https://codewithcarrie.com/kaleidoscope/
 
 The modern app lives in [src/](./src). Leave the original

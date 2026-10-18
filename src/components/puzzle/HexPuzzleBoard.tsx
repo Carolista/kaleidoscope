@@ -8,7 +8,11 @@ import {
 } from '@geometry/hexagonLayout'
 import type { AxialCoord } from '@appTypes/hexagon'
 import { pointsToSvgAttr } from '@utils/svgPoints'
-import { coordinateKey, pieceCells } from '../../puzzles/hexPuzzle'
+import {
+	coordinateKey,
+	pieceCells,
+	rotateCoordinate,
+} from '../../puzzles/hexPuzzle'
 import type { PuzzlePiece, PuzzlePlacements } from '../../puzzles/hexPuzzle'
 import styles from './PuzzleMode.module.css'
 
@@ -62,8 +66,23 @@ export function PieceGraphic({
 	}
 }) {
 	const grabbed = drag ? axialToPixel(drag.offset, layout) : null
-	const viewBox = viewBoxFor(piece.tiles)
-	const [, , width, height] = viewBox.split(' ').map(Number)
+	const [minX, minY, width, height] = viewBoxFor(piece.tiles)
+		.split(' ')
+		.map(Number)
+	// Reserve the largest rotated bounds so tray slots and tile scale stay fixed.
+	const side = Math.ceil(
+		Math.max(
+			...Array.from({ length: 6 }, (_, rotation) => {
+				const bounds = viewBoxFor(
+					piece.tiles.map(tile => rotateCoordinate(tile, rotation)),
+				)
+					.split(' ')
+					.map(Number)
+				return Math.max(bounds[2], bounds[3])
+			}),
+		),
+	)
+	const viewBox = `${minX + width / 2 - side / 2} ${minY + height / 2 - side / 2} ${side} ${side}`
 	return (
 		<svg
 			viewBox={
@@ -78,7 +97,7 @@ export function PieceGraphic({
 							width: drag.scale,
 							height: drag.scale,
 						}
-					: { width, height }
+					: { width: side, height: side }
 			}
 			aria-hidden="true"
 		>
@@ -104,7 +123,8 @@ interface HexPuzzleBoardProps {
 	readonly placements?: PuzzlePlacements
 	readonly selectedId?: string | null
 	readonly svgRef?: Ref<SVGSVGElement>
-	readonly onActivate?: (cell: AxialCoord) => void
+	readonly onActivate?: (cell: AxialCoord, keyboard: boolean) => void
+	readonly onReturn?: (cell: AxialCoord) => void
 	readonly onGrab?: (
 		event: PointerEvent<SVGPolygonElement>,
 		cell: AxialCoord,
@@ -121,6 +141,7 @@ export default function HexPuzzleBoard({
 	selectedId,
 	svgRef,
 	onActivate,
+	onReturn,
 	onGrab,
 }: HexPuzzleBoardProps) {
 	const cells = useMemo(() => generateHexagonCells(radius), [radius])
@@ -177,7 +198,7 @@ export default function HexPuzzleBoard({
 						aria-hidden={interactive || target ? undefined : true}
 						aria-description={
 							placedPiece
-								? `Piece ${placedPiece.number}`
+								? `Piece ${placedPiece.number}. Double-click or double-tap to return to tray; keyboard: Delete or Backspace.`
 								: undefined
 						}
 						aria-pressed={
@@ -191,7 +212,12 @@ export default function HexPuzzleBoard({
 								: undefined
 						}
 						onClick={
-							interactive ? () => onActivate?.(cell) : undefined
+							interactive
+								? () => onActivate?.(cell, false)
+								: undefined
+						}
+						onDoubleClick={
+							interactive ? () => onReturn?.(cell) : undefined
 						}
 						onKeyDown={
 							interactive
@@ -201,7 +227,13 @@ export default function HexPuzzleBoard({
 											event.key === ' '
 										) {
 											event.preventDefault()
-											onActivate?.(cell)
+											onActivate?.(cell, true)
+										} else if (
+											event.key === 'Delete' ||
+											event.key === 'Backspace'
+										) {
+											event.preventDefault()
+											onReturn?.(cell)
 										}
 									}
 								: undefined

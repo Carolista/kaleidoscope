@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
 	maybeSingle: vi.fn(),
 	unsubscribe: vi.fn(),
 	getClient: vi.fn(),
+	palettes: vi.fn(),
 }))
 
 let authCallback: (event: AuthChangeEvent, session: Session | null) => void
@@ -44,9 +45,18 @@ beforeEach(() => {
 		data: { user_id: 'admin' },
 		error: null,
 	})
-	mocks.from.mockReturnValue({
-		select: () => ({ eq: () => ({ maybeSingle: mocks.maybeSingle }) }),
-	})
+	mocks.palettes.mockResolvedValue({ data: [], error: null })
+	mocks.from.mockImplementation((table: string) =>
+		table === 'palettes'
+			? {
+					select: () => ({ order: mocks.palettes }),
+				}
+			: {
+					select: () => ({
+						eq: () => ({ maybeSingle: mocks.maybeSingle }),
+					}),
+				},
+	)
 	mocks.getClient.mockReturnValue({
 		auth: {
 			getSession: mocks.getSession,
@@ -108,7 +118,7 @@ describe('AdminPortal', () => {
 			}),
 		).toBeInTheDocument()
 		expect(mocks.from).toHaveBeenCalledWith('admin_account')
-		expect(mocks.from).toHaveBeenCalledTimes(1)
+		expect(mocks.from).toHaveBeenCalledWith('palettes')
 	})
 
 	it('denies authenticated non-admin users', async () => {
@@ -124,6 +134,7 @@ describe('AdminPortal', () => {
 		expect(
 			screen.queryByText('Admin access verified'),
 		).not.toBeInTheDocument()
+		expect(mocks.from).not.toHaveBeenCalledWith('palettes')
 	})
 
 	it('fails closed on role-query failure and allows retry', async () => {

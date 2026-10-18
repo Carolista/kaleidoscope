@@ -1,6 +1,7 @@
-import { generateHexagonCells, HEXAGON_GRID_RADII } from '@geometry/hexagonGrid'
 import type { ColorScheme } from '@appTypes/colorScheme'
+import type { GridSize } from '@appTypes/gridSize'
 import type { AxialCoord } from '@appTypes/hexagon'
+import { generateHexagonCells, HEXAGON_GRID_RADII } from '@geometry/hexagonGrid'
 
 export interface PuzzleTile extends AxialCoord {
 	readonly color: string
@@ -11,7 +12,58 @@ export interface PuzzlePiece {
 	readonly tiles: readonly PuzzleTile[]
 }
 
-export type PuzzlePlacements = Readonly<Record<string, AxialCoord>>
+export interface PuzzlePlacement extends AxialCoord {
+	readonly rotation?: number
+}
+
+export type PuzzlePlacements = Readonly<Record<string, PuzzlePlacement>>
+
+export const HEX_PUZZLE_RECIPES = [
+	{
+		id: 'easy-small',
+		label: 'EASY (S)',
+		size: 'sm',
+		rotation: false,
+		difficulty: 'easy',
+	},
+	{
+		id: 'moderate-small',
+		label: 'MODERATE (S + rotation)',
+		size: 'sm',
+		rotation: true,
+		difficulty: 'moderate',
+	},
+	{
+		id: 'moderate-medium',
+		label: 'MODERATE (M)',
+		size: 'md',
+		rotation: false,
+		difficulty: 'moderate',
+	},
+	{
+		id: 'hard-medium',
+		label: 'HARD (M + rotation)',
+		size: 'md',
+		rotation: true,
+		difficulty: 'hard',
+	},
+	{
+		id: 'hard-large',
+		label: 'HARD (L)',
+		size: 'lg',
+		rotation: false,
+		difficulty: 'hard',
+	},
+	{
+		id: 'super-hard-large',
+		label: 'SUPER HARD (L + rotation)',
+		size: 'lg',
+		rotation: true,
+		difficulty: 'super_hard',
+	},
+] as const
+
+export type HexPuzzleRecipe = (typeof HEX_PUZZLE_RECIPES)[number]
 
 export interface HexPuzzle {
 	readonly version: 1
@@ -22,6 +74,18 @@ export interface HexPuzzle {
 	readonly target: Readonly<Record<string, string>>
 	readonly pieces: readonly PuzzlePiece[]
 	readonly solution: PuzzlePlacements
+	readonly rotationAllowed?: boolean
+}
+
+export function rotateCoordinate<T extends AxialCoord>(
+	cell: T,
+	rotation: number,
+): T {
+	let { q, r } = cell
+	for (let step = 0; step < ((rotation % 6) + 6) % 6; step++) {
+		;[q, r] = [-r, q + r]
+	}
+	return { ...cell, q: q === 0 ? 0 : q, r: r === 0 ? 0 : r }
 }
 
 const directions: readonly AxialCoord[] = [
@@ -107,11 +171,14 @@ function partition(
 	return null
 }
 
-// Version 1 fixes the easy recipe at six wedge tiles split into 3 + 2 + 1.
-// Persist the definition, not just the seed, when publishing authored puzzles.
+// Keep the original default recipe reproducible for the player POC.
 export function generateHexPuzzle(
 	seed: string,
 	scheme: ColorScheme,
+	recipe: {
+		readonly size: GridSize
+		readonly rotation: boolean
+	} = HEX_PUZZLE_RECIPES[0],
 ): HexPuzzle {
 	if (!seed.trim()) throw new Error('A puzzle seed is required.')
 	if (
@@ -122,13 +189,16 @@ export function generateHexPuzzle(
 			'A puzzle requires a palette of five six-digit hex colors.',
 		)
 	}
-	const radius = HEXAGON_GRID_RADII.sm
+	const radius = HEXAGON_GRID_RADII[recipe.size]
 	const cells = generateHexagonCells(radius).filter(cell => cell.isClickable)
-	if (cells.length !== 6) {
-		throw new Error('The easy hex puzzle recipe requires six wedge tiles.')
-	}
 	const random = seededRandom(seed)
-	const groups = partition(cells, [3, 2, 1], random)
+	const sizes =
+		recipe.size === 'sm'
+			? [3, 2, 1]
+			: recipe.size === 'md'
+				? [3, 3, 2, 1]
+				: [3, 3, 3, 3, 2, 1, 1]
+	const groups = partition(cells, sizes, random)
 	if (!groups) throw new Error('Unable to partition the hex puzzle wedge.')
 	const target = Object.fromEntries(
 		cells.map(cell => [
@@ -136,18 +206,28 @@ export function generateHexPuzzle(
 			scheme.colors[Math.floor(random() * scheme.colors.length)],
 		]),
 	)
-	const solution: Record<string, AxialCoord> = {}
+	const solution: Record<string, PuzzlePlacement> = {}
 	const pieces = shuffle(groups, random).map((group, index) => {
 		const id = `piece-${index + 1}`
 		const anchor = group[0]
-		solution[id] = { q: anchor.q, r: anchor.r }
+		const rotation = recipe.rotation ? Math.floor(random() * 6) : 0
+		solution[id] = {
+			q: anchor.q,
+			r: anchor.r,
+			...(recipe.rotation ? { rotation: (6 - rotation) % 6 } : {}),
+		}
 		return {
 			id,
-			tiles: group.map(cell => ({
-				q: cell.q - anchor.q,
-				r: cell.r - anchor.r,
-				color: target[coordinateKey(cell)],
-			})),
+			tiles: group.map(cell =>
+				rotateCoordinate(
+					{
+						q: cell.q - anchor.q,
+						r: cell.r - anchor.r,
+						color: target[coordinateKey(cell)],
+					},
+					rotation,
+				),
+			),
 		}
 	})
 	return {
@@ -159,18 +239,18 @@ export function generateHexPuzzle(
 		target,
 		pieces,
 		solution,
+		...(recipe.rotation ? { rotationAllowed: true } : {}),
 	}
 }
 
 export function pieceCells(
 	piece: PuzzlePiece,
-	anchor: AxialCoord,
+	anchor: PuzzlePlacement,
 ): PuzzleTile[] {
-	return piece.tiles.map(tile => ({
-		q: anchor.q + tile.q,
-		r: anchor.r + tile.r,
-		color: tile.color,
-	}))
+	return piece.tiles.map(tile => {
+		const rotated = rotateCoordinate(tile, anchor.rotation ?? 0)
+		return { ...rotated, q: anchor.q + rotated.q, r: anchor.r + rotated.r }
+	})
 }
 
 export function getPuzzleColors(
@@ -194,12 +274,23 @@ export function placePuzzlePiece(
 	puzzle: HexPuzzle,
 	placements: PuzzlePlacements,
 	pieceId: string,
-	anchor: AxialCoord,
+	anchor: PuzzlePlacement,
 ):
 	| { readonly ok: true; readonly placements: PuzzlePlacements }
 	| { readonly ok: false; readonly reason: string } {
 	const piece = puzzle.pieces.find(piece => piece.id === pieceId)
 	if (!piece) return { ok: false, reason: 'Choose a puzzle piece first.' }
+	if (
+		!Number.isInteger(anchor.q) ||
+		!Number.isInteger(anchor.r) ||
+		!Number.isInteger(anchor.rotation ?? 0) ||
+		(!puzzle.rotationAllowed && (anchor.rotation ?? 0) !== 0)
+	) {
+		return {
+			ok: false,
+			reason: 'This placement has an invalid position or rotation.',
+		}
+	}
 	const cells = pieceCells(piece, anchor)
 	if (
 		cells.some(cell => !Object.hasOwn(puzzle.target, coordinateKey(cell)))

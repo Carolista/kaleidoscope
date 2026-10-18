@@ -73,6 +73,20 @@ in [supabase/README.md](./supabase/README.md). Admin sign-in is available at
 `#/admin` after local configuration; the player prototype below remains local
 and unchanged.
 
+The admin **Hexagon puzzle lab** supports all six size/rotation recipes, a visual
+Supabase palette picker, and one-click randomization. The current seed remains
+visible for reference; previously previewed seeds are skipped per recipe during
+the lab session. Saved-puzzle exclusions will follow with draft saving.
+Palette changes recolor the same design without resetting placements.
+
+Click/tap tray pieces to rotate in rotation-enabled recipes; drag to move.
+Double-click/double-tap board pieces or drag back to return them to the tray.
+Keyboard users can rotate/select with Enter/Space, activate a board tile to place,
+and use Delete/Backspace on an occupied tile to return its piece. Square tray
+slots stay fixed through rotation and use one subtle selected border.
+This temporary lab is memory-only: no publishing, saved drafts, player progress,
+or changes to Zen saves. See [Supabase instructions](./supabase/README.md).
+
 The header switch opens a session-only proof of concept; it does not change or
 overwrite saved Zen designs. Pieces may be placed anywhere they fit within the
 six-tile symmetry wedge without overlapping. A puzzle is solved when all six
@@ -83,7 +97,8 @@ visible, with a **Next puzzle** button below the board. Rotation, accounts, rewa
 persistence are not included yet.
 
 Placed pieces are outlined on the board and disabled/desaturated in the tray;
-move them directly from the board or return them to the tray. Mirrored tiles
+move them directly from the board or return them by dragging back or
+double-clicking/double-tapping. Mirrored tiles
 stay muted until completion, when the full design is revealed and piece
 interaction and outlines are removed. Restart makes the board editable again.
 The goal image and uniformly scaled pieces share a compact row above the
@@ -98,8 +113,9 @@ hexagon and connected pieces of one, two, and three tiles; the UI passes the Cab
 palette. Future set/pack authoring can call this pure generator with explicit
 seeds and store the generated definitions. Save the complete versioned
 definition, not just a seed, so a future generator change cannot alter a
-published puzzle. This is not yet an authoring tool or a difficulty/uniqueness
-certifier.
+published puzzle. The admin lab wraps the expanded generator with a version-2
+palette-slot authoring model and private solution metadata. Draft persistence
+is still pending; neither generator certifies difficulty or uniqueness.
 
 ## Working with AI
 
