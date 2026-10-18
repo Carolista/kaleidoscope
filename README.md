@@ -74,10 +74,12 @@ in [supabase/README.md](./supabase/README.md). Admin sign-in is available at
 and unchanged.
 
 The admin **Hexagon puzzle lab** supports all six size/rotation recipes, a visual
-Supabase palette picker, and one-click randomization. The current seed remains
-visible for reference; previously previewed seeds are skipped per recipe during
-the lab session. Saved-puzzle exclusions will follow with draft saving.
+Supabase palette picker, and one-click randomization. Previously previewed seeds
+are skipped per recipe during the lab session; seeds are not displayed.
+Saved-puzzle exclusions will follow with draft saving.
 Palette changes recolor the same design without resetting placements.
+At wider widths, palette controls sit beside recipe/randomize controls; on narrow
+screens they stack. Sign-out sits above the workspace beside the signed-in account.
 
 Click/tap tray pieces to rotate in rotation-enabled recipes; drag to move.
 Double-click/double-tap board pieces or drag back to return them to the tray.

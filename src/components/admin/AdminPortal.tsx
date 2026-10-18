@@ -174,7 +174,18 @@ function AdminSession({
 				</form>
 			) : (
 				<>
-					<p>Signed in as {session.user.email}</p>
+					<div className={styles.sessionBar}>
+						<p>Signed in as {session.user.email}</p>
+						<button
+							type="button"
+							onClick={() => {
+								void signOut()
+							}}
+							disabled={busy}
+						>
+							{busy ? 'Signing out…' : 'Sign out on this device'}
+						</button>
+					</div>
 					{!checkedRole ? (
 						<p role="status">Checking admin access…</p>
 					) : checkedRole.status === 'allowed' ? (
@@ -211,15 +222,6 @@ function AdminSession({
 							</button>
 						</div>
 					)}
-					<button
-						type="button"
-						onClick={() => {
-							void signOut()
-						}}
-						disabled={busy}
-					>
-						{busy ? 'Signing out…' : 'Sign out on this device'}
-					</button>
 				</>
 			)}
 		</>

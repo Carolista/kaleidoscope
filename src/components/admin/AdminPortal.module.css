@@ -1,5 +1,5 @@
 .page {
-	max-width: 42rem;
+	max-width: 44rem;
 	margin: 0 auto;
 	padding: 2rem 1.25rem;
 	background: #fafafa;
@@ -10,6 +10,43 @@
 .form {
 	display: grid;
 	gap: 0.75rem;
+}
+
+.authoringForm {
+	display: grid;
+	gap: 1.25rem;
+}
+
+.paletteControls,
+.recipeControls {
+	display: grid;
+	align-content: start;
+	gap: 0.75rem;
+	min-width: 0;
+}
+
+.recipeControls select {
+	width: 100%;
+	min-width: 0;
+}
+
+.sessionBar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem 1rem;
+}
+
+.rotationHelp {
+	font-size: 0.875rem;
+	line-height: 1.4;
+}
+
+@media (min-width: 640px) {
+	.authoringForm {
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+	}
 }
 
 :where(.page) input,

@@ -129,109 +129,105 @@ export default function PuzzleAuthoring({
 				puzzles are not saved or published.
 			</p>
 			{error && <p role="alert">{error}</p>}
-			<button
-				type="button"
-				disabled={loading}
-				onClick={() => {
-					setLoading(true)
-					setError('')
-					setReload(value => value + 1)
-				}}
-			>
-				Refresh palettes
-			</button>
-			{loading ? (
-				<p role="status">Loading Supabase palettes...</p>
-			) : palettes.length === 0 ? (
-				<p>
-					No palettes available. Add a palette to the catalog before
-					generating.
-				</p>
-			) : (
-				<form onSubmit={generate} className={styles.form}>
-					<fieldset className={styles.palettePicker}>
-						<legend>Palette</legend>
-						<ul className={paletteStyles.list}>
-							{palettes.map(palette => (
-								<li key={palette.id}>
-									<button
-										type="button"
-										className={styles.paletteOption}
-										aria-label={`Select the ${palette.name} color palette`}
-										aria-pressed={
-											selectedPalette?.id === palette.id
-										}
-										onClick={() => {
-											setSelectedPaletteId(palette.id)
-											setGenerated(previous =>
-												previous
-													? {
-															...previous,
-															puzzle: {
-																...previous.puzzle,
-																paletteId:
-																	palette.id,
-															},
-														}
-													: null,
-											)
-										}}
-									>
-										<span
-											className={styles.paletteColors}
-											aria-hidden="true"
+			<form onSubmit={generate} className={styles.authoringForm}>
+				<div className={styles.paletteControls}>
+					<button
+						type="button"
+						disabled={loading}
+						onClick={() => {
+							setLoading(true)
+							setError('')
+							setReload(value => value + 1)
+						}}
+					>
+						Refresh palettes
+					</button>
+					{loading ? (
+						<p role="status">Loading Supabase palettes...</p>
+					) : palettes.length === 0 ? (
+						<p>
+							No palettes available. Add a palette to the catalog
+							before generating.
+						</p>
+					) : (
+						<fieldset className={styles.palettePicker}>
+							<legend>Palette</legend>
+							<ul className={paletteStyles.list}>
+								{palettes.map(palette => (
+									<li key={palette.id}>
+										<button
+											type="button"
+											className={styles.paletteOption}
+											aria-label={`Select the ${palette.name} color palette`}
+											aria-pressed={
+												selectedPalette?.id ===
+												palette.id
+											}
+											onClick={() => {
+												setSelectedPaletteId(palette.id)
+												setGenerated(previous =>
+													previous
+														? {
+																...previous,
+																puzzle: {
+																	...previous.puzzle,
+																	paletteId:
+																		palette.id,
+																},
+															}
+														: null,
+												)
+											}}
 										>
-											{palette.colors.map(
-												(color, index) => (
-													<span
-														key={index}
-														className={
-															paletteStyles.swatch
-														}
-														style={{
-															backgroundColor:
-																color,
-														}}
-													/>
-												),
-											)}
-										</span>
-										<span>{palette.name}</span>
-									</button>
-								</li>
+											<span
+												className={styles.paletteColors}
+												aria-hidden="true"
+											>
+												{palette.colors.map(
+													(color, index) => (
+														<span
+															key={index}
+															className={
+																paletteStyles.swatch
+															}
+															style={{
+																backgroundColor:
+																	color,
+															}}
+														/>
+													),
+												)}
+											</span>
+											<span>{palette.name}</span>
+										</button>
+									</li>
+								))}
+							</ul>
+						</fieldset>
+					)}
+				</div>
+				{!loading && palettes.length > 0 && (
+					<div className={styles.recipeControls}>
+						<label htmlFor="puzzle-recipe">Recipe</label>
+						<select id="puzzle-recipe" name="recipe">
+							{HEX_PUZZLE_RECIPES.map(recipe => (
+								<option key={recipe.id} value={recipe.id}>
+									{recipe.label}
+								</option>
 							))}
-						</ul>
-					</fieldset>
-					<label htmlFor="puzzle-recipe">Recipe</label>
-					<select id="puzzle-recipe" name="recipe">
-						{HEX_PUZZLE_RECIPES.map(recipe => (
-							<option key={recipe.id} value={recipe.id}>
-								{recipe.label}
-							</option>
-						))}
-					</select>
-					<p>
-						Randomize to browse another puzzle. Seeds already
-						previewed for this recipe are skipped until you leave
-						the lab.
-					</p>
-					<button type="submit">Randomize puzzle</button>
-				</form>
-			)}
+						</select>
+						<button type="submit">Randomize puzzle</button>
+					</div>
+				)}
+			</form>
 			{generated && palette && (
 				<div className={styles.playtest}>
-					<h3>{generated.puzzle.recipe.label}</h3>
-					<p>
-						Palette: {palette.name}. Seed: {generated.puzzle.seed}
-					</p>
 					{generated.puzzle.recipe.rotation && (
-						<p>
-							Click or tap a tray piece to rotate it 60 degrees;
-							drag to move it. Double-click or double-tap a board
-							piece to return it to the tray. Keyboard:
-							Enter/Space rotates a tray piece, then activate a
-							board tile to place; Delete/Backspace returns a
-							board piece.
+						<p className={styles.rotationHelp}>
+							Tap tray pieces to rotate; drag to place. Double-tap
+							board pieces to return. Keyboard: Enter/Space
+							rotates, activate a tile to place, Delete/Backspace
+							returns.
 						</p>
 					)}
 					<PuzzleMode

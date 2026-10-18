@@ -23,6 +23,11 @@ slots, with private seed/generator/solution data kept separate. Playtests are
 memory-only: no draft saves, player progress writes, or Zen autosaves.
 See [Supabase instructions](./supabase/README.md) for current scope.
 
+The authoring controls use two columns from 640px: palette refresh/picker on the
+left, recipe/randomize on the right; narrower screens stack them. The preview
+omits repeated recipe/palette labels and the seed. Sign-out sits above the
+workspace beside the signed-in account.
+
 In rotation-enabled playtests, click/tap a tray piece to rotate 60 degrees;
 dragging moves it without rotating. Double-click/double-tap a board piece or drag
 it back to return it to the tray, preserving orientation. Keyboard: Enter/Space

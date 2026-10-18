@@ -51,8 +51,8 @@ changing its seed, layout, or placements.
 | Hard | Medium (9 wedge tiles) | Yes |
 | Super hard | Large (16 wedge tiles) | Yes |
 
-Seeds are generated automatically using browser cryptographic randomness; the
-current seed remains visible for reference, not as a required text input.
+Seeds are generated automatically using browser cryptographic randomness and are
+not displayed or entered manually.
 Already-previewed seeds are skipped per shape/exact recipe for this mounted lab
 session, even when switching palettes or recipes and back. Leaving/reloading the
 lab clears that history. Each randomization starts a fresh playtest.

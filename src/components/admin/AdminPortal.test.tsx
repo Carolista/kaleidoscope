@@ -119,6 +119,16 @@ describe('AdminPortal', () => {
 		).toBeInTheDocument()
 		expect(mocks.from).toHaveBeenCalledWith('admin_account')
 		expect(mocks.from).toHaveBeenCalledWith('palettes')
+		const signOut = screen.getByRole('button', {
+			name: 'Sign out on this device',
+		})
+		const lab = await screen.findByRole('heading', {
+			name: 'Hexagon puzzle lab',
+		})
+		expect(
+			signOut.compareDocumentPosition(lab) &
+				Node.DOCUMENT_POSITION_FOLLOWING,
+		).toBeTruthy()
 	})
 
 	it('denies authenticated non-admin users', async () => {

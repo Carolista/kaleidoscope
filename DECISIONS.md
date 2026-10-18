@@ -64,6 +64,10 @@ Resolve stable ordered slots against current palette colors, including duplicate
 
 Browse using visual palettes and one-click Randomize, not manual seed editing.
 Palette changes recolor the existing layout without resetting placements.
+Group palette refresh/picker separately from recipe/randomize controls, in two
+columns from 640px and stacked below. Avoid repeated preview headings, palette
+names, and displayed seeds; keep compact gesture help and sign-out above the
+workspace.
 Skip previewed seeds by shape/exact recipe for the mounted lab session. Future
 persistent exclusions derive from saved puzzles, not a separate blacklist table;
 deleting an unused draft frees its seed unless another saved row still uses it.

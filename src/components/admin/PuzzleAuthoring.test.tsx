@@ -11,6 +11,7 @@ import {
 	renderAuthoredHexPuzzle,
 } from '../../puzzles/hexAuthoring'
 import PuzzleAuthoring from './PuzzleAuthoring'
+import styles from './AdminPortal.module.css'
 
 const seed = '00000001000000010000000100000001'
 
@@ -65,6 +66,22 @@ function setup(
 }
 
 describe('admin puzzle lab', () => {
+	it('groups palette and refresh controls separately from recipe and randomize controls', async () => {
+		setup()
+		const recipe = await screen.findByLabelText('Recipe')
+		const refresh = screen.getByRole('button', { name: 'Refresh palettes' })
+		const picker = screen.getByRole('group', { name: 'Palette' })
+		const randomize = screen.getByRole('button', {
+			name: 'Randomize puzzle',
+		})
+		expect(refresh.parentElement).toHaveClass(styles.paletteControls)
+		expect(picker.parentElement).toBe(refresh.parentElement)
+		expect(recipe.parentElement).toHaveClass(styles.recipeControls)
+		expect(randomize.parentElement).toBe(recipe.parentElement)
+		expect(recipe.closest('form')).toHaveClass(styles.authoringForm)
+		expect(screen.getByLabelText('Recipe')).toBeVisible()
+	})
+
 	it('shows palette swatches and applies a different palette to the current design', async () => {
 		const second = {
 			...palette,
@@ -107,9 +124,10 @@ describe('admin puzzle lab', () => {
 			.querySelectorAll('polygon')) {
 			expect(cell).toHaveAttribute('fill', '#abcdef')
 		}
+		expect(screen.queryByText(/Seed:/)).not.toBeInTheDocument()
 		expect(
-			screen.getByText(`Palette: Other palette. Seed: ${seed}`),
-		).toBeInTheDocument()
+			screen.queryByRole('heading', { level: 3 }),
+		).not.toBeInTheDocument()
 	})
 
 	it('randomizes repeatedly, skips previewed seeds per recipe, and resets the playtest', async () => {
@@ -119,9 +137,7 @@ describe('admin puzzle lab', () => {
 			name: 'Randomize puzzle',
 		})
 		fireEvent.click(randomize)
-		expect(
-			screen.getByText(`Palette: Test palette. Seed: ${seed}`),
-		).toBeInTheDocument()
+		expect(crypto.getRandomValues).toHaveBeenCalledTimes(1)
 		let attempt = 0
 		vi.mocked(crypto.getRandomValues).mockImplementation(values => {
 			if (!(values instanceof Uint32Array))
@@ -135,11 +151,7 @@ describe('admin puzzle lab', () => {
 		fireEvent.click(firstPiece)
 		fireEvent.click(randomize)
 		expect(attempt).toBe(2)
-		expect(
-			screen.getByText(
-				'Palette: Test palette. Seed: 00000002000000020000000200000002',
-			),
-		).toBeInTheDocument()
+		expect(crypto.getRandomValues).toHaveBeenCalledTimes(3)
 		expect(screen.getByRole('status')).toHaveTextContent('Choose a piece')
 		fireEvent.change(screen.getByLabelText('Recipe'), {
 			target: { value: 'hard-medium' },
@@ -147,12 +159,9 @@ describe('admin puzzle lab', () => {
 		fireEvent.click(randomize)
 		expect(screen.queryByRole('alert')).not.toBeInTheDocument()
 		expect(
-			screen.getByRole('heading', {
-				name: HEX_PUZZLE_RECIPES.find(
-					recipe => recipe.id === 'hard-medium',
-				)!.label,
-			}),
+			screen.getByText(/Tap tray pieces to rotate/),
 		).toBeInTheDocument()
+		expect(screen.getByLabelText('Recipe')).toHaveValue('hard-medium')
 		fireEvent.change(screen.getByLabelText('Recipe'), {
 			target: { value: 'easy-small' },
 		})
@@ -161,11 +170,7 @@ describe('admin puzzle lab', () => {
 			'Unable to generate a fresh puzzle seed',
 		)
 		expect(
-			screen.getByRole('heading', {
-				name: HEX_PUZZLE_RECIPES.find(
-					recipe => recipe.id === 'hard-medium',
-				)!.label,
-			}),
+			screen.getByText(/Tap tray pieces to rotate/),
 		).toBeInTheDocument()
 	})
 
