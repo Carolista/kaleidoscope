@@ -16,6 +16,7 @@
 		"preview": "vite preview"
 	},
 	"dependencies": {
+		"@supabase/supabase-js": "^2.0.0",
 		"@fontsource/mr-dafoe": "^5.3.0",
 		"@fontsource/righteous": "^5.3.0",
 		"@fontsource/urbanist": "^5.3.0",

@@ -9,8 +9,7 @@ import '@fontsource/urbanist/700.css'
 import '@fontsource/mr-dafoe/400.css'
 import '@fontsource/righteous/400.css'
 import './index.css'
-import App from './App.tsx'
-import { AppStateProvider } from './state/AppContext.tsx'
+import AppEntry from './AppEntry.tsx'
 
 // Icons are rendered via <FontAwesomeIcon>, which injects its own <svg>
 // elements directly — importing the CSS above and disabling the library's
@@ -20,8 +19,6 @@ config.autoAddCss = false
 
 createRoot(document.getElementById('root')!).render(
 	<StrictMode>
-		<AppStateProvider>
-			<App />
-		</AppStateProvider>
+		<AppEntry />
 	</StrictMode>,
 )

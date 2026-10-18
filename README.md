@@ -68,6 +68,11 @@ This project has been a chance to build both a creative user experience and the 
 
 ## Puzzle Mode prototype
 
+The upcoming database foundation and Dashboard setup instructions are documented
+in [supabase/README.md](./supabase/README.md). Admin sign-in is available at
+`#/admin` after local configuration; the player prototype below remains local
+and unchanged.
+
 The header switch opens a session-only proof of concept; it does not change or
 overwrite saved Zen designs. Pieces may be placed anywhere they fit within the
 six-tile symmetry wedge without overlapping. A puzzle is solved when all six
