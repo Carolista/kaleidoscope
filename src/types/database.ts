@@ -969,7 +969,22 @@ export type Database = {
 			[_ in never]: never
 		}
 		Functions: {
-			[_ in never]: never
+			save_hex_puzzle_draft: {
+				Args: {
+					p_id: string
+					p_name: string
+					p_usage: string
+					p_palette_id: string
+					p_board_size: string
+					p_rotation_allowed: boolean
+					p_difficulty: string
+					p_definition: Json
+					p_seed: string
+					p_generator_version: string
+					p_known_solution: Json
+				}
+				Returns: string
+			}
 		}
 		Enums: {
 			[_ in never]: never

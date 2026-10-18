@@ -9,6 +9,13 @@ import {
 import { HEX_PUZZLE_RECIPES } from '../../puzzles/hexPuzzle'
 import { createUnusedPuzzleSeed } from '../../puzzles/puzzleSeed'
 import type { Database } from '../../types/database'
+import {
+	loadSavedPuzzleSeeds,
+	puzzleDraftArgs,
+	savePuzzleDraft,
+	type DraftArgs,
+	type PuzzleUsage,
+} from '../../services/puzzleDrafts'
 import paletteStyles from '../controls/color-schemes/SchemePicker.module.css'
 import PuzzleMode from '../puzzle/PuzzleMode'
 import styles from './AdminPortal.module.css'
@@ -28,6 +35,13 @@ export default function PuzzleAuthoring({
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState('')
 	const [reload, setReload] = useState(0)
+	const [busy, setBusy] = useState(false)
+	const working = useRef(false)
+	const [draftName, setDraftName] = useState('')
+	const [usage, setUsage] = useState<PuzzleUsage>('collection')
+	const [saved, setSaved] = useState(false)
+	const [saveMessage, setSaveMessage] = useState('')
+	const pendingSave = useRef<DraftArgs | null>(null)
 	const [selectedPaletteId, setSelectedPaletteId] = useState<string | null>(
 		null,
 	)
@@ -85,8 +99,11 @@ export default function PuzzleAuthoring({
 		}
 	}, [client, reload])
 
-	function generate(event: FormEvent<HTMLFormElement>) {
+	async function generate(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault()
+		if (working.current) return
+		working.current = true
+		setBusy(true)
 		setError('')
 		const form = new FormData(event.currentTarget)
 		const recipe = HEX_PUZZLE_RECIPES.find(
@@ -101,18 +118,65 @@ export default function PuzzleAuthoring({
 					'Choose a recipe and palette before generating.',
 				)
 			const recipeKey = `hexagon:${recipe.id}`
-			const excluded =
-				previewedSeeds.current.get(recipeKey) ?? new Set<string>()
+			const excluded = await loadSavedPuzzleSeeds(client, recipe)
+			for (const seed of previewedSeeds.current.get(recipeKey) ?? []) {
+				excluded.add(seed)
+			}
 			const seed = createUnusedPuzzleSeed(excluded)
 			const puzzle = generateAuthoredHexPuzzle(seed, palette.id, recipe)
-			excluded.add(seed)
-			previewedSeeds.current.set(recipeKey, excluded)
+			const previewed =
+				previewedSeeds.current.get(recipeKey) ?? new Set<string>()
+			previewed.add(seed)
+			previewedSeeds.current.set(recipeKey, previewed)
+			setSaved(false)
+			setSaveMessage('')
+			setDraftName('')
+			pendingSave.current = null
 			setGenerated(previous => ({
 				puzzle,
 				run: (previous?.run ?? 0) + 1,
 			}))
 		} catch (cause) {
 			setError(messageFor(cause))
+		} finally {
+			working.current = false
+			setBusy(false)
+		}
+	}
+
+	async function save(event: FormEvent<HTMLFormElement>) {
+		event.preventDefault()
+		if (working.current || saved || !generated) return
+		setError('')
+		if (!draftName.trim()) {
+			setError('Enter a name for the puzzle draft.')
+			return
+		}
+		working.current = true
+		setBusy(true)
+		try {
+			const previous = pendingSave.current
+			const args = puzzleDraftArgs(
+				previous?.p_id ?? crypto.randomUUID(),
+				draftName,
+				usage,
+				generated.puzzle,
+			)
+			// Retain the request ID after a failed response so retrying is idempotent.
+			if (previous && JSON.stringify(previous) !== JSON.stringify(args)) {
+				args.p_id = crypto.randomUUID()
+			}
+			pendingSave.current = args
+			await savePuzzleDraft(client, args)
+			setSaved(true)
+			setSaveMessage(
+				`Saved "${args.p_name}" as an unpublished ${usage === 'daily' ? 'daily' : 'set/pack'} draft. Randomize to create another draft.`,
+			)
+		} catch (cause) {
+			setError(messageFor(cause))
+		} finally {
+			working.current = false
+			setBusy(false)
 		}
 	}
 
@@ -125,15 +189,15 @@ export default function PuzzleAuthoring({
 		<section aria-labelledby="puzzle-authoring-title">
 			<h2 id="puzzle-authoring-title">Hexagon puzzle lab</h2>
 			<p>
-				Generate and playtest all six recipes. This lab is temporary:
-				puzzles are not saved or published.
+				Generate and playtest all six recipes, then save designs as
+				unpublished drafts.
 			</p>
 			{error && <p role="alert">{error}</p>}
 			<form onSubmit={generate} className={styles.authoringForm}>
 				<div className={styles.paletteControls}>
 					<button
 						type="button"
-						disabled={loading}
+						disabled={loading || busy}
 						onClick={() => {
 							setLoading(true)
 							setError('')
@@ -157,6 +221,7 @@ export default function PuzzleAuthoring({
 									<li key={palette.id}>
 										<button
 											type="button"
+											disabled={busy || saved}
 											className={styles.paletteOption}
 											aria-label={`Select the ${palette.name} color palette`}
 											aria-pressed={
@@ -165,6 +230,7 @@ export default function PuzzleAuthoring({
 											}
 											onClick={() => {
 												setSelectedPaletteId(palette.id)
+												setSaveMessage('')
 												setGenerated(previous =>
 													previous
 														? {
@@ -209,19 +275,60 @@ export default function PuzzleAuthoring({
 				{!loading && palettes.length > 0 && (
 					<div className={styles.recipeControls}>
 						<label htmlFor="puzzle-recipe">Recipe</label>
-						<select id="puzzle-recipe" name="recipe">
+						<select
+							id="puzzle-recipe"
+							name="recipe"
+							disabled={busy}
+						>
 							{HEX_PUZZLE_RECIPES.map(recipe => (
 								<option key={recipe.id} value={recipe.id}>
 									{recipe.label}
 								</option>
 							))}
 						</select>
-						<button type="submit">Randomize puzzle</button>
+						<button type="submit" disabled={busy}>
+							Randomize puzzle
+						</button>
 					</div>
 				)}
 			</form>
 			{generated && palette && (
 				<div className={styles.playtest}>
+					<form
+						onSubmit={save}
+						className={styles.form}
+						aria-label="Save puzzle draft"
+					>
+						<label htmlFor="draft-name">Puzzle name</label>
+						<input
+							id="draft-name"
+							value={draftName}
+							required
+							disabled={busy || saved}
+							onChange={event => setDraftName(event.target.value)}
+						/>
+						<label htmlFor="draft-usage">Intended use</label>
+						<select
+							id="draft-usage"
+							value={usage}
+							disabled={busy || saved}
+							onChange={event => {
+								const value = event.target.value
+								if (value === 'collection' || value === 'daily')
+									setUsage(value)
+							}}
+						>
+							<option value="collection">Set/pack</option>
+							<option value="daily">Daily</option>
+						</select>
+						<button
+							type="submit"
+							disabled={busy || saved || loading}
+						>
+							Save draft
+						</button>
+					</form>
+					{saveMessage && <p role="status">{saveMessage}</p>}
 					{generated.puzzle.recipe.rotation && (
 						<p className={styles.rotationHelp}>
 							Tap tray pieces to rotate; drag to place. Double-tap

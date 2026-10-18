@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import {
+	fireEvent,
+	render,
+	screen,
+	within,
+	waitFor,
+} from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getSupabaseClient } from '../../services/supabaseClient'
 import {
@@ -20,9 +26,13 @@ const palette = {
 	name: 'Test palette',
 	colors: ['#112233', '#223344', '#334455', '#445566', '#556677'] as const,
 }
-const mocks = vi.hoisted(() => ({ from: vi.fn() }))
+const mocks = vi.hoisted(() => ({
+	from: vi.fn(),
+	rpc: vi.fn(),
+	seeds: vi.fn(),
+}))
 vi.mock('../../services/supabaseClient', () => ({
-	getSupabaseClient: () => ({ from: mocks.from }),
+	getSupabaseClient: () => ({ from: mocks.from, rpc: mocks.rpc }),
 }))
 
 const originalHitTest = Object.getOwnPropertyDescriptor(
@@ -60,12 +70,177 @@ function setup(
 		return values
 	})
 	const order = vi.fn().mockResolvedValue(result)
-	mocks.from.mockReset().mockReturnValue({ select: () => ({ order }) })
+	mocks.seeds.mockReset().mockResolvedValue({ data: [], error: null })
+	mocks.rpc
+		.mockReset()
+		.mockImplementation((_name, args) =>
+			Promise.resolve({ data: args.p_id, error: null }),
+		)
+	mocks.from.mockReset().mockImplementation((table: string) => {
+		if (table === 'palettes') return { select: () => ({ order }) }
+		const query = {
+			eq: vi.fn().mockReturnThis(),
+			order: vi.fn().mockReturnThis(),
+			range: mocks.seeds,
+		}
+		return { select: () => query }
+	})
 	const view = render(<PuzzleAuthoring client={getSupabaseClient()} />)
 	return { ...view, order }
 }
 
+async function randomize() {
+	const button = screen.getByRole('button', { name: 'Randomize puzzle' })
+	fireEvent.click(button)
+	await waitFor(() => expect(button).toBeEnabled())
+}
+
 describe('admin puzzle lab', () => {
+	it.each(['collection', 'daily'] as const)(
+		'saves the exact preview as an unpublished %s draft without saving playtest placements',
+		async usage => {
+			setup()
+			await screen.findByLabelText('Recipe')
+			await randomize()
+			fireEvent.change(screen.getByLabelText('Puzzle name'), {
+				target: { value: '  Sunset  ' },
+			})
+			fireEvent.change(screen.getByLabelText('Intended use'), {
+				target: { value: usage },
+			})
+			fireEvent.click(
+				screen.getByRole('button', { name: /^Select piece 1,/ }),
+			)
+			fireEvent.click(screen.getByRole('button', { name: 'Save draft' }))
+			await screen.findByText(/Saved "Sunset"/)
+			const puzzle = generateAuthoredHexPuzzle(
+				seed,
+				palette.id,
+				HEX_PUZZLE_RECIPES[0],
+			)
+			expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith(
+				'save_hex_puzzle_draft',
+				{
+					p_id: expect.any(String),
+					p_name: 'Sunset',
+					p_usage: usage,
+					p_palette_id: palette.id,
+					p_board_size: 'sm',
+					p_rotation_allowed: false,
+					p_difficulty: 'easy',
+					p_definition: puzzle.definition,
+					p_seed: seed,
+					p_generator_version: 'hexagon-v2',
+					p_known_solution: puzzle.knownSolution,
+				},
+			)
+			expect(
+				screen.getByRole('button', { name: 'Save draft' }),
+			).toBeDisabled()
+			expect(screen.getByLabelText('Puzzle name')).toBeDisabled()
+		},
+	)
+
+	it('preserves the preview and retries a failed save with the same request ID', async () => {
+		setup()
+		mocks.rpc.mockResolvedValueOnce({
+			data: null,
+			error: { message: 'Connection lost' },
+		})
+		await screen.findByLabelText('Recipe')
+		await randomize()
+		const target = screen.getByRole('img', { name: 'Target design' })
+		fireEvent.change(screen.getByLabelText('Puzzle name'), {
+			target: { value: 'Retry me' },
+		})
+		const save = screen.getByRole('button', { name: 'Save draft' })
+		fireEvent.click(save)
+		fireEvent.submit(save.closest('form')!)
+		expect(await screen.findByRole('alert')).toHaveTextContent(
+			'Connection lost',
+		)
+		expect(mocks.rpc).toHaveBeenCalledTimes(1)
+		expect(target).toBeInTheDocument()
+		expect(save).toBeEnabled()
+		fireEvent.click(save)
+		await screen.findByText(/Saved "Retry me"/)
+		expect(mocks.rpc.mock.calls[1][1]).toEqual(mocks.rpc.mock.calls[0][1])
+	})
+
+	it('does not generate when saved-seed lookup fails, and skips saved seeds after recovery', async () => {
+		setup()
+		await screen.findByLabelText('Recipe')
+		mocks.seeds.mockResolvedValueOnce({
+			data: null,
+			error: { message: 'Offline' },
+		})
+		await randomize()
+		expect(screen.getByRole('alert')).toHaveTextContent(
+			'Unable to check saved puzzle seeds: Offline',
+		)
+		expect(crypto.getRandomValues).not.toHaveBeenCalled()
+		mocks.seeds.mockResolvedValue({ data: [{ seed }], error: null })
+		let attempt = 0
+		vi.mocked(crypto.getRandomValues).mockImplementation(values => {
+			if (!(values instanceof Uint32Array))
+				throw new Error('Expected seed words')
+			values.fill(attempt++ === 0 ? 1 : 2)
+			return values
+		})
+		await randomize()
+		expect(attempt).toBe(2)
+		expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+	})
+
+	it('rejects blank names and saves the preview recipe and palette rather than an ungenerated recipe selection', async () => {
+		const second = { ...palette, id: 'other', name: 'Other palette' }
+		setup({
+			data: [palette, second].map(value => ({
+				...value,
+				colors: [...value.colors],
+			})),
+			error: null,
+		})
+		await screen.findByLabelText('Recipe')
+		await randomize()
+		fireEvent.click(
+			screen.getByRole('button', {
+				name: 'Select the Other palette color palette',
+			}),
+		)
+		fireEvent.change(screen.getByLabelText('Recipe'), {
+			target: { value: 'super-hard-large' },
+		})
+		fireEvent.change(screen.getByLabelText('Puzzle name'), {
+			target: { value: '   ' },
+		})
+		const save = screen.getByRole('button', { name: 'Save draft' })
+		fireEvent.click(save)
+		expect(screen.getByRole('alert')).toHaveTextContent('Enter a name')
+		expect(mocks.rpc).not.toHaveBeenCalled()
+		fireEvent.change(screen.getByLabelText('Puzzle name'), {
+			target: { value: 'Recolored' },
+		})
+		fireEvent.click(save)
+		await screen.findByText(/Saved "Recolored"/)
+		expect(mocks.rpc.mock.calls[0][1]).toMatchObject({
+			p_palette_id: 'other',
+			p_board_size: 'sm',
+			p_difficulty: 'easy',
+			p_rotation_allowed: false,
+		})
+		vi.mocked(crypto.getRandomValues).mockImplementation(values => {
+			if (!(values instanceof Uint32Array))
+				throw new Error('Expected seed words')
+			values.fill(2)
+			return values
+		})
+		await randomize()
+		expect(screen.getByLabelText('Puzzle name')).toHaveValue('')
+		expect(save).toBeEnabled()
+		expect(screen.queryByText(/Saved "Recolored"/)).not.toBeInTheDocument()
+	})
+
 	it('groups palette and refresh controls separately from recipe and randomize controls', async () => {
 		setup()
 		const recipe = await screen.findByLabelText('Recipe')
@@ -110,9 +285,7 @@ describe('admin puzzle lab', () => {
 		expect(
 			screen.queryByRole('textbox', { name: 'Seed' }),
 		).not.toBeInTheDocument()
-		fireEvent.click(
-			screen.getByRole('button', { name: 'Randomize puzzle' }),
-		)
+		await randomize()
 		const secondButton = screen.getByRole('button', {
 			name: 'Select the Other palette color palette',
 		})
@@ -137,6 +310,7 @@ describe('admin puzzle lab', () => {
 			name: 'Randomize puzzle',
 		})
 		fireEvent.click(randomize)
+		await waitFor(() => expect(randomize).toBeEnabled())
 		expect(crypto.getRandomValues).toHaveBeenCalledTimes(1)
 		let attempt = 0
 		vi.mocked(crypto.getRandomValues).mockImplementation(values => {
@@ -150,6 +324,7 @@ describe('admin puzzle lab', () => {
 		})
 		fireEvent.click(firstPiece)
 		fireEvent.click(randomize)
+		await waitFor(() => expect(randomize).toBeEnabled())
 		expect(attempt).toBe(2)
 		expect(crypto.getRandomValues).toHaveBeenCalledTimes(3)
 		expect(screen.getByRole('status')).toHaveTextContent('Choose a piece')
@@ -157,6 +332,7 @@ describe('admin puzzle lab', () => {
 			target: { value: 'hard-medium' },
 		})
 		fireEvent.click(randomize)
+		await waitFor(() => expect(randomize).toBeEnabled())
 		expect(screen.queryByRole('alert')).not.toBeInTheDocument()
 		expect(
 			screen.getByText(/Tap tray pieces to rotate/),
@@ -166,6 +342,7 @@ describe('admin puzzle lab', () => {
 			target: { value: 'easy-small' },
 		})
 		fireEvent.click(randomize)
+		await waitFor(() => expect(randomize).toBeEnabled())
 		expect(screen.getByRole('alert')).toHaveTextContent(
 			'Unable to generate a fresh puzzle seed',
 		)
@@ -183,11 +360,7 @@ describe('admin puzzle lab', () => {
 			fireEvent.change(await screen.findByLabelText('Recipe'), {
 				target: { value: recipe.id },
 			})
-			fireEvent.click(
-				screen.getByRole('button', {
-					name: 'Randomize puzzle',
-				}),
-			)
+			await randomize()
 			const puzzle = renderAuthoredHexPuzzle(
 				generateAuthoredHexPuzzle(seed, palette.id, recipe),
 				palette,
@@ -218,9 +391,7 @@ describe('admin puzzle lab', () => {
 				screen.queryByRole('button', { name: 'Next puzzle' }),
 			).not.toBeInTheDocument()
 			expect(write).not.toHaveBeenCalled()
-			expect(
-				mocks.from.mock.calls.every(([table]) => table === 'palettes'),
-			).toBe(true)
+			expect(mocks.rpc).not.toHaveBeenCalled()
 			fireEvent.click(screen.getByRole('button', { name: 'Restart' }))
 			expect(
 				within(
@@ -255,9 +426,7 @@ describe('admin puzzle lab', () => {
 	it('refreshes palette colors without changing the layout or resetting placements', async () => {
 		const { order } = setup()
 		await screen.findByLabelText('Recipe')
-		fireEvent.click(
-			screen.getByRole('button', { name: 'Randomize puzzle' }),
-		)
+		await randomize()
 		const puzzle = renderAuthoredHexPuzzle(
 			generateAuthoredHexPuzzle(seed, palette.id, HEX_PUZZLE_RECIPES[0]),
 			palette,
@@ -297,9 +466,7 @@ describe('admin puzzle lab', () => {
 		fireEvent.change(await screen.findByLabelText('Recipe'), {
 			target: { value: 'hard-medium' },
 		})
-		fireEvent.click(
-			screen.getByRole('button', { name: 'Randomize puzzle' }),
-		)
+		await randomize()
 		const puzzle = renderAuthoredHexPuzzle(
 			generateAuthoredHexPuzzle(
 				seed,

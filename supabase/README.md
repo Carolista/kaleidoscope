@@ -79,22 +79,32 @@ their stable palette ID and ordered color slots against that result, so correcti
 update targets and pieces together without changing placement/layout. Failed reads
 show an error instead of silently falling back to the local player catalog.
 
-This milestone is an in-memory lab, not a saved draft library. Reloading or signing
-out discards generated puzzles and playtests. No database writes, player attempts,
-completions, reward grants, guest imports, or Zen autosaves occur. Atomic draft
-save/library/set/reward tools are the next authoring milestone.
+After generating, enter a **Puzzle name**, choose **Intended use** (Set/pack or
+Daily), and press **Save draft**. Apply the draft-saving migration below first.
+The save atomically creates an unpublished, unassigned puzzle and its private
+authoring record; it does not save playtest placements. A successful save locks
+the draft fields and palette until the next randomization. Repeated clicks are
+blocked while saving, and retrying an unchanged failed request reuses its ID.
+Errors preserve the preview and form values.
 
-When draft saving is added, saved puzzle/authoring records will also supply the
-persistent excluded seeds keyed by shape and exact size/rotation recipe,
-independent of palette. No separate blacklist table is planned: saving reserves
-the seed, and deleting an unused draft frees it (unless another saved puzzle
-still uses that seed/recipe). Persistent exclusions are not implemented in this
-memory-only milestone.
+Every randomization checks saved puzzle/authoring rows for excluded seeds keyed
+by shape and exact size/rotation recipe, independent of palette or intended use.
+No separate blacklist table is used. Deleting the last unused saved puzzle for a
+seed/recipe removes its persistent exclusion; mounted-session preview history
+still applies until leaving/reloading the lab. A failed seed read blocks
+randomization with an error rather than silently ignoring saved puzzles.
+
+Saved drafts survive reload/sign-out, but unsaved previews and playtest placements
+do not. The draft library, reopening/editing/deleting UI, sets, rewards, and release
+tools follow separately. Unassigned unpublished drafts can later switch intended
+use; existing references must be removed before switching assigned content, and
+live puzzles remain immutable. No player attempts, completions, reward grants,
+guest imports, or Zen autosaves are written.
 
 The authoring model separates the version-2 slot-based public definition
 (`version`, `geometry`, `target`, `pieces`) from palette/recipe metadata and private
-seed, generator version, and known solution. Persist the full definition when
-saving is added, not just its seed. The legacy player POC's default easy recipe
+seed, generator version, and known solution. Saving persists the full definition,
+not just its seed. The legacy player POC's default easy recipe
 and rendering adapter remain compatible; it is not switched to live content yet.
 
 The lazy-loaded admin route does not initialize Supabase for normal player
@@ -216,6 +226,31 @@ committed dependencies; stale-snapshot isolation modes are explicitly rejected.
 Keep authoring transactions short and surface database failures in the portal.
 The deferred global dependency checks prioritize consistency over bulk-write
 throughput; revisit only if real catalog size makes authoring slow.
+
+## Apply atomic draft saving
+
+For projects that already applied both existing migrations:
+
+1. Open a new Supabase **SQL Editor** query.
+2. Paste the complete contents of
+   [20261018020000_save_puzzle_draft.sql](./migrations/20261018020000_save_puzzle_draft.sql)
+   and run once as the database owner (`postgres`). Do not rerun the initial
+   schema or pre-release editing migration.
+3. In another query, run
+   [save_puzzle_draft.sql](./tests/save_puzzle_draft.sql) as the database owner,
+   without an automatic RLS-role wrapper. It creates rollback-only fixtures and
+   explicitly switches to `anon`/`authenticated` to check access. All 12 assertions
+   should return `PASS`; the final `rollback` removes the fixtures.
+4. In the admin lab, randomize, name a puzzle, select its intended use, and save.
+   Confirm the unpublished-draft success message. The library UI is not available
+   yet, so saved rows currently appear in Dashboard Table Editor under `puzzles`
+   and `puzzle_authoring`.
+
+This migration adds one `save_hex_puzzle_draft` RPC, no tables or player write
+permissions. It uses caller RLS plus an explicit admin check, the existing catalog
+transaction lock, and one transaction for both rows. Identical retries return the
+same ID; a different payload cannot overwrite an existing ID. Updated TypeScript
+types include the RPC signature.
 
 ## Bootstrap the one admin
 
