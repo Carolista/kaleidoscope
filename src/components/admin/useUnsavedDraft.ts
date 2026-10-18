@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 
 export function confirmDiscardDraft(): boolean {
-	return window.confirm('Discard unsaved puzzle changes?')
+	return window.confirm('Discard unsaved admin changes?')
 }
 
 export default function useUnsavedDraft(

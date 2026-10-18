@@ -81,7 +81,20 @@ function setup(
 			Promise.resolve({ data: args.p_id, error: null }),
 		)
 	mocks.from.mockReset().mockImplementation((table: string) => {
-		if (table === 'palettes') return { select: () => ({ order }) }
+		if (table === 'palettes')
+			return { select: () => ({ order: () => ({ range: order }) }) }
+		if (
+			[
+				'starter_palettes',
+				'palette_grants',
+				'palette_corrections',
+			].includes(table)
+		)
+			return {
+				select: () => ({
+					eq: () => Promise.resolve({ count: 0, error: null }),
+				}),
+			}
 		const query = {
 			eq: vi.fn().mockReturnThis(),
 			order: vi.fn().mockReturnThis(),
@@ -102,6 +115,62 @@ async function randomize() {
 }
 
 describe('admin puzzle lab', () => {
+	it('opens palette management from the library and refreshes authoring swatches after a palette save', async () => {
+		const row = {
+			...palette,
+			colors: [...palette.colors],
+			revision: 1,
+			published_at: null,
+			release_at: null,
+		}
+		const { order } = setup({ data: [row], error: null }, false)
+		fireEvent.click(screen.getByRole('button', { name: 'Manage palettes' }))
+		fireEvent.click(
+			await screen.findByRole('button', { name: 'Edit Test palette' }),
+		)
+		await screen.findByText(/No saved references/)
+		fireEvent.change(screen.getByLabelText('Palette name'), {
+			target: { value: 'Revised palette' },
+		})
+		fireEvent.change(screen.getByLabelText('Color 1'), {
+			target: { value: '#abcdef' },
+		})
+		const updated = {
+			...row,
+			name: 'Revised palette',
+			revision: 2,
+			colors: ['#abcdef', ...row.colors.slice(1)],
+		}
+		order.mockResolvedValue({ data: [updated], error: null })
+		fireEvent.click(screen.getByRole('button', { name: 'Save palette' }))
+		await screen.findByText('Saved "Revised palette" as a draft palette.')
+		expect(mocks.rpc).toHaveBeenCalledWith('manage_palette_draft', {
+			p_id: row.id,
+			p_action: 'update',
+			p_name: 'Revised palette',
+			p_colors: updated.colors,
+			p_expected_name: row.name,
+			p_expected_colors: row.colors,
+			p_expected_revision: 1,
+		})
+		fireEvent.click(screen.getByRole('button', { name: 'Back to puzzles' }))
+		fireEvent.click(
+			await screen.findByRole('button', { name: 'New puzzle' }),
+		)
+		const option = await screen.findByRole('button', {
+			name: 'Select the Revised palette color palette',
+		})
+		expect(option.querySelector('[style]')).toHaveStyle({
+			backgroundColor: '#abcdef',
+		})
+		expect(
+			screen.queryByRole('button', {
+				name: 'Select the Test palette color palette',
+			}),
+		).not.toBeInTheDocument()
+		expect(mocks.rpc).toHaveBeenCalledTimes(1)
+	})
+
 	it('keeps a revised name for the next puzzle without renaming or resaving the saved preview', async () => {
 		setup()
 		await screen.findByRole('button', {
@@ -460,6 +529,7 @@ describe('admin puzzle lab', () => {
 		const firstButton = await screen.findByRole('button', {
 			name: 'Select the Test palette color palette',
 		})
+		fireEvent.click(firstButton)
 		expect(firstButton).toHaveAttribute('aria-pressed', 'true')
 		const swatches = firstButton.querySelectorAll('[style]')
 		expect(swatches).toHaveLength(5)

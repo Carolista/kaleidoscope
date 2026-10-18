@@ -115,6 +115,7 @@ export function PieceGraphic({
 }
 
 interface HexPuzzleBoardProps {
+	readonly label?: string
 	readonly radius: number
 	readonly colors: Readonly<Record<string, string>>
 	readonly target?: boolean
@@ -132,6 +133,7 @@ interface HexPuzzleBoardProps {
 }
 
 export default function HexPuzzleBoard({
+	label,
 	radius,
 	colors,
 	target = false,
@@ -160,7 +162,7 @@ export default function HexPuzzleBoard({
 			viewBox={viewBoxFor(cells)}
 			className={styles.gridGraphic}
 			role={target ? 'img' : 'group'}
-			aria-label={target ? 'Target design' : 'Puzzle board'}
+			aria-label={label ?? (target ? 'Target design' : 'Puzzle board')}
 		>
 			{cells.map(cell => {
 				const interactive = cell.isClickable && !target && !solved

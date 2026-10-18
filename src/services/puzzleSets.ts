@@ -3,6 +3,7 @@ import type { Database, Tables } from '../types/database'
 import type { HexPuzzle } from '../puzzles/hexPuzzle'
 import { readAuthoredHexPuzzle } from '../puzzles/readAuthoredHexPuzzle'
 import { renderAuthoredHexPuzzle } from '../puzzles/hexAuthoring'
+import { readColorScheme } from './colorSchemes'
 
 export type SetKind = 'core' | 'reward' | 'paid'
 export interface DraftSet {
@@ -84,27 +85,13 @@ export async function loadDraftSets(
 					throw new Error(
 						'The set preview or its palette is unavailable.',
 					)
-				const palette = result.data.palettes
-				const [a, b, c, d, e] = palette.colors
-				if (
-					palette.colors.length !== 5 ||
-					!a ||
-					!b ||
-					!c ||
-					!d ||
-					!e ||
-					palette.colors.some(color => !/^#[0-9a-f]{6}$/i.test(color))
-				) {
-					throw new Error(
-						`Palette "${palette.name}" must contain five six-digit hex colors.`,
-					)
-				}
+				const palette = readColorScheme(result.data.palettes)
 				const preview = renderAuthoredHexPuzzle(
 					readAuthoredHexPuzzle(
 						result.data,
 						result.data.puzzle_authoring,
 					),
-					{ ...palette, colors: [a, b, c, d, e] },
+					palette,
 				)
 				members[index] = { ...member, preview }
 			}

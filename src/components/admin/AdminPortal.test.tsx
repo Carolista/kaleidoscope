@@ -53,7 +53,9 @@ beforeEach(() => {
 	mocks.from.mockImplementation((table: string) =>
 		table === 'palettes'
 			? {
-					select: () => ({ order: mocks.palettes }),
+					select: () => ({
+						order: () => ({ range: mocks.palettes }),
+					}),
 				}
 			: {
 					select: () => ({
@@ -78,6 +80,47 @@ beforeEach(() => {
 })
 
 describe('AdminPortal', () => {
+	it('guards sign-out with unsaved palette edits and keeps the sandbox stable on theme changes', async () => {
+		mocks.getSession.mockResolvedValue({
+			data: { session: session() },
+			error: null,
+		})
+		render(<AdminPortal />)
+		fireEvent.click(
+			await screen.findByRole('button', { name: 'Manage palettes' }),
+		)
+		fireEvent.click(
+			await screen.findByRole('button', { name: 'New palette' }),
+		)
+		fireEvent.change(screen.getByLabelText('Palette name'), {
+			target: { value: 'Unsaved palette' },
+		})
+		const preview = screen.getByRole('img', {
+			name: 'Palette sandbox design',
+		}).innerHTML
+		fireEvent.click(
+			screen.getByRole('button', { name: 'Switch to light mode' }),
+		)
+		expect(
+			screen.getByRole('img', { name: 'Palette sandbox design' })
+				.innerHTML,
+		).toBe(preview)
+		const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+		fireEvent.click(
+			screen.getByRole('button', { name: 'Sign out on this device' }),
+		)
+		expect(confirm).toHaveBeenCalledWith('Discard unsaved admin changes?')
+		expect(mocks.signOut).not.toHaveBeenCalled()
+		expect(screen.getByLabelText('Palette name')).toHaveValue(
+			'Unsaved palette',
+		)
+		confirm.mockReturnValue(true)
+		fireEvent.click(
+			screen.getByRole('button', { name: 'Sign out on this device' }),
+		)
+		await screen.findByRole('button', { name: 'Sign in' })
+	})
+
 	it('defaults to dark mode and toggles the admin theme without changing player state', () => {
 		const write = vi.spyOn(Storage.prototype, 'setItem')
 		render(<AdminPortal />)

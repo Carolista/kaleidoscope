@@ -20,6 +20,26 @@ function slot(value: Json | undefined): 0 | 1 | 2 | 3 | 4 {
 	return value
 }
 
+export function readHexPuzzleTarget(definition: Json): {
+	readonly radius: number
+	readonly target: HexPuzzleDefinition['target']
+} {
+	const source = object(definition)
+	const radius = integer(object(source.geometry).radius)
+	if (source.version !== 2 || ![3, 4, 6].includes(radius))
+		throw new Error('Unsupported saved puzzle target.')
+	const target = Object.fromEntries(
+		Object.entries(object(source.target)).map(([key, value]) => {
+			if (!/^-?\d+,-?\d+$/.test(key))
+				throw new Error('Invalid puzzle target coordinate.')
+			return [key, slot(value)]
+		}),
+	)
+	if (!Object.keys(target).length)
+		throw new Error('Saved puzzle has an empty target.')
+	return { radius, target }
+}
+
 export function readAuthoredHexPuzzle(
 	row: Tables<'puzzles'>,
 	authoring: Tables<'puzzle_authoring'> | null,
@@ -39,8 +59,7 @@ export function readAuthoredHexPuzzle(
 			`Puzzle "${row.name}" uses an unsupported generator version.`,
 		)
 	const source = object(row.definition)
-	const geometry = object(source.geometry)
-	const radius = integer(geometry.radius)
+	const { radius, target } = readHexPuzzleTarget(row.definition)
 	const expectedRadius = { sm: 3, md: 4, lg: 6 }[recipe.size]
 	if (
 		source.version !== 2 ||
@@ -48,13 +67,6 @@ export function readAuthoredHexPuzzle(
 		!Array.isArray(source.pieces)
 	)
 		throw new Error(`Puzzle "${row.name}" has an unsupported definition.`)
-	const target = Object.fromEntries(
-		Object.entries(object(source.target)).map(([key, value]) => {
-			if (!/^-?\d+,-?\d+$/.test(key))
-				throw new Error('Invalid puzzle target coordinate.')
-			return [key, slot(value)]
-		}),
-	)
 	const pieces: HexPuzzleDefinition['pieces'] = source.pieces.map(value => {
 		const piece = object(value)
 		if (

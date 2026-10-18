@@ -14,7 +14,7 @@ export default function AppEntry() {
 				admin &&
 				!nextAdmin &&
 				adminDirty &&
-				!window.confirm('Discard unsaved puzzle changes?')
+				!window.confirm('Discard unsaved admin changes?')
 			) {
 				window.history.replaceState(null, '', event.oldURL)
 				return

@@ -21,6 +21,8 @@ import useUnsavedDraft, { confirmDiscardDraft } from './useUnsavedDraft'
 import { faSquareArrowLeft } from '@fortawesome/pro-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import PuzzleDraftForm from './PuzzleDraftForm'
+import { loadColorSchemes } from '../../services/colorSchemes'
+import SchemeLibrary from './SchemeLibrary'
 
 function messageFor(cause: unknown): string {
 	return cause instanceof Error
@@ -41,6 +43,7 @@ export default function PuzzleAuthoring({
 	const [reload, setReload] = useState(0)
 	const [libraryRevision, setLibraryRevision] = useState(0)
 	const [creating, setCreating] = useState(false)
+	const [managingSchemes, setManagingSchemes] = useState(false)
 	const [busy, setBusy] = useState(false)
 	const working = useRef(false)
 	const [draftName, setDraftName] = useState('')
@@ -69,34 +72,7 @@ export default function PuzzleAuthoring({
 		let active = true
 		async function load() {
 			try {
-				const { data, error } = await client
-					.from('palettes')
-					.select('id, name, colors')
-					.order('name')
-				if (error) throw new Error(error.message)
-				if (!data)
-					throw new Error('The palette catalog returned no data.')
-				const next = data.map(row => {
-					const [a, b, c, d, e] = row.colors
-					if (
-						row.colors.length !== 5 ||
-						!a ||
-						!b ||
-						!c ||
-						!d ||
-						!e ||
-						row.colors.some(color => !/^#[0-9a-f]{6}$/i.test(color))
-					) {
-						throw new Error(
-							`Palette "${row.name}" must contain five six-digit hex colors.`,
-						)
-					}
-					return {
-						id: row.id,
-						name: row.name,
-						colors: [a, b, c, d, e] as const,
-					}
-				})
+				const next = await loadColorSchemes(client)
 				if (active) setPalettes(next)
 			} catch (cause) {
 				if (active) {
@@ -192,6 +168,21 @@ export default function PuzzleAuthoring({
 	)
 	const selectedPalette =
 		palettes.find(value => value.id === selectedPaletteId) ?? palettes[0]
+	if (managingSchemes) {
+		return (
+			<SchemeLibrary
+				client={client}
+				onDirtyChange={onDirtyChange}
+				onBack={() => {
+					setManagingSchemes(false)
+					setLoading(true)
+					setError('')
+					setReload(value => value + 1)
+					setLibraryRevision(value => value + 1)
+				}}
+			/>
+		)
+	}
 	if (!creating) {
 		return (
 			<>
@@ -201,6 +192,7 @@ export default function PuzzleAuthoring({
 					client={client}
 					palettes={palettes}
 					revision={libraryRevision}
+					onManagePalettes={() => setManagingSchemes(true)}
 					onNew={() => {
 						setGenerated(null)
 						setRecipeId(HEX_PUZZLE_RECIPES[0].id)

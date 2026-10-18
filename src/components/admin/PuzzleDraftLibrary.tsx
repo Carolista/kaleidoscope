@@ -329,6 +329,7 @@ export default function PuzzleDraftLibrary({
 	palettes,
 	revision,
 	onNew,
+	onManagePalettes,
 	onDirtyChange,
 	onRefreshPalettes,
 	palettesLoading,
@@ -337,6 +338,7 @@ export default function PuzzleDraftLibrary({
 	readonly palettes: readonly AuthoringPalette[]
 	readonly revision: number
 	readonly onNew?: () => void
+	readonly onManagePalettes?: () => void
 	readonly onDirtyChange?: (dirty: boolean) => void
 	readonly onRefreshPalettes?: () => void
 	readonly palettesLoading?: boolean
@@ -548,6 +550,14 @@ export default function PuzzleDraftLibrary({
 			<div className={styles.galleryHeading}>
 				<h2 id="draft-library-title">Puzzle drafts</h2>
 				<div className={styles.galleryControls}>
+					{onManagePalettes && (
+						<AdminIconButton
+							icon={faPalette}
+							label="Manage palettes"
+							disabled={bulkBusy}
+							onClick={onManagePalettes}
+						/>
+					)}
 					<AdminIconButton
 						icon={faLayerGroup}
 						label="Manage sets"

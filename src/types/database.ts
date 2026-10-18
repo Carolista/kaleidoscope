@@ -977,6 +977,18 @@ export type Database = {
 				}
 				Returns: string[]
 			}
+			manage_palette_draft: {
+				Args: {
+					p_id: string
+					p_action: string
+					p_name?: string
+					p_colors?: string[]
+					p_expected_name?: string
+					p_expected_colors?: string[]
+					p_expected_revision?: number
+				}
+				Returns: string
+			}
 			save_hex_puzzle_draft: {
 				Args: {
 					p_id: string
