@@ -79,6 +79,52 @@ function sandboxFills() {
 }
 
 describe('palette management', () => {
+	it.each([false, true])(
+		'duplicates colors into an unnamed new draft without copying identity or release state (published: %s)',
+		async published => {
+			const source: CatalogScheme = {
+				...scheme,
+				id: 'source',
+				name: 'Source',
+				colors: ['#abcdef', '#123456', '#abcdef', '#fedcba', '#654321'],
+				published_at: published ? '2000-01-01' : null,
+				release_at: published ? '2000-01-01' : null,
+			}
+			mocks.load.mockResolvedValue([scheme, source])
+			setup()
+			fireEvent.click(
+				await screen.findByRole('button', { name: 'Duplicate Source' }),
+			)
+			expect(
+				screen.getByRole('heading', { name: 'New palette' }),
+			).toBeInTheDocument()
+			expect(screen.getByLabelText('Palette name')).toHaveValue('')
+			for (const [index, color] of source.colors.entries())
+				expect(screen.getByLabelText(`Color ${index + 1}`)).toHaveValue(
+					color,
+				)
+			expect(
+				screen.getByRole('button', { name: 'Save palette' }),
+			).toBeDisabled()
+			expect(mocks.usage).not.toHaveBeenCalled()
+			expect(mocks.manage).not.toHaveBeenCalled()
+			fireEvent.change(screen.getByLabelText('Palette name'), {
+				target: { value: 'My variation' },
+			})
+			fireEvent.click(
+				screen.getByRole('button', { name: 'Save palette' }),
+			)
+			await screen.findByText('Saved "My variation" as a draft palette.')
+			const request = mocks.manage.mock.calls[0][1]
+			expect(request).toEqual({
+				kind: 'create',
+				id: expect.any(String),
+				scheme: { name: 'My variation', colors: source.colors },
+			})
+			expect(request.id).not.toBe(source.id)
+		},
+	)
+
 	it('shows draft, scheduled, and live palettes and keeps prepared ones read-only', async () => {
 		mocks.load.mockResolvedValue([
 			scheme,

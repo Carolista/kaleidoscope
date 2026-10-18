@@ -30,7 +30,7 @@ describe('palette sandbox', () => {
 		const random = vi
 			.spyOn(Math, 'random')
 			.mockImplementation(
-				() => [0, 0.18, 0.36, 0.54, 0.72, 0.95][index++ % 6],
+				() => [0, 0.2, 0.4, 0.6, 0.8, 0.999][index++ % 6],
 			)
 		const write = vi.spyOn(Storage.prototype, 'setItem')
 		render(<SchemeSandbox colors={colors} />)
@@ -44,7 +44,7 @@ describe('palette sandbox', () => {
 				expect(painted[i]).toBe(groups.get(cell.groupId))
 			groups.set(cell.groupId, painted[i])
 		}
-		expect(new Set(painted)).toEqual(new Set([...colors, 'var(--base)']))
+		expect(new Set(painted)).toEqual(new Set(colors))
 		expect(
 			screen.queryByRole('button', { name: /puzzle tile/i }),
 		).not.toBeInTheDocument()
@@ -55,7 +55,7 @@ describe('palette sandbox', () => {
 		let index = 0
 		const random = vi
 			.spyOn(Math, 'random')
-			.mockImplementation(() => [0, 0.18, 0.36, 0.54, 0.72][index++ % 5])
+			.mockImplementation(() => [0, 0.2, 0.4, 0.6, 0.8][index++ % 5])
 		const duplicate: ColorScheme['colors'] = [
 			'#abcdef',
 			'#abcdef',
@@ -92,5 +92,17 @@ describe('palette sandbox', () => {
 		fireEvent.click(screen.getByRole('button', { name: 'Randomize' }))
 		expect(fills()).not.toEqual(original)
 		expect(random).toHaveBeenCalledTimes(calls * 2)
+	})
+
+	it('gives each ordered palette slot exactly one fifth of the random range', () => {
+		const random = vi.spyOn(Math, 'random')
+		for (let slot = 0; slot < 5; slot++) {
+			for (const value of [slot / 5, (slot + 1) / 5 - 0.000001]) {
+				random.mockReturnValue(value)
+				const view = render(<SchemeSandbox colors={colors} />)
+				expect(new Set(fills())).toEqual(new Set([colors[slot]]))
+				view.unmount()
+			}
+		}
 	})
 })

@@ -131,6 +131,37 @@ dependencies instead of silently cascading meaningful configuration away.
 Keep mutations atomic under caller RLS, explicit admin checks, READ COMMITTED
 isolation, and the catalog lock. Starter/route/core/reward/release tools follow.
 
+### Palette catalog and sandbox
+
+Manage the Supabase palette catalog independently of the local Zen catalog.
+Keep starter availability, reward mappings, and palette-pack membership as separate
+relationships rather than an exclusive palette category; their management follows.
+Existing IDs stay permanent. New/Duplicate starts unnamed and saves under a new,
+retry-stable ID; Duplicate copies only the selected palette's ordered colors, not
+its publication, references, or ownership.
+
+Draft palettes support name/color edits and confirmed deletion only when unused.
+Scheduled/live rows are read-only in this workspace, with duplication still
+available. Exceptional published-color correction and release controls remain
+separate future work. Recheck draft state and every dependency under the catalog
+lock using invoker RLS/admin authorization; compare loaded name, ordered colors,
+and revision so name-only concurrent edits are also detected. Preserve inputs on
+errors/conflicts rather than silently overwriting changes.
+
+Use five numbered color slots with hex text and native color inputs, arranged in
+three equal-width columns. Preview in one medium hexagon with Randomize, without
+painting, shape selection, or generated puzzle pieces. Each slot has an equal
+20% chance; exclude base/accent colors from this sandbox without changing Zen's
+weighted randomizer. Keep random assignments as slot indices, not literal colors,
+so edits and duplicate colors recolor consistently without rerandomizing.
+
+Show saved puzzle targets and reference names/counts without fetching private
+solutions or account identities. Invalid text remains editable, blocks save and
+preview, and resumes the same preview pattern when valid. Saving returns to the
+palette catalog; returning to puzzles refreshes authoring colors. Sandbox changes
+are transient and never affect player state. Reuse the admin dirty-navigation
+guards for palette edits.
+
 ## Geometry and shape design
 
 ### Symmetry

@@ -67,6 +67,27 @@ scheduled/live sets, prepared members, and dependent progression/routes/rewards,
 qualifications or grants block deletion. Membership reads paginate.
 Publishing, starter, route/core progression, and reward tools remain deferred.
 
+**Manage palettes** opens a database-backed catalog with swatches, release state,
+and Duplicate/Edit/Delete controls. New palettes have blank names; Duplicate
+starts with the chosen palette's five ordered colors and creates a new ID on save.
+The editor pairs hex text and native color inputs in three equal-width columns.
+Its medium hexagon sandbox randomizes only palette slots, each with a 20% chance;
+no base color, painting, puzzle generation, or player writes are involved.
+Color edits recolor the same pattern, including when slots have duplicate colors;
+invalid input blocks saving/preview until corrected without losing the pattern.
+
+Only unpublished palette drafts can be edited/deleted here. Scheduled/live
+palettes are read-only but can be duplicated. Save returns to the palette library;
+Back to puzzles refreshes authoring colors. Usage shows linked stored-design
+thumbnails, set/daily context, starter/reward/pack references, and grant/correction
+counts without private solutions or account identities. Deletion requires a named
+confirmation and no references; the database rechecks under the catalog lock.
+Writes use loaded name/colors/revision conflict checks and retry-stable IDs.
+Unsaved palette edits use the same admin navigation/sign-out/reload guards.
+The initial migration already seeded all 19 original palettes as database drafts;
+Zen still uses its local catalog unchanged. Palette distribution and release
+tools remain deferred.
+
 In rotation-enabled playtests, click/tap a tray piece to rotate 60 degrees;
 dragging moves it without rotating. Double-click/double-tap a board piece or drag
 it back to return it to the tray, preserving orientation. Keyboard: Enter/Space

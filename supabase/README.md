@@ -169,6 +169,39 @@ The lazy-loaded admin route does not initialize Supabase for normal player
 visits. Missing configuration shows a setup error on the admin page without
 breaking the existing Zen/Puzzle app. The UI check is not a replacement for RLS.
 
+### Admin palette library
+
+Use **Manage palettes** in the puzzle-library toolbar. The catalog reads all
+Supabase palettes with pagination; the original 19 already exist as drafts from
+the initial migration. Zen still uses its local array and is unchanged.
+
+- **New palette** starts with a blank name and the first catalog palette's colors
+  (white slots if empty). **Duplicate** starts with a blank name and the selected
+  palette's ordered colors. It creates a new record, not a reference or copy of
+  release state, rewards, pack membership, or grants.
+- **Edit** changes a draft name and its five ordered six-digit hex colors using
+  text fields or native color inputs. Duplicate colors are valid. The three
+  field columns have equal widths.
+- The **Sandbox** uses a medium hexagon and a local **Randomize** button: each
+  palette slot has a 20% chance, with no base color. It is not puzzle generation
+  and does not permit painting. Color/name/theme edits do not rerandomize it.
+  Invalid hex text remains visible and blocks saving/preview until corrected.
+- **Usage** reads stored puzzle target slots for thumbnails, set/daily context,
+  starter/reward/pack references, and grant/correction counts. It does not load
+  private solutions or account identities. Refresh usage explicitly if needed.
+- **Delete** requires confirmation naming the palette and no saved references.
+  Failure to load usage disables deletion; write-time database checks remain
+  authoritative if the view becomes stale.
+- Scheduled/live palettes are read-only here, but can be duplicated. Publishing,
+  release scheduling, exceptional published color corrections, starter selection,
+  pack organization, and reward mapping are separate later tools.
+
+Save returns to the palette library and refreshes it. **Back to puzzles** refreshes
+authoring selectors/previews; saved puzzle definitions, seeds, and solutions do
+not change. Unsaved edits are guarded on Back, sign-out, route exit, and reload.
+Failed writes preserve inputs; a conflict requires refreshing/reviewing the
+catalog rather than silently replacing newer data.
+
 ### Database TypeScript types
 
 `src/types/database.ts` is generated from the hosted database using the Dashboard's
@@ -181,6 +214,31 @@ may appear in the export; application queries default to `public`.
 This step needs no CLI or schema change. Deployment environment configuration is
 separate from local `.env.local`; add these same public build variables to the
 deployment build when admin access is ready to deploy.
+
+## Palette draft management migration
+
+After applying the preceding migrations through
+[draft-set deletion](./migrations/20261018070000_delete_draft_set.sql), run
+[20261018080000_manage_palette_drafts.sql](./migrations/20261018080000_manage_palette_drafts.sql)
+once in the Dashboard SQL Editor as database owner, including its transaction.
+Then run [the palette assertions](./tests/manage_palette_drafts.sql) separately.
+All 54 assertions must pass; fixtures roll back. On error, stop and run
+`rollback;` before continuing. Do not rerun migrations already applied.
+
+This adds `manage_palette_draft` for create/update/delete only, with caller RLS,
+an explicit admin check, READ COMMITTED isolation, and the shared catalog lock.
+Updates/deletes compare the loaded name, colors, and revision; name-only edits
+are protected even though only color changes increment revision. Identical
+create/update retries confirm the expected result without duplicating records or
+incrementing revisions again. Missing records and stale content fail explicitly.
+Scheduled/live palettes are rejected by this draft-only RPC.
+
+Deletion rejects references from puzzles, starters, reward mappings, palette packs,
+grants, or correction history; nothing is silently detached. Existing constraints
+validate names and exactly five ordered hex colors. The RPC never accepts release
+metadata or a new revision from the client. It adds no player write permissions.
+The hosted migration and rollback-only assertions have been confirmed successful
+by the owner.
 
 ## Apply using the Dashboard
 
@@ -630,8 +688,9 @@ The app continues behaving exactly as before until intentionally integrated.
 
 - Player Auth/registration flows, explicit guest import, and the rest of the admin
   authoring workspace. Admin sign-in, generated types, and six-recipe isolated
-  playtesting, atomic draft saving/library, and draft set assembly/deletion are
-  available; starter selection, routes/core/reward/release tools remain pending.
+  playtesting, atomic draft saving/library, draft set assembly/deletion,
+  and draft palette management are available; starter selection, palette-pack
+  organization, routes/core/reward/release tools remain pending.
 - Server-side structural/geometric authoring validation and slot-based saved-content
   integration into player mode. The admin engine and palette-slot rendering adapter
   exist; the player POC remains local. Regenerate types when public schema changes.

@@ -4,14 +4,8 @@ import {
 	getGroupIds,
 	HEXAGON_GRID_RADII,
 } from '../../shape-geometry/hexagonGrid'
-import { generateRandomShapeGroupColors } from '../../utils/randomDesign'
 import HexPuzzleBoard from '../puzzle/HexPuzzleBoard'
 import styles from './SchemeLibrary.module.css'
-
-const slots: ColorScheme = {
-	name: 'Preview slots',
-	colors: ['0', '1', '2', '3', '4'],
-}
 
 export default function SchemeSandbox({
 	colors,
@@ -20,17 +14,18 @@ export default function SchemeSandbox({
 }) {
 	const [assignments, setAssignments] = useState(() => randomize())
 	function randomize() {
-		return generateRandomShapeGroupColors(
-			getGroupIds(HEXAGON_GRID_RADII.md),
-			slots,
-			'base',
+		return Object.fromEntries(
+			getGroupIds(HEXAGON_GRID_RADII.md).map(group => [
+				group,
+				Math.floor(Math.random() * 5),
+			]),
 		)
 	}
 	const resolved = colors
 		? Object.fromEntries(
 				Object.entries(assignments).map(([group, slot]) => [
 					group,
-					slot === 'base' ? 'var(--base)' : colors[Number(slot)],
+					colors[slot],
 				]),
 			)
 		: {}

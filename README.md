@@ -123,6 +123,16 @@ use **Save name**. Removing a member or confirming set deletion preserves the
 puzzles and their private solutions. Scheduled/live content and dependent
 progression/routes/rewards remain protected by database checks.
 
+**Manage palettes** opens the Supabase palette library. Create or edit draft
+palettes using five ordered hex fields/color pickers, or use a card's **Duplicate**
+icon to start an unnamed palette with those colors. The medium hexagon sandbox
+offers **Randomize** with an equal chance for each palette slot and no neutral
+color. Editing colors recolors the current pattern without regenerating it.
+Usage includes linked puzzle previews and distribution references; only unused
+drafts can be deleted, with confirmation. Scheduled/live palettes are read-only
+but can be duplicated. Returning to puzzles refreshes the authoring palette
+catalog. Zen's local palettes and randomizer remain unchanged.
+
 Playtest placements remain memory-only. Publishing, player progress,
 and changes to Zen saves are not included. See
 [Supabase instructions](./supabase/README.md) for required migrations and tests.

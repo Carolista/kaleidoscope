@@ -564,7 +564,9 @@ describe('admin puzzle lab', () => {
 
 	it('randomizes repeatedly, skips previewed seeds per recipe, and resets the playtest', async () => {
 		setup()
-		await screen.findByLabelText('Recipe')
+		await screen.findByRole('button', {
+			name: 'Select the Test palette color palette',
+		})
 		const randomize = screen.getByRole('button', {
 			name: 'Randomize puzzle',
 		})

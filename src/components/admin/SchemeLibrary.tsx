@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type SubmitEvent } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import {
+	faCopy,
 	faEye,
 	faPenToSquare,
 	faPlusLarge,
@@ -473,6 +474,7 @@ export default function SchemeLibrary({
 	const [editing, setEditing] = useState<{
 		scheme: CatalogScheme | null
 		deleting: boolean
+		startingColors?: ColorScheme['colors']
 	} | null>(null)
 	useEffect(() => {
 		let active = true
@@ -496,6 +498,7 @@ export default function SchemeLibrary({
 				client={client}
 				initial={editing.scheme}
 				startingColors={
+					editing.startingColors ??
 					editing.scheme?.colors ??
 					schemes[0]?.colors ?? [
 						'#ffffff',
@@ -573,6 +576,18 @@ export default function SchemeLibrary({
 								<strong>{scheme.name}</strong>
 								<span>{releaseState(scheme)}</span>
 								<div className={styles.actions}>
+									<AdminIconButton
+										icon={faCopy}
+										label={`Duplicate ${scheme.name}`}
+										onClick={() => {
+											setStatus('')
+											setEditing({
+												scheme: null,
+												deleting: false,
+												startingColors: scheme.colors,
+											})
+										}}
+									/>
 									<AdminIconButton
 										icon={
 											scheme.published_at
