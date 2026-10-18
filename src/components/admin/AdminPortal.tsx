@@ -1,22 +1,79 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import {
+	useEffect,
+	useLayoutEffect,
+	useState,
+	type CSSProperties,
+	type SubmitEvent,
+	type ReactNode,
+} from 'react'
 import type { Session, SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '../../types/database'
 import { getSupabaseClient } from '../../services/supabaseClient'
+import { getThemeColors } from '../../state/theme'
 import styles from './AdminPortal.module.css'
 import PuzzleAuthoring from './PuzzleAuthoring'
 import { confirmDiscardDraft } from './useUnsavedDraft'
+import AdminIconButton from './AdminIconButton'
+import {
+	faRightFromBracket,
+	faSun,
+	faMoon,
+} from '@fortawesome/pro-solid-svg-icons'
 
 type RoleCheck =
 	| { token: string; status: 'allowed' }
 	| { token: string; status: 'denied' }
 	| { token: string; status: 'error'; message: string }
 
+function AdminHeader({
+	light,
+	onToggleTheme,
+	children,
+}: {
+	readonly light: boolean
+	readonly onToggleTheme: () => void
+	readonly children?: ReactNode
+}) {
+	return (
+		<header className={styles.header}>
+			<div className={styles.headerBrand}>
+				<a
+					href="#"
+					className={styles.homeButton}
+					aria-label="Back to Kaleidoscope"
+					title="Back to Kaleidoscope"
+				>
+					<img
+						src={`${import.meta.env.BASE_URL}favicon.svg`}
+						alt=""
+					/>
+				</a>
+				<h1>Kaleidoscope Admin</h1>
+			</div>
+			<div className={styles.sessionBar}>
+				{children}
+				<AdminIconButton
+					icon={light ? faMoon : faSun}
+					label={
+						light ? 'Switch to dark mode' : 'Switch to light mode'
+					}
+					onClick={onToggleTheme}
+				/>
+			</div>
+		</header>
+	)
+}
+
 function AdminSession({
 	client,
 	onDirtyChange,
+	light,
+	onToggleTheme,
 }: {
 	readonly client: SupabaseClient<Database>
 	readonly onDirtyChange?: (dirty: boolean) => void
+	readonly light: boolean
+	readonly onToggleTheme: () => void
 }) {
 	const [session, setSession] = useState<Session | null>(null)
 	const [loading, setLoading] = useState(true)
@@ -101,7 +158,7 @@ function AdminSession({
 		}
 	}, [client, session, retry])
 
-	async function signIn(event: FormEvent<HTMLFormElement>) {
+	async function signIn(event: SubmitEvent<HTMLFormElement>) {
 		event.preventDefault()
 		const form = event.currentTarget
 		const values = new FormData(form)
@@ -150,6 +207,27 @@ function AdminSession({
 	const checkedRole = role?.token === session?.access_token ? role : null
 	return (
 		<>
+			<AdminHeader light={light} onToggleTheme={onToggleTheme}>
+				{session && (
+					<>
+						<span className={styles.accountName}>
+							{session.user.email}
+						</span>
+						<AdminIconButton
+							icon={faRightFromBracket}
+							label={
+								busy
+									? 'Signing out…'
+									: 'Sign out on this device'
+							}
+							onClick={() => {
+								void signOut()
+							}}
+							disabled={busy}
+						/>
+					</>
+				)}
+			</AdminHeader>
 			{error && <p role="alert">{error}</p>}
 			{loading ? (
 				<p role="status">Restoring session…</p>
@@ -183,33 +261,16 @@ function AdminSession({
 				</form>
 			) : (
 				<>
-					<div className={styles.sessionBar}>
-						<p>Signed in as {session.user.email}</p>
-						<button
-							type="button"
-							onClick={() => {
-								void signOut()
-							}}
-							disabled={busy}
-						>
-							{busy ? 'Signing out…' : 'Sign out on this device'}
-						</button>
-					</div>
 					{!checkedRole ? (
 						<p role="status">Checking admin access…</p>
 					) : checkedRole.status === 'allowed' ? (
-						<section aria-labelledby="admin-ready">
-							<h2 id="admin-ready">Admin access verified</h2>
-							<p>
-								Browse puzzle drafts or create a new design. Set
-								and reward tools will follow.
-							</p>
+						<>
 							<PuzzleAuthoring
 								key={session.user.id}
 								client={client}
 								onDirtyChange={setDirty}
 							/>
-						</section>
+						</>
 					) : checkedRole.status === 'denied' ? (
 						<p role="alert">
 							This account does not have admin access. Sign out to
@@ -243,6 +304,12 @@ export default function AdminPortal({
 }: {
 	readonly onDirtyChange?: (dirty: boolean) => void
 }) {
+	const [light, setLight] = useState(false)
+	const { base, accent } = getThemeColors(!light)
+	useLayoutEffect(() => {
+		document.documentElement.style.backgroundColor = base
+		document.body.style.backgroundColor = base
+	}, [base])
 	const [connection] = useState(() => {
 		try {
 			return { client: getSupabaseClient() }
@@ -256,16 +323,26 @@ export default function AdminPortal({
 		}
 	})
 	return (
-		<main className={styles.page}>
-			<a href="#">Back to Kaleidoscope</a>
-			<h1>Kaleidoscope Admin</h1>
+		<main
+			className={styles.page}
+			data-theme={light ? 'light' : 'dark'}
+			style={{ '--base': base, '--accent': accent } as CSSProperties}
+		>
 			{connection.client ? (
 				<AdminSession
 					client={connection.client}
 					onDirtyChange={onDirtyChange}
+					light={light}
+					onToggleTheme={() => setLight(value => !value)}
 				/>
 			) : (
-				<p role="alert">{connection.error}</p>
+				<>
+					<AdminHeader
+						light={light}
+						onToggleTheme={() => setLight(value => !value)}
+					/>
+					<p role="alert">{connection.error}</p>
+				</>
 			)}
 		</main>
 	)

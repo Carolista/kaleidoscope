@@ -1,7 +1,15 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type SubmitEvent } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPenToSquare, faTrashCan } from '@fortawesome/pro-solid-svg-icons'
+import {
+	faPenToSquare,
+	faTrashCan,
+	faRotate,
+	faPlusLarge,
+	faPalette,
+	faXmark,
+	faSquareArrowLeft,
+} from '@fortawesome/pro-solid-svg-icons'
 import type { Database } from '../../types/database'
 import {
 	renderAuthoredHexPuzzle,
@@ -20,6 +28,8 @@ import PuzzleMode from '../puzzle/PuzzleMode'
 import paletteStyles from '../controls/color-schemes/SchemePicker.module.css'
 import styles from './AdminPortal.module.css'
 import Checkbox from '../shared/Checkbox'
+import AdminIconButton from './AdminIconButton'
+import PuzzleDraftForm from './PuzzleDraftForm'
 import useUnsavedDraft, { confirmDiscardDraft } from './useUnsavedDraft'
 
 function message(cause: unknown) {
@@ -35,6 +45,8 @@ function DraftEditor({
 	onChanged,
 	onBack,
 	onDirtyChange,
+	onRefreshPalettes,
+	palettesLoading,
 }: {
 	readonly client: SupabaseClient<Database>
 	readonly draft: LibraryDraft
@@ -42,6 +54,8 @@ function DraftEditor({
 	readonly onChanged: (status: string, updated: LibraryDraft | null) => void
 	readonly onBack: () => void
 	readonly onDirtyChange?: (dirty: boolean) => void
+	readonly onRefreshPalettes?: () => void
+	readonly palettesLoading?: boolean
 }) {
 	const [name, setName] = useState(draft.row.name)
 	const [paletteId, setPaletteId] = useState(draft.row.palette_id)
@@ -59,7 +73,7 @@ function DraftEditor({
 		usage !== draft.row.usage
 	useUnsavedDraft(dirty || busy, onDirtyChange)
 
-	async function save(event: FormEvent<HTMLFormElement>) {
+	async function save(event: SubmitEvent<HTMLFormElement>) {
 		event.preventDefault()
 		if (working.current) return
 		setError('')
@@ -110,11 +124,13 @@ function DraftEditor({
 		<article aria-label={`Edit ${draft.row.name}`}>
 			<button
 				type="button"
+				className={styles.backLink}
 				disabled={busy}
 				onClick={() => {
 					if (!dirty || confirmDiscardDraft()) onBack()
 				}}
 			>
+				<FontAwesomeIcon icon={faSquareArrowLeft} aria-hidden="true" />{' '}
 				Back to library
 			</button>
 			<h2>Editing: {draft.row.name}</h2>
@@ -123,77 +139,24 @@ function DraftEditor({
 				{draft.assigned ? 'Assigned' : 'Unassigned'}
 			</p>
 			{error && <p role="alert">{error}</p>}
-			<form onSubmit={save} className={styles.form}>
-				<div className={styles.metadataForm}>
-					<div className={styles.metadataField}>
-						<label htmlFor="library-name">Puzzle name</label>
-						<input
-							id="library-name"
-							required
-							value={name}
-							disabled={busy}
-							onChange={event => setName(event.target.value)}
-						/>
-					</div>
-					<div className={styles.metadataField}>
-						<label htmlFor="library-usage">Intended use</label>
-						<select
-							id="library-usage"
-							value={usage}
-							disabled={busy || draft.assigned}
-							onChange={event => {
-								const value = event.target.value
-								if (value === 'daily' || value === 'collection')
-									setUsage(value)
-							}}
-						>
-							<option value="collection">Set/pack</option>
-							<option value="daily">Daily</option>
-						</select>
-					</div>
-					<button type="submit" disabled={busy || !palette}>
-						Save changes
-					</button>
-				</div>
-				{draft.assigned && (
-					<p>
-						Unassign this puzzle before changing its intended use or
-						deleting it.
-					</p>
-				)}
-				<fieldset className={styles.palettePicker} disabled={busy}>
-					<legend>Draft palette</legend>
-					<ul className={paletteStyles.list}>
-						{palettes.map(value => (
-							<li key={value.id}>
-								<button
-									type="button"
-									className={styles.paletteOption}
-									aria-pressed={value.id === paletteId}
-									aria-label={`Use ${value.name} for this draft`}
-									onClick={() => setPaletteId(value.id)}
-								>
-									<span
-										className={styles.paletteColors}
-										aria-hidden="true"
-									>
-										{value.colors.map((color, index) => (
-											<span
-												key={index}
-												className={paletteStyles.swatch}
-												style={{
-													backgroundColor: color,
-												}}
-											/>
-										))}
-									</span>
-									<span>{value.name}</span>
-								</button>
-							</li>
-						))}
-					</ul>
-				</fieldset>
-			</form>
+			<PuzzleDraftForm
+				palettes={palettes}
+				paletteId={paletteId}
+				onPaletteChange={setPaletteId}
+				onRefreshPalettes={onRefreshPalettes}
+				palettesLoading={palettesLoading}
+				busy={busy}
+				metadata={{
+					name,
+					usage,
+					onNameChange: setName,
+					onUsageChange: setUsage,
+					assigned: draft.assigned,
+					recipeLabel: draft.puzzle.recipe.label,
+					submitDisabled: !palette,
+				}}
+				onSubmit={save}
+			/>
 			{palette ? (
 				<div className={styles.playtest}>
 					{draft.puzzle.recipe.rotation && (
@@ -259,12 +222,16 @@ export default function PuzzleDraftLibrary({
 	revision,
 	onNew,
 	onDirtyChange,
+	onRefreshPalettes,
+	palettesLoading,
 }: {
 	readonly client: SupabaseClient<Database>
 	readonly palettes: readonly AuthoringPalette[]
 	readonly revision: number
 	readonly onNew?: () => void
 	readonly onDirtyChange?: (dirty: boolean) => void
+	readonly onRefreshPalettes?: () => void
+	readonly palettesLoading?: boolean
 }) {
 	const [drafts, setDrafts] = useState<readonly LibraryDraft[]>([])
 	const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -389,6 +356,8 @@ export default function PuzzleDraftLibrary({
 						setStatus('')
 					}}
 					onDirtyChange={onDirtyChange}
+					onRefreshPalettes={onRefreshPalettes}
+					palettesLoading={palettesLoading}
 					onChanged={(status, updated) => {
 						setStatus(status)
 						setDrafts(previous =>
@@ -403,10 +372,8 @@ export default function PuzzleDraftLibrary({
 											value.row.id !== selected.row.id,
 									),
 						)
-						if (!updated) {
-							setSelectedId(null)
-							setReload(value => value + 1)
-						}
+						setSelectedId(null)
+						setReload(value => value + 1)
 					}}
 				/>
 			</>
@@ -414,117 +381,123 @@ export default function PuzzleDraftLibrary({
 	}
 	return (
 		<section aria-labelledby="draft-library-title">
-			<h2 id="draft-library-title">Puzzle drafts</h2>
-			{onNew && (
-				<button type="button" disabled={bulkBusy} onClick={onNew}>
-					New puzzle
-				</button>
-			)}
-			<button
-				type="button"
-				disabled={loading || bulkBusy}
-				onClick={() => {
-					setCheckedIds(new Set())
-					setAction(null)
-					setReload(value => value + 1)
-				}}
-			>
-				Refresh drafts
-			</button>
-			<label htmlFor="draft-filter">Show drafts</label>{' '}
-			<select
-				id="draft-filter"
-				value={filter}
-				disabled={bulkBusy}
-				onChange={event => {
-					setFilter(event.target.value)
-					setSelectedId(null)
-					setCheckedIds(new Set())
-					setAction(null)
-				}}
-			>
-				<option value="all">All uses</option>
-				<option value="collection">Set/pack</option>
-				<option value="daily">Daily</option>
-			</select>
+			<div className={styles.galleryHeading}>
+				<h2 id="draft-library-title">Puzzle drafts</h2>
+				<div className={styles.galleryControls}>
+					{onNew && (
+						<AdminIconButton
+							icon={faPlusLarge}
+							label="New puzzle"
+							disabled={bulkBusy}
+							onClick={onNew}
+						/>
+					)}
+					<AdminIconButton
+						icon={faRotate}
+						label="Refresh drafts"
+						disabled={loading || bulkBusy}
+						onClick={() => {
+							setCheckedIds(new Set())
+							setAction(null)
+							setReload(value => value + 1)
+						}}
+					/>
+					<select
+						id="draft-filter"
+						aria-label="Show drafts"
+						value={filter}
+						disabled={bulkBusy}
+						onChange={event => {
+							setFilter(event.target.value)
+							setSelectedId(null)
+							setCheckedIds(new Set())
+							setAction(null)
+						}}
+					>
+						<option value="all">All uses</option>
+						<option value="collection">Set/pack</option>
+						<option value="daily">Daily</option>
+					</select>
+				</div>
+			</div>
 			{error && <p role="alert">{error}</p>}
 			{status && <p role="status">{status}</p>}
 			{loading ? (
 				<p role="status">Loading puzzle drafts...</p>
 			) : loadFailed ? null : (
 				<>
-					{visible.length > 0 && (
-						<Checkbox
-							plain
-							label="Select all shown"
-							checked={allChecked}
-							indeterminate={checked.length > 0 && !allChecked}
-							disabled={bulkBusy}
-							onChange={value => {
-								setCheckedIds(
-									new Set(
-										value
-											? visible.map(draft => draft.row.id)
-											: [],
-									),
-								)
-								setAction(null)
-							}}
-						/>
-					)}
-					{checked.length > 0 && (
-						<div
-							className={styles.bulkToolbar}
-							role="group"
-							aria-label="Bulk draft actions"
-						>
-							<strong>{checked.length} drafts selected</strong>
-							<button
-								type="button"
+					<div className={styles.selectionRow}>
+						{visible.length > 0 && (
+							<Checkbox
+								plain
+								label="Select all shown"
+								checked={allChecked}
+								indeterminate={
+									checked.length > 0 && !allChecked
+								}
 								disabled={bulkBusy}
-								onClick={() =>
-									startAction(
-										'palette',
-										checked.map(draft => draft.row.id),
+								onChange={value => {
+									setCheckedIds(
+										new Set(
+											value
+												? visible.map(
+														draft => draft.row.id,
+													)
+												: [],
+										),
 									)
-								}
-							>
-								Change palette
-							</button>
-							<button
-								type="button"
-								disabled={bulkBusy || hasAssigned}
-								title={
-									hasAssigned
-										? 'Unassign selected drafts before deleting.'
-										: undefined
-								}
-								onClick={() =>
-									startAction(
-										'delete',
-										checked.map(draft => draft.row.id),
-									)
-								}
-							>
-								Delete selected
-							</button>
-							<button
-								type="button"
-								disabled={bulkBusy}
-								onClick={() => {
-									setCheckedIds(new Set())
 									setAction(null)
 								}}
+							/>
+						)}
+						{checked.length > 0 && (
+							<div
+								className={styles.bulkToolbar}
+								role="group"
+								aria-label="Bulk draft actions"
 							>
-								Clear selection
-							</button>
-							{hasAssigned && (
-								<p>
-									Unassign selected drafts before deleting
-									them.
-								</p>
-							)}
-						</div>
+								<span className={styles.selectionCount}>
+									({checked.length} drafts selected)
+								</span>
+								<AdminIconButton
+									icon={faPalette}
+									label="Change palette"
+									disabled={bulkBusy}
+									onClick={() =>
+										startAction(
+											'palette',
+											checked.map(draft => draft.row.id),
+										)
+									}
+								/>
+								<AdminIconButton
+									icon={faTrashCan}
+									label="Delete selected"
+									className={styles.deleteAction}
+									disabled={bulkBusy || hasAssigned}
+									onClick={() =>
+										startAction(
+											'delete',
+											checked.map(draft => draft.row.id),
+										)
+									}
+								/>
+								<AdminIconButton
+									icon={faXmark}
+									label="Clear selection"
+									disabled={bulkBusy}
+									onClick={() => {
+										setCheckedIds(new Set())
+										setAction(null)
+									}}
+								/>
+							</div>
+						)}
+					</div>
+					{hasAssigned && (
+						<p className={styles.rotationHelp}>
+							Unassign selected drafts before deleting them.
+						</p>
 					)}
 					{action && (
 						<div
@@ -729,8 +702,10 @@ export default function PuzzleDraftLibrary({
 										<span>Palette unavailable</span>
 									)}
 									<strong>{draft.row.name}</strong>
-									<span>{draft.puzzle.recipe.label}</span>
-									<span>
+									<span className={styles.difficulty}>
+										{draft.puzzle.recipe.label}
+									</span>
+									<span className={styles.assignment}>
 										{draft.row.usage === 'daily'
 											? 'Daily'
 											: 'Set/pack'}{' '}

@@ -28,7 +28,7 @@ export const HEX_PUZZLE_RECIPES = [
 	},
 	{
 		id: 'moderate-small',
-		label: 'MODERATE (S + rotation)',
+		label: 'MODERATE (S+)',
 		size: 'sm',
 		rotation: true,
 		difficulty: 'moderate',
@@ -42,7 +42,7 @@ export const HEX_PUZZLE_RECIPES = [
 	},
 	{
 		id: 'hard-medium',
-		label: 'HARD (M + rotation)',
+		label: 'HARD (M+)',
 		size: 'md',
 		rotation: true,
 		difficulty: 'hard',
@@ -56,7 +56,7 @@ export const HEX_PUZZLE_RECIPES = [
 	},
 	{
 		id: 'super-hard-large',
-		label: 'SUPER HARD (L + rotation)',
+		label: 'SUPER HARD (L+)',
 		size: 'lg',
 		rotation: true,
 		difficulty: 'super_hard',

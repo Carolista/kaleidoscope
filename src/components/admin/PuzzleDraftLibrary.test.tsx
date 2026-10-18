@@ -6,11 +6,12 @@ import {
 	within,
 } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { getSupabaseClient } from '../../services/supabaseClient'
 import { generateAuthoredHexPuzzle } from '../../puzzles/hexAuthoring'
 import { HEX_PUZZLE_RECIPES } from '../../puzzles/hexPuzzle'
 import { puzzleDraftArgs } from '../../services/puzzleDrafts'
 import type { LibraryDraft } from '../../services/puzzleLibrary'
+import { getSupabaseClient } from '../../services/supabaseClient'
+import styles from './AdminPortal.module.css'
 import PuzzleDraftLibrary from './PuzzleDraftLibrary'
 
 const mocks = vi.hoisted(() => ({
@@ -86,6 +87,75 @@ async function open() {
 	return screen.getByRole('article', { name: 'Edit Saved art' })
 }
 describe('draft library', () => {
+	it('keeps gallery controls fixed and places compact bulk icons alongside select all', async () => {
+		setup()
+		const refresh = screen.getByRole('button', { name: 'Refresh drafts' })
+		expect(refresh).toHaveAttribute('title', 'Refresh drafts')
+		expect(refresh.querySelector('svg')).toHaveAttribute(
+			'data-icon',
+			'rotate',
+		)
+		expect(refresh.parentElement).toHaveClass(styles.galleryControls)
+		const filter = screen.getByLabelText('Show drafts')
+		expect(filter).toHaveAccessibleName('Show drafts')
+		expect(screen.queryByText('Show drafts')).not.toBeInTheDocument()
+		expect(filter.parentElement).toBe(refresh.parentElement)
+		const selectAll = await screen.findByRole('checkbox', {
+			name: 'Select all shown',
+		})
+		const row = selectAll.closest(`.${styles.selectionRow}`)
+		expect(row).toBeInTheDocument()
+		fireEvent.click(selectAll)
+		const actions = screen.getByRole('group', {
+			name: 'Bulk draft actions',
+		})
+		expect(actions.parentElement).toBe(row)
+		for (const [label, icon] of [
+			['Change palette', 'palette'],
+			['Delete selected', 'trash-can'],
+			['Clear selection', 'xmark'],
+		]) {
+			const button = within(actions).getByRole('button', { name: label })
+			expect(button).toHaveAttribute('title', label)
+			expect(button.querySelector('svg')).toHaveAttribute(
+				'data-icon',
+				icon,
+			)
+			expect(button).toHaveClass(styles.cardAction)
+		}
+		fireEvent.click(screen.getByRole('button', { name: 'Clear selection' }))
+		expect(selectAll.closest(`.${styles.selectionRow}`)).toBe(row)
+		expect(filter.parentElement).toBe(refresh.parentElement)
+	})
+	it('offers compact palette refresh in the edit workspace only', async () => {
+		const refresh = vi.fn()
+		render(
+			<PuzzleDraftLibrary
+				client={getSupabaseClient()}
+				palettes={[palette, other]}
+				revision={0}
+				onRefreshPalettes={refresh}
+			/>,
+		)
+		expect(
+			screen.queryByRole('button', { name: 'Refresh palettes' }),
+		).not.toBeInTheDocument()
+		await open()
+		expect(screen.getByLabelText('Recipe')).toHaveValue(puzzle.recipe.label)
+		expect(screen.getByLabelText('Recipe')).toHaveAttribute('readonly')
+		expect(
+			screen.queryByRole('button', { name: 'Randomize puzzle' }),
+		).not.toBeInTheDocument()
+		expect(document.querySelectorAll('form')).toHaveLength(1)
+		expect(screen.getAllByText('Palette', { exact: true })).toHaveLength(1)
+		const button = screen.getByRole('button', { name: 'Refresh palettes' })
+		expect(button.parentElement).toHaveClass(styles.paletteHeading)
+		fireEvent.click(button)
+		expect(refresh).toHaveBeenCalledOnce()
+		expect(
+			screen.getByRole('button', { name: 'Back to library' }),
+		).toHaveClass(styles.backLink)
+	})
 	it('selects only shown drafts, reports mixed selection, and clears hidden selections on filter changes', async () => {
 		const daily = {
 			...draft,
@@ -113,7 +183,7 @@ describe('draft library', () => {
 		expect(
 			screen.getByRole('checkbox', { name: 'Select draft Daily art' }),
 		).toBeChecked()
-		expect(screen.getByText('2 drafts selected')).toBeInTheDocument()
+		expect(screen.getByText('(2 drafts selected)')).toBeInTheDocument()
 		fireEvent.change(screen.getByLabelText('Show drafts'), {
 			target: { value: 'daily' },
 		})
@@ -301,7 +371,9 @@ describe('draft library', () => {
 			within(editor).getByRole('button', { name: /^Select piece 1,/ }),
 		)
 		fireEvent.click(
-			screen.getByRole('button', { name: 'Use Other for this draft' }),
+			screen.getByRole('button', {
+				name: 'Select the Other color palette',
+			}),
 		)
 		expect(
 			within(editor).getByRole('button', { name: /^Select piece 1,/ }),
@@ -317,7 +389,7 @@ describe('draft library', () => {
 		fireEvent.change(screen.getByLabelText('Intended use'), {
 			target: { value: 'daily' },
 		})
-		fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }))
 		await waitFor(() =>
 			expect(mocks.edit).toHaveBeenCalledWith(
 				expect.anything(),
@@ -329,10 +401,9 @@ describe('draft library', () => {
 		)
 		await screen.findByText('Draft changes saved.')
 		expect(
-			screen.getByRole('heading', { name: 'Editing: Renamed' }),
+			screen.getByRole('heading', { name: 'Puzzle drafts' }),
 		).toBeInTheDocument()
-		expect(mocks.load).toHaveBeenCalledTimes(1)
-		fireEvent.click(screen.getByRole('button', { name: 'Back to library' }))
+		expect(screen.queryByRole('article')).not.toBeInTheDocument()
 		await waitFor(() => expect(mocks.load).toHaveBeenCalledTimes(2))
 	})
 	it('blocks duplicate submissions and switching drafts during a mutation', async () => {
@@ -344,7 +415,7 @@ describe('draft library', () => {
 		)
 		setup()
 		await open()
-		const button = screen.getByRole('button', { name: 'Save changes' })
+		const button = screen.getByRole('button', { name: 'Save Changes' })
 		fireEvent.click(button)
 		fireEvent.submit(button.closest('form')!)
 		expect(mocks.edit).toHaveBeenCalledTimes(1)
@@ -358,11 +429,9 @@ describe('draft library', () => {
 		if (!finish) throw new Error('Save did not start')
 		finish()
 		await screen.findByText('Draft changes saved.')
-		await waitFor(() =>
-			expect(
-				screen.getByRole('button', { name: 'Back to library' }),
-			).toBeEnabled(),
-		)
+		expect(
+			screen.getByRole('heading', { name: 'Puzzle drafts' }),
+		).toBeInTheDocument()
 	})
 	it('warns before leaving unsaved metadata, but not after a successful save', async () => {
 		setup()
@@ -374,10 +443,12 @@ describe('draft library', () => {
 		fireEvent.click(screen.getByRole('button', { name: 'Back to library' }))
 		expect(screen.getByLabelText('Puzzle name')).toHaveValue('Unsaved')
 		expect(confirm).toHaveBeenCalledOnce()
-		fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }))
 		await screen.findByText('Draft changes saved.')
-		fireEvent.click(screen.getByRole('button', { name: 'Back to library' }))
 		await screen.findByRole('heading', { name: 'Puzzle drafts' })
+		const unload = new Event('beforeunload', { cancelable: true })
+		window.dispatchEvent(unload)
+		expect(unload.defaultPrevented).toBe(false)
 		expect(confirm).toHaveBeenCalledOnce()
 	})
 	it('preserves edits on failure and surfaces database errors', async () => {
@@ -387,7 +458,7 @@ describe('draft library', () => {
 		fireEvent.change(screen.getByLabelText('Puzzle name'), {
 			target: { value: 'Keep my edit' },
 		})
-		fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }))
 		expect(await screen.findByRole('alert')).toHaveTextContent(
 			'Draft is now scheduled',
 		)
@@ -424,7 +495,7 @@ describe('draft library', () => {
 			screen.getByRole('button', { name: 'Delete draft' }),
 		).toBeDisabled()
 		expect(
-			screen.getByRole('button', { name: 'Save changes' }),
+			screen.getByRole('button', { name: 'Save Changes' }),
 		).toBeEnabled()
 	})
 	it('shows load failures explicitly and supports retry', async () => {

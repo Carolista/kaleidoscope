@@ -105,7 +105,7 @@ returns to browsing.
 Cards are not navigation links. Their square, icon-only controls provide the
 shared custom selection checkbox, a blue classic Edit icon, and a red classic
 Delete icon. Use **Edit** to playtest the stored definition (not a regenerated seed).
-Edit its name, visual palette selection, or intended use and press **Save changes**.
+Edit its name, visual palette selection, or intended use and press **Save Changes**.
 Palette selection recolors without resetting playtest state. Changes remain local
 until saved; leaving an unsaved workspace warns before discarding edits. Unassigned
 unpublished drafts can switch intended use; assigned drafts must first be

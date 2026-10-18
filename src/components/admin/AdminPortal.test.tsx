@@ -78,6 +78,42 @@ beforeEach(() => {
 })
 
 describe('AdminPortal', () => {
+	it('defaults to dark mode and toggles the admin theme without changing player state', () => {
+		const write = vi.spyOn(Storage.prototype, 'setItem')
+		render(<AdminPortal />)
+		const page = screen.getByRole('main')
+		expect(page).toHaveAttribute('data-theme', 'dark')
+		expect(page.style.getPropertyValue('--base')).toBe('#222222')
+		expect(page.style.getPropertyValue('--accent')).toBe('#ffffff')
+		expect(document.documentElement.style.backgroundColor).toBe(
+			'rgb(34, 34, 34)',
+		)
+		expect(document.body.style.backgroundColor).toBe('rgb(34, 34, 34)')
+		const toggle = screen.getByRole('button', {
+			name: 'Switch to light mode',
+		})
+		expect(toggle).toHaveAttribute('title', 'Switch to light mode')
+		expect(toggle.querySelector('svg')).toHaveAttribute(
+			'data-prefix',
+			'fas',
+		)
+		fireEvent.click(toggle)
+		expect(page).toHaveAttribute('data-theme', 'light')
+		expect(page.style.getPropertyValue('--base')).toBe('#ffffff')
+		expect(page.style.getPropertyValue('--accent')).toBe('#222222')
+		expect(document.documentElement.style.backgroundColor).toBe(
+			'rgb(255, 255, 255)',
+		)
+		expect(document.body.style.backgroundColor).toBe('rgb(255, 255, 255)')
+		fireEvent.click(
+			screen.getByRole('button', { name: 'Switch to dark mode' }),
+		)
+		expect(page).toHaveAttribute('data-theme', 'dark')
+		expect(page.style.getPropertyValue('--base')).toBe('#222222')
+		expect(document.body.style.backgroundColor).toBe('rgb(34, 34, 34)')
+		expect(write).not.toHaveBeenCalled()
+	})
+
 	it('asks before signing out with an unsaved puzzle and preserves it when cancelled', async () => {
 		mocks.getSession.mockResolvedValue({
 			data: { session: session() },
@@ -172,7 +208,7 @@ describe('AdminPortal', () => {
 		render(<AdminPortal />)
 		expect(
 			await screen.findByRole('heading', {
-				name: 'Admin access verified',
+				name: 'Puzzle drafts',
 			}),
 		).toBeInTheDocument()
 		expect(mocks.from).toHaveBeenCalledWith('admin_account')
@@ -180,6 +216,37 @@ describe('AdminPortal', () => {
 		const signOut = screen.getByRole('button', {
 			name: 'Sign out on this device',
 		})
+		const header = screen
+			.getByRole('heading', { name: 'Kaleidoscope Admin' })
+			.closest('header')
+		expect(header).toContainElement(signOut)
+		const toggle = screen.getByRole('button', {
+			name: 'Switch to light mode',
+		})
+		expect(toggle.parentElement).toBe(signOut.parentElement)
+		expect(signOut.parentElement).toContainElement(
+			screen.getByText('admin@example.com'),
+		)
+		const home = screen.getByRole('link', { name: 'Back to Kaleidoscope' })
+		expect(header).toContainElement(home)
+		expect(home).toHaveAttribute('href', '#')
+		expect(home).toHaveAttribute('title', 'Back to Kaleidoscope')
+		expect(home.querySelector('img')).toHaveAttribute(
+			'src',
+			`${import.meta.env.BASE_URL}favicon.svg`,
+		)
+		expect(home.querySelector('img')).toHaveAttribute('alt', '')
+		expect(home).not.toHaveTextContent('Back to Kaleidoscope')
+		expect(signOut.querySelector('svg')).toHaveAttribute(
+			'data-icon',
+			'right-from-bracket',
+		)
+		expect(
+			screen.queryByText('Admin access verified'),
+		).not.toBeInTheDocument()
+		expect(
+			screen.queryByRole('button', { name: 'Refresh palettes' }),
+		).not.toBeInTheDocument()
 		const lab = await screen.findByRole('heading', {
 			name: 'Puzzle drafts',
 		})
@@ -200,7 +267,7 @@ describe('AdminPortal', () => {
 			'does not have admin access',
 		)
 		expect(
-			screen.queryByText('Admin access verified'),
+			screen.queryByRole('heading', { name: 'Puzzle drafts' }),
 		).not.toBeInTheDocument()
 		expect(mocks.from).not.toHaveBeenCalledWith('palettes')
 	})
@@ -219,13 +286,13 @@ describe('AdminPortal', () => {
 			'Network unavailable',
 		)
 		expect(
-			screen.queryByText('Admin access verified'),
+			screen.queryByRole('heading', { name: 'Puzzle drafts' }),
 		).not.toBeInTheDocument()
 		fireEvent.click(
 			screen.getByRole('button', { name: 'Retry access check' }),
 		)
 		expect(
-			await screen.findByText('Admin access verified'),
+			await screen.findByRole('heading', { name: 'Puzzle drafts' }),
 		).toBeInTheDocument()
 	})
 
@@ -235,11 +302,11 @@ describe('AdminPortal', () => {
 			error: null,
 		})
 		render(<AdminPortal />)
-		await screen.findByText('Admin access verified')
+		await screen.findByRole('heading', { name: 'Puzzle drafts' })
 		mocks.maybeSingle.mockImplementation(() => new Promise(() => {}))
 		act(() => authCallback('SIGNED_IN', session('player')))
 		expect(
-			screen.queryByText('Admin access verified'),
+			screen.queryByRole('heading', { name: 'Puzzle drafts' }),
 		).not.toBeInTheDocument()
 		expect(screen.getByRole('status')).toHaveTextContent(
 			'Checking admin access',
@@ -267,7 +334,7 @@ describe('AdminPortal', () => {
 			resolveRole({ data: { user_id: 'admin' }, error: null })
 		})
 		expect(
-			screen.queryByText('Admin access verified'),
+			screen.queryByRole('heading', { name: 'Puzzle drafts' }),
 		).not.toBeInTheDocument()
 		expect(screen.getByLabelText('Password')).toBeInTheDocument()
 	})
@@ -278,7 +345,7 @@ describe('AdminPortal', () => {
 			error: null,
 		})
 		const { unmount } = render(<AdminPortal />)
-		await screen.findByText('Admin access verified')
+		await screen.findByRole('heading', { name: 'Puzzle drafts' })
 		fireEvent.click(
 			screen.getByRole('button', { name: 'Sign out on this device' }),
 		)

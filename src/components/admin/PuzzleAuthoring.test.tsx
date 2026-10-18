@@ -146,15 +146,17 @@ describe('admin puzzle lab', () => {
 		const metadataForm = screen.getByRole('form', {
 			name: 'Save puzzle draft',
 		})
-		expect(metadataForm).toHaveClass(styles.metadataForm)
-		expect(metadataForm.children).toHaveLength(3)
+		expect(
+			metadataForm.querySelector(`.${styles.metadataForm}`)?.children,
+		).toHaveLength(2)
+		expect(document.querySelectorAll('form')).toHaveLength(1)
 		expect(screen.getByLabelText('Puzzle name').parentElement).toHaveClass(
 			styles.metadataField,
 		)
 		fireEvent.change(screen.getByLabelText('Puzzle name'), {
 			target: { value: 'Saved design' },
 		})
-		fireEvent.click(screen.getByRole('button', { name: 'Save draft' }))
+		fireEvent.click(screen.getByRole('button', { name: /save draft/i }))
 		await screen.findByText(/Saved "Saved design"/)
 		const unload = new Event('beforeunload', { cancelable: true })
 		window.dispatchEvent(unload)
@@ -170,7 +172,7 @@ describe('admin puzzle lab', () => {
 		).toBe(original)
 		expect(mocks.rpc).toHaveBeenCalledTimes(1)
 		expect(
-			screen.getByRole('button', { name: 'Save draft' }),
+			screen.getByRole('button', { name: /save draft/i }),
 		).toBeDisabled()
 		vi.mocked(crypto.getRandomValues).mockImplementation(values => {
 			if (!(values instanceof Uint32Array))
@@ -201,7 +203,7 @@ describe('admin puzzle lab', () => {
 			fireEvent.click(
 				screen.getByRole('button', { name: /^Select piece 1,/ }),
 			)
-			fireEvent.click(screen.getByRole('button', { name: 'Save draft' }))
+			fireEvent.click(screen.getByRole('button', { name: /save draft/i }))
 			await screen.findByText(/Saved "Sunset"/)
 			const puzzle = generateAuthoredHexPuzzle(
 				seed,
@@ -225,7 +227,7 @@ describe('admin puzzle lab', () => {
 				},
 			)
 			expect(
-				screen.getByRole('button', { name: 'Save draft' }),
+				screen.getByRole('button', { name: /save draft/i }),
 			).toBeDisabled()
 			expect(screen.getByLabelText('Puzzle name')).toBeDisabled()
 		},
@@ -243,7 +245,7 @@ describe('admin puzzle lab', () => {
 		fireEvent.change(screen.getByLabelText('Puzzle name'), {
 			target: { value: 'Retry me' },
 		})
-		const save = screen.getByRole('button', { name: 'Save draft' })
+		const save = screen.getByRole('button', { name: /save draft/i })
 		fireEvent.click(save)
 		fireEvent.submit(save.closest('form')!)
 		expect(await screen.findByRole('alert')).toHaveTextContent(
@@ -304,8 +306,10 @@ describe('admin puzzle lab', () => {
 		fireEvent.change(screen.getByLabelText('Puzzle name'), {
 			target: { value: '   ' },
 		})
-		const save = screen.getByRole('button', { name: 'Save draft' })
+		const save = screen.getByRole('button', { name: /save draft/i })
 		fireEvent.click(save)
+		expect(save).toBeDisabled()
+		fireEvent.submit(save.closest('form')!)
 		expect(screen.getByRole('alert')).toHaveTextContent('Enter a name')
 		expect(mocks.rpc).not.toHaveBeenCalled()
 		fireEvent.change(screen.getByLabelText('Puzzle name'), {
@@ -327,7 +331,7 @@ describe('admin puzzle lab', () => {
 		})
 		await randomize()
 		expect(screen.getByLabelText('Puzzle name')).toHaveValue('')
-		expect(save).toBeEnabled()
+		expect(save).toBeDisabled()
 		expect(screen.queryByText(/Saved "Recolored"/)).not.toBeInTheDocument()
 	})
 
@@ -339,12 +343,44 @@ describe('admin puzzle lab', () => {
 		const randomize = screen.getByRole('button', {
 			name: 'Randomize puzzle',
 		})
-		expect(refresh.parentElement).toHaveClass(styles.paletteControls)
-		expect(picker.parentElement).toBe(refresh.parentElement)
-		expect(recipe.parentElement).toHaveClass(styles.recipeControls)
-		expect(randomize.parentElement).toBe(recipe.parentElement)
-		expect(recipe.closest('form')).toHaveClass(styles.authoringForm)
+		expect(refresh.parentElement).toHaveClass(styles.paletteHeading)
+		expect(picker).toContainElement(refresh)
+		expect(
+			within(picker).getAllByText('Palette', { exact: true }),
+		).toHaveLength(1)
+		expect(recipe.parentElement?.parentElement).toHaveClass(
+			styles.recipeControls,
+		)
+		expect(randomize.parentElement).toBe(
+			recipe.parentElement?.parentElement,
+		)
+		expect(randomize.querySelector('svg')).toHaveAttribute(
+			'data-icon',
+			'wand-magic-sparkles',
+		)
+		expect(
+			recipe.closest(`.${styles.draftControls}`)?.parentElement,
+		).toHaveClass(styles.authoringForm)
 		expect(screen.getByLabelText('Recipe')).toBeVisible()
+	})
+
+	it('shows all metadata before generation and enables saving only with a named puzzle', async () => {
+		setup()
+		await screen.findByRole('button', {
+			name: 'Select the Test palette color palette',
+		})
+		const name = screen.getByLabelText('Puzzle name')
+		const save = screen.getByRole('button', { name: /save draft/i })
+		expect(name).toBeVisible()
+		expect(screen.getByLabelText('Intended use')).toBeVisible()
+		expect(save).toBeDisabled()
+		fireEvent.change(name, { target: { value: 'Named before generation' } })
+		expect(save).toBeDisabled()
+		await randomize()
+		expect(name).toHaveValue('Named before generation')
+		expect(save).toBeEnabled()
+		fireEvent.change(name, { target: { value: '   ' } })
+		expect(save).toBeDisabled()
 	})
 
 	it('shows palette swatches and applies a different palette to the current design', async () => {
@@ -501,7 +537,7 @@ describe('admin puzzle lab', () => {
 		expect(await screen.findByRole('alert')).toHaveTextContent(
 			'Connection lost',
 		)
-		expect(screen.queryByLabelText('Recipe')).not.toBeInTheDocument()
+		expect(screen.getByLabelText('Recipe')).toBeDisabled()
 		order.mockResolvedValue({ data: [palette], error: null })
 		fireEvent.click(
 			screen.getByRole('button', { name: 'Refresh palettes' }),

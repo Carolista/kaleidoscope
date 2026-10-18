@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type SubmitEvent } from 'react'
 import {
 	generateAuthoredHexPuzzle,
 	renderAuthoredHexPuzzle,
@@ -16,11 +16,13 @@ import {
 	type DraftArgs,
 	type PuzzleUsage,
 } from '../../services/puzzleDrafts'
-import paletteStyles from '../controls/color-schemes/SchemePicker.module.css'
 import PuzzleMode from '../puzzle/PuzzleMode'
 import styles from './AdminPortal.module.css'
 import PuzzleDraftLibrary from './PuzzleDraftLibrary'
 import useUnsavedDraft, { confirmDiscardDraft } from './useUnsavedDraft'
+import { faSquareArrowLeft } from '@fortawesome/pro-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import PuzzleDraftForm from './PuzzleDraftForm'
 
 function messageFor(cause: unknown): string {
 	return cause instanceof Error
@@ -45,6 +47,7 @@ export default function PuzzleAuthoring({
 	const working = useRef(false)
 	const [draftName, setDraftName] = useState('')
 	const [usage, setUsage] = useState<PuzzleUsage>('collection')
+	const [recipeId, setRecipeId] = useState<string>(HEX_PUZZLE_RECIPES[0].id)
 	const [saved, setSaved] = useState(false)
 	const [saveMessage, setSaveMessage] = useState('')
 	const pendingSave = useRef<DraftArgs | null>(null)
@@ -56,7 +59,10 @@ export default function PuzzleAuthoring({
 		puzzle: AuthoredHexPuzzle
 		run: number
 	} | null>(null)
-	const dirty = creating && !!generated && !saved
+	const dirty =
+		creating &&
+		!saved &&
+		(!!generated || draftName.length > 0 || usage !== 'collection')
 	useUnsavedDraft(dirty || busy, onDirtyChange)
 
 	useEffect(() => {
@@ -107,16 +113,12 @@ export default function PuzzleAuthoring({
 		}
 	}, [client, reload])
 
-	async function generate(event: FormEvent<HTMLFormElement>) {
-		event.preventDefault()
+	async function generate() {
 		if (working.current) return
 		working.current = true
 		setBusy(true)
 		setError('')
-		const form = new FormData(event.currentTarget)
-		const recipe = HEX_PUZZLE_RECIPES.find(
-			value => value.id === form.get('recipe'),
-		)
+		const recipe = HEX_PUZZLE_RECIPES.find(value => value.id === recipeId)
 		const palette =
 			palettes.find(value => value.id === selectedPaletteId) ??
 			palettes[0]
@@ -138,7 +140,7 @@ export default function PuzzleAuthoring({
 			previewedSeeds.current.set(recipeKey, previewed)
 			setSaved(false)
 			setSaveMessage('')
-			setDraftName('')
+			if (saved) setDraftName('')
 			pendingSave.current = null
 			setGenerated(previous => ({
 				puzzle,
@@ -152,7 +154,7 @@ export default function PuzzleAuthoring({
 		}
 	}
 
-	async function save(event: FormEvent<HTMLFormElement>) {
+	async function save(event: SubmitEvent<HTMLFormElement>) {
 		event.preventDefault()
 		if (working.current || saved || !generated) return
 		setError('')
@@ -199,23 +201,13 @@ export default function PuzzleAuthoring({
 			<>
 				{error && <p role="alert">{error}</p>}
 				{loading && <p role="status">Loading Supabase palettes...</p>}
-				<button
-					type="button"
-					disabled={loading}
-					onClick={() => {
-						setLoading(true)
-						setError('')
-						setReload(value => value + 1)
-					}}
-				>
-					Refresh palettes
-				</button>
 				<PuzzleDraftLibrary
 					client={client}
 					palettes={palettes}
 					revision={libraryRevision}
 					onNew={() => {
 						setGenerated(null)
+						setRecipeId(HEX_PUZZLE_RECIPES[0].id)
 						setSaved(false)
 						setDraftName('')
 						setSaveMessage('')
@@ -224,6 +216,12 @@ export default function PuzzleAuthoring({
 						setCreating(true)
 					}}
 					onDirtyChange={onDirtyChange}
+					onRefreshPalettes={() => {
+						setLoading(true)
+						setError('')
+						setReload(value => value + 1)
+					}}
+					palettesLoading={loading}
 				/>
 			</>
 		)
@@ -233,11 +231,16 @@ export default function PuzzleAuthoring({
 			<section aria-labelledby="puzzle-authoring-title">
 				<button
 					type="button"
+					className={styles.backLink}
 					disabled={busy}
 					onClick={() => {
 						if (!dirty || confirmDiscardDraft()) setCreating(false)
 					}}
 				>
+					<FontAwesomeIcon
+						icon={faSquareArrowLeft}
+						aria-hidden="true"
+					/>{' '}
 					Back to library
 				</button>
 				<h2 id="puzzle-authoring-title">New puzzle</h2>
@@ -246,155 +249,49 @@ export default function PuzzleAuthoring({
 					unpublished drafts.
 				</p>
 				{error && <p role="alert">{error}</p>}
-				<form onSubmit={generate} className={styles.authoringForm}>
-					<div className={styles.paletteControls}>
-						<button
-							type="button"
-							disabled={loading || busy}
-							onClick={() => {
-								setLoading(true)
-								setError('')
-								setReload(value => value + 1)
-							}}
-						>
-							Refresh palettes
-						</button>
-						{loading ? (
-							<p role="status">Loading Supabase palettes...</p>
-						) : palettes.length === 0 ? (
-							<p>
-								No palettes available. Add a palette to the
-								catalog before generating.
-							</p>
-						) : (
-							<fieldset className={styles.palettePicker}>
-								<legend>Palette</legend>
-								<ul className={paletteStyles.list}>
-									{palettes.map(palette => (
-										<li key={palette.id}>
-											<button
-												type="button"
-												disabled={busy}
-												className={styles.paletteOption}
-												aria-label={`Select the ${palette.name} color palette`}
-												aria-pressed={
-													selectedPalette?.id ===
-													palette.id
-												}
-												onClick={() => {
-													setSelectedPaletteId(
-														palette.id,
-													)
-													setGenerated(previous =>
-														previous && !saved
-															? {
-																	...previous,
-																	puzzle: {
-																		...previous.puzzle,
-																		paletteId:
-																			palette.id,
-																	},
-																}
-															: previous,
-													)
-												}}
-											>
-												<span
-													className={
-														styles.paletteColors
-													}
-													aria-hidden="true"
-												>
-													{palette.colors.map(
-														(color, index) => (
-															<span
-																key={index}
-																className={
-																	paletteStyles.swatch
-																}
-																style={{
-																	backgroundColor:
-																		color,
-																}}
-															/>
-														),
-													)}
-												</span>
-												<span>{palette.name}</span>
-											</button>
-										</li>
-									))}
-								</ul>
-							</fieldset>
-						)}
-					</div>
-					{!loading && palettes.length > 0 && (
-						<div className={styles.recipeControls}>
-							<label htmlFor="puzzle-recipe">Recipe</label>
-							<select
-								id="puzzle-recipe"
-								name="recipe"
-								disabled={busy}
-							>
-								{HEX_PUZZLE_RECIPES.map(recipe => (
-									<option key={recipe.id} value={recipe.id}>
-										{recipe.label}
-									</option>
-								))}
-							</select>
-							<button type="submit" disabled={busy}>
-								Randomize puzzle
-							</button>
-						</div>
-					)}
-				</form>
+				<PuzzleDraftForm
+					palettes={palettes}
+					paletteId={selectedPalette?.id}
+					onPaletteChange={paletteId => {
+						setSelectedPaletteId(paletteId)
+						setGenerated(previous =>
+							previous && !saved
+								? {
+										...previous,
+										puzzle: {
+											...previous.puzzle,
+											paletteId,
+										},
+									}
+								: previous,
+						)
+					}}
+					onRefreshPalettes={() => {
+						setLoading(true)
+						setError('')
+						setReload(value => value + 1)
+					}}
+					palettesLoading={loading}
+					busy={busy}
+					generation={{
+						recipeId,
+						onRecipeChange: setRecipeId,
+						onGenerate: () => {
+							void generate()
+						},
+					}}
+					metadata={{
+						name: draftName,
+						usage,
+						onNameChange: setDraftName,
+						onUsageChange: setUsage,
+						locked: saved,
+						submitDisabled: loading || !generated || !palette,
+					}}
+					onSubmit={save}
+				/>
 				{generated && palette && (
 					<div className={styles.playtest}>
-						<form
-							onSubmit={save}
-							className={styles.metadataForm}
-							aria-label="Save puzzle draft"
-						>
-							<div className={styles.metadataField}>
-								<label htmlFor="draft-name">Puzzle name</label>
-								<input
-									id="draft-name"
-									value={draftName}
-									required
-									disabled={busy || saved}
-									onChange={event =>
-										setDraftName(event.target.value)
-									}
-								/>
-							</div>
-							<div className={styles.metadataField}>
-								<label htmlFor="draft-usage">
-									Intended use
-								</label>
-								<select
-									id="draft-usage"
-									value={usage}
-									disabled={busy || saved}
-									onChange={event => {
-										const value = event.target.value
-										if (
-											value === 'collection' ||
-											value === 'daily'
-										)
-											setUsage(value)
-									}}
-								>
-									<option value="collection">Set/pack</option>
-									<option value="daily">Daily</option>
-								</select>
-							</div>
-							<button
-								type="submit"
-								disabled={busy || saved || loading}
-							>
-								Save draft
-							</button>
-						</form>
 						{saveMessage && <p role="status">{saveMessage}</p>}
 						{generated.puzzle.recipe.rotation && (
 							<p className={styles.rotationHelp}>
