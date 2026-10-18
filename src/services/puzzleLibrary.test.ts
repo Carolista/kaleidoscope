@@ -11,6 +11,7 @@ import {
 	editPuzzleDraft,
 	loadPuzzleDrafts,
 	bulkPuzzleDrafts,
+	replacePuzzleDraft,
 } from './puzzleLibrary'
 
 const palette = {
@@ -88,6 +89,44 @@ describe('saved puzzle decoding', () => {
 	})
 })
 describe('draft library database requests', () => {
+	it('replaces the exact preview and private solution atomically under the existing ID', async () => {
+		const { original } = fixture(HEX_PUZZLE_RECIPES[3])
+		const rpc = vi.fn().mockResolvedValue({ data: 'id', error: null })
+		await replacePuzzleDraft(
+			mockClient({ rpc }),
+			'id',
+			' Replacement ',
+			'daily',
+			original,
+		)
+		expect(rpc).toHaveBeenCalledExactlyOnceWith(
+			'replace_hex_puzzle_draft',
+			puzzleDraftArgs('id', 'Replacement', 'daily', original),
+		)
+		rpc.mockResolvedValue({ data: 'wrong-id', error: null })
+		await expect(
+			replacePuzzleDraft(
+				mockClient({ rpc }),
+				'id',
+				'Name',
+				'daily',
+				original,
+			),
+		).rejects.toThrow('not confirmed')
+		rpc.mockResolvedValue({
+			data: null,
+			error: { message: 'Unassign the puzzle' },
+		})
+		await expect(
+			replacePuzzleDraft(
+				mockClient({ rpc }),
+				'id',
+				'Name',
+				'daily',
+				original,
+			),
+		).rejects.toThrow('Unassign the puzzle')
+	})
 	it('sends one atomic bulk request and requires confirmation of every selected ID', async () => {
 		const rpc = vi.fn().mockResolvedValue({ data: ['b', 'a'], error: null })
 		await bulkPuzzleDrafts(mockClient({ rpc }), ['a', 'b'], {

@@ -64,10 +64,13 @@ Resolve stable ordered slots against current palette colors, including duplicate
 
 Browse using visual palettes and one-click Randomize, not manual seed editing.
 Palette changes recolor the existing layout without resetting placements.
-Group palette refresh/picker separately from recipe/randomize controls, in two
-columns from 640px and stacked below. Avoid repeated preview headings, palette
-names, and displayed seeds; keep compact gesture help and sign-out above the
-workspace.
+Use one shared New/Edit form with palette refresh/picker on the left and name,
+recipe/wand, and intended-use/save rows on the right from 640px, stacked below.
+Show creation metadata before generation; require a named preview to save.
+Avoid repeated palette labels and displayed seeds. Keep compact gesture help.
+Admin defaults to dark mode using the player's neutral charcoal/white theme helper,
+not separate tinted canvas colors or player state. Header account/sign-out/theme
+controls stay together, with favicon navigation back to the player app.
 Skip previewed seeds by shape/exact recipe for the mounted lab session. Current
 persistent exclusions derive from saved puzzles, not a separate blacklist table;
 deleting an unused draft frees its seed unless another saved row still uses it.
@@ -84,9 +87,21 @@ IDs. Intended use can switch between Set/pack and Daily while unassigned.
 Scheduled/live content is not managed through the draft-only editing/deletion RPCs.
 
 Use a library-first flow with dedicated New/Edit workspaces. Saving a new puzzle
-stays in creation; palette/recipe controls then configure the next generation,
-not the saved preview. Editing uses stored definitions and preserves playtest
-state across metadata saves. Guard unsaved work when leaving.
+stays in creation; name/palette/recipe controls then configure the next generation,
+not the saved preview. Preserve a revised next-puzzle name on generation; clear it
+only when exactly unchanged from the last successful save. Warn when discarding
+a revised next-puzzle name.
+
+Editing opens stored definitions rather than regenerating from seed. Unassigned
+drafts can preview replacements, including recipe changes, without deleting their
+identity. Save Changes atomically updates public design/recipe and private
+provenance/solution under the same ID and returns to the library. Discard keeps the
+original; failed saves retain the preview for retry. Recipe selection alone never
+changes the current design. Palette changes preserve placements; randomization
+resets them. Assigned drafts must be unassigned before replacement, while existing
+metadata editing remains available. Recheck all blockers under the catalog lock.
+Creation and editing share saved-seed exclusion/generation logic; edit preview
+history also excludes the original seed. Guard unsaved work when leaving.
 
 Keep gallery cards non-clickable, with small square custom checkboxes and classic
 blue pen-to-square/red trash-can icon buttons. Selection applies to the shown

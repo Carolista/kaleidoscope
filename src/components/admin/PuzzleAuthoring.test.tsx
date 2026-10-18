@@ -102,6 +102,69 @@ async function randomize() {
 }
 
 describe('admin puzzle lab', () => {
+	it('keeps a revised name for the next puzzle without renaming or resaving the saved preview', async () => {
+		setup()
+		await screen.findByRole('button', {
+			name: 'Select the Test palette color palette',
+		})
+		await randomize()
+		const name = screen.getByLabelText('Puzzle name')
+		fireEvent.change(name, { target: { value: 'Puzzle 1' } })
+		const save = screen.getByRole('button', { name: /save draft/i })
+		fireEvent.click(save)
+		await screen.findByText(/Saved "Puzzle 1"/)
+		const original = screen.getByRole('img', {
+			name: 'Target design',
+		}).innerHTML
+		expect(name).toBeEnabled()
+		fireEvent.change(name, { target: { value: 'Puzzle 2' } })
+		expect(save).toBeDisabled()
+		fireEvent.submit(save.closest('form')!)
+		expect(mocks.rpc).toHaveBeenCalledTimes(1)
+		expect(
+			screen.getByRole('img', { name: 'Target design' }).innerHTML,
+		).toBe(original)
+		const unload = new Event('beforeunload', { cancelable: true })
+		window.dispatchEvent(unload)
+		expect(unload.defaultPrevented).toBe(true)
+		const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+		fireEvent.click(screen.getByRole('button', { name: 'Back to library' }))
+		expect(confirm).toHaveBeenCalledOnce()
+		expect(name).toHaveValue('Puzzle 2')
+		mocks.seeds.mockResolvedValueOnce({
+			data: null,
+			error: { message: 'Seed read failed' },
+		})
+		await randomize()
+		expect(name).toHaveValue('Puzzle 2')
+		expect(save).toBeDisabled()
+		vi.mocked(crypto.getRandomValues).mockImplementation(values => {
+			if (!(values instanceof Uint32Array))
+				throw new Error('Expected seed words')
+			values.fill(2)
+			return values
+		})
+		await randomize()
+		expect(name).toHaveValue('Puzzle 2')
+		expect(save).toBeEnabled()
+		fireEvent.click(save)
+		await screen.findByText(/Saved "Puzzle 2"/)
+		expect(mocks.rpc).toHaveBeenCalledTimes(2)
+		expect(mocks.rpc.mock.calls[1][1].p_name).toBe('Puzzle 2')
+		expect(mocks.rpc.mock.calls[1][1].p_id).not.toBe(
+			mocks.rpc.mock.calls[0][1].p_id,
+		)
+		vi.mocked(crypto.getRandomValues).mockImplementation(values => {
+			if (!(values instanceof Uint32Array))
+				throw new Error('Expected seed words')
+			values.fill(3)
+			return values
+		})
+		await randomize()
+		expect(name).toHaveValue('')
+		expect(save).toBeDisabled()
+	})
+
 	it('starts in the library and warns before discarding an unsaved new puzzle', async () => {
 		setup(undefined, false)
 		expect(
@@ -229,7 +292,7 @@ describe('admin puzzle lab', () => {
 			expect(
 				screen.getByRole('button', { name: /save draft/i }),
 			).toBeDisabled()
-			expect(screen.getByLabelText('Puzzle name')).toBeDisabled()
+			expect(screen.getByLabelText('Puzzle name')).toBeEnabled()
 		},
 	)
 

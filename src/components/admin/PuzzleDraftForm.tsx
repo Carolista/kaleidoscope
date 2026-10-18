@@ -25,6 +25,7 @@ interface DraftGeneration {
 }
 
 export default function PuzzleDraftForm({
+	mode,
 	palettes,
 	paletteId,
 	onPaletteChange,
@@ -35,6 +36,7 @@ export default function PuzzleDraftForm({
 	generation,
 	onSubmit,
 }: {
+	readonly mode: 'create' | 'edit'
 	readonly palettes: readonly AuthoringPalette[]
 	readonly paletteId?: string
 	readonly onPaletteChange: (id: string) => void
@@ -50,7 +52,9 @@ export default function PuzzleDraftForm({
 		<form
 			onSubmit={onSubmit}
 			className={styles.form}
-			aria-label={generation ? 'Save puzzle draft' : 'Edit puzzle draft'}
+			aria-label={
+				mode === 'create' ? 'Save puzzle draft' : 'Edit puzzle draft'
+			}
 		>
 			<div className={styles.authoringForm}>
 				<div className={styles.paletteControls}>
@@ -126,7 +130,7 @@ export default function PuzzleDraftForm({
 							id={`${id}-name`}
 							value={metadata.name}
 							required
-							disabled={busy || metadata.locked}
+							disabled={busy}
 							onChange={event =>
 								metadata.onNameChange(event.target.value)
 							}
@@ -213,7 +217,7 @@ export default function PuzzleDraftForm({
 								!metadata.name.trim()
 							}
 						>
-							{generation ? 'Save Draft' : 'Save Changes'}
+							{mode === 'create' ? 'Save Draft' : 'Save Changes'}
 						</button>
 					</div>
 					{metadata.assigned && (

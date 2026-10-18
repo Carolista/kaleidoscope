@@ -83,8 +83,10 @@ After generating, enter a **Puzzle name**, choose **Intended use** (Set/pack or
 Daily), and press **Save draft**. Apply the draft-saving migration below first.
 The save atomically creates an unpublished, unassigned puzzle and its private
 authoring record; it does not save playtest placements. A successful save locks
-the draft fields until the next randomization. Palette and recipe stay available
-for the next generation without changing the saved preview. Repeated clicks are
+intended use and saving until the next randomization. Name, palette, and recipe
+stay available for the next generation without changing the saved puzzle. A revised
+name carries into the next randomization; an unchanged saved name is cleared.
+Leaving with a revised next-puzzle name warns before discarding it. Repeated clicks are
 blocked while saving, and retrying an unchanged failed request reuses its ID.
 Errors preserve the preview and form values.
 
@@ -106,6 +108,14 @@ Cards are not navigation links. Their square, icon-only controls provide the
 shared custom selection checkbox, a blue classic Edit icon, and a red classic
 Delete icon. Use **Edit** to playtest the stored definition (not a regenerated seed).
 Edit its name, visual palette selection, or intended use and press **Save Changes**.
+For an unassigned draft, the recipe selector and wand **Randomize puzzle** button
+can preview a replacement without deleting the puzzle. Name, palette, and intended
+use are retained; each randomization resets playtest placements. **Save Changes**
+atomically replaces the design, recipe, seed, and private solution under the same
+puzzle ID, then returns to the library. Changing the recipe selector alone does
+not change the preview. Leaving without saving keeps the original stored design.
+Assigned drafts must be unassigned before replacing their design; their existing
+name/palette editing remains available. Apply the replacement migration below first.
 Palette selection recolors without resetting playtest state. Changes remain local
 until saved; leaving an unsaved workspace warns before discarding edits. Unassigned
 unpublished drafts can switch intended use; assigned drafts must first be
@@ -302,6 +312,31 @@ be deleted, and scheduled/live content is rejected. Deletion cascades to the
 private authoring row, removing that row's persistent saved-seed exclusion.
 Other saved uses of the same seed/recipe and current session preview history
 still exclude it.
+
+## Apply draft design replacement
+
+After the bulk-action migration:
+
+1. Run the complete
+   [20261018050000_replace_puzzle_draft.sql](./migrations/20261018050000_replace_puzzle_draft.sql)
+   once in SQL Editor as `postgres`. Do not rerun earlier migrations.
+2. Run [replace_puzzle_draft.sql](./tests/replace_puzzle_draft.sql) as `postgres`,
+   without an automatic RLS wrapper. Expect **18 PASS results**; fixtures roll back.
+3. Open an unassigned draft, randomize a replacement, and save. Reopen it to verify
+   the saved design. Also try leaving a replacement without saving to verify that
+   the original remains unchanged.
+
+The new `replace_hex_puzzle_draft` RPC uses caller RLS, an explicit admin check,
+READ COMMITTED isolation, and the existing catalog lock. It rechecks existence,
+hexagon shape, unpublished status, and collection/daily references at write time.
+Public metadata/definition and private provenance/solution update in one transaction;
+failure in either write rolls back both. The puzzle ID is never deleted/recreated.
+Identical retries reapply the same content without creating a second puzzle.
+Metadata-only edits still use the existing RPC, preserving assigned-draft behavior.
+Replacement uses the same saved-seed exclusions as creation; its mounted editor also
+excludes the original seed and any replacement seeds already previewed per recipe.
+Replacing a design removes its old persistent seed exclusion unless another saved
+puzzle still uses it; mounted preview history continues to exclude it until leaving.
 
 ## Apply gallery bulk actions
 

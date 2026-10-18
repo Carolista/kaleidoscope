@@ -13,6 +13,7 @@ import {
 import type { Database } from '../../types/database'
 import {
 	renderAuthoredHexPuzzle,
+	type AuthoredHexPuzzle,
 	type AuthoringPalette,
 } from '../../puzzles/hexAuthoring'
 import {
@@ -20,9 +21,15 @@ import {
 	editPuzzleDraft,
 	loadPuzzleDrafts,
 	bulkPuzzleDrafts,
+	replacePuzzleDraft,
 	type LibraryDraft,
 } from '../../services/puzzleLibrary'
-import type { PuzzleUsage } from '../../services/puzzleDrafts'
+import {
+	generateDraftPreview,
+	puzzleDraftArgs,
+	type PuzzleUsage,
+} from '../../services/puzzleDrafts'
+import { HEX_PUZZLE_RECIPES } from '../../puzzles/hexPuzzle'
 import HexPuzzleBoard from '../puzzle/HexPuzzleBoard'
 import PuzzleMode from '../puzzle/PuzzleMode'
 import paletteStyles from '../controls/color-schemes/SchemePicker.module.css'
@@ -66,12 +73,57 @@ function DraftEditor({
 	const working = useRef(false)
 	const [error, setError] = useState('')
 	const [confirmDelete, setConfirmDelete] = useState(false)
+	const [recipeId, setRecipeId] = useState<string>(draft.puzzle.recipe.id)
+	const [replacement, setReplacement] = useState<AuthoredHexPuzzle | null>(
+		null,
+	)
+	const [previewRun, setPreviewRun] = useState(0)
+	const previewedSeeds = useRef(
+		new Map([
+			[`hexagon:${draft.puzzle.recipe.id}`, new Set([draft.puzzle.seed])],
+		]),
+	)
+	const puzzle = replacement ?? draft.puzzle
 	const palette = palettes.find(value => value.id === paletteId)
 	const dirty =
 		name !== draft.row.name ||
 		paletteId !== draft.row.palette_id ||
-		usage !== draft.row.usage
+		usage !== draft.row.usage ||
+		replacement !== null
 	useUnsavedDraft(dirty || busy, onDirtyChange)
+
+	async function generate() {
+		if (working.current) return
+		setError('')
+		working.current = true
+		setBusy(true)
+		try {
+			if (draft.assigned)
+				throw new Error(
+					'Unassign the puzzle before replacing its design.',
+				)
+			const recipe = HEX_PUZZLE_RECIPES.find(
+				value => value.id === recipeId,
+			)
+			if (!recipe || !palette)
+				throw new Error(
+					'Choose a recipe and palette before generating.',
+				)
+			const next = await generateDraftPreview(
+				client,
+				recipe,
+				paletteId,
+				previewedSeeds.current,
+			)
+			setReplacement(next)
+			setPreviewRun(value => value + 1)
+		} catch (cause) {
+			setError(message(cause))
+		} finally {
+			working.current = false
+			setBusy(false)
+		}
+	}
 
 	async function save(event: SubmitEvent<HTMLFormElement>) {
 		event.preventDefault()
@@ -84,7 +136,30 @@ function DraftEditor({
 		working.current = true
 		setBusy(true)
 		try {
-			await editPuzzleDraft(client, draft.row.id, name, paletteId, usage)
+			const updatedPuzzle = { ...puzzle, paletteId }
+			if (replacement) {
+				await replacePuzzleDraft(
+					client,
+					draft.row.id,
+					name,
+					usage,
+					updatedPuzzle,
+				)
+			} else {
+				await editPuzzleDraft(
+					client,
+					draft.row.id,
+					name,
+					paletteId,
+					usage,
+				)
+			}
+			const args = puzzleDraftArgs(
+				draft.row.id,
+				name,
+				usage,
+				updatedPuzzle,
+			)
 			setName(name.trim())
 			onChanged('Draft changes saved.', {
 				...draft,
@@ -93,8 +168,12 @@ function DraftEditor({
 					name: name.trim(),
 					palette_id: paletteId,
 					usage,
+					board_size: args.p_board_size,
+					rotation_allowed: args.p_rotation_allowed,
+					difficulty: args.p_difficulty,
+					definition: args.p_definition,
 				},
-				puzzle: { ...draft.puzzle, paletteId },
+				puzzle: updatedPuzzle,
 			})
 		} catch (cause) {
 			setError(message(cause))
@@ -135,17 +214,29 @@ function DraftEditor({
 			</button>
 			<h2>Editing: {draft.row.name}</h2>
 			<p>
-				{draft.puzzle.recipe.label} ·{' '}
+				{puzzle.recipe.label} ·{' '}
 				{draft.assigned ? 'Assigned' : 'Unassigned'}
 			</p>
 			{error && <p role="alert">{error}</p>}
 			<PuzzleDraftForm
+				mode="edit"
 				palettes={palettes}
 				paletteId={paletteId}
 				onPaletteChange={setPaletteId}
 				onRefreshPalettes={onRefreshPalettes}
 				palettesLoading={palettesLoading}
 				busy={busy}
+				generation={
+					draft.assigned
+						? undefined
+						: {
+								recipeId,
+								onRecipeChange: setRecipeId,
+								onGenerate: () => {
+									void generate()
+								},
+							}
+				}
 				metadata={{
 					name,
 					usage,
@@ -153,13 +244,22 @@ function DraftEditor({
 					onUsageChange: setUsage,
 					assigned: draft.assigned,
 					recipeLabel: draft.puzzle.recipe.label,
-					submitDisabled: !palette,
+					submitDisabled: !palette || palettesLoading,
 				}}
 				onSubmit={save}
 			/>
+			{!draft.assigned && (
+				<p>
+					Randomize previews a replacement. Save Changes replaces the
+					saved design; leaving without saving keeps the original.
+				</p>
+			)}
+			{draft.assigned && (
+				<p>Unassign this puzzle before replacing its design.</p>
+			)}
 			{palette ? (
 				<div className={styles.playtest}>
-					{draft.puzzle.recipe.rotation && (
+					{puzzle.recipe.rotation && (
 						<p className={styles.rotationHelp}>
 							Tap tray pieces to rotate; drag to place. Double-tap
 							board pieces to return. Keyboard: Enter/Space
@@ -168,8 +268,9 @@ function DraftEditor({
 						</p>
 					)}
 					<PuzzleMode
+						key={previewRun}
 						previewPuzzle={renderAuthoredHexPuzzle(
-							{ ...draft.puzzle, paletteId },
+							{ ...puzzle, paletteId },
 							palette,
 						)}
 					/>

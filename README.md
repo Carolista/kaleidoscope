@@ -78,8 +78,12 @@ Supabase palette picker, and one-click randomization. Previously previewed seeds
 are skipped per recipe during the lab session; seeds are not displayed.
 Saved puzzles supply persistent exclusions across palettes and intended uses.
 Palette changes recolor the same design without resetting placements.
-At wider widths, palette controls sit beside recipe/randomize controls; on narrow
-screens they stack. Sign-out sits above the workspace beside the signed-in account.
+At wider widths, the shared New/Edit form has a palette picker on the left and
+name, recipe/wand randomizer, and intended-use/save controls stacked on the right.
+All fields appear before generation; saving requires a named preview. Narrow
+screens stack the columns. The compact header groups account, sign-out, and theme
+controls, with favicon navigation back to the player app. Admin defaults to dark
+mode and uses the same neutral charcoal/white theme colors as the player app.
 
 Click/tap tray pieces to rotate in rotation-enabled recipes; drag to move.
 Double-click/double-tap board pieces or drag back to return them to the tray.
@@ -89,9 +93,16 @@ slots stay fixed through rotation and use one subtle selected border.
 The admin workspace opens with a draft gallery. **New puzzle** and each card's
 **Edit** button open dedicated creation/editing views. Save named Set/pack or Daily
 drafts atomically; reopening uses the stored definition rather than regeneration.
-After saving, palette/recipe choices apply to the next generation without changing
-the saved puzzle. Wide metadata rows use name/use/save columns; narrow screens stack.
+After saving, name/palette/recipe choices apply to the next generation without
+changing the saved puzzle. A revised name survives randomization; an unchanged
+saved name clears.
 Unsaved work is guarded when leaving the workspace.
+
+Unassigned drafts can preview replacement designs with the recipe/wand controls.
+Save Changes atomically replaces the public design and private solution under the
+same puzzle ID, then returns to the library. Leaving without saving keeps the
+original; errors preserve the pending replacement for retry. Assigned drafts retain
+metadata editing but cannot replace their design.
 
 Non-clickable cards have custom selection checkboxes and small blue Edit/red Delete
 icons. Select all shown or individual drafts to change palettes or delete in bulk.

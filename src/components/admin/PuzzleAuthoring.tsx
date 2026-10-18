@@ -1,16 +1,14 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { useEffect, useRef, useState, type SubmitEvent } from 'react'
 import {
-	generateAuthoredHexPuzzle,
 	renderAuthoredHexPuzzle,
 	type AuthoredHexPuzzle,
 	type AuthoringPalette,
 } from '../../puzzles/hexAuthoring'
 import { HEX_PUZZLE_RECIPES } from '../../puzzles/hexPuzzle'
-import { createUnusedPuzzleSeed } from '../../puzzles/puzzleSeed'
 import type { Database } from '../../types/database'
 import {
-	loadSavedPuzzleSeeds,
+	generateDraftPreview,
 	puzzleDraftArgs,
 	savePuzzleDraft,
 	type DraftArgs,
@@ -49,6 +47,7 @@ export default function PuzzleAuthoring({
 	const [usage, setUsage] = useState<PuzzleUsage>('collection')
 	const [recipeId, setRecipeId] = useState<string>(HEX_PUZZLE_RECIPES[0].id)
 	const [saved, setSaved] = useState(false)
+	const [savedName, setSavedName] = useState('')
 	const [saveMessage, setSaveMessage] = useState('')
 	const pendingSave = useRef<DraftArgs | null>(null)
 	const [selectedPaletteId, setSelectedPaletteId] = useState<string | null>(
@@ -61,8 +60,9 @@ export default function PuzzleAuthoring({
 	} | null>(null)
 	const dirty =
 		creating &&
-		!saved &&
-		(!!generated || draftName.length > 0 || usage !== 'collection')
+		(saved
+			? draftName !== savedName
+			: !!generated || draftName.length > 0 || usage !== 'collection')
 	useUnsavedDraft(dirty || busy, onDirtyChange)
 
 	useEffect(() => {
@@ -127,20 +127,15 @@ export default function PuzzleAuthoring({
 				throw new Error(
 					'Choose a recipe and palette before generating.',
 				)
-			const recipeKey = `hexagon:${recipe.id}`
-			const excluded = await loadSavedPuzzleSeeds(client, recipe)
-			for (const seed of previewedSeeds.current.get(recipeKey) ?? []) {
-				excluded.add(seed)
-			}
-			const seed = createUnusedPuzzleSeed(excluded)
-			const puzzle = generateAuthoredHexPuzzle(seed, palette.id, recipe)
-			const previewed =
-				previewedSeeds.current.get(recipeKey) ?? new Set<string>()
-			previewed.add(seed)
-			previewedSeeds.current.set(recipeKey, previewed)
+			const puzzle = await generateDraftPreview(
+				client,
+				recipe,
+				palette.id,
+				previewedSeeds.current,
+			)
 			setSaved(false)
 			setSaveMessage('')
-			if (saved) setDraftName('')
+			if (saved && draftName === savedName) setDraftName('')
 			pendingSave.current = null
 			setGenerated(previous => ({
 				puzzle,
@@ -179,9 +174,10 @@ export default function PuzzleAuthoring({
 			pendingSave.current = args
 			await savePuzzleDraft(client, args)
 			setSaved(true)
+			setSavedName(draftName)
 			setLibraryRevision(value => value + 1)
 			setSaveMessage(
-				`Saved "${args.p_name}" as an unpublished ${usage === 'daily' ? 'daily' : 'set/pack'} draft. Palette and recipe choices now apply to the next randomization; this saved preview stays unchanged.`,
+				`Saved "${args.p_name}" as an unpublished ${usage === 'daily' ? 'daily' : 'set/pack'} draft. Name, palette, and recipe choices now apply to the next randomization; this saved preview stays unchanged.`,
 			)
 		} catch (cause) {
 			setError(messageFor(cause))
@@ -250,6 +246,7 @@ export default function PuzzleAuthoring({
 				</p>
 				{error && <p role="alert">{error}</p>}
 				<PuzzleDraftForm
+					mode="create"
 					palettes={palettes}
 					paletteId={selectedPalette?.id}
 					onPaletteChange={paletteId => {

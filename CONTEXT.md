@@ -24,16 +24,28 @@ memory-only, while named Set/pack or Daily drafts save atomically to Supabase.
 No player progress writes or Zen autosaves occur.
 See [Supabase instructions](./supabase/README.md) for current scope.
 
-The authoring controls use two columns from 640px: palette refresh/picker on the
-left, recipe/randomize on the right; narrower screens stack them. The preview
-omits repeated recipe/palette labels and the seed. Sign-out sits above the
-workspace beside the signed-in account.
+The shared New/Edit form uses two columns from 640px: palette refresh/picker on the
+left; name, recipe/wand randomizer, and intended-use/save rows on the right.
+Narrower screens stack the columns. New-puzzle fields are visible before generation;
+saving requires a named preview. The preview omits repeated palette labels and the
+seed. The compact header groups account, sign-out, and theme controls at the right,
+with favicon navigation at the left. Admin defaults to dark mode using the shared
+neutral charcoal/white theme helper, without initializing player state.
 
 The portal starts in the draft gallery; New puzzle and Edit open dedicated views.
 Saved definitions reopen without regeneration. Creation stays open after saving,
-with palette/recipe choices available for the next generation without changing the
-saved preview. Name/use/save share a 2fr/1fr/1fr row from 640px, stacked below.
+with name/palette/recipe choices available for the next generation without changing
+the saved preview. A revised name carries forward; an exactly unchanged saved name
+clears on successful randomization. Leaving with a revised name warns too.
 Leaving unsaved work warns before discarding.
+
+Unassigned drafts can randomize replacement previews and change recipe locally.
+Saving atomically replaces public design/recipe and private provenance/solution
+under the existing ID, then returns to the library. Discard keeps the original;
+failed reads/saves preserve the preview. Changing the recipe alone does not generate.
+Assigned drafts retain metadata editing but cannot replace designs. The replacement
+RPC rechecks existence, shape, release and references under the catalog lock.
+Hosted replacement functionality has been confirmed by the user.
 
 Gallery cards are not links: small square controls provide the custom checkbox,
 blue classic Edit icon, and red classic Delete icon. Select all shown supports a

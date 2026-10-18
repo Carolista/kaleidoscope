@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database, Tables } from '../types/database'
 import type { AuthoredHexPuzzle } from '../puzzles/hexAuthoring'
 import { readAuthoredHexPuzzle } from '../puzzles/readAuthoredHexPuzzle'
-import type { PuzzleUsage } from './puzzleDrafts'
+import { puzzleDraftArgs, type PuzzleUsage } from './puzzleDrafts'
 
 export interface LibraryDraft {
 	readonly row: Tables<'puzzles'>
@@ -66,6 +66,21 @@ export async function deletePuzzleDraft(
 	})
 	if (error) throw new Error(`Unable to delete draft: ${error.message}`)
 	if (data !== id) throw new Error('The draft deletion was not confirmed.')
+}
+
+export async function replacePuzzleDraft(
+	client: SupabaseClient<Database>,
+	id: string,
+	name: string,
+	usage: PuzzleUsage,
+	puzzle: AuthoredHexPuzzle,
+): Promise<void> {
+	const { data, error } = await client.rpc(
+		'replace_hex_puzzle_draft',
+		puzzleDraftArgs(id, name, usage, puzzle),
+	)
+	if (error) throw new Error(`Unable to replace draft: ${error.message}`)
+	if (data !== id) throw new Error('The draft replacement was not confirmed.')
 }
 
 export async function bulkPuzzleDrafts(

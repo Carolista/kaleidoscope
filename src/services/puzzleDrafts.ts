@@ -1,6 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { AuthoredHexPuzzle } from '../puzzles/hexAuthoring'
+import {
+	generateAuthoredHexPuzzle,
+	type AuthoredHexPuzzle,
+} from '../puzzles/hexAuthoring'
 import type { HexPuzzleRecipe } from '../puzzles/hexPuzzle'
+import { createUnusedPuzzleSeed } from '../puzzles/puzzleSeed'
 import type { Database } from '../types/database'
 
 export type PuzzleUsage = 'collection' | 'daily'
@@ -79,4 +83,21 @@ export async function savePuzzleDraft(
 	if (data !== args.p_id)
 		throw new Error('The draft save did not return the expected puzzle ID.')
 	return data
+}
+
+export async function generateDraftPreview(
+	client: SupabaseClient<Database>,
+	recipe: HexPuzzleRecipe,
+	paletteId: string,
+	previewedSeeds: Map<string, Set<string>>,
+): Promise<AuthoredHexPuzzle> {
+	const recipeKey = `hexagon:${recipe.id}`
+	const excluded = await loadSavedPuzzleSeeds(client, recipe)
+	for (const seed of previewedSeeds.get(recipeKey) ?? []) excluded.add(seed)
+	const seed = createUnusedPuzzleSeed(excluded)
+	const puzzle = generateAuthoredHexPuzzle(seed, paletteId, recipe)
+	const previewed = previewedSeeds.get(recipeKey) ?? new Set<string>()
+	previewed.add(seed)
+	previewedSeeds.set(recipeKey, previewed)
+	return puzzle
 }

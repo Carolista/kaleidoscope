@@ -19,15 +19,27 @@ const mocks = vi.hoisted(() => ({
 	edit: vi.fn(),
 	remove: vi.fn(),
 	bulk: vi.fn(),
+	replace: vi.fn(),
+	seeds: vi.fn(),
 }))
 vi.mock('../../services/puzzleLibrary', () => ({
 	loadPuzzleDrafts: (...args: unknown[]) => mocks.load(...args),
 	editPuzzleDraft: (...args: unknown[]) => mocks.edit(...args),
 	deletePuzzleDraft: (...args: unknown[]) => mocks.remove(...args),
 	bulkPuzzleDrafts: (...args: unknown[]) => mocks.bulk(...args),
+	replacePuzzleDraft: (...args: unknown[]) => mocks.replace(...args),
 }))
 vi.mock('../../services/supabaseClient', () => ({
-	getSupabaseClient: () => ({}),
+	getSupabaseClient: () => ({
+		from: () => {
+			const query = {
+				eq: vi.fn().mockReturnThis(),
+				order: vi.fn().mockReturnThis(),
+				range: mocks.seeds,
+			}
+			return { select: () => query }
+		},
+	}),
 }))
 const palette = {
 	id: 'cabo',
@@ -69,6 +81,8 @@ beforeEach(() => {
 	mocks.edit.mockResolvedValue(undefined)
 	mocks.remove.mockResolvedValue(undefined)
 	mocks.bulk.mockResolvedValue(undefined)
+	mocks.replace.mockResolvedValue(undefined)
+	mocks.seeds.mockResolvedValue({ data: [], error: null })
 })
 afterEach(() => vi.restoreAllMocks())
 function setup() {
@@ -87,6 +101,148 @@ async function open() {
 	return screen.getByRole('article', { name: 'Edit Saved art' })
 }
 describe('draft library', () => {
+	it('previews replacements without writes, excludes saved/previewed seeds, and saves the exact replacement under the existing ID', async () => {
+		mocks.seeds.mockResolvedValue({
+			data: [{ seed: '00000001000000010000000100000001' }],
+			error: null,
+		})
+		const words = [1, 2, 2, 3]
+		vi.spyOn(crypto, 'getRandomValues').mockImplementation(values => {
+			if (!(values instanceof Uint32Array))
+				throw new Error('Expected seed words')
+			const word = words.shift()
+			if (!word) throw new Error('Unexpected seed request')
+			values.fill(word)
+			return values
+		})
+		setup()
+		await open()
+		const target = screen.getByRole('img', {
+			name: 'Target design',
+		}).innerHTML
+		const name = screen.getByLabelText('Puzzle name')
+		fireEvent.change(name, { target: { value: 'Replacement name' } })
+		fireEvent.change(screen.getByLabelText('Intended use'), {
+			target: { value: 'daily' },
+		})
+		fireEvent.click(
+			screen.getByRole('button', {
+				name: 'Select the Other color palette',
+			}),
+		)
+		fireEvent.change(screen.getByLabelText('Recipe'), {
+			target: { value: 'hard-medium' },
+		})
+		const randomize = screen.getByRole('button', {
+			name: 'Randomize puzzle',
+		})
+		fireEvent.click(randomize)
+		fireEvent.click(randomize)
+		await waitFor(() => expect(randomize).toBeEnabled())
+		expect(mocks.seeds).toHaveBeenCalledTimes(1)
+		expect(name).toHaveValue('Replacement name')
+		expect(screen.getByLabelText('Intended use')).toHaveValue('daily')
+		expect(
+			screen.getByRole('img', { name: 'Target design' }).innerHTML,
+		).not.toBe(target)
+		expect(mocks.edit).not.toHaveBeenCalled()
+		expect(mocks.replace).not.toHaveBeenCalled()
+		fireEvent.click(randomize)
+		await waitFor(() => expect(randomize).toBeEnabled())
+		expect(words).toEqual([])
+		const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+		fireEvent.click(screen.getByRole('button', { name: 'Back to library' }))
+		expect(confirm).toHaveBeenCalledOnce()
+		mocks.replace.mockRejectedValueOnce(new Error('Replacement failed'))
+		const preview = screen.getByRole('img', {
+			name: 'Target design',
+		}).innerHTML
+		const save = screen.getByRole('button', { name: 'Save Changes' })
+		fireEvent.click(save)
+		fireEvent.submit(save.closest('form')!)
+		expect(await screen.findByRole('alert')).toHaveTextContent(
+			'Replacement failed',
+		)
+		expect(mocks.replace).toHaveBeenCalledOnce()
+		expect(
+			screen.getByRole('img', { name: 'Target design' }).innerHTML,
+		).toBe(preview)
+		const expected = generateAuthoredHexPuzzle(
+			'00000003000000030000000300000003',
+			other.id,
+			HEX_PUZZLE_RECIPES[3],
+		)
+		expect(mocks.replace).toHaveBeenCalledWith(
+			expect.anything(),
+			draft.row.id,
+			'Replacement name',
+			'daily',
+			expected,
+		)
+		// Changing the next recipe does not silently regenerate the pending design.
+		fireEvent.change(screen.getByLabelText('Recipe'), {
+			target: { value: 'easy-small' },
+		})
+		fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }))
+		await screen.findByRole('heading', { name: 'Puzzle drafts' })
+		const unload = new Event('beforeunload', { cancelable: true })
+		window.dispatchEvent(unload)
+		expect(unload.defaultPrevented).toBe(false)
+		expect(mocks.replace.mock.calls[1]).toEqual(mocks.replace.mock.calls[0])
+		expect(mocks.edit).not.toHaveBeenCalled()
+	})
+
+	it('discards a replacement without writing and reopens the original stored design', async () => {
+		setup()
+		await open()
+		const original = screen.getByRole('img', {
+			name: 'Target design',
+		}).innerHTML
+		fireEvent.click(
+			screen.getByRole('button', { name: 'Randomize puzzle' }),
+		)
+		await waitFor(() =>
+			expect(
+				screen.getByRole('button', { name: 'Randomize puzzle' }),
+			).toBeEnabled(),
+		)
+		const unload = new Event('beforeunload', { cancelable: true })
+		window.dispatchEvent(unload)
+		expect(unload.defaultPrevented).toBe(true)
+		vi.spyOn(window, 'confirm').mockReturnValue(true)
+		fireEvent.click(screen.getByRole('button', { name: 'Back to library' }))
+		await open()
+		expect(
+			screen.getByRole('img', { name: 'Target design' }).innerHTML,
+		).toBe(original)
+		expect(mocks.replace).not.toHaveBeenCalled()
+		expect(mocks.edit).not.toHaveBeenCalled()
+	})
+
+	it('preserves the current design when seed lookup fails and still saves metadata normally', async () => {
+		setup()
+		await open()
+		const original = screen.getByRole('img', {
+			name: 'Target design',
+		}).innerHTML
+		mocks.seeds.mockResolvedValueOnce({
+			data: null,
+			error: { message: 'Seed lookup unavailable' },
+		})
+		fireEvent.click(
+			screen.getByRole('button', { name: 'Randomize puzzle' }),
+		)
+		expect(await screen.findByRole('alert')).toHaveTextContent(
+			'Seed lookup unavailable',
+		)
+		expect(
+			screen.getByRole('img', { name: 'Target design' }).innerHTML,
+		).toBe(original)
+		fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }))
+		await screen.findByText('Draft changes saved.')
+		expect(mocks.edit).toHaveBeenCalledOnce()
+		expect(mocks.replace).not.toHaveBeenCalled()
+	})
 	it('keeps gallery controls fixed and places compact bulk icons alongside select all', async () => {
 		setup()
 		const refresh = screen.getByRole('button', { name: 'Refresh drafts' })
@@ -141,11 +297,10 @@ describe('draft library', () => {
 			screen.queryByRole('button', { name: 'Refresh palettes' }),
 		).not.toBeInTheDocument()
 		await open()
-		expect(screen.getByLabelText('Recipe')).toHaveValue(puzzle.recipe.label)
-		expect(screen.getByLabelText('Recipe')).toHaveAttribute('readonly')
+		expect(screen.getByLabelText('Recipe')).toHaveValue(puzzle.recipe.id)
 		expect(
-			screen.queryByRole('button', { name: 'Randomize puzzle' }),
-		).not.toBeInTheDocument()
+			screen.getByRole('button', { name: 'Randomize puzzle' }),
+		).toBeEnabled()
 		expect(document.querySelectorAll('form')).toHaveLength(1)
 		expect(screen.getAllByText('Palette', { exact: true })).toHaveLength(1)
 		const button = screen.getByRole('button', { name: 'Refresh palettes' })
@@ -342,8 +497,8 @@ describe('draft library', () => {
 			screen.queryByRole('heading', { name: 'Puzzle drafts' }),
 		).not.toBeInTheDocument()
 		expect(
-			screen.queryByRole('button', { name: 'Randomize puzzle' }),
-		).not.toBeInTheDocument()
+			screen.getByRole('button', { name: 'Randomize puzzle' }),
+		).toBeEnabled()
 		expect(
 			within(editor)
 				.getByRole('img', { name: 'Target design' })
@@ -491,6 +646,10 @@ describe('draft library', () => {
 		setup()
 		await open()
 		expect(screen.getByLabelText('Intended use')).toBeDisabled()
+		expect(screen.getByLabelText('Recipe')).toHaveAttribute('readonly')
+		expect(
+			screen.queryByRole('button', { name: 'Randomize puzzle' }),
+		).not.toBeInTheDocument()
 		expect(
 			screen.getByRole('button', { name: 'Delete draft' }),
 		).toBeDisabled()
