@@ -2,8 +2,8 @@ import { useRef, useState, type SubmitEvent } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase'
 import {
-	renderAuthoredHexPuzzle,
-	type AuthoredHexPuzzle,
+	renderAuthoredPuzzle,
+	type AuthoredPuzzle,
 	type AuthoringPalette,
 	PUZZLE_RECIPES,
 } from '@/domain/puzzles'
@@ -13,6 +13,7 @@ import {
 	replacePuzzleDraft,
 	type LibraryDraft,
 	generateDraftPreview,
+	previewedSeedKey,
 	puzzleDraftArgs,
 	type PuzzleUsage,
 } from '@/features/admin/services'
@@ -57,13 +58,14 @@ export default function PuzzleDraftEditor({
 		useModalState<true>()
 	const [deleteError, setDeleteError] = useState('')
 	const [recipeId, setRecipeId] = useState<string>(draft.puzzle.recipe.id)
-	const [replacement, setReplacement] = useState<AuthoredHexPuzzle | null>(
-		null,
-	)
+	const [replacement, setReplacement] = useState<AuthoredPuzzle | null>(null)
 	const [previewRun, setPreviewRun] = useState(0)
 	const previewedSeeds = useRef(
 		new Map([
-			[`hexagon:${draft.puzzle.recipe.id}`, new Set([draft.puzzle.seed])],
+			[
+				previewedSeedKey(draft.puzzle.shape, draft.puzzle.recipe),
+				new Set([draft.puzzle.seed]),
+			],
 		]),
 	)
 	const puzzle = replacement ?? draft.puzzle
@@ -91,6 +93,7 @@ export default function PuzzleDraftEditor({
 				recipe,
 				paletteId,
 				previewedSeeds.current,
+				draft.puzzle.shape,
 			)
 			setReplacement(next)
 			setPreviewRun(value => value + 1)
@@ -193,6 +196,7 @@ export default function PuzzleDraftEditor({
 				palettesError={palettesError}
 				busy={busy}
 				generation={{
+					shape: draft.puzzle.shape,
 					recipeId,
 					onRecipeChange: setRecipeId,
 					onGenerate: () => {
@@ -212,7 +216,7 @@ export default function PuzzleDraftEditor({
 			{palette ? (
 				<PuzzlePlaytest
 					key={previewRun}
-					puzzle={renderAuthoredHexPuzzle(
+					puzzle={renderAuthoredPuzzle(
 						{ ...puzzle, paletteId },
 						palette,
 					)}

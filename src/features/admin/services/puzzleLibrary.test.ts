@@ -2,11 +2,13 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { describe, expect, it, vi } from 'vitest'
 import type { Database, Tables } from '@/lib/supabase'
 import {
-	generateAuthoredHexPuzzle,
+	generateAuthoredPuzzle,
 	PUZZLE_RECIPES,
+	PUZZLE_SHAPE_IDS,
 	isPuzzleSolved,
-	renderAuthoredHexPuzzle,
-	readAuthoredHexPuzzle,
+	type PuzzleShapeId,
+	renderAuthoredPuzzle,
+	readAuthoredPuzzle,
 } from '@/domain/puzzles'
 import { puzzleDraftArgs } from './puzzleDrafts'
 import {
@@ -24,13 +26,19 @@ const palette = {
 }
 function fixture(
 	recipe = PUZZLE_RECIPES[0] as (typeof PUZZLE_RECIPES)[number],
+	shape: PuzzleShapeId = 'hexagon',
 ) {
-	const original = generateAuthoredHexPuzzle('saved-seed', palette.id, recipe)
+	const original = generateAuthoredPuzzle(
+		'saved-seed',
+		palette.id,
+		recipe,
+		shape,
+	)
 	const args = puzzleDraftArgs('id', 'Draft', 'collection', original)
 	const row: Tables<'puzzles'> = {
 		id: 'id',
 		name: 'Draft',
-		shape_id: 'hexagon',
+		shape_id: args.p_shape_id,
 		palette_id: palette.id,
 		usage: 'collection',
 		board_size: recipe.size,
@@ -52,43 +60,75 @@ function mockClient(value: object) {
 	return value as SupabaseClient<Database>
 }
 describe('saved puzzle decoding', () => {
-	it.each(PUZZLE_RECIPES)(
-		'reopens exact stored $id content without regeneration',
-		recipe => {
-			const { original, row, authoring } = fixture(recipe)
+	it.each(
+		PUZZLE_SHAPE_IDS.flatMap(shape =>
+			PUZZLE_RECIPES.map(recipe => ({ shape, recipe, id: recipe.id })),
+		),
+	)(
+		'reopens exact stored $shape $id content without regeneration',
+		({ shape, recipe }) => {
+			const { original, row, authoring } = fixture(recipe, shape)
 			// The seed intentionally no longer reproduces the stored design.
-			const saved = readAuthoredHexPuzzle(row, {
+			const saved = readAuthoredPuzzle(row, {
 				...authoring,
 				seed: 'not-the-original-seed',
 			})
-			expect(saved.definition).toEqual(original.definition)
-			const rendered = renderAuthoredHexPuzzle(saved, palette)
+			expect(saved).toMatchObject({
+				shape,
+				recipe,
+				generatorVersion: original.generatorVersion,
+				definition: original.definition,
+			})
+			const rendered = renderAuthoredPuzzle(saved, palette)
 			expect(isPuzzleSolved(rendered, saved.knownSolution)).toBe(true)
 		},
 	)
 	it('rejects missing authoring, unsupported versions, malformed slots and invalid solutions', () => {
 		const { row, authoring } = fixture()
-		expect(() => readAuthoredHexPuzzle(row, null)).toThrow('authoring')
+		expect(() => readAuthoredPuzzle(row, null)).toThrow('authoring')
 		expect(() =>
-			readAuthoredHexPuzzle(row, {
+			readAuthoredPuzzle(row, {
 				...authoring,
 				generator_version: 'future',
 			}),
 		).toThrow('generator')
 		expect(() =>
-			readAuthoredHexPuzzle(
+			readAuthoredPuzzle(
 				{ ...row, definition: { version: 1 } },
 				authoring,
 			),
 		).toThrow()
 		expect(() =>
-			readAuthoredHexPuzzle(row, { ...authoring, known_solution: {} }),
+			readAuthoredPuzzle(row, { ...authoring, known_solution: {} }),
 		).toThrow()
 		const definition = JSON.parse(JSON.stringify(row.definition))
 		definition.target['0,0'] = 5
 		expect(() =>
-			readAuthoredHexPuzzle({ ...row, definition }, authoring),
+			readAuthoredPuzzle({ ...row, definition }, authoring),
 		).toThrow('slot')
+	})
+	it('rejects triangle data stored with hexagon geometry, sizes or generator', () => {
+		const { row, authoring } = fixture(PUZZLE_RECIPES[0], 'triangle')
+		expect(row.definition).toMatchObject({ geometry: { size: 4 } })
+		expect(authoring.generator_version).toBe('triangle-v1')
+		expect(() =>
+			readAuthoredPuzzle(row, {
+				...authoring,
+				generator_version: 'hexagon-v2',
+			}),
+		).toThrow('generator')
+		const definition = JSON.parse(JSON.stringify(row.definition))
+		definition.geometry = { radius: 4 }
+		expect(() =>
+			readAuthoredPuzzle({ ...row, definition }, authoring),
+		).toThrow()
+		definition.geometry = { size: 7 }
+		expect(() =>
+			readAuthoredPuzzle({ ...row, definition }, authoring),
+		).toThrow()
+		expect(() =>
+			readAuthoredPuzzle({ ...row, shape_id: 'pinwheel' }, authoring),
+		).toThrow('unsupported authoring')
 	})
 })
 describe('draft library database requests', () => {
@@ -209,7 +249,7 @@ describe('draft library database requests', () => {
 				error: null,
 			})
 		const query = {
-			eq: vi.fn().mockReturnThis(),
+			in: vi.fn().mockReturnThis(),
 			is: vi.fn().mockReturnThis(),
 			order: vi.fn().mockReturnThis(),
 			range,
@@ -239,7 +279,10 @@ describe('draft library database requests', () => {
 			true,
 		)
 		expect(query.is).toHaveBeenCalledWith('published_at', null)
-		expect(query.eq).toHaveBeenCalledWith('shape_id', 'hexagon')
+		expect(query.in).toHaveBeenCalledWith('shape_id', [
+			'hexagon',
+			'triangle',
+		])
 		expect(range.mock.calls).toEqual([
 			[0, 999],
 			[1000, 1999],
@@ -247,7 +290,7 @@ describe('draft library database requests', () => {
 	})
 	it('surfaces read and write errors and rejects unconfirmed mutations', async () => {
 		const query = {
-			eq: vi.fn().mockReturnThis(),
+			in: vi.fn().mockReturnThis(),
 			is: vi.fn().mockReturnThis(),
 			order: vi.fn().mockReturnThis(),
 			range: vi.fn().mockResolvedValue({

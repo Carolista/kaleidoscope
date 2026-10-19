@@ -5,6 +5,7 @@ import {
 	type PuzzleRecipe,
 	type PuzzlePlacements,
 } from './puzzle'
+import type { PuzzleShapeId } from './puzzleShapes'
 
 export interface AuthoringPalette extends Palette {
 	readonly id: string
@@ -19,9 +20,29 @@ const slotColors = [
 	'#000004',
 ] as const
 
-export interface HexPuzzleDefinition {
+export const PUZZLE_GENERATOR_VERSIONS = {
+	hexagon: 'hexagon-v2',
+	triangle: 'triangle-v1',
+} as const satisfies Record<PuzzleShapeId, string>
+
+// Hexagon definitions predate other shapes and keep their `radius` key.
+export type PuzzleGeometry =
+	{ readonly radius: number } | { readonly size: number }
+
+export function puzzleGeometry(
+	shape: PuzzleShapeId,
+	gridSize: number,
+): PuzzleGeometry {
+	return shape === 'hexagon' ? { radius: gridSize } : { size: gridSize }
+}
+
+export function geometryGridSize(geometry: PuzzleGeometry): number {
+	return 'radius' in geometry ? geometry.radius : geometry.size
+}
+
+export interface PuzzleDefinition {
 	readonly version: 2
-	readonly geometry: { readonly radius: number }
+	readonly geometry: PuzzleGeometry
 	readonly target: Readonly<Record<string, ColorSlot>>
 	readonly pieces: readonly {
 		readonly id: string
@@ -33,12 +54,13 @@ export interface HexPuzzleDefinition {
 	}[]
 }
 
-export interface AuthoredHexPuzzle {
+export interface AuthoredPuzzle {
+	readonly shape: PuzzleShapeId
 	readonly paletteId: string
 	readonly recipe: PuzzleRecipe
 	readonly seed: string
-	readonly generatorVersion: 'hexagon-v2'
-	readonly definition: HexPuzzleDefinition
+	readonly generatorVersion: (typeof PUZZLE_GENERATOR_VERSIONS)[PuzzleShapeId]
+	readonly definition: PuzzleDefinition
 	readonly knownSolution: PuzzlePlacements
 }
 
@@ -50,25 +72,28 @@ function colorSlot(color: string): ColorSlot {
 	return slot
 }
 
-export function generateAuthoredHexPuzzle(
+export function generateAuthoredPuzzle(
 	seed: string,
 	paletteId: string,
 	recipe: PuzzleRecipe,
-): AuthoredHexPuzzle {
+	shape: PuzzleShapeId,
+): AuthoredPuzzle {
 	if (!paletteId.trim()) throw new Error('A palette ID is required.')
 	const puzzle = generatePuzzle(
 		seed,
 		{ name: 'Slots', colors: slotColors },
 		recipe,
+		shape,
 	)
 	return {
+		shape,
 		paletteId,
 		recipe,
 		seed,
-		generatorVersion: 'hexagon-v2',
+		generatorVersion: PUZZLE_GENERATOR_VERSIONS[shape],
 		definition: {
 			version: 2,
-			geometry: { radius: puzzle.gridSize },
+			geometry: puzzleGeometry(shape, puzzle.gridSize),
 			target: Object.fromEntries(
 				Object.entries(puzzle.target).map(([key, color]) => [
 					key,
@@ -88,8 +113,8 @@ export function generateAuthoredHexPuzzle(
 	}
 }
 
-export function renderAuthoredHexPuzzle(
-	authored: AuthoredHexPuzzle,
+export function renderAuthoredPuzzle(
+	authored: AuthoredPuzzle,
 	palette: AuthoringPalette,
 ): Puzzle {
 	if (palette.id !== authored.paletteId)
@@ -104,9 +129,9 @@ export function renderAuthoredHexPuzzle(
 	}
 	return {
 		version: 1,
-		shape: 'hexagon',
+		shape: authored.shape,
 		seed: authored.seed,
-		gridSize: authored.definition.geometry.radius,
+		gridSize: geometryGridSize(authored.definition.geometry),
 		paletteName: palette.name,
 		rotationAllowed: authored.recipe.rotation,
 		target: Object.fromEntries(

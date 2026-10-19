@@ -1,7 +1,12 @@
 import { faRotate, faWandMagicSparkles } from '@fortawesome/pro-solid-svg-icons'
 import type { SubmitEvent } from 'react'
-import type { AuthoringPalette } from '@/domain/puzzles'
-import { PUZZLE_RECIPES } from '@/domain/puzzles'
+import type { AuthoringPalette, PuzzleShapeId } from '@/domain/puzzles'
+import {
+	isPuzzleShapeId,
+	PUZZLE_RECIPES,
+	PUZZLE_SHAPE_IDS,
+	PUZZLE_SHAPE_LABELS,
+} from '@/domain/puzzles'
 import type { PuzzleUsage } from '@/features/admin/services'
 import { AdminIconButton, AdminForm } from '@/features/admin/common'
 import {
@@ -26,6 +31,9 @@ interface DraftMetadata {
 }
 
 interface DraftGeneration {
+	// Without a change handler the shape is shown but fixed.
+	readonly shape: PuzzleShapeId
+	readonly onShapeChange?: (shape: PuzzleShapeId) => void
 	readonly recipeId: string
 	readonly onRecipeChange: (recipeId: string) => void
 	readonly onGenerate: () => void
@@ -125,6 +133,26 @@ export default function PuzzleDraftForm({
 									metadata.onNameChange(event.target.value)
 								}
 							/>
+						)}
+					</FormField>
+					<FormField label="Shape">
+						{field => (
+							<Select
+								{...field}
+								value={generation.shape}
+								disabled={busy || !generation.onShapeChange}
+								onChange={event => {
+									const value = event.target.value
+									if (isPuzzleShapeId(value))
+										generation.onShapeChange?.(value)
+								}}
+							>
+								{PUZZLE_SHAPE_IDS.map(shape => (
+									<option key={shape} value={shape}>
+										{PUZZLE_SHAPE_LABELS[shape]}
+									</option>
+								))}
+							</Select>
 						)}
 					</FormField>
 					<div className={styles.recipeControls}>

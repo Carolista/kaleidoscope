@@ -9,10 +9,7 @@ import {
 	rotateCoordinate,
 	type PuzzlePlacements,
 } from './puzzle'
-import {
-	generateAuthoredHexPuzzle,
-	renderAuthoredHexPuzzle,
-} from './hexAuthoring'
+import { generateAuthoredPuzzle, renderAuthoredPuzzle } from './puzzleAuthoring'
 
 const palette = {
 	id: 'test',
@@ -24,10 +21,15 @@ describe.each(PUZZLE_RECIPES)('$label', recipe => {
 	it.each(Array.from({ length: 30 }, (_, i) => `recipe-${i}`))(
 		'generates a connected, solvable exact cover for %s',
 		seed => {
-			const authored = generateAuthoredHexPuzzle(seed, palette.id, recipe)
-			expect(generateAuthoredHexPuzzle(seed, palette.id, recipe)).toEqual(
-				authored,
+			const authored = generateAuthoredPuzzle(
+				seed,
+				palette.id,
+				recipe,
+				'hexagon',
 			)
+			expect(
+				generateAuthoredPuzzle(seed, palette.id, recipe, 'hexagon'),
+			).toEqual(authored)
 			expect(JSON.parse(JSON.stringify(authored))).toEqual(authored)
 			expect(Object.keys(authored.definition).sort()).toEqual([
 				'geometry',
@@ -40,7 +42,7 @@ describe.each(PUZZLE_RECIPES)('$label', recipe => {
 					slot => Number.isInteger(slot) && slot >= 0 && slot < 5,
 				),
 			).toBe(true)
-			const puzzle = renderAuthoredHexPuzzle(authored, palette)
+			const puzzle = renderAuthoredPuzzle(authored, palette)
 			for (const piece of authored.definition.pieces) {
 				const placement = authored.knownSolution[piece.id]
 				for (const tile of piece.tiles) {
@@ -102,16 +104,17 @@ describe.each(PUZZLE_RECIPES)('$label', recipe => {
 	)
 
 	it('varies with the seed and rejects out-of-wedge and overlapping placements', () => {
-		const authored = generateAuthoredHexPuzzle(
+		const authored = generateAuthoredPuzzle(
 			'placement',
 			palette.id,
 			recipe,
+			'hexagon',
 		)
 		expect(
-			generateAuthoredHexPuzzle('different', palette.id, recipe)
+			generateAuthoredPuzzle('different', palette.id, recipe, 'hexagon')
 				.definition,
 		).not.toEqual(authored.definition)
-		const puzzle = renderAuthoredHexPuzzle(authored, palette)
+		const puzzle = renderAuthoredPuzzle(authored, palette)
 		const first = puzzle.pieces.find(piece => piece.tiles.length > 1)!
 		const other = puzzle.pieces.find(piece => piece.tiles.length === 1)!
 		const placements = { [first.id]: puzzle.solution[first.id] }
@@ -134,10 +137,11 @@ describe.each(PUZZLE_RECIPES)('$label', recipe => {
 })
 
 it('retains palette slot identity through corrections, even with duplicate colors', () => {
-	const authored = generateAuthoredHexPuzzle(
+	const authored = generateAuthoredPuzzle(
 		'slots',
 		palette.id,
 		PUZZLE_RECIPES[0],
+		'hexagon',
 	)
 	const corrected = {
 		...palette,
@@ -149,13 +153,13 @@ it('retains palette slot identity through corrections, even with duplicate color
 			'#aabbcc',
 		] as const,
 	}
-	const rendered = renderAuthoredHexPuzzle(authored, corrected)
+	const rendered = renderAuthoredPuzzle(authored, corrected)
 	for (const [key, slot] of Object.entries(authored.definition.target)) {
 		expect(rendered.target[key]).toBe(corrected.colors[slot])
 	}
 	expect(isPuzzleSolved(rendered, rendered.solution)).toBe(true)
 	expect(() =>
-		renderAuthoredHexPuzzle(authored, { ...palette, id: 'wrong' }),
+		renderAuthoredPuzzle(authored, { ...palette, id: 'wrong' }),
 	).toThrow('assigned palette')
 })
 
@@ -163,8 +167,13 @@ it('rotates axial coordinates exactly and rejects invalid placement rotations', 
 	const cell = { q: 2, r: -1, color: '#123456' }
 	expect(rotateCoordinate(cell, 6)).toEqual(cell)
 	expect(rotateCoordinate(rotateCoordinate(cell, 1), -1)).toEqual(cell)
-	const noRotation = renderAuthoredHexPuzzle(
-		generateAuthoredHexPuzzle('rotations', palette.id, PUZZLE_RECIPES[0]),
+	const noRotation = renderAuthoredPuzzle(
+		generateAuthoredPuzzle(
+			'rotations',
+			palette.id,
+			PUZZLE_RECIPES[0],
+			'hexagon',
+		),
 		palette,
 	)
 	expect(
@@ -174,11 +183,12 @@ it('rotates axial coordinates exactly and rejects invalid placement rotations', 
 			rotation: 1,
 		}).ok,
 	).toBe(false)
-	const rotation = renderAuthoredHexPuzzle(
-		generateAuthoredHexPuzzle(
+	const rotation = renderAuthoredPuzzle(
+		generateAuthoredPuzzle(
 			'rotations',
 			palette.id,
 			PUZZLE_RECIPES.find(recipe => recipe.id === 'moderate-small')!,
+			'hexagon',
 		),
 		palette,
 	)
@@ -189,4 +199,49 @@ it('rotates axial coordinates exactly and rejects invalid placement rotations', 
 			rotation: NaN,
 		}).ok,
 	).toBe(false)
+})
+
+describe.each(PUZZLE_RECIPES)('triangle $label authoring', recipe => {
+	it.each(Array.from({ length: 10 }, (_, i) => `triangle-${i}`))(
+		'stores size geometry and palette slots that render solvable for %s',
+		seed => {
+			const authored = generateAuthoredPuzzle(
+				seed,
+				palette.id,
+				recipe,
+				'triangle',
+			)
+			expect(authored).toMatchObject({
+				shape: 'triangle',
+				generatorVersion: 'triangle-v1',
+				definition: {
+					version: 2,
+					geometry: { size: { sm: 4, md: 7, lg: 10 }[recipe.size] },
+				},
+			})
+			expect(JSON.parse(JSON.stringify(authored))).toEqual(authored)
+			const puzzle = renderAuthoredPuzzle(authored, palette)
+			expect(puzzle).toMatchObject({
+				shape: 'triangle',
+				gridSize: { sm: 4, md: 7, lg: 10 }[recipe.size],
+				rotationAllowed: recipe.rotation,
+			})
+			for (const [key, slot] of Object.entries(
+				authored.definition.target,
+			))
+				expect(puzzle.target[key]).toBe(palette.colors[slot])
+			let placements: PuzzlePlacements = {}
+			for (const piece of puzzle.pieces) {
+				const result = placePuzzlePiece(
+					puzzle,
+					placements,
+					piece.id,
+					puzzle.solution[piece.id],
+				)
+				if (!result.ok) throw new Error(result.reason)
+				placements = result.placements
+			}
+			expect(isPuzzleSolved(puzzle, placements)).toBe(true)
+		},
+	)
 })

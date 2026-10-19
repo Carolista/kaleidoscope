@@ -820,7 +820,11 @@ describe('palette management', () => {
 					id: 'puzzle',
 					name: 'Linked art',
 					context: 'First set',
-					preview: { radius: 3, target: { '0,0': 0 } },
+					preview: {
+						shape: 'hexagon',
+						gridSize: 3,
+						target: { '0,0': 0 },
+					},
 				},
 			],
 			rewards: ['First set / Hard route'],

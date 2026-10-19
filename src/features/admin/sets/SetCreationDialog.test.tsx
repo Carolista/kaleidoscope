@@ -80,7 +80,12 @@ describe('set creation dialog', () => {
 		fireEvent.submit(screen.getByRole('form', { name: 'Create draft set' }))
 		expect(onCreate).toHaveBeenCalledOnce()
 		const request = onCreate.mock.calls[0]
-		expect(request).toEqual([expect.any(String), 'First', 'core'])
+		expect(request).toEqual([
+			expect.any(String),
+			'First',
+			'core',
+			undefined,
+		])
 		for (const button of within(dialog).getAllByRole('button'))
 			expect(button).toBeDisabled()
 		fireEvent(dialog, new Event('cancel', { cancelable: true }))
@@ -100,8 +105,55 @@ describe('set creation dialog', () => {
 		await user.click(screen.getByRole('button', { name: 'Create set' }))
 		await screen.findByText('Try again')
 		expect(onCreate.mock.calls[2][0]).not.toBe(request[0])
-		expect(onCreate.mock.calls[2].slice(1)).toEqual(['First', 'paid'])
+		expect(onCreate.mock.calls[2].slice(1)).toEqual([
+			'First',
+			'paid',
+			undefined,
+		])
 		await user.click(screen.getByRole('button', { name: 'Cancel' }))
 		expect(onCancel).toHaveBeenCalledOnce()
+	})
+
+	it('offers an optional shape choice that is submitted and gets its own retry ID', async () => {
+		const user = userEvent.setup()
+		const onCreate = vi.fn().mockRejectedValue(new Error('Try again'))
+		render(
+			<SetCreationDialog
+				open
+				onAfterClose={vi.fn()}
+				title="New set"
+				formLabel="Create draft set"
+				kindLabel="Set role"
+				kinds={{ core: 'Core' }}
+				initialKind="core"
+				confirmLabel="Create set"
+				pendingLabel="Creating set…"
+				shape={{
+					label: 'Shape',
+					options: { hexagon: 'Hexagon', triangle: 'Triangle' },
+					initial: 'hexagon',
+				}}
+				onCreate={onCreate}
+				onCancel={vi.fn()}
+			/>,
+		)
+		expect(screen.getByLabelText('Shape')).toHaveValue('hexagon')
+		await user.type(screen.getByLabelText('Set name'), 'Triangles')
+		await user.click(screen.getByRole('button', { name: 'Create set' }))
+		await screen.findByText('Try again')
+		await user.selectOptions(screen.getByLabelText('Shape'), 'triangle')
+		await user.click(screen.getByRole('button', { name: 'Create set' }))
+		await screen.findByText('Try again')
+		expect(onCreate.mock.calls[0].slice(1)).toEqual([
+			'Triangles',
+			'core',
+			'hexagon',
+		])
+		expect(onCreate.mock.calls[1].slice(1)).toEqual([
+			'Triangles',
+			'core',
+			'triangle',
+		])
+		expect(onCreate.mock.calls[1][0]).not.toBe(onCreate.mock.calls[0][0])
 	})
 })

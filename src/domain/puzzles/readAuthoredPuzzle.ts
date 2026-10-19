@@ -1,6 +1,16 @@
 import type { Json, Tables } from '@/lib/supabase'
 import { PUZZLE_RECIPES, type PuzzlePlacement } from './puzzle'
-import type { AuthoredHexPuzzle, HexPuzzleDefinition } from './hexAuthoring'
+import {
+	PUZZLE_GENERATOR_VERSIONS,
+	puzzleGeometry,
+	type AuthoredPuzzle,
+	type PuzzleDefinition,
+} from './puzzleAuthoring'
+import {
+	isPuzzleShapeId,
+	puzzleShapes,
+	type PuzzleShapeId,
+} from './puzzleShapes'
 
 function object(value: Json | undefined): { [key: string]: Json | undefined } {
 	if (!value || typeof value !== 'object' || Array.isArray(value))
@@ -20,13 +30,25 @@ function slot(value: Json | undefined): 0 | 1 | 2 | 3 | 4 {
 	return value
 }
 
-export function readHexPuzzleTarget(definition: Json): {
-	readonly radius: number
-	readonly target: HexPuzzleDefinition['target']
+export function readPuzzleTarget(
+	shape: string,
+	definition: Json,
+): {
+	readonly shape: PuzzleShapeId
+	readonly gridSize: number
+	readonly target: PuzzleDefinition['target']
 } {
+	if (!isPuzzleShapeId(shape))
+		throw new Error('Unsupported saved puzzle shape.')
 	const source = object(definition)
-	const radius = integer(object(source.geometry).radius)
-	if (source.version !== 2 || ![3, 4, 6].includes(radius))
+	const geometry = object(source.geometry)
+	const [key] = Object.keys(puzzleGeometry(shape, 0))
+	const gridSize = integer(geometry[key])
+	if (
+		source.version !== 2 ||
+		Object.keys(geometry).length !== 1 ||
+		!Object.values(puzzleShapes[shape].gridSizes).includes(gridSize)
+	)
 		throw new Error('Unsupported saved puzzle target.')
 	const target = Object.fromEntries(
 		Object.entries(object(source.target)).map(([key, value]) => {
@@ -37,37 +59,37 @@ export function readHexPuzzleTarget(definition: Json): {
 	)
 	if (!Object.keys(target).length)
 		throw new Error('Saved puzzle has an empty target.')
-	return { radius, target }
+	return { shape, gridSize, target }
 }
 
-export function readAuthoredHexPuzzle(
+export function readAuthoredPuzzle(
 	row: Tables<'puzzles'>,
 	authoring: Tables<'puzzle_authoring'> | null,
-): AuthoredHexPuzzle {
+): AuthoredPuzzle {
 	const recipe = PUZZLE_RECIPES.find(
 		value =>
 			value.size === row.board_size &&
 			value.rotation === row.rotation_allowed &&
 			value.difficulty === row.difficulty,
 	)
-	if (row.shape_id !== 'hexagon' || !recipe || !authoring)
+	const shape = row.shape_id
+	if (!isPuzzleShapeId(shape) || !recipe || !authoring)
 		throw new Error(
 			`Puzzle "${row.name}" has missing or unsupported authoring data.`,
 		)
-	if (authoring.generator_version !== 'hexagon-v2')
+	if (authoring.generator_version !== PUZZLE_GENERATOR_VERSIONS[shape])
 		throw new Error(
 			`Puzzle "${row.name}" uses an unsupported generator version.`,
 		)
 	const source = object(row.definition)
-	const { radius, target } = readHexPuzzleTarget(row.definition)
-	const expectedRadius = { sm: 3, md: 4, lg: 6 }[recipe.size]
+	const { gridSize, target } = readPuzzleTarget(shape, row.definition)
 	if (
 		source.version !== 2 ||
-		radius !== expectedRadius ||
+		gridSize !== puzzleShapes[shape].gridSizes[recipe.size] ||
 		!Array.isArray(source.pieces)
 	)
 		throw new Error(`Puzzle "${row.name}" has an unsupported definition.`)
-	const pieces: HexPuzzleDefinition['pieces'] = source.pieces.map(value => {
+	const pieces: PuzzleDefinition['pieces'] = source.pieces.map(value => {
 		const piece = object(value)
 		if (
 			typeof piece.id !== 'string' ||
@@ -113,11 +135,17 @@ export function readAuthoredHexPuzzle(
 		}
 	}
 	return {
+		shape,
 		paletteId: row.palette_id,
 		recipe,
 		seed: authoring.seed,
-		generatorVersion: 'hexagon-v2',
-		definition: { version: 2, geometry: { radius }, target, pieces },
+		generatorVersion: PUZZLE_GENERATOR_VERSIONS[shape],
+		definition: {
+			version: 2,
+			geometry: puzzleGeometry(shape, gridSize),
+			target,
+			pieces,
+		},
 		knownSolution,
 	}
 }

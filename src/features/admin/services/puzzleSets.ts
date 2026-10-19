@@ -1,9 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database, Tables } from '@/lib/supabase'
-import type { Puzzle } from '@/domain/puzzles'
+import type { Puzzle, PuzzleShapeId } from '@/domain/puzzles'
 import {
-	readAuthoredHexPuzzle,
-	renderAuthoredHexPuzzle,
+	PUZZLE_SHAPE_IDS,
+	readAuthoredPuzzle,
+	renderAuthoredPuzzle,
 } from '@/domain/puzzles'
 import { readPalette } from './palettes'
 
@@ -100,8 +101,8 @@ async function loadPreviews(
 			throw new Error('The set preview or its palette is unavailable.')
 		previews.set(
 			row.id,
-			renderAuthoredHexPuzzle(
-				readAuthoredHexPuzzle(row, row.puzzle_authoring),
+			renderAuthoredPuzzle(
+				readAuthoredPuzzle(row, row.puzzle_authoring),
 				readPalette(row.palettes),
 			),
 		)
@@ -121,7 +122,7 @@ export async function loadDraftSets(
 		const { data, error } = await client
 			.from('puzzle_collections')
 			.select('*')
-			.eq('shape_id', 'hexagon')
+			.in('shape_id', [...PUZZLE_SHAPE_IDS])
 			.is('published_at', null)
 			.order('id')
 			.range(offset, offset + 999)
@@ -156,7 +157,12 @@ export async function loadDraftSets(
 }
 
 export type SetAction =
-	| { readonly kind: 'create'; readonly name: string; readonly role: SetKind }
+	| {
+			readonly kind: 'create'
+			readonly name: string
+			readonly role: SetKind
+			readonly shape: PuzzleShapeId
+	  }
 	| { readonly kind: 'rename'; readonly name: string }
 	| {
 			readonly kind: 'append' | 'remove' | 'reorder'
@@ -183,7 +189,7 @@ export async function manageDraftSet(
 		p_action: action.kind,
 		...('name' in action ? { p_name: action.name.trim() } : {}),
 		...(action.kind === 'create'
-			? { p_kind: action.role, p_shape_id: 'hexagon' }
+			? { p_kind: action.role, p_shape_id: action.shape }
 			: {}),
 		...('puzzleIds' in action
 			? { p_puzzle_ids: [...action.puzzleIds] }

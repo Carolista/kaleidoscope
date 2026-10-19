@@ -49,8 +49,8 @@ export default function PaletteUsageDetails({
 										<PuzzleBoard
 											target
 											label={`${puzzle.name} palette preview`}
-											shape="hexagon"
-											gridSize={puzzle.preview.radius}
+											shape={puzzle.preview.shape}
+											gridSize={puzzle.preview.gridSize}
 											colors={Object.fromEntries(
 												Object.entries(
 													puzzle.preview.target,

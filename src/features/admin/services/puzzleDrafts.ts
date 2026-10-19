@@ -1,10 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import {
-	generateAuthoredHexPuzzle,
-	type AuthoredHexPuzzle,
+	generateAuthoredPuzzle,
+	type AuthoredPuzzle,
 	createUnusedPuzzleSeed,
 } from '@/domain/puzzles'
-import type { PuzzleRecipe } from '@/domain/puzzles'
+import type { PuzzleRecipe, PuzzleShapeId } from '@/domain/puzzles'
 import type { Database } from '@/lib/supabase'
 
 export type PuzzleUsage = 'collection' | 'daily'
@@ -15,13 +15,13 @@ export function puzzleDraftArgs(
 	id: string,
 	name: string,
 	usage: PuzzleUsage,
-	puzzle: AuthoredHexPuzzle,
+	puzzle: AuthoredPuzzle,
 ): DraftArgs {
 	return {
 		p_id: id,
 		p_name: name.trim(),
 		p_usage: usage,
-		p_shape_id: 'hexagon',
+		p_shape_id: puzzle.shape,
 		p_palette_id: puzzle.paletteId,
 		p_board_size: puzzle.recipe.size,
 		p_rotation_allowed: puzzle.recipe.rotation,
@@ -49,6 +49,7 @@ export function puzzleDraftArgs(
 export async function loadSavedPuzzleSeeds(
 	client: SupabaseClient<Database>,
 	recipe: PuzzleRecipe,
+	shape: PuzzleShapeId,
 ): Promise<Set<string>> {
 	const seeds = new Set<string>()
 	const pageSize = 1000
@@ -58,7 +59,7 @@ export async function loadSavedPuzzleSeeds(
 			.select(
 				'puzzle_id, seed, puzzles!inner(shape_id, board_size, rotation_allowed, difficulty)',
 			)
-			.eq('puzzles.shape_id', 'hexagon')
+			.eq('puzzles.shape_id', shape)
 			.eq('puzzles.board_size', recipe.size)
 			.eq('puzzles.rotation_allowed', recipe.rotation)
 			.eq('puzzles.difficulty', recipe.difficulty)
@@ -86,17 +87,25 @@ export async function savePuzzleDraft(
 	return data
 }
 
+export function previewedSeedKey(
+	shape: PuzzleShapeId,
+	recipe: PuzzleRecipe,
+): string {
+	return `${shape}:${recipe.id}`
+}
+
 export async function generateDraftPreview(
 	client: SupabaseClient<Database>,
 	recipe: PuzzleRecipe,
 	paletteId: string,
 	previewedSeeds: Map<string, Set<string>>,
-): Promise<AuthoredHexPuzzle> {
-	const recipeKey = `hexagon:${recipe.id}`
-	const excluded = await loadSavedPuzzleSeeds(client, recipe)
+	shape: PuzzleShapeId,
+): Promise<AuthoredPuzzle> {
+	const recipeKey = previewedSeedKey(shape, recipe)
+	const excluded = await loadSavedPuzzleSeeds(client, recipe, shape)
 	for (const seed of previewedSeeds.get(recipeKey) ?? []) excluded.add(seed)
 	const seed = createUnusedPuzzleSeed(excluded)
-	const puzzle = generateAuthoredHexPuzzle(seed, paletteId, recipe)
+	const puzzle = generateAuthoredPuzzle(seed, paletteId, recipe, shape)
 	const previewed = previewedSeeds.get(recipeKey) ?? new Set<string>()
 	previewed.add(seed)
 	previewedSeeds.set(recipeKey, previewed)

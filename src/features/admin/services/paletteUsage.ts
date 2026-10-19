@@ -1,13 +1,13 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase'
-import { readHexPuzzleTarget } from '@/domain/puzzles'
+import { isPuzzleShapeId, readPuzzleTarget } from '@/domain/puzzles'
 
 export interface PaletteUsage {
 	readonly puzzles: readonly {
 		readonly id: string
 		readonly name: string
 		readonly context: string
-		readonly preview: ReturnType<typeof readHexPuzzleTarget> | null
+		readonly preview: ReturnType<typeof readPuzzleTarget> | null
 	}[]
 	readonly rewards: readonly string[]
 	readonly packs: readonly string[]
@@ -60,10 +60,9 @@ export async function loadPaletteUsage(
 					row.usage === 'daily'
 						? 'Daily'
 						: sets.join(', ') || 'Unassigned Set/pack',
-				preview:
-					row.shape_id === 'hexagon'
-						? readHexPuzzleTarget(row.definition)
-						: null,
+				preview: isPuzzleShapeId(row.shape_id)
+					? readPuzzleTarget(row.shape_id, row.definition)
+					: null,
 			})
 		}
 		if (data.length < 1000) break

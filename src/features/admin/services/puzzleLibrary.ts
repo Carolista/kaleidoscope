@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database, Tables } from '@/lib/supabase'
-import type { AuthoredHexPuzzle } from '@/domain/puzzles'
-import { readAuthoredHexPuzzle } from '@/domain/puzzles'
+import type { AuthoredPuzzle } from '@/domain/puzzles'
+import { PUZZLE_SHAPE_IDS, readAuthoredPuzzle } from '@/domain/puzzles'
 import { puzzleDraftArgs, type PuzzleUsage } from './puzzleDrafts'
 
 export interface LibraryDraft {
@@ -11,7 +11,7 @@ export interface LibraryDraft {
 	readonly collectionName: string | null
 	readonly collectionPosition: number | null
 	readonly collectionKind: string | null
-	readonly puzzle: AuthoredHexPuzzle
+	readonly puzzle: AuthoredPuzzle
 }
 
 export async function loadPuzzleDrafts(
@@ -24,7 +24,7 @@ export async function loadPuzzleDrafts(
 			.select(
 				'*, puzzle_authoring(*), collection_puzzles(puzzle_id, collection_id, position, puzzle_collections(name, kind)), daily_puzzles(id)',
 			)
-			.eq('shape_id', 'hexagon')
+			.in('shape_id', [...PUZZLE_SHAPE_IDS])
 			.is('published_at', null)
 			.order('id')
 			.range(offset, offset + 999)
@@ -51,7 +51,7 @@ export async function loadPuzzleDrafts(
 				collectionPosition: row.collection_puzzles[0]?.position ?? null,
 				collectionKind:
 					row.collection_puzzles[0]?.puzzle_collections?.kind ?? null,
-				puzzle: readAuthoredHexPuzzle(row, row.puzzle_authoring),
+				puzzle: readAuthoredPuzzle(row, row.puzzle_authoring),
 			})
 		}
 		if (data.length < 1000)
@@ -92,7 +92,7 @@ export async function replacePuzzleDraft(
 	id: string,
 	name: string,
 	usage: PuzzleUsage,
-	puzzle: AuthoredHexPuzzle,
+	puzzle: AuthoredPuzzle,
 ): Promise<void> {
 	const { data, error } = await client.rpc(
 		'replace_puzzle_draft',

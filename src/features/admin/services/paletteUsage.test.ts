@@ -92,7 +92,11 @@ describe('palette usage', () => {
 					id: 'puzzle',
 					name: 'Saved art',
 					context: 'First set',
-					preview: { radius: 4, target: definition.target },
+					preview: {
+						shape: 'hexagon',
+						gridSize: 4,
+						target: definition.target,
+					},
 				},
 			],
 			rewards: ['First set / Hard route'],
@@ -169,7 +173,17 @@ describe('palette usage', () => {
 				{
 					...puzzle,
 					id: 'other',
+					shape_id: 'pinwheel',
+					collection_puzzles: [],
+				},
+				{
+					...puzzle,
+					id: 'triangle',
 					shape_id: 'triangle',
+					definition: {
+						...definition,
+						geometry: { size: 7 },
+					},
 					collection_puzzles: [],
 				},
 			],
@@ -179,8 +193,14 @@ describe('palette usage', () => {
 		expect(usage.puzzles.map(value => value.context)).toEqual([
 			'Daily',
 			'Unassigned Set/pack',
+			'Unassigned Set/pack',
 		])
 		expect(usage.puzzles[1].preview).toBeNull()
+		expect(usage.puzzles[2].preview).toEqual({
+			shape: 'triangle',
+			gridSize: 7,
+			target: definition.target,
+		})
 	})
 
 	it.each(['puzzles', 'reward_palettes', 'palette_pack_palettes'] as const)(

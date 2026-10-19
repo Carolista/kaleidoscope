@@ -7,8 +7,8 @@ import {
 	PUZZLE_RECIPES,
 	coordinateKey,
 	rotateCoordinate,
-	generateAuthoredHexPuzzle,
-	renderAuthoredHexPuzzle,
+	generateAuthoredPuzzle,
+	renderAuthoredPuzzle,
 } from '@/domain/puzzles'
 import PuzzleAuthoring from './PuzzleAuthoring'
 import { AdminWorkspace } from '@/features/admin/shell'
@@ -500,10 +500,11 @@ describe('admin puzzle lab', () => {
 			)
 			fireEvent.click(screen.getByRole('button', { name: /save draft/i }))
 			await screen.findByText(/Saved "Sunset"/)
-			const puzzle = generateAuthoredHexPuzzle(
+			const puzzle = generateAuthoredPuzzle(
 				seed,
 				palette.id,
 				PUZZLE_RECIPES[0],
+				'hexagon',
 			)
 			expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith(
 				'save_puzzle_draft',
@@ -528,6 +529,54 @@ describe('admin puzzle lab', () => {
 			expect(screen.getByLabelText('Puzzle name')).toBeEnabled()
 		},
 	)
+
+	it('authors and saves a triangle puzzle from the shape picker', async () => {
+		setup()
+		await screen.findByLabelText('Recipe')
+		const shape = screen.getByLabelText('Shape')
+		expect(shape).toHaveValue('hexagon')
+		expect(
+			within(shape)
+				.getAllByRole('option')
+				.map(option => option.textContent),
+		).toEqual(['Hexagon', 'Triangle'])
+		fireEvent.change(shape, { target: { value: 'triangle' } })
+		expect(
+			screen.queryByRole('img', { name: 'Target design' }),
+		).not.toBeInTheDocument()
+		await randomize()
+		const seedFilters = mocks.from.mock.results
+			.map(result => result.value)
+			.filter(value => 'select' in value)
+			.flatMap(value => value.select().eq?.mock?.calls ?? [])
+		expect(seedFilters).toContainEqual(['puzzles.shape_id', 'triangle'])
+		const target = screen.getByRole('img', { name: 'Target design' })
+		const tiles = [...target.querySelectorAll('polygon')]
+		expect(tiles).toHaveLength(16)
+		for (const tile of tiles)
+			expect(tile.getAttribute('points')!.split(' ')).toHaveLength(3)
+		fireEvent.change(screen.getByLabelText('Puzzle name'), {
+			target: { value: 'Triangle one' },
+		})
+		fireEvent.click(screen.getByRole('button', { name: /save draft/i }))
+		await screen.findByText(/Saved "Triangle one"/)
+		const puzzle = generateAuthoredPuzzle(
+			seed,
+			palette.id,
+			PUZZLE_RECIPES[0],
+			'triangle',
+		)
+		expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith(
+			'save_puzzle_draft',
+			expect.objectContaining({
+				p_shape_id: 'triangle',
+				p_generator_version: 'triangle-v1',
+				p_definition: puzzle.definition,
+				p_known_solution: puzzle.knownSolution,
+			}),
+		)
+		expect(puzzle.definition.geometry).toEqual({ size: 4 })
+	})
 
 	it('preserves the preview and retries a failed save with the same request ID', async () => {
 		setup()
@@ -786,8 +835,8 @@ describe('admin puzzle lab', () => {
 				target: { value: recipe.id },
 			})
 			await randomize()
-			const puzzle = renderAuthoredHexPuzzle(
-				generateAuthoredHexPuzzle(seed, palette.id, recipe),
+			const puzzle = renderAuthoredPuzzle(
+				generateAuthoredPuzzle(seed, palette.id, recipe, 'hexagon'),
 				palette,
 			)
 			const board = screen.getByRole('group', { name: 'Puzzle board' })
@@ -852,8 +901,13 @@ describe('admin puzzle lab', () => {
 		const { order } = setup()
 		await screen.findByLabelText('Recipe')
 		await randomize()
-		const puzzle = renderAuthoredHexPuzzle(
-			generateAuthoredHexPuzzle(seed, palette.id, PUZZLE_RECIPES[0]),
+		const puzzle = renderAuthoredPuzzle(
+			generateAuthoredPuzzle(
+				seed,
+				palette.id,
+				PUZZLE_RECIPES[0],
+				'hexagon',
+			),
 			palette,
 		)
 		const first = puzzle.pieces[0]
@@ -892,11 +946,12 @@ describe('admin puzzle lab', () => {
 			target: { value: 'hard-medium' },
 		})
 		await randomize()
-		const puzzle = renderAuthoredHexPuzzle(
-			generateAuthoredHexPuzzle(
+		const puzzle = renderAuthoredPuzzle(
+			generateAuthoredPuzzle(
 				seed,
 				palette.id,
 				PUZZLE_RECIPES.find(recipe => recipe.id === 'hard-medium')!,
+				'hexagon',
 			),
 			palette,
 		)

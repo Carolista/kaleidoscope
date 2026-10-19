@@ -2,7 +2,7 @@ import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { renderWithNavigationGuard as render } from '@/features/admin/testing'
 import { useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { generateAuthoredHexPuzzle, PUZZLE_RECIPES } from '@/domain/puzzles'
+import { generateAuthoredPuzzle, PUZZLE_RECIPES } from '@/domain/puzzles'
 import { puzzleDraftArgs } from '@/features/admin/services'
 import type { LibraryDraft } from '@/features/admin/services'
 import { getSupabaseClient } from '@/lib/supabase'
@@ -57,7 +57,12 @@ const other = {
 	name: 'Other',
 	colors: ['#abcdef', '#abcdef', '#abcdef', '#abcdef', '#abcdef'] as const,
 }
-const puzzle = generateAuthoredHexPuzzle('saved', palette.id, PUZZLE_RECIPES[1])
+const puzzle = generateAuthoredPuzzle(
+	'saved',
+	palette.id,
+	PUZZLE_RECIPES[1],
+	'hexagon',
+)
 const args = puzzleDraftArgs('draft-id', 'Saved art', 'collection', puzzle)
 const draft: LibraryDraft = {
 	row: {
@@ -305,6 +310,111 @@ describe('draft library', () => {
 			screen.getByRole('button', { name: 'Assign to set' }),
 		).toBeDisabled()
 	})
+	it("offers only sets of the selected drafts' shape and blocks mixed-shape selections", async () => {
+		const trianglePuzzle = generateAuthoredPuzzle(
+			'triangle',
+			palette.id,
+			PUZZLE_RECIPES[0],
+			'triangle',
+		)
+		const triangleDraft: LibraryDraft = {
+			...draft,
+			row: {
+				...draft.row,
+				id: 'triangle-id',
+				name: 'Triangle art',
+				shape_id: 'triangle',
+			},
+			puzzle: trianglePuzzle,
+		}
+		mocks.load.mockResolvedValue([draft, triangleDraft])
+		mocks.loadSets.mockResolvedValue([
+			{
+				row: {
+					id: 'set',
+					name: 'Hexagon set',
+					kind: 'core',
+					shape_id: 'hexagon',
+					selection_mode: 'any',
+					published_at: null,
+					release_at: null,
+				},
+				members: [],
+			},
+			{
+				row: {
+					id: 'triangle-set',
+					name: 'Triangle set',
+					kind: 'paid',
+					shape_id: 'triangle',
+					selection_mode: 'any',
+					published_at: null,
+					release_at: null,
+				},
+				members: [],
+			},
+		])
+		setup()
+		expect(
+			await screen.findByText('Triangle · EASY (S)'),
+		).toBeInTheDocument()
+		expect(screen.getByText('Hexagon · MODERATE (S+)')).toBeInTheDocument()
+		fireEvent.click(
+			screen.getByRole('checkbox', { name: 'Select draft Saved art' }),
+		)
+		fireEvent.click(
+			screen.getByRole('checkbox', { name: 'Select draft Triangle art' }),
+		)
+		const assign = screen.getByRole('button', { name: 'Assign to set' })
+		expect(assign).toBeDisabled()
+		expect(assign).toHaveAttribute(
+			'title',
+			'Only unassigned Set/pack drafts of one shape can be assigned to a set.',
+		)
+		fireEvent.click(
+			screen.getByRole('checkbox', { name: 'Select draft Saved art' }),
+		)
+		fireEvent.click(assign)
+		const picker = await screen.findByLabelText('Draft set')
+		expect(
+			within(picker)
+				.getAllByRole('option')
+				.map(option => option.getAttribute('value')),
+		).toEqual(['', 'triangle-set'])
+		fireEvent.change(picker, { target: { value: 'triangle-set' } })
+		fireEvent.click(screen.getByRole('button', { name: 'Assign puzzles' }))
+		await screen.findByText('Assigned 1 draft to set.')
+		expect(mocks.manageSet).toHaveBeenCalledExactlyOnceWith(
+			expect.anything(),
+			'triangle-set',
+			{ kind: 'append', puzzleIds: ['triangle-id'] },
+		)
+	})
+	it("explains when no set has the selected drafts' shape", async () => {
+		mocks.load.mockResolvedValue([
+			{
+				...draft,
+				row: { ...draft.row, shape_id: 'triangle' },
+				puzzle: generateAuthoredPuzzle(
+					'triangle',
+					palette.id,
+					PUZZLE_RECIPES[0],
+					'triangle',
+				),
+			},
+		])
+		setup()
+		fireEvent.click(
+			await screen.findByRole('checkbox', {
+				name: 'Select draft Saved art',
+			}),
+		)
+		fireEvent.click(screen.getByRole('button', { name: 'Assign to set' }))
+		await screen.findByLabelText('Draft set')
+		expect(
+			screen.getByText(/Create a triangle draft set using Manage sets/),
+		).toBeInTheDocument()
+	})
 	it('surfaces set lookup failures without losing selected puzzles', async () => {
 		mocks.loadSets.mockRejectedValueOnce(
 			new Error('Set catalog unavailable'),
@@ -329,6 +439,50 @@ describe('draft library', () => {
 		fireEvent.click(screen.getByRole('button', { name: 'Assign to set' }))
 		await screen.findByLabelText('Draft set')
 		expect(mocks.loadSets).toHaveBeenCalledTimes(2)
+	})
+	it("keeps a draft's shape fixed while editing and replaces triangle designs with triangles", async () => {
+		const trianglePuzzle = generateAuthoredPuzzle(
+			'triangle',
+			palette.id,
+			PUZZLE_RECIPES[0],
+			'triangle',
+		)
+		mocks.load.mockResolvedValue([
+			{
+				...draft,
+				row: { ...draft.row, shape_id: 'triangle' },
+				puzzle: trianglePuzzle,
+			},
+		])
+		setup()
+		await open()
+		const shape = screen.getByLabelText('Shape')
+		expect(shape).toHaveValue('triangle')
+		expect(shape).toBeDisabled()
+		fireEvent.change(screen.getByLabelText('Recipe'), {
+			target: { value: 'hard-medium' },
+		})
+		const randomize = screen.getByRole('button', {
+			name: 'Randomize puzzle',
+		})
+		fireEvent.click(randomize)
+		await waitFor(() => expect(randomize).toBeEnabled())
+		const tiles = [
+			...screen
+				.getByRole('img', { name: 'Target design' })
+				.querySelectorAll('polygon'),
+		]
+		expect(tiles).toHaveLength(49)
+		for (const tile of tiles)
+			expect(tile.getAttribute('points')!.split(' ')).toHaveLength(3)
+		fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }))
+		await waitFor(() => expect(mocks.replace).toHaveBeenCalledOnce())
+		expect(mocks.replace.mock.calls[0][4]).toMatchObject({
+			shape: 'triangle',
+			generatorVersion: 'triangle-v1',
+			recipe: { id: 'hard-medium' },
+			definition: { geometry: { size: 7 } },
+		})
 	})
 	it('previews replacements without writes, excludes saved/previewed seeds, and saves the exact replacement under the existing ID', async () => {
 		mocks.seeds.mockResolvedValue({
@@ -398,10 +552,11 @@ describe('draft library', () => {
 		expect(
 			screen.getByRole('img', { name: 'Target design' }).innerHTML,
 		).toBe(preview)
-		const expected = generateAuthoredHexPuzzle(
+		const expected = generateAuthoredPuzzle(
 			'00000003000000030000000300000003',
 			other.id,
 			PUZZLE_RECIPES[3],
+			'hexagon',
 		)
 		expect(mocks.replace).toHaveBeenCalledWith(
 			expect.anything(),

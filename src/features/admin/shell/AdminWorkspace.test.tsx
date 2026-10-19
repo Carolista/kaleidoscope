@@ -11,7 +11,7 @@ import type {
 	LibraryDraft,
 	DraftSet,
 } from '@/features/admin/services'
-import { generateAuthoredHexPuzzle, PUZZLE_RECIPES } from '@/domain/puzzles'
+import { generateAuthoredPuzzle, PUZZLE_RECIPES } from '@/domain/puzzles'
 import { puzzleDraftArgs } from '@/features/admin/services'
 import AdminWorkspace from './AdminWorkspace'
 
@@ -57,7 +57,12 @@ const palette: CatalogPalette = {
 	published_at: null,
 	release_at: null,
 }
-const puzzle = generateAuthoredHexPuzzle('test', palette.id, PUZZLE_RECIPES[0])
+const puzzle = generateAuthoredPuzzle(
+	'test',
+	palette.id,
+	PUZZLE_RECIPES[0],
+	'hexagon',
+)
 const args = puzzleDraftArgs(
 	'puzzle',
 	'Unassigned design',

@@ -10,7 +10,8 @@ import {
 } from '@fortawesome/pro-solid-svg-icons'
 import type { Database } from '@/lib/supabase'
 import {
-	renderAuthoredHexPuzzle,
+	PUZZLE_SHAPE_LABELS,
+	renderAuthoredPuzzle,
 	type AuthoringPalette,
 } from '@/domain/puzzles'
 import {
@@ -147,8 +148,18 @@ export default function PuzzleDraftLibrary({
 			: filtered
 	const selection = useCheckedIds(visible.map(draft => draft.row.id))
 	const checked = visible.filter(draft => selection.checked.has(draft.row.id))
-	const canAssign = checked.every(
-		draft => !draft.assigned && draft.row.usage === 'collection',
+	// Each set uses one shape, so a batch must share the shape of its set.
+	const canAssign =
+		checked.every(
+			draft => !draft.assigned && draft.row.usage === 'collection',
+		) && new Set(checked.map(draft => draft.puzzle.shape)).size <= 1
+	const assignShape =
+		action?.kind === 'set'
+			? drafts.find(draft => action.ids.includes(draft.row.id))?.puzzle
+					.shape
+			: undefined
+	const assignableSets = draftSets.filter(
+		set => set.row.shape_id === assignShape,
 	)
 	const canDelete = checked.every(deletable)
 	function startAction(
@@ -175,7 +186,7 @@ export default function PuzzleDraftLibrary({
 		}
 		if (
 			action.kind === 'set' &&
-			!draftSets.some(set => set.row.id === bulkSetId)
+			!assignableSets.some(set => set.row.id === bulkSetId)
 		) {
 			setActionError('Choose a draft set before assigning puzzles.')
 			return
@@ -365,7 +376,7 @@ export default function PuzzleDraftLibrary({
 							title={
 								canAssign
 									? undefined
-									: 'Only unassigned Set/pack drafts can be assigned to a set.'
+									: 'Only unassigned Set/pack drafts of one shape can be assigned to a set.'
 							}
 							disabled={bulkBusy || !canAssign}
 							onClick={() => startAction('set', selection.ids)}
@@ -469,7 +480,7 @@ export default function PuzzleDraftLibrary({
 											<option value="">
 												Choose a set
 											</option>
-											{draftSets.map(set => (
+											{assignableSets.map(set => (
 												<option
 													key={set.row.id}
 													value={set.row.id}
@@ -481,13 +492,18 @@ export default function PuzzleDraftLibrary({
 												</option>
 											))}
 										</Select>
-										{!draftSets.length &&
+										{!assignableSets.length &&
 											!actionError &&
-											!setsError && (
+											!setsError &&
+											assignShape && (
 												<p>
-													Create a draft set using
-													Manage sets, then select
-													puzzles to assign.
+													Create a{' '}
+													{PUZZLE_SHAPE_LABELS[
+														assignShape
+													].toLowerCase()}{' '}
+													draft set using Manage sets,
+													then select puzzles to
+													assign.
 												</p>
 											)}
 									</>
@@ -540,7 +556,7 @@ export default function PuzzleDraftLibrary({
 								value => value.id === draft.puzzle.paletteId,
 							)
 							const preview = palette
-								? renderAuthoredHexPuzzle(draft.puzzle, palette)
+								? renderAuthoredPuzzle(draft.puzzle, palette)
 								: null
 							return (
 								<AdminItemCard
@@ -604,7 +620,14 @@ export default function PuzzleDraftLibrary({
 									}
 								>
 									<strong>{draft.row.name}</strong>
-									<span>{draft.puzzle.recipe.label}</span>
+									<span>
+										{
+											PUZZLE_SHAPE_LABELS[
+												draft.puzzle.shape
+											]
+										}{' '}
+										· {draft.puzzle.recipe.label}
+									</span>
 									<span>
 										{draft.row.usage === 'daily'
 											? 'Daily'

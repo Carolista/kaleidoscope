@@ -8,8 +8,8 @@ import {
 	type SetAction,
 } from './puzzleSets'
 import {
-	generateAuthoredHexPuzzle,
-	renderAuthoredHexPuzzle,
+	generateAuthoredPuzzle,
+	renderAuthoredPuzzle,
 	PUZZLE_RECIPES,
 } from '@/domain/puzzles'
 import { puzzleDraftArgs } from './puzzleDrafts'
@@ -59,10 +59,11 @@ describe('draft set requests', () => {
 				'#556677',
 			] as const,
 		}
-		const saved = generateAuthoredHexPuzzle(
+		const saved = generateAuthoredPuzzle(
 			'set-preview',
 			palette.id,
 			PUZZLE_RECIPES[0],
+			'hexagon',
 		)
 		const args = puzzleDraftArgs(
 			'first',
@@ -132,7 +133,7 @@ describe('draft set requests', () => {
 		}))
 		const sets = await loadDraftSets(client({ from }), true)
 		expect(sets[0].preview?.target).toEqual(
-			renderAuthoredHexPuzzle(saved, palette).target,
+			renderAuthoredPuzzle(saved, palette).target,
 		)
 		expect(previewQuery.in).toHaveBeenCalledExactlyOnceWith('id', [
 			'first',
@@ -172,8 +173,8 @@ describe('draft set requests', () => {
 	})
 	it.each([
 		[
-			{ kind: 'create', name: ' Set ', role: 'paid' },
-			{ p_name: 'Set', p_kind: 'paid', p_shape_id: 'hexagon' },
+			{ kind: 'create', name: ' Set ', role: 'paid', shape: 'triangle' },
+			{ p_name: 'Set', p_kind: 'paid', p_shape_id: 'triangle' },
 		],
 		[{ kind: 'rename', name: ' Renamed ' }, { p_name: 'Renamed' }],
 		[
@@ -248,7 +249,7 @@ describe('draft set requests', () => {
 			})
 		})
 		const makeQuery = (range: (start: number) => unknown) => ({
-			eq: vi.fn().mockReturnThis(),
+			in: vi.fn().mockReturnThis(),
 			is: vi.fn().mockReturnThis(),
 			order: vi.fn().mockReturnThis(),
 			range,
@@ -270,7 +271,10 @@ describe('draft set requests', () => {
 		const sets = await loadDraftSets(client({ from }))
 		expect(sets).toHaveLength(1001)
 		expect(query.is).toHaveBeenCalledWith('published_at', null)
-		expect(query.eq).toHaveBeenCalledWith('shape_id', 'hexagon')
+		expect(query.in).toHaveBeenCalledWith('shape_id', [
+			'hexagon',
+			'triangle',
+		])
 		expect(setsRange.mock.calls).toEqual([
 			[0, 999],
 			[1000, 1999],

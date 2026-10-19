@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase'
-import { PUZZLE_RECIPES, generateAuthoredHexPuzzle } from '@/domain/puzzles'
+import { PUZZLE_RECIPES, generateAuthoredPuzzle } from '@/domain/puzzles'
 import {
 	loadSavedPuzzleSeeds,
 	puzzleDraftArgs,
@@ -16,7 +16,12 @@ describe('puzzle draft requests', () => {
 	it.each(PUZZLE_RECIPES)(
 		'serializes complete $id definitions and private solutions separately',
 		recipe => {
-			const puzzle = generateAuthoredHexPuzzle('seed', 'palette', recipe)
+			const puzzle = generateAuthoredPuzzle(
+				'seed',
+				'palette',
+				recipe,
+				'hexagon',
+			)
 			const args = puzzleDraftArgs('id', '  Draft  ', 'daily', puzzle)
 			expect(args).toMatchObject({
 				p_name: 'Draft',
@@ -55,6 +60,7 @@ describe('puzzle draft requests', () => {
 		const seeds = await loadSavedPuzzleSeeds(
 			clientWith({ from }),
 			PUZZLE_RECIPES[1],
+			'triangle',
 		)
 		expect(seeds.size).toBe(1001)
 		expect(seeds.has('last')).toBe(true)
@@ -63,7 +69,7 @@ describe('puzzle draft requests', () => {
 			[1000, 1999],
 		])
 		expect(query.eq.mock.calls.slice(0, 4)).toEqual([
-			['puzzles.shape_id', 'hexagon'],
+			['puzzles.shape_id', 'triangle'],
 			['puzzles.board_size', 'sm'],
 			['puzzles.rotation_allowed', true],
 			['puzzles.difficulty', 'moderate'],
@@ -81,13 +87,19 @@ describe('puzzle draft requests', () => {
 			loadSavedPuzzleSeeds(
 				clientWith({ from: () => ({ select: () => query }) }),
 				PUZZLE_RECIPES[0],
+				'hexagon',
 			),
 		).rejects.toThrow('returned no data')
 		const args = puzzleDraftArgs(
 			'id',
 			'Draft',
 			'collection',
-			generateAuthoredHexPuzzle('seed', 'palette', PUZZLE_RECIPES[0]),
+			generateAuthoredPuzzle(
+				'seed',
+				'palette',
+				PUZZLE_RECIPES[0],
+				'hexagon',
+			),
 		)
 		await expect(
 			savePuzzleDraft(

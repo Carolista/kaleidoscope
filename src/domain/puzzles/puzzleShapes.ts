@@ -1,5 +1,6 @@
 import type { Point } from '@/domain/geometry'
-import type { GridSize } from '@/domain/shapes'
+import { supportedGridShapes } from '@/domain/shapes'
+import type { GridShapeId, GridSize } from '@/domain/shapes'
 import type { AxialCoord } from '@/domain/shapes/hexagon'
 import {
 	axialToPixel,
@@ -12,7 +13,12 @@ import {
 	TRIANGLE_GRID_SIZES,
 } from '@/domain/shapes/triangle'
 
-export type PuzzleShapeId = 'hexagon' | 'triangle'
+export const PUZZLE_SHAPE_IDS = [
+	'hexagon',
+	'triangle',
+] as const satisfies readonly GridShapeId[]
+
+export type PuzzleShapeId = (typeof PUZZLE_SHAPE_IDS)[number]
 
 export interface PuzzleCell extends AxialCoord {
 	readonly groupId: string
@@ -132,5 +138,14 @@ export const puzzleShapes: Readonly<Record<PuzzleShapeId, PuzzleShape>> = {
 }
 
 export function isPuzzleShapeId(value: unknown): value is PuzzleShapeId {
-	return value === 'hexagon' || value === 'triangle'
+	return PUZZLE_SHAPE_IDS.some(id => id === value)
+}
+
+function catalogLabel(shape: PuzzleShapeId): string {
+	return supportedGridShapes.find(option => option.id === shape)!.label
+}
+
+export const PUZZLE_SHAPE_LABELS: Readonly<Record<PuzzleShapeId, string>> = {
+	hexagon: catalogLabel('hexagon'),
+	triangle: catalogLabel('triangle'),
 }

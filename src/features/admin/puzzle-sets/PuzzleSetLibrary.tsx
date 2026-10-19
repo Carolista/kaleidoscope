@@ -14,6 +14,7 @@ import {
 } from '@/features/admin/services'
 import type { Database } from '@/lib/supabase'
 import { PuzzleBoard } from '@/ui/puzzle'
+import { isPuzzleShapeId, PUZZLE_SHAPE_LABELS } from '@/domain/puzzles'
 import {
 	AdminIconButton,
 	AdminFeedback,
@@ -37,6 +38,10 @@ import { useCatalog, useCatalogInvalidation } from '@/features/admin/catalog'
 
 function roleLabel(kind: string) {
 	return kind === 'core' ? 'Core' : kind === 'reward' ? 'Reward' : 'Pack'
+}
+
+function shapeLabel(shape: string) {
+	return isPuzzleShapeId(shape) ? PUZZLE_SHAPE_LABELS[shape] : shape
 }
 
 const fallbackError = 'Unable to manage draft sets.'
@@ -233,12 +238,19 @@ export default function PuzzleSetLibrary({
 					initialKind="core"
 					confirmLabel="Create set"
 					pendingLabel="Creating puzzle set…"
+					shape={{
+						label: 'Shape',
+						options: PUZZLE_SHAPE_LABELS,
+						initial: 'hexagon',
+					}}
 					onCancel={() => setCreating(null)}
-					onCreate={async (id, name, kind) => {
+					onCreate={async (id, name, kind, shape) => {
+						if (!shape) throw new Error('Choose a set shape.')
 						await manageDraftSet(client, id, {
 							kind: 'create',
 							name,
 							role: kind,
+							shape,
 						})
 						focusAdd.current = true
 						setCreating(null)
@@ -290,6 +302,7 @@ export default function PuzzleSetLibrary({
 						onSave={save}
 					>
 						<AdminTag>{roleLabel(selected.row.kind)}</AdminTag>
+						<AdminTag>{shapeLabel(selected.row.shape_id)}</AdminTag>
 					</AdminSetForm>
 					{!selected.members.length && <p>No puzzles yet.</p>}
 					<SortableSetMembers
@@ -386,7 +399,10 @@ export default function PuzzleSetLibrary({
 							}
 						>
 							<strong>{set.row.name}</strong>
-							<span>{roleLabel(set.row.kind)}</span>
+							<span>
+								{shapeLabel(set.row.shape_id)} ·{' '}
+								{roleLabel(set.row.kind)}
+							</span>
 							<span>
 								{set.members.length}{' '}
 								{set.members.length === 1

@@ -5,8 +5,8 @@ import { getSupabaseClient } from '@/lib/supabase'
 import type { DraftSet } from '@/features/admin/services'
 import PuzzleSetLibrary from './PuzzleSetLibrary'
 import {
-	generateAuthoredHexPuzzle,
-	renderAuthoredHexPuzzle,
+	generateAuthoredPuzzle,
+	renderAuthoredPuzzle,
 	PUZZLE_RECIPES,
 } from '@/domain/puzzles'
 import styles from './PuzzleSetLibrary.module.css'
@@ -284,11 +284,12 @@ describe('draft set workspace', () => {
 		}
 		const members = draftSet.members.map((member, index) => ({
 			...member,
-			preview: renderAuthoredHexPuzzle(
-				generateAuthoredHexPuzzle(
+			preview: renderAuthoredPuzzle(
+				generateAuthoredPuzzle(
 					`member-${index}`,
 					palette.id,
 					PUZZLE_RECIPES[index],
+					'hexagon',
 				),
 				palette,
 			),
@@ -362,11 +363,12 @@ describe('draft set workspace', () => {
 		mocks.load.mockResolvedValue([
 			{
 				...draftSet,
-				preview: renderAuthoredHexPuzzle(
-					generateAuthoredHexPuzzle(
+				preview: renderAuthoredPuzzle(
+					generateAuthoredPuzzle(
 						'preview',
 						palette.id,
 						PUZZLE_RECIPES[0],
+						'hexagon',
 					),
 					palette,
 				),
@@ -377,7 +379,7 @@ describe('draft set workspace', () => {
 			name: 'Set First set',
 		})
 		expect(card).toHaveClass(layoutStyles.setCard)
-		expect(within(card).getByText('Core')).toBeInTheDocument()
+		expect(within(card).getByText('Hexagon · Core')).toBeInTheDocument()
 		expect(within(card).getByText('2 puzzles')).toBeInTheDocument()
 		expect(
 			card.querySelector('svg polygon[fill="#112233"]'),
@@ -407,7 +409,7 @@ describe('draft set workspace', () => {
 				{ ...draftSet, row: { ...draftSet.row, kind }, members: [] },
 			])
 			setup()
-			await screen.findByText(label)
+			await screen.findByText(`Hexagon · ${label}`)
 			expect(screen.getByText('0 puzzles')).toBeInTheDocument()
 			expect(screen.getByText('Empty set')).toBeInTheDocument()
 		},
@@ -498,6 +500,10 @@ describe('draft set workspace', () => {
 		fireEvent.change(screen.getByLabelText('Set role'), {
 			target: { value: 'paid' },
 		})
+		expect(screen.getByLabelText('Shape')).toHaveValue('hexagon')
+		fireEvent.change(screen.getByLabelText('Shape'), {
+			target: { value: 'triangle' },
+		})
 		mocks.manage.mockRejectedValueOnce(new Error('Connection lost'))
 		fireEvent.click(screen.getByRole('button', { name: 'Create set' }))
 		expect(await screen.findByRole('alert')).toHaveTextContent(
@@ -513,6 +519,7 @@ describe('draft set workspace', () => {
 					id,
 					name: 'New collection',
 					kind: 'paid',
+					shape_id: 'triangle',
 				},
 				members: [],
 			},
@@ -526,10 +533,12 @@ describe('draft set workspace', () => {
 			kind: 'create',
 			name: 'New collection',
 			role: 'paid',
+			shape: 'triangle',
 		})
 		fireEvent.click(screen.getByRole('button', { name: 'New set' }))
 		expect(screen.getByLabelText('Set name')).toHaveValue('')
 		expect(screen.getByLabelText('Set role')).toHaveValue('core')
+		expect(screen.getByLabelText('Shape')).toHaveValue('hexagon')
 	})
 	it('guards unsaved names, renames the set and keeps its role unchanged', async () => {
 		setup()

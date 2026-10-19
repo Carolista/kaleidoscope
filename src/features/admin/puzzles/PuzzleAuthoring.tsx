@@ -1,10 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { useRef, useState, type SubmitEvent } from 'react'
 import {
-	renderAuthoredHexPuzzle,
-	type AuthoredHexPuzzle,
+	renderAuthoredPuzzle,
+	type AuthoredPuzzle,
 	type AuthoringPalette,
 	PUZZLE_RECIPES,
+	type PuzzleShapeId,
 } from '@/domain/puzzles'
 import type { Database } from '@/lib/supabase'
 import {
@@ -45,6 +46,7 @@ export default function PuzzleAuthoring({
 	const working = useRef(false)
 	const [draftName, setDraftName] = useState('')
 	const [usage, setUsage] = useState<PuzzleUsage>('collection')
+	const [shape, setShape] = useState<PuzzleShapeId>('hexagon')
 	const [recipeId, setRecipeId] = useState<string>(PUZZLE_RECIPES[0].id)
 	const [saved, setSaved] = useState(false)
 	const [savedName, setSavedName] = useState('')
@@ -55,7 +57,7 @@ export default function PuzzleAuthoring({
 	)
 	const previewedSeeds = useRef(new Map<string, Set<string>>())
 	const [generated, setGenerated] = useState<{
-		puzzle: AuthoredHexPuzzle
+		puzzle: AuthoredPuzzle
 		run: number
 	} | null>(null)
 	const dirty =
@@ -89,6 +91,7 @@ export default function PuzzleAuthoring({
 				recipe,
 				palette.id,
 				previewedSeeds.current,
+				shape,
 			)
 			setSaved(false)
 			setSaveMessage('')
@@ -167,6 +170,7 @@ export default function PuzzleAuthoring({
 					catalogStatus={catalogStatus}
 					onNew={() => {
 						setGenerated(null)
+						setShape('hexagon')
 						setRecipeId(PUZZLE_RECIPES[0].id)
 						setSaved(false)
 						setDraftName('')
@@ -213,6 +217,8 @@ export default function PuzzleAuthoring({
 					palettesError={!!paletteError}
 					busy={busy}
 					generation={{
+						shape,
+						onShapeChange: setShape,
 						recipeId,
 						onRecipeChange: setRecipeId,
 						onGenerate: () => {
@@ -232,10 +238,7 @@ export default function PuzzleAuthoring({
 				{generated && palette && (
 					<PuzzlePlaytest
 						key={generated.run}
-						puzzle={renderAuthoredHexPuzzle(
-							generated.puzzle,
-							palette,
-						)}
+						puzzle={renderAuthoredPuzzle(generated.puzzle, palette)}
 					>
 						{saveMessage && <p role="status">{saveMessage}</p>}
 					</PuzzlePlaytest>
