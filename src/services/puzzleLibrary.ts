@@ -7,6 +7,7 @@ import { puzzleDraftArgs, type PuzzleUsage } from './puzzleDrafts'
 export interface LibraryDraft {
 	readonly row: Tables<'puzzles'>
 	readonly assigned: boolean
+	readonly collectionId: string | null
 	readonly collectionName: string | null
 	readonly collectionKind: string | null
 	readonly puzzle: AuthoredHexPuzzle
@@ -20,7 +21,7 @@ export async function loadPuzzleDrafts(
 		const { data, error } = await client
 			.from('puzzles')
 			.select(
-				'*, puzzle_authoring(*), collection_puzzles(puzzle_id, puzzle_collections(name, kind)), daily_puzzles(id)',
+				'*, puzzle_authoring(*), collection_puzzles(puzzle_id, collection_id, puzzle_collections(name, kind)), daily_puzzles(id)',
 			)
 			.eq('shape_id', 'hexagon')
 			.is('published_at', null)
@@ -43,6 +44,7 @@ export async function loadPuzzleDrafts(
 				assigned:
 					row.collection_puzzles.length > 0 ||
 					row.daily_puzzles.length > 0,
+				collectionId: row.collection_puzzles[0]?.collection_id ?? null,
 				collectionName:
 					row.collection_puzzles[0]?.puzzle_collections?.name ?? null,
 				collectionKind:

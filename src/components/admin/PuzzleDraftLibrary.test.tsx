@@ -77,6 +77,7 @@ const draft: LibraryDraft = {
 		release_at: null,
 	},
 	assigned: false,
+	collectionId: null,
 	collectionName: null,
 	collectionKind: null,
 	puzzle,
@@ -475,9 +476,9 @@ describe('draft library', () => {
 		expect(screen.queryByText('Show drafts')).not.toBeInTheDocument()
 		expect(filter.parentElement).toBe(refresh.parentElement)
 		const selectAll = await screen.findByRole('checkbox', {
-			name: 'Select all shown',
+			name: 'Select all',
 		})
-		const row = selectAll.closest(`.${styles.selectionRow}`)
+		const row = selectAll.closest(`.${layoutStyles.selectionBar}`)
 		expect(row).toBeInTheDocument()
 		fireEvent.click(selectAll)
 		const actions = screen.getByRole('group', {
@@ -498,7 +499,7 @@ describe('draft library', () => {
 			expect(button).toHaveClass(iconStyles.button)
 		}
 		fireEvent.click(screen.getByRole('button', { name: 'Clear selection' }))
-		expect(selectAll.closest(`.${styles.selectionRow}`)).toBe(row)
+		expect(selectAll.closest(`.${layoutStyles.selectionBar}`)).toBe(row)
 		expect(filter.parentElement).toBe(refresh.parentElement)
 	})
 	it('offers compact palette refresh in the edit workspace only', async () => {
@@ -545,26 +546,22 @@ describe('draft library', () => {
 		})
 		fireEvent.click(first)
 		expect(
-			screen.getByRole('checkbox', { name: 'Select all shown' }),
+			screen.getByRole('checkbox', { name: 'Select all' }),
 		).toBePartiallyChecked()
 		expect(screen.queryByRole('article')).not.toBeInTheDocument()
-		fireEvent.click(
-			screen.getByRole('checkbox', { name: 'Select all shown' }),
-		)
+		fireEvent.click(screen.getByRole('checkbox', { name: 'Select all' }))
 		expect(first).toBeChecked()
 		expect(
 			screen.getByRole('checkbox', { name: 'Select draft Daily art' }),
 		).toBeChecked()
-		expect(screen.getByText('(2 drafts selected)')).toBeInTheDocument()
+		expect(screen.queryByText(/selected\)/)).not.toBeInTheDocument()
 		fireEvent.change(screen.getByLabelText('Show drafts'), {
 			target: { value: 'daily' },
 		})
 		expect(
 			screen.queryByRole('group', { name: 'Bulk draft actions' }),
 		).not.toBeInTheDocument()
-		fireEvent.click(
-			screen.getByRole('checkbox', { name: 'Select all shown' }),
-		)
+		fireEvent.click(screen.getByRole('checkbox', { name: 'Select all' }))
 		fireEvent.click(screen.getByRole('button', { name: 'Delete selected' }))
 		const confirmation = screen.getByRole('dialog', {
 			name: 'Confirm gallery deletion',
@@ -672,19 +669,21 @@ describe('draft library', () => {
 			{ kind: 'palette', paletteId: 'other' },
 		)
 	})
-	it('blocks card and bulk deletion of assigned drafts but allows bulk palette changes', async () => {
+	it('hides card and bulk deletion for assigned drafts but allows bulk palette changes', async () => {
 		mocks.load.mockResolvedValue([{ ...draft, assigned: true }])
 		setup()
+		await screen.findByRole('button', { name: 'Edit draft Saved art' })
 		expect(
-			await screen.findByRole('button', {
-				name: 'Delete draft Saved art',
-			}),
-		).toBeDisabled()
+			screen.queryByRole('button', { name: 'Delete draft Saved art' }),
+		).not.toBeInTheDocument()
 		fireEvent.click(
 			screen.getByRole('checkbox', { name: 'Select draft Saved art' }),
 		)
 		expect(
-			screen.getByRole('button', { name: 'Delete selected' }),
+			screen.queryByRole('button', { name: 'Delete selected' }),
+		).not.toBeInTheDocument()
+		expect(
+			screen.getByRole('button', { name: 'Assign to set' }),
 		).toBeDisabled()
 		expect(
 			screen.getByRole('button', { name: 'Change palette' }),
@@ -693,6 +692,79 @@ describe('draft library', () => {
 		expect(
 			screen.getByRole('checkbox', { name: 'Select draft Saved art' }),
 		).not.toBeChecked()
+	})
+	it('isolates assigned drafts by set and offers no set filter for unassigned drafts', async () => {
+		const inSet = (
+			id: string,
+			name: string,
+			setId: string,
+			set: string,
+		) => ({
+			...draft,
+			row: { ...draft.row, id, name },
+			assigned: true,
+			collectionId: setId,
+			collectionName: set,
+			collectionKind: 'core',
+		})
+		mocks.load.mockResolvedValue([
+			inSet('a', 'First art', 'set-b', 'Beta'),
+			inSet('b', 'Second art', 'set-a', 'Alpha'),
+			{
+				...draft,
+				row: {
+					...draft.row,
+					id: 'c',
+					name: 'Daily art',
+					usage: 'daily',
+				},
+				assigned: true,
+			},
+		])
+		const view = render(
+			<PuzzleDraftLibrary
+				client={getSupabaseClient()}
+				palettes={[palette, other]}
+				catalogStatus="assigned"
+			/>,
+		)
+		const filter = await screen.findByLabelText('Show set')
+		expect(
+			within(filter)
+				.getAllByRole('option')
+				.map(option => option.textContent),
+		).toEqual(['All sets', 'No set', 'Alpha', 'Beta'])
+		fireEvent.click(
+			screen.getByRole('checkbox', { name: 'Select draft First art' }),
+		)
+		fireEvent.change(filter, { target: { value: 'set-a' } })
+		expect(
+			screen.getByRole('button', { name: 'Edit draft Second art' }),
+		).toBeInTheDocument()
+		expect(
+			screen.queryByRole('button', { name: 'Edit draft First art' }),
+		).not.toBeInTheDocument()
+		expect(
+			screen.queryByRole('group', { name: 'Bulk draft actions' }),
+		).not.toBeInTheDocument()
+		fireEvent.change(filter, { target: { value: 'none' } })
+		expect(
+			screen.getByRole('button', { name: 'Edit draft Daily art' }),
+		).toBeInTheDocument()
+		expect(
+			screen.queryByRole('button', { name: 'Edit draft Second art' }),
+		).not.toBeInTheDocument()
+		view.unmount()
+		mocks.load.mockResolvedValue([draft])
+		render(
+			<PuzzleDraftLibrary
+				client={getSupabaseClient()}
+				palettes={[palette, other]}
+				catalogStatus="drafts"
+			/>,
+		)
+		await screen.findByRole('button', { name: 'Edit draft Saved art' })
+		expect(screen.queryByLabelText('Show set')).not.toBeInTheDocument()
 	})
 	it('shows thumbnails, filters intended use, and reopens the stored design for playtesting', async () => {
 		setup()

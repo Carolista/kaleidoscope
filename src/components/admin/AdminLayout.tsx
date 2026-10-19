@@ -1,5 +1,7 @@
 import type { ComponentProps, ReactNode, SubmitEvent } from 'react'
-import { Button, FormField, Input } from '@shared'
+import { faXmark } from '@fortawesome/pro-solid-svg-icons'
+import { Button, Checkbox, FormField, Input } from '@shared'
+import AdminIconButton from './AdminIconButton'
 import styles from './AdminLayout.module.css'
 
 export function AdminSectionHeading({
@@ -66,6 +68,99 @@ export function AdminSetCard({
 			<div className={styles.setDetails}>{children}</div>
 			<div className={styles.setCardActions}>{actions}</div>
 		</li>
+	)
+}
+
+// A catalog card: preview, centered details, then checkbox and actions.
+export function AdminItemCard({
+	label,
+	preview,
+	children,
+	selectLabel,
+	selected,
+	selectDisabled,
+	onSelect,
+	actions,
+}: {
+	readonly label: string
+	readonly preview: ReactNode
+	readonly children: ReactNode
+	readonly selectLabel: string
+	readonly selected: boolean
+	readonly selectDisabled?: boolean
+	readonly onSelect: (selected: boolean) => void
+	readonly actions: ReactNode
+}) {
+	return (
+		<li
+			className={styles.itemCard}
+			aria-label={label}
+			data-selected={selected}
+		>
+			<div className={styles.itemPreview}>{preview}</div>
+			<div className={styles.itemDetails}>{children}</div>
+			<div className={styles.itemFooter}>
+				<Checkbox
+					plain
+					hideLabel
+					label={selectLabel}
+					className={styles.itemCheckbox}
+					checked={selected}
+					disabled={selectDisabled}
+					onChange={onSelect}
+				/>
+				<div className={styles.itemActions}>{actions}</div>
+			</div>
+		</li>
+	)
+}
+
+// Select-all for the shown cards, plus bulk icon actions once any are checked.
+export function AdminSelectionBar({
+	label,
+	shown,
+	checked,
+	disabled,
+	onSelectAll,
+	onClear,
+	children,
+}: {
+	readonly label: string
+	readonly shown: number
+	readonly checked: number
+	readonly disabled: boolean
+	readonly onSelectAll: (selected: boolean) => void
+	readonly onClear: () => void
+	readonly children: ReactNode
+}) {
+	if (!shown) return null
+	const all = checked === shown
+	return (
+		<div className={styles.selectionBar}>
+			<Checkbox
+				plain
+				label="Select all"
+				checked={all}
+				indeterminate={checked > 0 && !all}
+				disabled={disabled}
+				onChange={onSelectAll}
+			/>
+			{checked > 0 && (
+				<div
+					className={styles.bulkActions}
+					role="group"
+					aria-label={label}
+				>
+					{children}
+					<AdminIconButton
+						icon={faXmark}
+						label="Clear selection"
+						disabled={disabled}
+						onClick={onClear}
+					/>
+				</div>
+			)}
+		</div>
 	)
 }
 

@@ -150,16 +150,16 @@ describe('palette management', () => {
 			screen.queryByText('No palettes match this view.'),
 		).not.toBeInTheDocument()
 		fireEvent.click(screen.getByRole('checkbox', { name: 'Select Cabo' }))
-		fireEvent.change(screen.getByLabelText('Assign selected to set'), {
-			target: { value: 'set-two' },
-		})
-		fireEvent.click(
-			screen.getByRole('button', { name: 'Assign 1 selected' }),
-		)
+		fireEvent.click(screen.getByRole('button', { name: 'Assign to set' }))
 		const assignment = screen.getByRole('dialog', {
 			name: 'Assign selected palettes to set',
 		})
-		expect(assignment).toHaveTextContent('Pack colors')
+		expect(
+			within(assignment).getByRole('button', { name: 'Assign palettes' }),
+		).toBeDisabled()
+		fireEvent.change(within(assignment).getByLabelText('Palette set'), {
+			target: { value: 'set-two' },
+		})
 		expect(assignment).toHaveTextContent('Cabo')
 		expect(mocks.manageSet).not.toHaveBeenCalled()
 		fireEvent.click(
@@ -173,9 +173,12 @@ describe('palette management', () => {
 		)
 		await waitFor(() =>
 			expect(
-				screen.getByRole('button', { name: 'Assign 0 selected' }),
-			).toBeDisabled(),
+				screen.getByRole('checkbox', { name: 'Select Cabo' }),
+			).not.toBeChecked(),
 		)
+		expect(
+			screen.queryByRole('group', { name: 'Bulk palette actions' }),
+		).not.toBeInTheDocument()
 	})
 
 	it('retains the palette filter, selection, and assignment target on cancellation or write failure', async () => {
@@ -193,12 +196,10 @@ describe('palette management', () => {
 			target: { value: 'set-one' },
 		})
 		fireEvent.click(screen.getByRole('checkbox', { name: 'Select Cabo' }))
-		fireEvent.change(screen.getByLabelText('Assign selected to set'), {
+		fireEvent.click(screen.getByRole('button', { name: 'Assign to set' }))
+		fireEvent.change(screen.getByLabelText('Palette set'), {
 			target: { value: 'set-one' },
 		})
-		fireEvent.click(
-			screen.getByRole('button', { name: 'Assign 1 selected' }),
-		)
 		fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
 		expect(mocks.manageSet).not.toHaveBeenCalled()
 		expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
@@ -206,13 +207,11 @@ describe('palette management', () => {
 		expect(
 			screen.getByRole('checkbox', { name: 'Select Cabo' }),
 		).toBeChecked()
-		expect(screen.getByLabelText('Assign selected to set')).toHaveValue(
-			'set-one',
-		)
-		fireEvent.click(
-			screen.getByRole('button', { name: 'Assign 1 selected' }),
-		)
+		fireEvent.click(screen.getByRole('button', { name: 'Assign to set' }))
 		const dialog = screen.getByRole('dialog')
+		fireEvent.change(within(dialog).getByLabelText('Palette set'), {
+			target: { value: 'set-one' },
+		})
 		fireEvent.click(
 			within(dialog).getByRole('button', { name: 'Assign palettes' }),
 		)
@@ -232,7 +231,7 @@ describe('palette management', () => {
 		expect(
 			screen.getByRole('checkbox', { name: 'Select Cabo' }),
 		).toBeChecked()
-		expect(screen.getByLabelText('Assign selected to set')).toHaveValue(
+		expect(within(dialog).getByLabelText('Palette set')).toHaveValue(
 			'set-one',
 		)
 		expect(
@@ -240,18 +239,42 @@ describe('palette management', () => {
 		).toBeEnabled()
 	})
 
-	it('allows confirmed deletion of a palette belonging only to a draft set', async () => {
-		mocks.sets.mockResolvedValue([paletteSet])
-		mocks.usage.mockResolvedValue({
-			...emptyUsage,
-			packs: ['Warm colors'],
-			preparedPacks: 0,
+	it('selects all shown palettes and highlights selected cards', async () => {
+		const loose = { ...scheme, id: 'loose', name: 'Loose' }
+		mocks.load.mockResolvedValue([scheme, loose])
+		setup()
+		const selectAll = await screen.findByRole('checkbox', {
+			name: 'Select all',
 		})
+		fireEvent.click(screen.getByRole('checkbox', { name: 'Select Cabo' }))
+		expect(selectAll).toBePartiallyChecked()
+		expect(
+			screen.getByRole('listitem', { name: 'Palette Cabo' }),
+		).toHaveAttribute('data-selected', 'true')
+		fireEvent.click(selectAll)
+		expect(
+			screen.getByRole('checkbox', { name: 'Select Loose' }),
+		).toBeChecked()
+		fireEvent.click(screen.getByRole('button', { name: 'Clear selection' }))
+		expect(
+			screen.getByRole('checkbox', { name: 'Select Cabo' }),
+		).not.toBeChecked()
+		expect(
+			screen.queryByRole('group', { name: 'Bulk palette actions' }),
+		).not.toBeInTheDocument()
+	})
+
+	it('offers deletion only for unassigned draft palettes', async () => {
+		const loose = { ...scheme, id: 'loose', name: 'Loose' }
+		mocks.load.mockResolvedValue([scheme, loose])
+		mocks.sets.mockResolvedValue([paletteSet])
 		setup()
 		fireEvent.click(
-			await screen.findByRole('button', { name: 'Delete Cabo' }),
+			await screen.findByRole('button', { name: 'Delete Loose' }),
 		)
-		await screen.findByText('Warm colors')
+		expect(
+			screen.queryByRole('button', { name: 'Delete Cabo' }),
+		).not.toBeInTheDocument()
 		expect(
 			await screen.findByRole('button', {
 				name: 'Confirm delete palette',
@@ -260,10 +283,10 @@ describe('palette management', () => {
 		fireEvent.click(
 			screen.getByRole('button', { name: 'Confirm delete palette' }),
 		)
-		await screen.findByText('Deleted "Cabo".')
+		await screen.findByText('Deleted "Loose".')
 		expect(mocks.manage).toHaveBeenCalledWith(client, {
 			kind: 'delete',
-			previous: scheme,
+			previous: loose,
 		})
 	})
 
@@ -532,15 +555,18 @@ describe('palette management', () => {
 			},
 		])
 		setup()
-		expect(await screen.findByText('Draft')).toBeInTheDocument()
-		expect(screen.getByText('Scheduled')).toBeInTheDocument()
+		expect(await screen.findByText('Scheduled')).toBeInTheDocument()
 		expect(screen.getByText('Live')).toBeInTheDocument()
+		expect(screen.queryByText('Draft')).not.toBeInTheDocument()
 		expect(
-			screen.getByRole('button', { name: 'Delete Scheduled art' }),
-		).toBeDisabled()
+			screen.getByRole('button', { name: 'Delete Cabo' }),
+		).toBeEnabled()
 		expect(
-			screen.getByRole('button', { name: 'Delete Live art' }),
-		).toBeDisabled()
+			screen.queryByRole('button', { name: 'Delete Scheduled art' }),
+		).not.toBeInTheDocument()
+		expect(
+			screen.queryByRole('button', { name: 'Delete Live art' }),
+		).not.toBeInTheDocument()
 		fireEvent.click(
 			screen.getByRole('button', { name: 'View Scheduled art' }),
 		)
@@ -802,7 +828,7 @@ describe('palette management', () => {
 	})
 
 	it('keeps palette filter and selection mounted across deletion cancellation and failed writes, and blocks pending dismissal', async () => {
-		mocks.sets.mockResolvedValue([paletteSet])
+		mocks.sets.mockResolvedValue([{ ...paletteSet, members: [] }])
 		let fail!: (cause: Error) => void
 		mocks.manage.mockReturnValueOnce(
 			new Promise((_resolve, reject) => {
@@ -812,7 +838,7 @@ describe('palette management', () => {
 		setup()
 		await screen.findByRole('checkbox', { name: 'Select Cabo' })
 		fireEvent.change(screen.getByLabelText('Show palettes'), {
-			target: { value: 'set-one' },
+			target: { value: 'ungrouped' },
 		})
 		fireEvent.click(screen.getByRole('checkbox', { name: 'Select Cabo' }))
 		const card = screen.getByRole('listitem', { name: 'Palette Cabo' })
@@ -826,7 +852,7 @@ describe('palette management', () => {
 		expect(screen.getByRole('listitem', { name: 'Palette Cabo' })).toBe(
 			card,
 		)
-		expect(screen.getByLabelText('Show palettes')).toHaveValue('set-one')
+		expect(screen.getByLabelText('Show palettes')).toHaveValue('ungrouped')
 		expect(
 			screen.getByRole('checkbox', { name: 'Select Cabo' }),
 		).toBeChecked()

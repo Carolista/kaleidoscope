@@ -71,6 +71,7 @@ const draft: LibraryDraft = {
 		release_at: null,
 	},
 	assigned: false,
+	collectionId: null,
 	collectionName: null,
 	collectionKind: null,
 	puzzle,

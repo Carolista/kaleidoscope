@@ -41,6 +41,78 @@
 	overflow-wrap: anywhere;
 }
 
+.itemCard {
+	display: grid;
+	grid-template-rows: auto 1fr auto;
+	gap: 0.375rem;
+	text-align: center;
+}
+
+.itemCard[data-selected='true'] {
+	border-color: var(--admin-blue);
+	background: var(--admin-selected);
+}
+
+.itemPreview {
+	display: grid;
+	align-items: center;
+	min-width: 0;
+}
+
+.itemDetails {
+	display: grid;
+	align-content: start;
+	justify-items: center;
+	gap: 0.25rem;
+	font-size: 0.875rem;
+}
+
+.itemDetails strong {
+	font-size: 1rem;
+}
+
+.itemFooter {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.25rem;
+}
+
+.itemCheckbox {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.875rem;
+	height: 1.875rem;
+	flex: none;
+}
+
+.itemActions {
+	display: flex;
+	align-items: center;
+	gap: 0.25rem;
+}
+
+.selectionBar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem 0.75rem;
+	min-height: 2.25rem;
+	margin-block: 0.375rem;
+}
+
+.selectionBar > label {
+	font-size: 0.875rem;
+}
+
+.bulkActions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.375rem;
+}
+
 .members {
 	padding: 0;
 	list-style: none;

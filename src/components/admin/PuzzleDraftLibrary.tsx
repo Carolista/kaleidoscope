@@ -8,7 +8,6 @@ import {
 	faPlusLarge,
 	faPalette,
 	faLayerGroup,
-	faXmark,
 	faSquareArrowLeft,
 } from '@fortawesome/pro-solid-svg-icons'
 import type { Database } from '../../types/database'
@@ -33,16 +32,27 @@ import { HEX_PUZZLE_RECIPES } from '../../puzzles/hexPuzzle'
 import HexPuzzleBoard from '../puzzle/HexPuzzleBoard'
 import PuzzleMode from '../puzzle/PuzzleMode'
 import styles from './AdminPortal.module.css'
-import Checkbox from '../shared/Checkbox'
 import AdminIconButton from './AdminIconButton'
 import { Button, ConfirmDialog, Loading, PaletteChoices, Select } from '@shared'
-import { AdminFeedback, AdminGallery, AdminSectionHeading } from './AdminLayout'
+import {
+	AdminFeedback,
+	AdminGallery,
+	AdminItemCard,
+	AdminSectionHeading,
+	AdminSelectionBar,
+} from './AdminLayout'
+import useCheckedIds from './useCheckedIds'
 import { useCatalog, useCatalogInvalidation } from './useAdminCatalog'
 import PuzzleDraftForm from './PuzzleDraftForm'
 import { manageDraftSet, type DraftSet } from '../../services/puzzleSets'
 import useUnsavedDraft from './useUnsavedDraft'
 import { useNavigationGuard } from './useNavigationGuard'
 import useModalState from '../../hooks/useModalState'
+
+// Only unassigned drafts may be deleted, singly or in bulk.
+function deletable(draft: LibraryDraft) {
+	return !draft.assigned && !draft.row.published_at && !draft.row.release_at
+}
 
 function message(cause: unknown) {
 	return cause instanceof Error
@@ -358,7 +368,7 @@ export default function PuzzleDraftLibrary({
 	const [error, setError] = useState('')
 	const [filter, setFilter] = useState('all')
 	const [status, setStatus] = useState('')
-	const [checkedIds, setCheckedIds] = useState<ReadonlySet<string>>(new Set())
+	const [setChoice, setSetChoice] = useState('all')
 	const [action, setAction, actionModal] = useModalState<{
 		kind: 'delete' | 'palette' | 'set'
 		ids: readonly string[]
@@ -377,17 +387,44 @@ export default function PuzzleDraftLibrary({
 			? message(setCatalog.error)
 			: ''
 	const selected = drafts.find(value => value.row.id === selectedId)
-	const visible = drafts.filter(
+	const inStatus = drafts.filter(
+		value =>
+			!catalogStatus ||
+			(!value.row.published_at &&
+				!value.row.release_at &&
+				value.assigned === (catalogStatus === 'assigned')),
+	)
+	// Unassigned drafts never belong to a set, so only offer the set filter elsewhere.
+	const showSetFilter = catalogStatus !== 'drafts'
+	const setOptions = [
+		...new Map(
+			inStatus.flatMap(value =>
+				value.collectionId
+					? [[value.collectionId, value.collectionName ?? '']]
+					: [],
+			),
+		),
+	].sort((a, b) => a[1].localeCompare(b[1]))
+	const shownSet =
+		setChoice === 'all' ||
+		setChoice === 'none' ||
+		setOptions.some(([id]) => id === setChoice)
+			? setChoice
+			: 'all'
+	const visible = inStatus.filter(
 		value =>
 			(filter === 'all' || value.row.usage === filter) &&
-			(!catalogStatus ||
-				(!value.row.published_at &&
-					!value.row.release_at &&
-					value.assigned === (catalogStatus === 'assigned'))),
+			(shownSet === 'all' ||
+				(shownSet === 'none'
+					? !value.collectionId
+					: value.collectionId === shownSet)),
 	)
-	const checked = visible.filter(draft => checkedIds.has(draft.row.id))
-	const allChecked = visible.length > 0 && checked.length === visible.length
-	const hasAssigned = checked.some(draft => draft.assigned)
+	const selection = useCheckedIds(visible.map(draft => draft.row.id))
+	const checked = visible.filter(draft => selection.checked.has(draft.row.id))
+	const canAssign = checked.every(
+		draft => !draft.assigned && draft.row.usage === 'collection',
+	)
+	const canDelete = checked.every(deletable)
 	function startAction(
 		kind: 'delete' | 'palette' | 'set',
 		ids: readonly string[],
@@ -442,7 +479,7 @@ export default function PuzzleDraftLibrary({
 							? `Deleted ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'}.`
 							: `Updated the palette for ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'}.`,
 				)
-				setCheckedIds(new Set())
+				selection.clear()
 				invalidate('puzzleDrafts', 'puzzleSets')
 			})
 		} catch (cause) {
@@ -514,7 +551,7 @@ export default function PuzzleDraftLibrary({
 					label="Refresh drafts"
 					disabled={loading || bulkBusy}
 					onClick={() => {
-						setCheckedIds(new Set())
+						selection.clear()
 						setAction(null)
 						setError('')
 						void draftCatalog.refresh().catch(() => {})
@@ -528,7 +565,7 @@ export default function PuzzleDraftLibrary({
 					onChange={event => {
 						setFilter(event.target.value)
 						setSelectedId(null)
-						setCheckedIds(new Set())
+						selection.clear()
 						setAction(null)
 					}}
 				>
@@ -536,6 +573,27 @@ export default function PuzzleDraftLibrary({
 					<option value="collection">Set/pack</option>
 					<option value="daily">Daily</option>
 				</Select>
+				{showSetFilter && (
+					<Select
+						id="draft-set-filter"
+						aria-label="Show set"
+						value={shownSet}
+						disabled={bulkBusy}
+						onChange={event => {
+							setSetChoice(event.target.value)
+							selection.clear()
+							setAction(null)
+						}}
+					>
+						<option value="all">All sets</option>
+						<option value="none">No set</option>
+						{setOptions.map(([id, name]) => (
+							<option key={id} value={id}>
+								{name}
+							</option>
+						))}
+					</Select>
+				)}
 			</AdminSectionHeading>
 			<AdminFeedback
 				error={
@@ -563,107 +621,51 @@ export default function PuzzleDraftLibrary({
 				/>
 			) : loadFailed ? null : (
 				<>
-					<div className={styles.selectionRow}>
-						{visible.length > 0 && (
-							<Checkbox
-								plain
-								label="Select all shown"
-								checked={allChecked}
-								indeterminate={
-									checked.length > 0 && !allChecked
-								}
+					<AdminSelectionBar
+						label="Bulk draft actions"
+						shown={visible.length}
+						checked={checked.length}
+						disabled={bulkBusy}
+						onSelectAll={value => {
+							selection.setAll(value)
+							setAction(null)
+						}}
+						onClear={() => {
+							selection.clear()
+							setAction(null)
+						}}
+					>
+						<AdminIconButton
+							icon={faLayerGroup}
+							label="Assign to set"
+							title={
+								canAssign
+									? undefined
+									: 'Only unassigned Set/pack drafts can be assigned to a set.'
+							}
+							disabled={bulkBusy || !canAssign}
+							onClick={() => startAction('set', selection.ids)}
+						/>
+						<AdminIconButton
+							icon={faPalette}
+							label="Change palette"
+							disabled={bulkBusy}
+							onClick={() =>
+								startAction('palette', selection.ids)
+							}
+						/>
+						{canDelete && (
+							<AdminIconButton
+								icon={faTrashCan}
+								label="Delete selected"
+								className={styles.deleteAction}
 								disabled={bulkBusy}
-								onChange={value => {
-									setCheckedIds(
-										new Set(
-											value
-												? visible.map(
-														draft => draft.row.id,
-													)
-												: [],
-										),
-									)
-									setAction(null)
-								}}
+								onClick={() =>
+									startAction('delete', selection.ids)
+								}
 							/>
 						)}
-						{checked.length > 0 && (
-							<div
-								className={styles.bulkToolbar}
-								role="group"
-								aria-label="Bulk draft actions"
-							>
-								<span className={styles.selectionCount}>
-									({checked.length} drafts selected)
-								</span>
-								<AdminIconButton
-									icon={faLayerGroup}
-									label="Assign to set"
-									disabled={
-										bulkBusy ||
-										hasAssigned ||
-										checked.some(
-											draft =>
-												draft.row.usage !==
-												'collection',
-										)
-									}
-									onClick={() =>
-										startAction(
-											'set',
-											checked.map(draft => draft.row.id),
-										)
-									}
-								/>
-								<AdminIconButton
-									icon={faPalette}
-									label="Change palette"
-									disabled={bulkBusy}
-									onClick={() =>
-										startAction(
-											'palette',
-											checked.map(draft => draft.row.id),
-										)
-									}
-								/>
-								<AdminIconButton
-									icon={faTrashCan}
-									label="Delete selected"
-									className={styles.deleteAction}
-									disabled={bulkBusy || hasAssigned}
-									onClick={() =>
-										startAction(
-											'delete',
-											checked.map(draft => draft.row.id),
-										)
-									}
-								/>
-								<AdminIconButton
-									icon={faXmark}
-									label="Clear selection"
-									disabled={bulkBusy}
-									onClick={() => {
-										setCheckedIds(new Set())
-										setAction(null)
-									}}
-								/>
-							</div>
-						)}
-					</div>
-					{hasAssigned && (
-						<p className={styles.rotationHelp}>
-							Unassign selected drafts before deleting them.
-						</p>
-					)}
-					{checked.some(
-						draft =>
-							draft.assigned || draft.row.usage !== 'collection',
-					) && (
-						<p className={styles.rotationHelp}>
-							Only unassigned Set/pack drafts can be assigned to a
-							set.
-						</p>
-					)}
+					</AdminSelectionBar>
 					{action && (
 						<ConfirmDialog
 							{...actionModal}
@@ -818,88 +820,70 @@ export default function PuzzleDraftLibrary({
 								? renderAuthoredHexPuzzle(draft.puzzle, palette)
 								: null
 							return (
-								<li
+								<AdminItemCard
 									key={draft.row.id}
-									className={styles.draftCard}
-									aria-label={`Draft ${draft.row.name}`}
-									data-selected={checkedIds.has(draft.row.id)}
-								>
-									<div className={styles.cardActions}>
-										<Checkbox
-											plain
-											hideLabel
-											label={`Select draft ${draft.row.name}`}
-											className={styles.cardCheckbox}
-											checked={checkedIds.has(
-												draft.row.id,
-											)}
-											disabled={bulkBusy}
-											onChange={value => {
-												setCheckedIds(previous => {
-													const next = new Set(
-														previous,
-													)
-													if (value)
-														next.add(draft.row.id)
-													else
-														next.delete(
-															draft.row.id,
-														)
-													return next
-												})
-												setAction(null)
-											}}
-										/>
-										<AdminIconButton
-											icon={faPenToSquare}
-											className={styles.editAction}
-											disabled={bulkBusy}
-											label={`Edit draft ${draft.row.name}`}
-											title={`Edit ${draft.row.name}`}
-											onClick={() => {
-												setStatus('')
-												setAction(null)
-												setSelectedId(draft.row.id)
-											}}
-										/>
-										<AdminIconButton
-											icon={faTrashCan}
-											className={styles.deleteAction}
-											disabled={
-												bulkBusy || draft.assigned
-											}
-											label={`Delete draft ${draft.row.name}`}
-											title={
-												draft.assigned
-													? 'Unassign this draft before deleting.'
-													: `Delete ${draft.row.name}`
-											}
-											onClick={() =>
-												startAction('delete', [
-													draft.row.id,
-												])
-											}
-										/>
-									</div>
-									{preview ? (
-										<span
-											aria-hidden="true"
-											className={styles.thumbnail}
-										>
-											<HexPuzzleBoard
-												target
-												radius={preview.radius}
-												colors={preview.target}
-											/>
-										</span>
-									) : (
-										<span>Palette unavailable</span>
+									label={`Draft ${draft.row.name}`}
+									selectLabel={`Select draft ${draft.row.name}`}
+									selected={selection.checked.has(
+										draft.row.id,
 									)}
+									selectDisabled={bulkBusy}
+									onSelect={value => {
+										selection.toggle(draft.row.id, value)
+										setAction(null)
+									}}
+									preview={
+										preview ? (
+											<span
+												aria-hidden="true"
+												className={styles.thumbnail}
+											>
+												<HexPuzzleBoard
+													target
+													radius={preview.radius}
+													colors={preview.target}
+												/>
+											</span>
+										) : (
+											<span>Palette unavailable</span>
+										)
+									}
+									actions={
+										<>
+											<AdminIconButton
+												icon={faPenToSquare}
+												className={styles.editAction}
+												disabled={bulkBusy}
+												label={`Edit draft ${draft.row.name}`}
+												title={`Edit ${draft.row.name}`}
+												onClick={() => {
+													setStatus('')
+													setAction(null)
+													setSelectedId(draft.row.id)
+												}}
+											/>
+											{deletable(draft) && (
+												<AdminIconButton
+													icon={faTrashCan}
+													className={
+														styles.deleteAction
+													}
+													disabled={bulkBusy}
+													label={`Delete draft ${draft.row.name}`}
+													title={`Delete ${draft.row.name}`}
+													onClick={() =>
+														startAction('delete', [
+															draft.row.id,
+														])
+													}
+												/>
+											)}
+										</>
+									}
+								>
 									<strong>{draft.row.name}</strong>
-									<span className={styles.difficulty}>
-										{draft.puzzle.recipe.label}
-									</span>
-									<span className={styles.assignment}>
+									<span>{draft.puzzle.recipe.label}</span>
+									<span>
 										{draft.row.usage === 'daily'
 											? 'Daily'
 											: draft.collectionKind === 'core'
@@ -917,7 +901,7 @@ export default function PuzzleDraftLibrary({
 												? 'Assigned'
 												: 'Unassigned')}
 									</span>
-								</li>
+								</AdminItemCard>
 							)
 						})}
 					</AdminGallery>
