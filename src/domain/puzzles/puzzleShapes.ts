@@ -13,6 +13,12 @@ import {
 	TRIANGLE_GRID_SIZES,
 } from '@/domain/shapes/triangle'
 import {
+	CIRCLE_RINGS_GRID_SIZES,
+	circleRingsCellCenter,
+	circleRingsCellRadius,
+	generateCircleRingsCells,
+} from '@/domain/shapes/circle-rings'
+import {
 	generateHexagramCells,
 	HEXAGRAM_GRID_SIZES,
 	hexagramStarCellCorners,
@@ -29,6 +35,7 @@ export const PUZZLE_SHAPE_IDS = [
 	'triangle',
 	'diamondStar',
 	'hexagram',
+	'circleRings',
 ] as const satisfies readonly GridShapeId[]
 
 export type PuzzleShapeId = (typeof PUZZLE_SHAPE_IDS)[number]
@@ -228,11 +235,82 @@ const diamondStar: PuzzleShape = {
 	},
 }
 
+// Ring k of circle rings has 6k circles, like ring k of a hexagon grid, so each
+// circle maps to the hex cell at the same ring position (clockwise from the top
+// corner). Hex neighbours are the touching circles, and 60-degree hex rotation
+// maps every ring onto itself. Circles are drawn as fine polygons.
+const ringCorners: readonly AxialCoord[] = [
+	{ q: 0, r: -1 },
+	{ q: 1, r: -1 },
+	{ q: 1, r: 0 },
+	{ q: 0, r: 1 },
+	{ q: -1, r: 1 },
+	{ q: -1, r: 0 },
+]
+
+function hexAtRing(ring: number, index: number): AxialCoord {
+	if (ring === 0) return { q: 0, r: 0 }
+	const side = Math.floor(index / ring)
+	const step = index % ring
+	const from = ringCorners[side]
+	const to = ringCorners[(side + 1) % 6]
+	return {
+		q: ring * from.q + step * (to.q - from.q),
+		r: ring * from.r + step * (to.r - from.r),
+	}
+}
+
+function ringAtHex(cell: AxialCoord): { ring: number; index: number } {
+	const ring = Math.max(
+		Math.abs(cell.q),
+		Math.abs(cell.r),
+		Math.abs(cell.q + cell.r),
+	)
+	for (let index = 0; index < Math.max(1, 6 * ring); index++) {
+		const candidate = hexAtRing(ring, index)
+		if (candidate.q === cell.q && candidate.r === cell.r)
+			return { ring, index }
+	}
+	throw new Error('Unreachable circle-ring coordinate.')
+}
+
+const CIRCLE_SEGMENTS = 32
+
+const circleRings: PuzzleShape = {
+	...hexagon,
+	id: 'circleRings',
+	gridSizes: CIRCLE_RINGS_GRID_SIZES,
+	cells: ringCount =>
+		generateCircleRingsCells(ringCount).map(
+			({ ring, index, groupId, isClickable }) => ({
+				...hexAtRing(ring, index),
+				groupId,
+				isClickable,
+			}),
+		),
+	corners: (cell, size) => {
+		const position = ringAtHex(cell)
+		const layout = { ringCount: 0, size }
+		const center = circleRingsCellCenter(position, layout)
+		const radius = circleRingsCellRadius(position, layout)
+		return Array.from({ length: CIRCLE_SEGMENTS }, (_, i) => {
+			const angle = (2 * Math.PI * i) / CIRCLE_SEGMENTS
+			return {
+				x: center.x + radius * Math.cos(angle),
+				y: center.y + radius * Math.sin(angle),
+			}
+		})
+	},
+	center: (cell, size) =>
+		circleRingsCellCenter(ringAtHex(cell), { ringCount: 0, size }),
+}
+
 export const puzzleShapes: Readonly<Record<PuzzleShapeId, PuzzleShape>> = {
 	hexagon,
 	triangle,
 	diamondStar,
 	hexagram,
+	circleRings,
 }
 
 export function isPuzzleShapeId(value: unknown): value is PuzzleShapeId {
@@ -248,4 +326,5 @@ export const PUZZLE_SHAPE_LABELS: Readonly<Record<PuzzleShapeId, string>> = {
 	triangle: catalogLabel('triangle'),
 	diamondStar: catalogLabel('diamondStar'),
 	hexagram: catalogLabel('hexagram'),
+	circleRings: catalogLabel('circleRings'),
 }

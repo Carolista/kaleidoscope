@@ -25,6 +25,7 @@ export const PUZZLE_GENERATOR_VERSIONS = {
 	triangle: 'triangle-v1',
 	diamondStar: 'diamondStar-v1',
 	hexagram: 'hexagram-v1',
+	circleRings: 'circleRings-v1',
 } as const satisfies Record<PuzzleShapeId, string>
 
 // Hexagon definitions predate other shapes and keep their `radius` key.

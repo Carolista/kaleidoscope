@@ -14,6 +14,11 @@ import {
 	hexagramStarCellCorners,
 } from '@/domain/shapes/hexagram'
 import {
+	circleRingsCellCenter,
+	circleRingsCellRadius,
+	generateCircleRingsCells,
+} from '@/domain/shapes/circle-rings'
+import {
 	anchorAt,
 	coordinateKey,
 	generatePuzzle,
@@ -610,4 +615,111 @@ describe('hexagram puzzles', () => {
 			expect(isPuzzleSolved(puzzle, placements)).toBe(true)
 		},
 	)
+})
+
+describe('circle rings puzzles', () => {
+	const circles = puzzleShapes.circleRings
+	const distance = (
+		a: { x: number; y: number },
+		b: { x: number; y: number },
+	) => Math.hypot(a.x - b.x, a.y - b.y)
+
+	it('maps every Zen circle to a unique hex cell at the same position, with touching circles as neighbours', () => {
+		for (const gridSize of Object.values(circles.gridSizes)) {
+			const cells = circles.cells(gridSize)
+			const zen = generateCircleRingsCells(gridSize)
+			const keys = new Set(cells.map(coordinateKey))
+			expect(keys.size).toBe(zen.length)
+			const layout = { ringCount: gridSize, size: 1 }
+			cells.forEach((cell, index) => {
+				const center = circleRingsCellCenter(zen[index], layout)
+				expect(distance(circles.center(cell, 1), center)).toBeCloseTo(0)
+				const radius = circleRingsCellRadius(zen[index], layout)
+				for (const point of circles.corners(cell, 1))
+					expect(distance(point, center)).toBeCloseTo(radius)
+			})
+			// Neighbours are always nearer, relative to their radii, than non-neighbours.
+			const gap = (
+				a: (typeof cells)[number],
+				b: (typeof cells)[number],
+			) => {
+				const ra = distance(
+					circles.corners(a, 1)[0],
+					circles.center(a, 1),
+				)
+				const rb = distance(
+					circles.corners(b, 1)[0],
+					circles.center(b, 1),
+				)
+				return (
+					distance(circles.center(a, 1), circles.center(b, 1)) /
+					(ra + rb)
+				)
+			}
+			let farthestNeighbour = 0
+			let nearestOther = Infinity
+			for (const a of cells) {
+				const neighbours = new Set(
+					circles.neighbors(a).map(coordinateKey),
+				)
+				for (const b of cells) {
+					if (a === b) continue
+					if (neighbours.has(coordinateKey(b)))
+						farthestNeighbour = Math.max(
+							farthestNeighbour,
+							gap(a, b),
+						)
+					else nearestOther = Math.min(nearestOther, gap(a, b))
+				}
+			}
+			expect(farthestNeighbour).toBeLessThan(nearestOther)
+		}
+		expect(
+			Object.values(circles.gridSizes).map(
+				size =>
+					circles.cells(size).filter(cell => cell.isClickable).length,
+			),
+		).toEqual([6, 9, 16])
+	})
+
+	it('rotates positions 60 degrees about the center', () => {
+		for (const cell of circles.cells(6)) {
+			const turned = rotateCoordinate(cell, 1)
+			const { x, y } = circles.center(cell, 1)
+			const angle = Math.PI / 3
+			const moved = circles.center(turned, 1)
+			expect(moved.x).toBeCloseTo(
+				x * Math.cos(angle) - y * Math.sin(angle),
+			)
+			expect(moved.y).toBeCloseTo(
+				x * Math.sin(angle) + y * Math.cos(angle),
+			)
+		}
+	})
+
+	it.each(
+		PUZZLE_RECIPES.flatMap(recipe =>
+			Array.from(
+				{ length: 30 },
+				(_, i) => [recipe.id, `c-${i}`, recipe] as const,
+			),
+		),
+	)('generates a solvable %s partition for %s', (_, seed, recipe) => {
+		const puzzle = generatePuzzle(seed, palette, recipe, 'circleRings')
+		expect(puzzle.pieces.map(piece => piece.tiles.length).sort()).toEqual(
+			[...circles.pieceSizes[recipe.size]].sort(),
+		)
+		let placements: PuzzlePlacements = {}
+		for (const piece of puzzle.pieces) {
+			const result = placePuzzlePiece(
+				puzzle,
+				placements,
+				piece.id,
+				puzzle.solution[piece.id],
+			)
+			if (!result.ok) throw new Error(result.reason)
+			placements = result.placements
+		}
+		expect(isPuzzleSolved(puzzle, placements)).toBe(true)
+	})
 })
