@@ -23,6 +23,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import PuzzleDraftForm from './PuzzleDraftForm'
 import { loadColorSchemes } from '../../services/colorSchemes'
 import SchemeLibrary from './SchemeLibrary'
+import { Button } from '@shared'
 
 function messageFor(cause: unknown): string {
 	return cause instanceof Error
@@ -217,7 +218,8 @@ export default function PuzzleAuthoring({
 	return (
 		<>
 			<section aria-labelledby="puzzle-authoring-title">
-				<button
+				<Button
+					variant="link"
 					type="button"
 					className={styles.backLink}
 					disabled={busy}
@@ -230,7 +232,7 @@ export default function PuzzleAuthoring({
 						aria-hidden="true"
 					/>{' '}
 					Back to library
-				</button>
+				</Button>
 				<h2 id="puzzle-authoring-title">New puzzle</h2>
 				<p>
 					Generate and playtest all six recipes, then save designs as

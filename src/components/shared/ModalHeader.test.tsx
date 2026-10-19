@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { screen, within } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useImageExport } from '@hooks/useImageExport'
 import { renderWithProvider } from '@test/renderWithProvider'
@@ -7,6 +7,8 @@ import ControlsModal from '../controls/ControlsModal'
 import SaveImageModal from '../controls/SaveImageModal'
 import ColorSchemeModal from '../controls/color-schemes/ColorSchemeModal'
 import GridShapeModal from '../controls/shapes/GridShapeModal'
+import Modal from './Modal'
+import ModalHeader from './ModalHeader'
 
 vi.mock('@hooks/useImageExport')
 
@@ -30,6 +32,33 @@ const modals = [
 ]
 
 describe('shared modal headers', () => {
+	it('renders a labelled modal and close control without player state', async () => {
+		const onClose = vi.fn()
+		render(
+			<Modal
+				open
+				onClose={onClose}
+				labelledBy="admin-title"
+				header={
+					<ModalHeader
+						title="Admin action"
+						titleId="admin-title"
+						closeLabel="Close action"
+						onClose={onClose}
+					/>
+				}
+			>
+				Details
+			</Modal>,
+		)
+		expect(
+			screen.getByRole('dialog', { name: 'Admin action' }),
+		).toBeInTheDocument()
+		await userEvent
+			.setup()
+			.click(screen.getByRole('button', { name: 'Close action' }))
+		expect(onClose).toHaveBeenCalledOnce()
+	})
 	beforeEach(() => {
 		localStorage.clear()
 		vi.mocked(useImageExport).mockReturnValue({

@@ -14,6 +14,7 @@ import styles from './AdminPortal.module.css'
 import PuzzleAuthoring from './PuzzleAuthoring'
 import { confirmDiscardDraft } from './useUnsavedDraft'
 import AdminIconButton from './AdminIconButton'
+import { Button, Input } from '@shared'
 import {
 	faRightFromBracket,
 	faSun,
@@ -234,7 +235,7 @@ function AdminSession({
 			) : !session ? (
 				<form onSubmit={signIn} className={styles.form}>
 					<label htmlFor="admin-email">Email</label>
-					<input
+					<Input
 						id="admin-email"
 						name="email"
 						type="email"
@@ -243,7 +244,7 @@ function AdminSession({
 						disabled={busy}
 					/>
 					<label htmlFor="admin-password">Password</label>
-					<input
+					<Input
 						id="admin-password"
 						name="password"
 						type="password"
@@ -251,9 +252,9 @@ function AdminSession({
 						required
 						disabled={busy}
 					/>
-					<button type="submit" disabled={busy}>
+					<Button type="submit" disabled={busy}>
 						{busy ? 'Signing in…' : 'Sign in'}
-					</button>
+					</Button>
 					<p>
 						Use your existing admin account. Player registration is
 						not available here.
@@ -282,7 +283,7 @@ function AdminSession({
 								Unable to verify admin access:{' '}
 								{checkedRole.message}
 							</p>
-							<button
+							<Button
 								type="button"
 								onClick={() => {
 									setRole(null)
@@ -290,7 +291,7 @@ function AdminSession({
 								}}
 							>
 								Retry access check
-							</button>
+							</Button>
 						</div>
 					)}
 				</>

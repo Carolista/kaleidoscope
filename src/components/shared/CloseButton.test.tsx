@@ -1,14 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
-import { screen } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { renderWithProvider } from '@test/renderWithProvider'
 import CloseButton from './CloseButton'
 
 describe('CloseButton', () => {
 	it('supports the existing small icon-button size', () => {
-		renderWithProvider(
-			<CloseButton label="Close" onClick={() => {}} size="sm" />,
-		)
+		render(<CloseButton label="Close" onClick={() => {}} size="sm" />)
 		expect(screen.getByRole('button', { name: 'Close' })).toHaveStyle(
 			'--icon-button-size: 1.875rem',
 		)
@@ -17,7 +14,7 @@ describe('CloseButton', () => {
 	it('renders with its label as the accessible name and fires onClick', async () => {
 		const user = userEvent.setup()
 		const onClick = vi.fn()
-		renderWithProvider(
+		render(
 			<CloseButton
 				label="Close color palette selector"
 				onClick={onClick}

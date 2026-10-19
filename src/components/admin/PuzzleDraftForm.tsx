@@ -5,6 +5,7 @@ import { HEX_PUZZLE_RECIPES } from '../../puzzles/hexPuzzle'
 import type { PuzzleUsage } from '../../services/puzzleDrafts'
 import paletteStyles from '../controls/color-schemes/SchemePicker.module.css'
 import AdminIconButton from './AdminIconButton'
+import { Button, Input, Select } from '@shared'
 import styles from './AdminPortal.module.css'
 
 interface DraftMetadata {
@@ -126,7 +127,7 @@ export default function PuzzleDraftForm({
 				<div className={styles.draftControls}>
 					<div className={styles.metadataField}>
 						<label htmlFor={`${id}-name`}>Puzzle name</label>
-						<input
+						<Input
 							id={`${id}-name`}
 							value={metadata.name}
 							required
@@ -140,7 +141,7 @@ export default function PuzzleDraftForm({
 						<div className={styles.recipeControls}>
 							<div className={styles.metadataField}>
 								<label htmlFor={`${id}-recipe`}>Recipe</label>
-								<select
+								<Select
 									id={`${id}-recipe`}
 									value={generation.recipeId}
 									disabled={
@@ -162,7 +163,7 @@ export default function PuzzleDraftForm({
 											{recipe.label}
 										</option>
 									))}
-								</select>
+								</Select>
 							</div>
 							<AdminIconButton
 								icon={faWandMagicSparkles}
@@ -178,7 +179,7 @@ export default function PuzzleDraftForm({
 					) : (
 						<div className={styles.metadataField}>
 							<label htmlFor={`${id}-recipe`}>Recipe</label>
-							<input
+							<Input
 								id={`${id}-recipe`}
 								value={metadata.recipeLabel ?? ''}
 								readOnly
@@ -188,7 +189,7 @@ export default function PuzzleDraftForm({
 					<div className={styles.metadataForm}>
 						<div className={styles.metadataField}>
 							<label htmlFor={`${id}-usage`}>Intended use</label>
-							<select
+							<Select
 								id={`${id}-usage`}
 								value={metadata.usage}
 								disabled={
@@ -205,10 +206,10 @@ export default function PuzzleDraftForm({
 							>
 								<option value="collection">Set/pack</option>
 								<option value="daily">Daily</option>
-							</select>
+							</Select>
 						</div>
-						<button
-							className={styles.saveButton}
+						<Button
+							variant="primary"
 							type="submit"
 							disabled={
 								busy ||
@@ -218,7 +219,7 @@ export default function PuzzleDraftForm({
 							}
 						>
 							{mode === 'create' ? 'Save Draft' : 'Save Changes'}
-						</button>
+						</Button>
 					</div>
 					{metadata.assigned && (
 						<p>

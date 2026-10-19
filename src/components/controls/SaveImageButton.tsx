@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { RefObject } from 'react'
 import { faHexagonImage } from '@fortawesome/sharp-duotone-solid-svg-icons'
-import { IconButton } from '@shared'
+import { PlayerIconButton as IconButton } from '@shared'
 import SaveImageModal from './SaveImageModal'
 
 export interface SaveImageButtonProps {

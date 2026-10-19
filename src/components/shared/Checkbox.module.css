@@ -35,7 +35,7 @@
 }
 
 .box:has(.input:focus-visible) {
-	outline: 2px solid var(--accent, #222);
+	outline: 2px solid var(--control-focus, var(--accent, #222));
 	outline-offset: 2px;
 }
 
@@ -55,5 +55,5 @@
 }
 
 .disabled {
-	opacity: 0.65;
+	opacity: var(--control-disabled-opacity, 0.65);
 }

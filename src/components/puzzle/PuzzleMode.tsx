@@ -2,7 +2,7 @@ import type { AxialCoord } from '@appTypes/hexagon'
 import { DarkModeToggle } from '@controls'
 import { colorSchemes } from '@data/colorSchemes'
 import { faRotate } from '@fortawesome/sharp-duotone-solid-svg-icons'
-import { Button, IconButton, Modal } from '@shared'
+import { Button, IconButton, PlayerIconButton, Modal } from '@shared'
 import type { PointerEvent } from 'react'
 import { useId, useRef, useState } from 'react'
 import type {
@@ -418,11 +418,14 @@ export default function PuzzleMode({
 					<Button onClick={() => reset(true)}>Next puzzle</Button>
 				)}
 				{previewPuzzle ? (
-					<button type="button" onClick={() => reset(false)}>
-						Restart
-					</button>
-				) : (
 					<IconButton
+						size="sm"
+						icon={faRotate}
+						label="Restart"
+						onClick={() => reset(false)}
+					/>
+				) : (
+					<PlayerIconButton
 						icon={faRotate}
 						label="Restart"
 						onClick={() => reset(false)}

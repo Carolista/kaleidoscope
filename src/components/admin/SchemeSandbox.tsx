@@ -5,6 +5,8 @@ import {
 	HEXAGON_GRID_RADII,
 } from '../../shape-geometry/hexagonGrid'
 import HexPuzzleBoard from '../puzzle/HexPuzzleBoard'
+import { faWandMagicSparkles } from '@fortawesome/pro-solid-svg-icons'
+import AdminIconButton from './AdminIconButton'
 import styles from './SchemeLibrary.module.css'
 
 export default function SchemeSandbox({
@@ -33,12 +35,11 @@ export default function SchemeSandbox({
 		<section className={styles.sandbox} aria-label="Palette sandbox">
 			<div className={styles.heading}>
 				<h3>Sandbox</h3>
-				<button
-					type="button"
+				<AdminIconButton
+					icon={faWandMagicSparkles}
+					label="Randomize"
 					onClick={() => setAssignments(randomize())}
-				>
-					Randomize
-				</button>
+				/>
 			</div>
 			{colors ? (
 				<HexPuzzleBoard

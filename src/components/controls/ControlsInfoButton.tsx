@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { faCircleInfo } from '@fortawesome/sharp-duotone-solid-svg-icons'
-import { IconButton } from '@shared'
+import { PlayerIconButton as IconButton } from '@shared'
 import ControlsModal from './ControlsModal'
 
 interface ControlsInfoButtonProps {

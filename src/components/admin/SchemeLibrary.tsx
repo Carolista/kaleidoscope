@@ -9,6 +9,7 @@ import {
 	faRotate,
 	faSquareArrowLeft,
 	faTrashCan,
+	faXmark,
 } from '@fortawesome/pro-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import type { Database } from '../../types/database'
@@ -38,6 +39,7 @@ import {
 	type SchemeSet,
 } from '../../services/schemeSets'
 import SchemeSetLibrary from './SchemeSetLibrary'
+import { Button, Input, Select } from '@shared'
 
 function errorMessage(cause: unknown): string {
 	return cause instanceof Error ? cause.message : 'Unable to manage palettes.'
@@ -265,7 +267,8 @@ function SchemeEditor({
 	}
 	return (
 		<section aria-labelledby="scheme-editor-title">
-			<button
+			<Button
+				variant="link"
 				type="button"
 				className={adminStyles.backLink}
 				disabled={busy}
@@ -273,7 +276,7 @@ function SchemeEditor({
 			>
 				<FontAwesomeIcon icon={faSquareArrowLeft} aria-hidden="true" />{' '}
 				Back to palettes
-			</button>
+			</Button>
 			<h2 id="scheme-editor-title">
 				{initial
 					? `${readOnly ? 'View' : 'Edit'} palette`
@@ -301,7 +304,7 @@ function SchemeEditor({
 				>
 					<div className={adminStyles.metadataField}>
 						<label htmlFor="scheme-name">Palette name</label>
-						<input
+						<Input
 							id="scheme-name"
 							value={name}
 							required
@@ -329,7 +332,7 @@ function SchemeEditor({
 										Color {index + 1}
 									</label>
 									{valid ? (
-										<input
+										<Input
 											type="color"
 											value={color}
 											aria-label={`Pick color ${index + 1}`}
@@ -345,7 +348,7 @@ function SchemeEditor({
 											?
 										</span>
 									)}
-									<input
+									<Input
 										id={`scheme-color-${index}`}
 										value={color}
 										required
@@ -378,7 +381,7 @@ function SchemeEditor({
 						updates their appearance without changing their designs.
 					</p>
 					{!readOnly && (
-						<button
+						<Button
 							type="submit"
 							disabled={
 								busy ||
@@ -388,7 +391,7 @@ function SchemeEditor({
 							}
 						>
 							{busy ? 'Saving…' : 'Save palette'}
-						</button>
+						</Button>
 					)}
 				</form>
 				<SchemeSandbox colors={validColors} />
@@ -422,14 +425,14 @@ function SchemeEditor({
 					)}
 					{!readOnly && (
 						<>
-							<button
+							<Button
 								type="button"
 								className={styles.deleteButton}
 								disabled={busy || !canDelete}
 								onClick={() => setConfirmDelete(true)}
 							>
 								Delete palette
-							</button>
+							</Button>
 							{confirmDelete && canDelete && (
 								<div
 									className={adminStyles.bulkPanel}
@@ -443,7 +446,7 @@ function SchemeEditor({
 											? ' Unsaved edits will also be discarded.'
 											: ''}
 									</p>
-									<button
+									<Button
 										type="button"
 										disabled={busy}
 										onClick={() => {
@@ -451,14 +454,14 @@ function SchemeEditor({
 										}}
 									>
 										Confirm delete palette
-									</button>{' '}
-									<button
+									</Button>{' '}
+									<Button
 										type="button"
 										disabled={busy}
 										onClick={() => setConfirmDelete(false)}
 									>
 										Cancel deletion
-									</button>
+									</Button>
 								</div>
 							)}
 						</>
@@ -604,7 +607,8 @@ export default function SchemeLibrary({
 	}
 	return (
 		<section aria-labelledby="scheme-library-title">
-			<button
+			<Button
+				variant="link"
 				type="button"
 				className={adminStyles.backLink}
 				onClick={onBack}
@@ -612,7 +616,7 @@ export default function SchemeLibrary({
 			>
 				<FontAwesomeIcon icon={faSquareArrowLeft} aria-hidden="true" />{' '}
 				Back to puzzles
-			</button>
+			</Button>
 			<div className={adminStyles.galleryHeading}>
 				<h2 id="scheme-library-title">Palettes</h2>
 				<div className={adminStyles.galleryControls}>
@@ -648,7 +652,7 @@ export default function SchemeLibrary({
 			</p>
 			<div className={styles.organize}>
 				<label htmlFor="scheme-set-filter">Show palettes</label>
-				<select
+				<Select
 					id="scheme-set-filter"
 					value={filter}
 					disabled={loading || busy}
@@ -664,11 +668,11 @@ export default function SchemeLibrary({
 							{set.row.name} ({schemeSetLabels[set.kind]})
 						</option>
 					))}
-				</select>
+				</Select>
 				<label htmlFor="scheme-assign-set">
 					Assign selected to set
 				</label>
-				<select
+				<Select
 					id="scheme-assign-set"
 					value={targetSet}
 					disabled={loading || busy}
@@ -684,8 +688,8 @@ export default function SchemeLibrary({
 								{set.row.name}
 							</option>
 						))}
-				</select>
-				<button
+				</Select>
+				<Button
 					type="button"
 					disabled={
 						loading || busy || !targetSet || checked.size === 0
@@ -695,15 +699,14 @@ export default function SchemeLibrary({
 					}}
 				>
 					Assign {checked.size} selected
-				</button>
+				</Button>
 				{checked.size > 0 && (
-					<button
-						type="button"
+					<AdminIconButton
+						icon={faXmark}
+						label="Clear selection"
 						disabled={busy}
 						onClick={() => setChecked(new Set())}
-					>
-						Clear selection
-					</button>
+					/>
 				)}
 			</div>
 			{status && <p role="status">{status}</p>}

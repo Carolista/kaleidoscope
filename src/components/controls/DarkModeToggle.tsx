@@ -1,6 +1,6 @@
 import { faMoon, faSun } from '@fortawesome/sharp-duotone-solid-svg-icons'
 import { useAppState } from '@state/useAppState'
-import { IconButton } from '@shared'
+import { PlayerIconButton as IconButton } from '@shared'
 
 // Flips any tiles painted base/accent along with the mode (see
 // TOGGLE_DARK_MODE in the reducer).

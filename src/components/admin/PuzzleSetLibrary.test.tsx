@@ -15,6 +15,7 @@ import {
 } from '../../puzzles/hexAuthoring'
 import { HEX_PUZZLE_RECIPES } from '../../puzzles/hexPuzzle'
 import styles from './AdminPortal.module.css'
+import iconStyles from '../shared/IconButton.module.css'
 
 const mocks = vi.hoisted(() => ({
 	load: vi.fn(),
@@ -174,10 +175,10 @@ describe('draft set workspace', () => {
 		).toBeInTheDocument()
 		expect(
 			within(card).getByRole('button', { name: 'Edit set First set' }),
-		).toHaveClass(styles.cardAction, styles.editAction)
+		).toHaveClass(iconStyles.button, styles.editAction)
 		expect(
 			within(card).getByRole('button', { name: 'Delete set First set' }),
-		).toHaveClass(styles.cardAction, styles.deleteAction)
+		).toHaveClass(iconStyles.button, styles.deleteAction)
 		fireEvent.click(within(card).getByText('First set'))
 		expect(
 			screen.getByRole('heading', { name: 'Draft sets' }),

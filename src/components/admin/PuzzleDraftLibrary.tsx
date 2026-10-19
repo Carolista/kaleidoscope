@@ -37,6 +37,7 @@ import paletteStyles from '../controls/color-schemes/SchemePicker.module.css'
 import styles from './AdminPortal.module.css'
 import Checkbox from '../shared/Checkbox'
 import AdminIconButton from './AdminIconButton'
+import { Button, Select } from '@shared'
 import PuzzleDraftForm from './PuzzleDraftForm'
 import PuzzleSetLibrary from './PuzzleSetLibrary'
 import {
@@ -208,7 +209,8 @@ function DraftEditor({
 
 	return (
 		<article aria-label={`Edit ${draft.row.name}`}>
-			<button
+			<Button
+				variant="link"
 				type="button"
 				className={styles.backLink}
 				disabled={busy}
@@ -218,7 +220,7 @@ function DraftEditor({
 			>
 				<FontAwesomeIcon icon={faSquareArrowLeft} aria-hidden="true" />{' '}
 				Back to library
-			</button>
+			</Button>
 			<h2>Editing: {draft.row.name}</h2>
 			<p>
 				{puzzle.recipe.label} ·{' '}
@@ -294,7 +296,7 @@ function DraftEditor({
 						Delete "{draft.row.name}" permanently? Its saved design
 						and private solution will be removed.
 					</p>
-					<button
+					<Button
 						type="button"
 						disabled={busy}
 						onClick={() => {
@@ -302,23 +304,23 @@ function DraftEditor({
 						}}
 					>
 						Confirm delete
-					</button>
-					<button
+					</Button>
+					<Button
 						type="button"
 						disabled={busy}
 						onClick={() => setConfirmDelete(false)}
 					>
 						Keep draft
-					</button>
+					</Button>
 				</div>
 			) : (
-				<button
+				<Button
 					type="button"
 					disabled={busy || draft.assigned}
 					onClick={() => setConfirmDelete(true)}
 				>
 					Delete draft
-				</button>
+				</Button>
 			)}
 		</article>
 	)
@@ -586,7 +588,7 @@ export default function PuzzleDraftLibrary({
 							setReload(value => value + 1)
 						}}
 					/>
-					<select
+					<Select
 						id="draft-filter"
 						aria-label="Show drafts"
 						value={filter}
@@ -601,7 +603,7 @@ export default function PuzzleDraftLibrary({
 						<option value="all">All uses</option>
 						<option value="collection">Set/pack</option>
 						<option value="daily">Daily</option>
-					</select>
+					</Select>
 				</div>
 			</div>
 			{error && <p role="alert">{error}</p>}
@@ -751,7 +753,7 @@ export default function PuzzleDraftLibrary({
 										<label htmlFor="bulk-set">
 											Draft set
 										</label>
-										<select
+										<Select
 											id="bulk-set"
 											value={bulkSetId}
 											disabled={bulkBusy}
@@ -773,7 +775,7 @@ export default function PuzzleDraftLibrary({
 													puzzles)
 												</option>
 											))}
-										</select>
+										</Select>
 										{!draftSets.length && !error && (
 											<p>
 												Create a draft set using Manage
@@ -836,7 +838,7 @@ export default function PuzzleDraftLibrary({
 									</ul>
 								</fieldset>
 							)}
-							<button
+							<Button
 								type="button"
 								disabled={
 									bulkBusy ||
@@ -854,14 +856,14 @@ export default function PuzzleDraftLibrary({
 									: action.kind === 'delete'
 										? 'Confirm delete'
 										: 'Apply palette'}
-							</button>
-							<button
+							</Button>
+							<Button
 								type="button"
 								disabled={bulkBusy}
 								onClick={() => setAction(null)}
 							>
 								Cancel
-							</button>
+							</Button>
 						</div>
 					)}
 					{!visible.length && <p>No drafts match this view.</p>}
@@ -906,30 +908,25 @@ export default function PuzzleDraftLibrary({
 												setAction(null)
 											}}
 										/>
-										<button
-											type="button"
-											className={`${styles.cardAction} ${styles.editAction}`}
+										<AdminIconButton
+											icon={faPenToSquare}
+											className={styles.editAction}
 											disabled={bulkBusy}
-											aria-label={`Edit draft ${draft.row.name}`}
+											label={`Edit draft ${draft.row.name}`}
 											title={`Edit ${draft.row.name}`}
 											onClick={() => {
 												setStatus('')
 												setAction(null)
 												setSelectedId(draft.row.id)
 											}}
-										>
-											<FontAwesomeIcon
-												icon={faPenToSquare}
-												aria-hidden="true"
-											/>
-										</button>
-										<button
-											type="button"
-											className={`${styles.cardAction} ${styles.deleteAction}`}
+										/>
+										<AdminIconButton
+											icon={faTrashCan}
+											className={styles.deleteAction}
 											disabled={
 												bulkBusy || draft.assigned
 											}
-											aria-label={`Delete draft ${draft.row.name}`}
+											label={`Delete draft ${draft.row.name}`}
 											title={
 												draft.assigned
 													? 'Unassign this draft before deleting.'
@@ -940,12 +937,7 @@ export default function PuzzleDraftLibrary({
 													draft.row.id,
 												])
 											}
-										>
-											<FontAwesomeIcon
-												icon={faTrashCan}
-												aria-hidden="true"
-											/>
-										</button>
+										/>
 									</div>
 									{preview ? (
 										<span

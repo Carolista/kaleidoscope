@@ -1,13 +1,14 @@
 .button {
 	display: flex;
+	flex: none;
 	align-items: center;
 	justify-content: center;
 	width: var(--icon-button-size, 2.5rem);
 	height: var(--icon-button-size, 2.5rem);
 	padding: 0;
 	border: none;
-	border-radius: 4px;
-	color: var(--accent, #222);
+	border-radius: var(--control-radius, 4px);
+	color: var(--icon-color, var(--accent, #222));
 	background: transparent;
 	cursor: pointer;
 }
@@ -22,7 +23,7 @@
 }
 
 .button:disabled {
-	opacity: 0.4;
+	opacity: var(--control-disabled-opacity, 0.4);
 	cursor: default;
 }
 
@@ -38,5 +39,13 @@
    fontawesome-svg-core/styles.css), so font-size still controls it the
    same way a webfont glyph's font-size would have. */
 .button svg {
-	font-size: calc(var(--icon-button-size, 2.5rem) * 0.667);
+	font-size: var(
+		--icon-glyph-size,
+		calc(var(--icon-button-size, 2.5rem) * 0.667)
+	);
+}
+
+.button:focus-visible {
+	outline: 2px solid var(--control-focus, var(--accent, #222));
+	outline-offset: 3px;
 }

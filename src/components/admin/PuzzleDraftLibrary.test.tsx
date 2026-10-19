@@ -12,6 +12,7 @@ import { puzzleDraftArgs } from '../../services/puzzleDrafts'
 import type { LibraryDraft } from '../../services/puzzleLibrary'
 import { getSupabaseClient } from '../../services/supabaseClient'
 import styles from './AdminPortal.module.css'
+import iconStyles from '../shared/IconButton.module.css'
 import PuzzleDraftLibrary from './PuzzleDraftLibrary'
 
 const mocks = vi.hoisted(() => ({
@@ -431,7 +432,7 @@ describe('draft library', () => {
 				'data-icon',
 				icon,
 			)
-			expect(button).toHaveClass(styles.cardAction)
+			expect(button).toHaveClass(iconStyles.button)
 		}
 		fireEvent.click(screen.getByRole('button', { name: 'Clear selection' }))
 		expect(selectAll.closest(`.${styles.selectionRow}`)).toBe(row)

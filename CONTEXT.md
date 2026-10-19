@@ -4,7 +4,8 @@ Current behavior, architecture, and working standards. For rationale, see
 [DECISIONS.md](./DECISIONS.md).
 
 For the UI consistency/reuse audit and proposed housekeeping conventions, see
-[UI_AUDIT.md](./UI_AUDIT.md). Recommendations there are not yet implemented.
+[UI_AUDIT.md](./UI_AUDIT.md). Its progress section distinguishes implemented
+foundations from remaining recommendations.
 
 ## App
 
@@ -212,13 +213,23 @@ changes should be applied to all four SVG assets.
 - Import individual Font Awesome definitions and render `FontAwesomeIcon` SVGs.
   [main.tsx](./src/main.tsx) imports core CSS and disables automatic CSS injection.
   No Kit script or Kit dependency.
-- Self-hosted fonts: Righteous 400 (header, buttons, modal titles); Mr Dafoe 400
+- Self-hosted fonts: Righteous 400 (player header, text buttons, modal titles); Mr Dafoe 400
   (intro Welcome/Congratulations headings); Urbanist 200, 400, 400 italic, and 700
   (body text and default bold headings).
 - Icon buttons use accessible labels and tooltips. Toggle labels/icons describe
-  the destination. Standard boxes are 2.5rem; undo/redo use 1.875rem.
-- Shared controls are **app-shared**, not provider-independent primitives:
-  icon tinting intentionally reads app state.
+  the destination. Player boxes are 2.5rem; undo/redo and admin use 1.875rem.
+- Reuse shared `Button`, `Input`, `Select`, and `IconButton` for ordinary controls.
+  They forward native props/refs; `Button` defaults to `type="button"` and forms
+  explicitly request `type="submit"`. Keep visual swatches and gameplay pieces
+  specialized rather than applying command-button styling to them.
+- `IconButton`, `CloseButton`, and `ModalHeader` do not require player state.
+  Player palette-aware actions use `PlayerIconButton`; admin's `AdminIconButton`
+  supplies the compact size to the same renderer.
+- Global CSS owns basic normalization and `--font-body`. Shared component styles
+  own control behavior, with inherited `--control-*`, `--button-*`, and
+  `--icon-glyph-size` overrides scoped to admin. Admin retains Urbanist text,
+  compact controls, and blue/red actions; do not restore blanket page button rules.
+  `Button` variants are `solid`, `outline`, `primary`, and `link`.
 - Shared `Checkbox` keeps a native, labelled input beneath a custom box, with
   visible keyboard focus and a checked duotone icon tinted by the active palette.
   Confirmation preferences and the save-image grid-line option use it.

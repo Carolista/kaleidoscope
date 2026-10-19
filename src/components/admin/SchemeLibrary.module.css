@@ -129,7 +129,7 @@
 }
 
 .deleteButton {
-	color: var(--admin-red);
+	--button-text: var(--control-danger);
 }
 
 .organize {

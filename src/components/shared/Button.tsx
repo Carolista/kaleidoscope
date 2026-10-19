@@ -1,32 +1,26 @@
-import type { ReactNode } from 'react'
+import type { ComponentPropsWithRef } from 'react'
 import styles from './Button.module.css'
 
-export type ButtonVariant = 'solid' | 'outline'
+export type ButtonVariant = 'solid' | 'outline' | 'primary' | 'link'
 
-export interface ButtonProps {
-	// 'solid' (filled, accent background) is for the primary/confirming
-	// action; 'outline' is for a secondary action like cancel.
+export interface ButtonProps extends ComponentPropsWithRef<'button'> {
 	readonly variant?: ButtonVariant
-	readonly disabled?: boolean
-	readonly onClick: () => void
-	readonly children: ReactNode
 }
 
 function Button({
 	variant = 'solid',
-	disabled,
-	onClick,
-	children,
+	type = 'button',
+	className,
+	...props
 }: ButtonProps) {
 	return (
 		<button
-			type="button"
-			className={`${styles.button} ${styles[variant]}`}
-			disabled={disabled}
-			onClick={onClick}
-		>
-			{children}
-		</button>
+			type={type}
+			className={[styles.button, styles[variant], className]
+				.filter(Boolean)
+				.join(' ')}
+			{...props}
+		/>
 	)
 }
 

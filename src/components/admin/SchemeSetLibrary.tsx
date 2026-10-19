@@ -5,9 +5,12 @@ import {
 	faArrowUp,
 	faPenToSquare,
 	faPlusLarge,
+	faSquareArrowLeft,
 	faSquareMinus,
 	faTrashCan,
 } from '@fortawesome/pro-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Button, Input, Select } from '@shared'
 import type { Database } from '../../types/database'
 import {
 	manageSchemeSet,
@@ -133,14 +136,16 @@ export default function SchemeSetLibrary({
 	}
 	return (
 		<section aria-labelledby="scheme-sets-title">
-			<button
+			<Button
+				variant="link"
 				type="button"
 				className={adminStyles.backLink}
 				disabled={busy || loading}
 				onClick={back}
 			>
+				<FontAwesomeIcon icon={faSquareArrowLeft} aria-hidden="true" />{' '}
 				{editing ? 'Back to sets' : 'Back to palettes'}
-			</button>
+			</Button>
 			<div className={adminStyles.galleryHeading}>
 				<h2 id="scheme-sets-title">
 					{editing
@@ -178,13 +183,13 @@ export default function SchemeSetLibrary({
 			{catalogError && (
 				<p role="alert">
 					{catalogError}{' '}
-					<button
+					<Button
 						type="button"
 						disabled={loading || busy}
 						onClick={onChanged}
 					>
 						Retry loading sets
-					</button>
+					</Button>
 				</p>
 			)}
 			{status && <p role="status">{status}</p>}
@@ -200,7 +205,7 @@ export default function SchemeSetLibrary({
 						onSubmit={save}
 					>
 						<label htmlFor="scheme-set-name">Set name</label>
-						<input
+						<Input
 							id="scheme-set-name"
 							value={name}
 							disabled={unavailable || readOnly}
@@ -208,7 +213,7 @@ export default function SchemeSetLibrary({
 							onChange={event => setName(event.target.value)}
 						/>
 						<label htmlFor="scheme-set-kind">Set label</label>
-						<select
+						<Select
 							id="scheme-set-kind"
 							value={kind}
 							disabled={unavailable || readOnly}
@@ -230,9 +235,9 @@ export default function SchemeSetLibrary({
 									</option>
 								),
 							)}
-						</select>
+						</Select>
 						{!readOnly && (
-							<button
+							<Button
 								type="submit"
 								disabled={
 									unavailable ||
@@ -241,7 +246,7 @@ export default function SchemeSetLibrary({
 								}
 							>
 								Save set
-							</button>
+							</Button>
 						)}
 					</form>
 					{readOnly && (
@@ -401,7 +406,7 @@ export default function SchemeSetLibrary({
 						Delete "{deleting.row.name}"? Its palettes will remain
 						in the library, ungrouped.
 					</p>
-					<button
+					<Button
 						type="button"
 						disabled={unavailable}
 						onClick={() => {
@@ -413,14 +418,14 @@ export default function SchemeSetLibrary({
 						}}
 					>
 						Confirm delete set
-					</button>{' '}
-					<button
+					</Button>{' '}
+					<Button
 						type="button"
 						disabled={busy}
 						onClick={() => setDeleting(null)}
 					>
 						Cancel deletion
-					</button>
+					</Button>
 				</div>
 			)}
 		</section>

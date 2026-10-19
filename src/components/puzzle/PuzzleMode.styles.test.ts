@@ -11,7 +11,7 @@ const puzzleCss = readFileSync(
 	'utf8',
 )
 
-it('keeps puzzle piece sizing independent of admin button defaults', () => {
+it('keeps puzzle pieces independent of opt-in admin control styling', () => {
 	const stylesheet = document.createElement('style')
 	stylesheet.textContent = `${puzzleCss}\n${adminCss}`
 	const page = document.createElement('main')
@@ -26,7 +26,11 @@ it('keeps puzzle piece sizing independent of admin button defaults', () => {
 	document.head.append(stylesheet)
 	document.body.append(page)
 	try {
-		expect(getComputedStyle(control).height).toBe('2rem')
+		expect(getComputedStyle(control).height).not.toBe('2rem')
+		expect(adminCss).not.toContain(':not(.playtest *)')
+		expect(getComputedStyle(page).getPropertyValue('--button-height')).toBe(
+			'2rem',
+		)
 		const previewStyle = getComputedStyle(piece)
 		expect(previewStyle.height).not.toBe('2rem')
 		expect(previewStyle.minHeight).toBe('44px')

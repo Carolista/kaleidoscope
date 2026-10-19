@@ -22,6 +22,7 @@ import {
 import type { Database } from '../../types/database'
 import HexPuzzleBoard from '../puzzle/HexPuzzleBoard'
 import AdminIconButton from './AdminIconButton'
+import { Button, Input, Select } from '@shared'
 import styles from './AdminPortal.module.css'
 import useUnsavedDraft, { confirmDiscardDraft } from './useUnsavedDraft'
 
@@ -193,7 +194,8 @@ export default function PuzzleSetLibrary({
 
 	return (
 		<section aria-labelledby="draft-sets-title">
-			<button
+			<Button
+				variant="link"
 				type="button"
 				className={styles.backLink}
 				disabled={busy || loading}
@@ -201,7 +203,7 @@ export default function PuzzleSetLibrary({
 			>
 				<FontAwesomeIcon icon={faSquareArrowLeft} aria-hidden="true" />{' '}
 				{creating || selectedId ? 'Back to sets' : 'Back to library'}
-			</button>
+			</Button>
 			<div className={styles.galleryHeading}>
 				<h2 id="draft-sets-title">
 					{creating
@@ -251,7 +253,7 @@ export default function PuzzleSetLibrary({
 						{deleting.members.length} puzzles will be unassigned,
 						not deleted.
 					</p>
-					<button
+					<Button
 						type="button"
 						disabled={busy}
 						onClick={() => {
@@ -259,14 +261,14 @@ export default function PuzzleSetLibrary({
 						}}
 					>
 						Confirm delete set
-					</button>
-					<button
+					</Button>
+					<Button
 						type="button"
 						disabled={busy}
 						onClick={() => setDeleting(null)}
 					>
 						Keep set
-					</button>
+					</Button>
 				</div>
 			)}
 			{loading ? (
@@ -282,7 +284,7 @@ export default function PuzzleSetLibrary({
 					>
 						<div className={styles.metadataField}>
 							<label htmlFor="set-name">Set name</label>
-							<input
+							<Input
 								id="set-name"
 								required
 								value={name}
@@ -293,7 +295,7 @@ export default function PuzzleSetLibrary({
 						{creating ? (
 							<div className={styles.metadataField}>
 								<label htmlFor="set-kind">Set role</label>
-								<select
+								<Select
 									id="set-kind"
 									value={kind}
 									disabled={busy}
@@ -312,7 +314,7 @@ export default function PuzzleSetLibrary({
 									</option>
 									<option value="reward">Reward</option>
 									<option value="paid">Paid</option>
-								</select>
+								</Select>
 							</div>
 						) : (
 							<p>
@@ -320,9 +322,9 @@ export default function PuzzleSetLibrary({
 								{selected?.members.length} puzzles
 							</p>
 						)}
-						<button type="submit" disabled={busy || !name.trim()}>
+						<Button type="submit" disabled={busy || !name.trim()}>
 							{creating ? 'Create set' : 'Save name'}
-						</button>
+						</Button>
 					</form>
 					{selected && (
 						<>

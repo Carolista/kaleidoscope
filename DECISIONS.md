@@ -5,8 +5,8 @@ are omitted unless they explain a constraint worth preserving. For current
 implementation and working agreements, see [CONTEXT.md](./CONTEXT.md).
 
 For verified UI inconsistencies and proposed improvements, see
-[UI_AUDIT.md](./UI_AUDIT.md). Its recommendations do not supersede the decisions
-below until accepted and implemented.
+[UI_AUDIT.md](./UI_AUDIT.md). Its progress section identifies implemented work;
+remaining recommendations do not supersede the decisions below.
 
 ## Stack and boundaries
 
@@ -19,8 +19,19 @@ below until accepted and implemented.
 - Share actual repeated behavior: `GridView` for grid interactions,
   `ModalHeader` for modal chrome, and narrow geometry helpers. Keep per-shape
   generation, unusual bounds, modal widths, and content layouts local.
-- Shared controls intentionally depend on app state for icon tinting.
-  Provider-independent wrappers or dependency injection would solve no current need.
+- Shared command/form controls are provider-independent so admin does not need
+  player state. `PlayerIconButton` adds palette tinting to the generic icon
+  renderer; `AdminIconButton` supplies compact sizing without duplicating markup.
+  This supersedes the earlier player-only shared-control boundary.
+- Keep global normalization and shared control styles truly shared. Admin
+  overrides inherited control tokens for compact Urbanist controls and action
+  colors; local modules retain feature layout and specialized choice/gameplay
+  controls. Do not style every descendant button through a page selector or
+  exclude whole playtest subtrees to compensate.
+- Shared text/form controls forward native props and refs. Default command
+  buttons to `type="button"`; use explicit native submit buttons for forms.
+  Familiar compact actions reuse icons and accessible labels, while Save,
+  Apply, Sign in, and confirmation choices retain explicit text.
 - Reuse the palette-aware custom `Checkbox` for confirmation preferences and
   export options. Keep its native input for labelling and keyboard interaction;
   the decorative checkmark uses the same duotone tint as other app icons.

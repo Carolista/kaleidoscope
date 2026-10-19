@@ -1,6 +1,6 @@
 import { faMagicWandSparkles } from '@fortawesome/sharp-duotone-solid-svg-icons'
 import { useAppState } from '@state/useAppState'
-import { IconButton } from '@shared'
+import { PlayerIconButton as IconButton } from '@shared'
 
 function RandomizeDesignButton() {
 	const { randomizeDesign } = useAppState()

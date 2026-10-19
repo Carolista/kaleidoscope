@@ -1,7 +1,10 @@
-import type { CSSProperties } from 'react'
+import type {
+	ComponentProps,
+	ComponentPropsWithRef,
+	CSSProperties,
+} from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core'
-import { useDuotoneIconTint } from '@hooks/useDuotoneIconTint'
 import styles from './IconButton.module.css'
 
 export type IconButtonSize = 'md' | 'sm'
@@ -11,7 +14,10 @@ const SIZES: Readonly<Record<IconButtonSize, string>> = {
 	sm: '1.875rem',
 }
 
-export interface IconButtonProps {
+export interface IconButtonProps extends Omit<
+	ComponentPropsWithRef<'button'>,
+	'children' | 'aria-label'
+> {
 	// A Font Awesome icon definition (e.g. `faEraser` from
 	// `@fortawesome/sharp-duotone-solid-svg-icons`), imported by the caller so each
 	// icon is tree-shaken individually rather than bundling the whole kit.
@@ -21,8 +27,7 @@ export interface IconButtonProps {
 	readonly label: string
 	readonly title?: string
 	readonly size?: IconButtonSize
-	readonly disabled?: boolean
-	readonly onClick: () => void
+	readonly iconStyle?: ComponentProps<typeof FontAwesomeIcon>['style']
 }
 
 function IconButton({
@@ -30,26 +35,24 @@ function IconButton({
 	label,
 	title,
 	size = 'md',
-	disabled,
-	onClick,
+	type = 'button',
+	className,
+	style,
+	iconStyle,
+	...props
 }: IconButtonProps) {
-	const duotoneTint = useDuotoneIconTint()
-
 	return (
 		<button
-			type="button"
-			className={styles.button}
-			style={{ '--icon-button-size': SIZES[size] } as CSSProperties}
+			{...props}
+			type={type}
+			className={[styles.button, className].filter(Boolean).join(' ')}
+			style={
+				{ '--icon-button-size': SIZES[size], ...style } as CSSProperties
+			}
 			aria-label={label}
 			title={title ?? label}
-			disabled={disabled}
-			onClick={onClick}
 		>
-			<FontAwesomeIcon
-				icon={icon}
-				aria-hidden="true"
-				style={duotoneTint(icon)}
-			/>
+			<FontAwesomeIcon icon={icon} aria-hidden="true" style={iconStyle} />
 		</button>
 	)
 }
