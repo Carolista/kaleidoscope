@@ -1,22 +1,19 @@
 import { describe, expect, it } from 'vitest'
-import * as hexagon from './hexagonGrid'
-import * as triangle from './triangleGrid'
-import * as diamondStar from './diamondStarGrid'
-import * as hexagram from './hexagramGrid'
-import * as circleRings from './circleRingsGrid'
-import * as pinwheel from './pinwheelGrid'
-import { supportedGridShapes } from '@/data/gridShapes'
-import { defaultGridSizes } from '@/data/gridSizes'
-import { HEXAGON_GRID_RADII } from './hexagonGrid'
-import { TRIANGLE_GRID_SIZES } from './triangleGrid'
-import { DIAMOND_STAR_GRID_SIZES } from './diamondStarGrid'
-import { HEXAGRAM_GRID_SIZES } from './hexagramGrid'
-import { CIRCLE_RINGS_GRID_SIZES } from './circleRingsGrid'
-import { PINWHEEL_GRID_SIZES } from './pinwheelGrid'
-import {
-	computeAspectRatioForShape,
-	getGroupIdsForShape,
-} from './gridShapeRegistry'
+import * as hexagon from '@/domain/shapes/hexagon'
+import * as triangle from '@/domain/shapes/triangle'
+import * as diamondStar from '@/domain/shapes/diamond-star'
+import * as hexagram from '@/domain/shapes/hexagram'
+import * as circleRings from '@/domain/shapes/circle-rings'
+import * as pinwheel from '@/domain/shapes/pinwheel'
+import { supportedGridShapes } from './catalog'
+import { defaultGridSizes } from './sizes'
+import { HEXAGON_GRID_RADII } from '@/domain/shapes/hexagon'
+import { TRIANGLE_GRID_SIZES } from '@/domain/shapes/triangle'
+import { DIAMOND_STAR_GRID_SIZES } from '@/domain/shapes/diamond-star'
+import { HEXAGRAM_GRID_SIZES } from '@/domain/shapes/hexagram'
+import { CIRCLE_RINGS_GRID_SIZES } from '@/domain/shapes/circle-rings'
+import { PINWHEEL_GRID_SIZES } from '@/domain/shapes/pinwheel'
+import { computeAspectRatioForShape, getGroupIdsForShape } from './registry'
 
 const geometry = {
 	hexagon,

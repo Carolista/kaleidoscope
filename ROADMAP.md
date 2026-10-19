@@ -93,8 +93,8 @@ Rules:
 | #   | Step                                                                    | Status |
 | --- | ----------------------------------------------------------------------- | ------ |
 | R1  | One `@/` alias; convert all imports                                     | ✅     |
-| R2  | Fix wrong-way dependencies and import cycles                            | 👀 review |
-| R3  | Shapes domain: one folder per shape plus a registry                     | ⬜     |
+| R2  | Fix wrong-way dependencies and import cycles                            | ✅     |
+| R3  | Shapes domain: one folder per shape plus a registry                     | 👀 review |
 | R4  | Puzzle engine to `domain/`; shared board/tray split from player shell   | ⬜     |
 | R5  | Admin into `features/admin/*` with its services and colocated CSS       | ⬜     |
 | R6  | Zen into `features/zen`; `app/`, `ui/`, `lib/` settled; barrels         | ⬜     |

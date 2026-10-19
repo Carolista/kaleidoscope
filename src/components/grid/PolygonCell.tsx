@@ -1,6 +1,6 @@
 import type { CSSProperties, KeyboardEvent } from 'react'
-import type { Point } from '@/types/geometry'
-import { pointsToSvgAttr } from '@/utils/svgPoints'
+import type { Point } from '@/domain/geometry'
+import { pointsToSvgAttr } from '@/domain/geometry'
 import { getHoverFill } from '@/utils/colorMath'
 import styles from './Cell.module.css'
 import polygonStyles from './PolygonCell.module.css'

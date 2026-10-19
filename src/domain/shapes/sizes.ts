@@ -1,5 +1,6 @@
-import type { GridSize } from '@/types/gridSize'
-import type { GridShapeId } from '@/types/gridShape'
+import type { GridShapeId } from './catalog'
+
+export type GridSize = 'sm' | 'md' | 'lg'
 
 export const gridSizeOptions = [
 	{ id: 'sm', label: 'S' },

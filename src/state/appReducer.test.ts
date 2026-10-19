@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { colorSchemes } from '@/data/colorSchemes'
-import { defaultGridSizes } from '@/data/gridSizes'
-import { supportedGridShapes } from '@/data/gridShapes'
-import { getGroupIdsForShape } from '@/shape-geometry/gridShapeRegistry'
+import {
+	defaultGridSizes,
+	supportedGridShapes,
+	getGroupIdsForShape,
+} from '@/domain/shapes'
 import { appReducer, createInitialAppState } from './appReducer'
 import type { AppState } from '@/types/appState'
 

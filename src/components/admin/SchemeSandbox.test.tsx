@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { generateHexagonCells, getGroupIds } from '@/shape-geometry/hexagonGrid'
+import { generateHexagonCells, getGroupIds } from '@/domain/shapes/hexagon'
 import type { ColorScheme } from '@/types/colorScheme'
 import SchemeSandbox from './SchemeSandbox'
 

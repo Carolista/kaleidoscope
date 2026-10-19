@@ -6,7 +6,7 @@ import {
 	HEXAGRAM_GRID_SIZES,
 	computeGridAspectRatio,
 	getGroupIds,
-} from '@/shape-geometry/hexagramGrid'
+} from '@/domain/shapes/hexagram'
 import HexagramGrid from './HexagramGrid'
 
 describe('HexagramGrid', () => {

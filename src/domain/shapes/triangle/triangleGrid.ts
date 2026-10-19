@@ -1,9 +1,11 @@
-import type { Point } from '@/types/geometry'
-import type { TriangleCell } from '@/types/triangle'
-import type { GridSize } from '@/types/gridSize'
-import { averagePoint } from '@/utils/geometryMath'
-import { groupCells } from '@/utils/groupCells'
-import { assignSymmetryGroups } from '@/utils/symmetry'
+import type { Point } from '@/domain/geometry'
+import type { TriangleCell } from './triangleTypes'
+import type { GridSize } from '@/domain/shapes/sizes'
+import {
+	averagePoint,
+	groupCells,
+	assignSymmetryGroups,
+} from '@/domain/geometry'
 import { triangleCorners, trianglesBoundingBox } from './triangleLayout'
 import type { TriangleLayout } from './triangleLayout'
 

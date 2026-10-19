@@ -2,7 +2,7 @@ import { TriangleGrid } from '@/components/grid'
 import { Button } from '@/components/shared'
 import { useAppState } from '@/state/useAppState'
 import { useState } from 'react'
-import { TRIANGLE_GRID_SIZES } from '@/shape-geometry/triangleGrid'
+import { TRIANGLE_GRID_SIZES } from '@/domain/shapes/triangle'
 import ColorSwatches from '@/components/controls/color-schemes/ColorSwatches'
 import styles from './IntroSequence.module.css'
 

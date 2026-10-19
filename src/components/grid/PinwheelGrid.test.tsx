@@ -6,7 +6,7 @@ import {
 	PINWHEEL_GRID_SIZES,
 	computeGridAspectRatio,
 	getGroupIds,
-} from '@/shape-geometry/pinwheelGrid'
+} from '@/domain/shapes/pinwheel'
 import PinwheelGrid from './PinwheelGrid'
 
 describe('PinwheelGrid', () => {

@@ -4,12 +4,10 @@ import {
 	DIAMOND_STAR_GRID_SIZE,
 	computeGridAspectRatio,
 	generateDiamondStarCells,
-} from '@/shape-geometry/diamondStarGrid'
-import {
 	diamondStarBoundingBox,
 	diamondStarCellCorners,
-} from '@/shape-geometry/diamondStarLayout'
-import type { DiamondStarLayout } from '@/shape-geometry/diamondStarLayout'
+} from '@/domain/shapes/diamond-star'
+import type { DiamondStarLayout } from '@/domain/shapes/diamond-star'
 import GridView from './GridView'
 import type { GridCell } from './GridView'
 

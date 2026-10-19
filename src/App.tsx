@@ -1,4 +1,4 @@
-import type { ComponentType, CSSProperties, Ref } from 'react'
+import type { CSSProperties } from 'react'
 import { useLayoutEffect, useRef, useState } from 'react'
 import styles from './App.module.css'
 import {
@@ -15,14 +15,7 @@ import {
 	UndoRedoButtons,
 } from '@/components/controls'
 import { GridShapeButton } from '@/components/controls/shapes'
-import {
-	CircleRingsGrid,
-	DiamondStarGrid,
-	HexagonGrid,
-	HexagramGrid,
-	PinwheelGrid,
-	TriangleGrid,
-} from '@/components/grid'
+import { ShapeGrid } from '@/components/grid'
 import GridTransition from './components/grid/GridTransition'
 import Footer from './components/layout/Footer'
 import Header from './components/layout/Header'
@@ -32,25 +25,6 @@ import PuzzleMode from './components/puzzle/PuzzleMode'
 import { hasPersistedDesign } from './services/storageService'
 import { getThemeColors } from './state/theme'
 import { useAppState } from './state/useAppState'
-import type { GridShapeId } from './types/gridShape'
-import { HEXAGON_GRID_RADII } from '@/shape-geometry/hexagonGrid'
-import { TRIANGLE_GRID_SIZES } from '@/shape-geometry/triangleGrid'
-import { DIAMOND_STAR_GRID_SIZES } from '@/shape-geometry/diamondStarGrid'
-import { HEXAGRAM_GRID_SIZES } from '@/shape-geometry/hexagramGrid'
-import { CIRCLE_RINGS_GRID_SIZES } from '@/shape-geometry/circleRingsGrid'
-import { PINWHEEL_GRID_SIZES } from '@/shape-geometry/pinwheelGrid'
-
-const gridComponents = {
-	hexagon: HexagonGrid,
-	triangle: TriangleGrid,
-	diamondStar: DiamondStarGrid,
-	hexagram: HexagramGrid,
-	circleRings: CircleRingsGrid,
-	pinwheel: PinwheelGrid,
-} satisfies Record<
-	GridShapeId,
-	ComponentType<{ readonly svgRef?: Ref<SVGSVGElement> }>
->
 
 function App() {
 	const { state } = useAppState()
@@ -67,7 +41,6 @@ function App() {
 	const [entrance, setEntrance] = useState<'opening' | 'moving' | 'complete'>(
 		canAnimateEntrance ? 'opening' : 'complete',
 	)
-	const Grid = gridComponents[state.gridShape]
 	const [isFirstVisit] = useState(() => !hasPersistedDesign())
 	const [showIntro, setShowIntro] = useState(isFirstVisit)
 	const [mode, setMode] = useState<'zen' | 'puzzle'>('zen')
@@ -180,61 +153,11 @@ function App() {
 							<GridTransition
 								gridKey={`${state.gridShape}:${state.gridSizes[state.gridShape]}`}
 							>
-								{state.gridShape === 'triangle' ? (
-									<TriangleGrid
-										gridSize={
-											TRIANGLE_GRID_SIZES[
-												state.gridSizes.triangle
-											]
-										}
-										svgRef={svgRef}
-									/>
-								) : state.gridShape === 'diamondStar' ? (
-									<DiamondStarGrid
-										gridSize={
-											DIAMOND_STAR_GRID_SIZES[
-												state.gridSizes.diamondStar
-											]
-										}
-										svgRef={svgRef}
-									/>
-								) : state.gridShape === 'hexagram' ? (
-									<HexagramGrid
-										gridSize={
-											HEXAGRAM_GRID_SIZES[
-												state.gridSizes.hexagram
-											]
-										}
-										svgRef={svgRef}
-									/>
-								) : state.gridShape === 'hexagon' ? (
-									<HexagonGrid
-										radius={
-											HEXAGON_GRID_RADII[
-												state.gridSizes.hexagon
-											]
-										}
-										svgRef={svgRef}
-									/>
-								) : state.gridShape === 'circleRings' ? (
-									<CircleRingsGrid
-										ringCount={
-											CIRCLE_RINGS_GRID_SIZES[
-												state.gridSizes.circleRings
-											]
-										}
-										svgRef={svgRef}
-									/>
-								) : state.gridShape === 'pinwheel' ? (
-									<PinwheelGrid
-										{...PINWHEEL_GRID_SIZES[
-											state.gridSizes.pinwheel
-										]}
-										svgRef={svgRef}
-									/>
-								) : (
-									<Grid svgRef={svgRef} />
-								)}
+								<ShapeGrid
+									shape={state.gridShape}
+									size={state.gridSizes[state.gridShape]}
+									svgRef={svgRef}
+								/>
 							</GridTransition>
 							<div
 								role="group"

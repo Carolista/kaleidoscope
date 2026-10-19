@@ -352,18 +352,19 @@ follow-up work.
 | [app/](./src/app/) | Entry-level routing (`useAdminRoute`) |
 | [ui/navigation/](./src/ui/navigation/) | App-wide unsaved-work navigation guard |
 | [components/layout/](./src/components/layout/) | Header and footer |
-| [components/grid/](./src/components/grid/) | Shape adapters, shared `GridView`, polygon/circle cells |
+| [components/grid/](./src/components/grid/) | Shape adapters, `ShapeGrid` (shape → adapter), shared `GridView`, polygon/circle cells |
 | [components/controls/](./src/components/controls/) | Toolbar, pickers, and modal content |
 | [components/intro/](./src/components/intro/) | First-visit learn-by-doing sequence |
 | [components/shared/](./src/components/shared/) | Buttons, palette-aware `Checkbox`, native `Modal`, `ModalHeader`, `ConfirmDialog` and its dismissal preferences |
-| [shape-geometry/](./src/shape-geometry/) | Shape-specific generation and layout, plus the shape registry |
-| [utils/](./src/utils/) | Shared math, symmetry, and randomization |
+| [domain/shapes/](./src/domain/shapes/) | React-free shape catalog, sizes, registry, and one folder per shape (grid, layout, types) |
+| [domain/geometry/](./src/domain/geometry/) | `Point`, shared geometry math, symmetry engine, cell grouping, SVG points |
+| [utils/](./src/utils/) | Color math and design randomization |
 | [state/](./src/state/) | App reducer, history wrapper, and Context |
 | [services/](./src/services/) | Design persistence, export preferences, PNG export, Supabase admin data |
 | [hooks/](./src/hooks/) | React lifecycle and interaction logic |
 | [puzzles/](./src/puzzles/) | Pure seeded puzzle generation, placement validation, and completion |
 | [components/puzzle/](./src/components/puzzle/) | Puzzle target, board, tray, and pointer/keyboard interaction |
-| [data/](./src/data/) | Palettes and supported-shape definitions |
+| [data/](./src/data/) | Local palette catalog |
 | [types/](./src/types/) | Domain types, imported from individual modules |
 
 Shape adapters supply geometry to `GridView`; it owns numbering, painting,
@@ -372,15 +373,19 @@ prop (supported by `TriangleGrid`) replaces app-state paint colors, paint handli
 paintable groups, and highlighting; the intro uses it for its local design. Helpers preserve generated
 cell/group ordering. `averagePoint` is a vertex average, not an area-weighted centroid.
 
-[gridShapes.ts](./src/data/gridShapes.ts) defines supported IDs, labels, order,
+[catalog.ts](./src/domain/shapes/catalog.ts) defines supported IDs, labels, order,
 and picker visibility. All six are currently visible. Hidden entries remain
-loadable; component/geometry mappings and previews enforce complete shape coverage.
+loadable. The [registry](./src/domain/shapes/registry.ts), `ShapeGrid`, and icon
+previews are keyed by every shape ID, so an unregistered shape fails to compile.
+Import a shape through its folder barrel (`@/domain/shapes/hexagon`) and shared
+shape data through `@/domain/shapes`. Files inside `domain/shapes` import siblings
+directly, never their own barrel, to avoid cycles.
 React rendering remains separate from geometry and storage.
 
 ### Grid sizes
 
 Each shape offers small, medium, and large grids. Size choices are remembered
-independently per shape in [gridSizes.ts](./src/data/gridSizes.ts).
+independently per shape in [sizes.ts](./src/domain/shapes/sizes.ts).
 
 | Shape | Small | Medium | Large | Default |
 | --- | --- | --- | --- | --- |

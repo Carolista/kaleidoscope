@@ -1,6 +1,6 @@
-import type { AxialCoord, HexagonCell } from '@/types/hexagon'
-import type { GridSize } from '@/types/gridSize'
-import { groupCells } from '@/utils/groupCells'
+import type { AxialCoord, HexagonCell } from './hexagonTypes'
+import type { GridSize } from '@/domain/shapes/sizes'
+import { groupCells } from '@/domain/geometry'
 import { axialToPixel, boundingBox } from './hexagonLayout'
 import type { HexagonLayout } from './hexagonLayout'
 

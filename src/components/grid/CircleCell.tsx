@@ -1,5 +1,5 @@
 import type { CSSProperties, KeyboardEvent } from 'react'
-import type { Point } from '@/types/geometry'
+import type { Point } from '@/domain/geometry'
 import { getHoverFill } from '@/utils/colorMath'
 import styles from './Cell.module.css'
 

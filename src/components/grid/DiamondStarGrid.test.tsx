@@ -6,7 +6,7 @@ import {
 	DIAMOND_STAR_GRID_SIZES,
 	computeGridAspectRatio,
 	getGroupIds,
-} from '@/shape-geometry/diamondStarGrid'
+} from '@/domain/shapes/diamond-star'
 import DiamondStarGrid from './DiamondStarGrid'
 
 describe('DiamondStarGrid', () => {

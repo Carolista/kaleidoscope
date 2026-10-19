@@ -1,4 +1,4 @@
-import type { AxialCoord } from '@/types/hexagon'
+import type { AxialCoord } from '@/domain/shapes/hexagon'
 import { DarkModeToggle } from '@/components/controls'
 import { colorSchemes } from '@/data/colorSchemes'
 import { faRotate } from '@fortawesome/sharp-duotone-solid-svg-icons'

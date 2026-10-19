@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { colorSchemes } from '@/data/colorSchemes'
-import { generateHexagonCells } from '@/shape-geometry/hexagonGrid'
+import { generateHexagonCells } from '@/domain/shapes/hexagon'
 import {
 	coordinateKey,
 	generateHexPuzzle,

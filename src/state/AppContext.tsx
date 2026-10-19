@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useReducer } from 'react'
 import type { ReactNode } from 'react'
 import type { ColorScheme } from '@/types/colorScheme'
-import type { GridShapeId } from '@/types/gridShape'
-import type { GridSize } from '@/types/gridSize'
+import type { GridShapeId, GridSize } from '@/domain/shapes'
 import { createInitialHistoryState, historyReducer } from './historyReducer'
 import {
 	loadInitialAppState,

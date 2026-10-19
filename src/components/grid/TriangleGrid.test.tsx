@@ -6,7 +6,7 @@ import {
 	TRIANGLE_GRID_SIZES,
 	computeGridAspectRatio,
 	getGroupIds,
-} from '@/shape-geometry/triangleGrid'
+} from '@/domain/shapes/triangle'
 import TriangleGrid from './TriangleGrid'
 
 describe('TriangleGrid', () => {

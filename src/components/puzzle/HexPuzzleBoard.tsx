@@ -1,13 +1,13 @@
 import { useMemo } from 'react'
 import type { PointerEvent, Ref } from 'react'
-import { generateHexagonCells } from '@/shape-geometry/hexagonGrid'
 import {
+	generateHexagonCells,
 	axialToPixel,
 	boundingBox,
 	hexagonCorners,
-} from '@/shape-geometry/hexagonLayout'
-import type { AxialCoord } from '@/types/hexagon'
-import { pointsToSvgAttr } from '@/utils/svgPoints'
+} from '@/domain/shapes/hexagon'
+import type { AxialCoord } from '@/domain/shapes/hexagon'
+import { pointsToSvgAttr } from '@/domain/geometry'
 import {
 	coordinateKey,
 	pieceCells,

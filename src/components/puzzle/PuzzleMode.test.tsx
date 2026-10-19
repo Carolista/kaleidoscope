@@ -3,7 +3,7 @@ import { fireEvent, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProvider } from '@/test/renderWithProvider'
 import { colorSchemes } from '@/data/colorSchemes'
-import { generateHexagonCells } from '@/shape-geometry/hexagonGrid'
+import { generateHexagonCells } from '@/domain/shapes/hexagon'
 import {
 	coordinateKey,
 	generateHexPuzzle,

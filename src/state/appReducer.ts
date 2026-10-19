@@ -1,10 +1,12 @@
 import { colorSchemes } from '@/data/colorSchemes'
 import type { AppState, BoardId, PaintMap } from '@/types/appState'
 import type { ColorScheme } from '@/types/colorScheme'
-import type { GridShapeId } from '@/types/gridShape'
-import type { GridSize } from '@/types/gridSize'
-import { availableGridSizes, defaultGridSizes } from '@/data/gridSizes'
-import { getGroupIdsForShape } from '@/shape-geometry/gridShapeRegistry'
+import type { GridShapeId, GridSize } from '@/domain/shapes'
+import {
+	availableGridSizes,
+	defaultGridSizes,
+	getGroupIdsForShape,
+} from '@/domain/shapes'
 import { generateRandomShapeGroupColors } from '@/utils/randomDesign'
 import { getThemeColors } from './theme'
 

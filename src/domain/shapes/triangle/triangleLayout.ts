@@ -1,5 +1,5 @@
-import type { Point } from '@/types/geometry'
-import type { TriangleCell } from '@/types/triangle'
+import type { Point } from '@/domain/geometry'
+import type { TriangleCell } from './triangleTypes'
 
 export interface TriangleLayout {
 	// Length of one small triangle's edge, in SVG user units.
@@ -48,4 +48,4 @@ export function triangleCorners(
 	]
 }
 
-export { polygonBoundingBox as trianglesBoundingBox } from '@/utils/geometryMath'
+export { polygonBoundingBox as trianglesBoundingBox } from '@/domain/geometry'

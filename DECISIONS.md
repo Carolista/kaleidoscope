@@ -13,9 +13,12 @@ remaining recommendations do not supersede the decisions below.
 - Rebuilt the 2020 DOM app in React/Vite/TypeScript rather than extending its
   hand-authored markup. Preserve the legacy app as-is for reference.
 - Use computed SVG geometry, CSS Modules/plain CSS, and reducer + Context state.
-  An external state library or feature-folder overhaul is unnecessary for one coloring app.
-- Keep shape math in `shape-geometry`, shared math in `utils`, non-React services
-  in `services`, and React lifecycle logic in hooks.
+  An external state library is unnecessary. Layer folders suited one coloring app;
+  with admin and Puzzle Mode added, the code is moving to feature folders (see
+  [ROADMAP.md](./ROADMAP.md)).
+- Keep shape math in `domain/shapes` (one folder per shape plus a keyed registry),
+  shared geometry in `domain/geometry`, non-React services in `services`, and
+  React lifecycle logic in hooks. `domain/` never imports React.
 - Share actual repeated behavior: `GridView` for grid interactions,
   `ModalHeader` for modal chrome, and narrow geometry helpers. Keep per-shape
   generation, unusual bounds, modal widths, and content layouts local.
@@ -251,7 +254,7 @@ coordinates give exact hexagon orbits; the canonical representative makes one
 contiguous editable wedge.
 
 Other shapes use geometric transforms and rounded-coordinate lookup in
-[symmetry.ts](./src/utils/symmetry.ts). Closed canonical-wedge boundaries include
+[symmetry.ts](./src/domain/geometry/symmetry.ts). Closed canonical-wedge boundaries include
 cells centered on mirror axes; those smaller orbits are genuine, not rounding errors.
 Pinwheel uses rotation-only C8 symmetry.
 

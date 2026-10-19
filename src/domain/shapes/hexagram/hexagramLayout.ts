@@ -1,6 +1,6 @@
-import type { Point } from '@/types/geometry'
-import type { HexagramCell } from '@/types/hexagram'
-import { rotate } from '@/utils/symmetry'
+import type { Point } from '@/domain/geometry'
+import type { HexagramCell } from './hexagramTypes'
+import { rotate } from '@/domain/geometry'
 
 export interface HexagramLayout {
 	// Number of lattice rows subdividing each of the 2 equilateral
@@ -115,4 +115,4 @@ export function hexagramStarCellCorners(
 	return raw.map(transform)
 }
 
-export { polygonBoundingBox as hexagramBoundingBox } from '@/utils/geometryMath'
+export { polygonBoundingBox as hexagramBoundingBox } from '@/domain/geometry'

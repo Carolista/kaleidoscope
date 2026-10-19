@@ -4,13 +4,11 @@ import {
 	CIRCLE_RINGS_GRID_SIZE,
 	computeGridAspectRatio,
 	generateCircleRingsCells,
-} from '@/shape-geometry/circleRingsGrid'
-import {
 	circleRingsBoundingBox,
 	circleRingsCellCenter,
 	circleRingsCellRadius,
-} from '@/shape-geometry/circleRingsLayout'
-import type { CircleRingsLayout } from '@/shape-geometry/circleRingsLayout'
+} from '@/domain/shapes/circle-rings'
+import type { CircleRingsLayout } from '@/domain/shapes/circle-rings'
 import GridView from './GridView'
 import type { GridCell } from './GridView'
 

@@ -8,7 +8,7 @@ import {
 	CIRCLE_RINGS_GRID_SIZES,
 	computeGridAspectRatio,
 	getGroupIds,
-} from '@/shape-geometry/circleRingsGrid'
+} from '@/domain/shapes/circle-rings'
 import styles from './Cell.module.css'
 import CircleRingsGrid from './CircleRingsGrid'
 

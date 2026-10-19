@@ -1,6 +1,5 @@
 import type { ColorScheme } from './colorScheme'
-import type { GridShapeId } from './gridShape'
-import type { GridSize } from './gridSize'
+import type { GridShapeId, GridSize } from '@/domain/shapes'
 
 export type BoardId = `${GridShapeId}:${GridSize}`
 export type PaintMap = Readonly<Record<string, string>>

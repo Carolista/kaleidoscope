@@ -1,6 +1,6 @@
 import { useId, useMemo, useState } from 'react'
 import type { CSSProperties, Ref } from 'react'
-import type { Point } from '@/types/geometry'
+import type { Point } from '@/domain/geometry'
 import { useIsTouchDevice } from '@/hooks/useIsTouchDevice'
 import { getThemeColors } from '@/state/theme'
 import { useAppState } from '@/state/useAppState'

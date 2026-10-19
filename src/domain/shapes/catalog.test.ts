@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { gridShapes, isGridShapeId, supportedGridShapes } from './gridShapes'
+import { gridShapes, isGridShapeId, supportedGridShapes } from './catalog'
 
 describe('grid shape definitions', () => {
 	it('preserves supported IDs, labels, and current picker order', () => {
