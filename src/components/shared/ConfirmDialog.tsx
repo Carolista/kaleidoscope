@@ -1,5 +1,5 @@
 import { useId, useState, type ReactNode, type RefObject } from 'react'
-import { dismissConfirmDialog } from '@/services/confirmDialogPreferences'
+import { dismissConfirmDialog } from './confirmDialogPreferences'
 import Button from './Button'
 import Checkbox from './Checkbox'
 import styles from './ConfirmDialog.module.css'

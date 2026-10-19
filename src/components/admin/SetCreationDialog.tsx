@@ -1,6 +1,6 @@
 import { useId, useRef, useState, type SubmitEvent } from 'react'
 import { ConfirmDialog, FormField, Input, Select } from '@/components/shared'
-import useUnsavedDraft from './useUnsavedDraft'
+import { useUnsavedDraft } from '@/ui/navigation'
 import styles from './AdminPortal.module.css'
 
 interface SetCreationDialogProps<Kind extends string> {

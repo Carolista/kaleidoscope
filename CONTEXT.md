@@ -336,7 +336,7 @@ changes should be applied to all four SVG assets.
 | Confirmation / rich action form | [ConfirmDialog](./src/components/shared/ConfirmDialog.tsx) on [Modal](./src/components/shared/Modal.tsx); errors/pending stay inside |
 | Simple set creation | [SetCreationDialog](./src/components/admin/SetCreationDialog.tsx); close/refresh/focus Add on success |
 | Retain action content during exit | [useModalState](./src/hooks/useModalState.ts); defer destructive view changes until after close |
-| Guard edited/pending navigation | [useUnsavedDraft](./src/components/admin/useUnsavedDraft.ts) with [useNavigationGuard](./src/components/admin/useNavigationGuard.ts); first destination wins |
+| Guard edited/pending navigation | [useUnsavedDraft](./src/ui/navigation/useUnsavedDraft.ts) with [useNavigationGuard](./src/ui/navigation/useNavigationGuard.ts); first destination wins |
 | Decorative palette / palette selection | [PaletteStrip](./src/components/shared/PaletteStrip.tsx) / [PaletteChoices](./src/components/shared/PaletteChoices.tsx); not painting buttons |
 | Section / gallery / ordered members | [AdminLayout](./src/components/admin/AdminLayout.tsx); retain domain card layouts and local async ownership |
 
@@ -349,15 +349,17 @@ follow-up work.
 
 | Location | Responsibility |
 | --- | --- |
+| [app/](./src/app/) | Entry-level routing (`useAdminRoute`) |
+| [ui/navigation/](./src/ui/navigation/) | App-wide unsaved-work navigation guard |
 | [components/layout/](./src/components/layout/) | Header and footer |
 | [components/grid/](./src/components/grid/) | Shape adapters, shared `GridView`, polygon/circle cells |
 | [components/controls/](./src/components/controls/) | Toolbar, pickers, and modal content |
 | [components/intro/](./src/components/intro/) | First-visit learn-by-doing sequence |
-| [components/shared/](./src/components/shared/) | Buttons, palette-aware `Checkbox`, native `Modal`, `ModalHeader`, `ConfirmDialog` |
-| [shape-geometry/](./src/shape-geometry/) | Shape-specific generation and layout |
-| [utils/](./src/utils/) | Shared math, symmetry, randomization, and geometry dispatch |
+| [components/shared/](./src/components/shared/) | Buttons, palette-aware `Checkbox`, native `Modal`, `ModalHeader`, `ConfirmDialog` and its dismissal preferences |
+| [shape-geometry/](./src/shape-geometry/) | Shape-specific generation and layout, plus the shape registry |
+| [utils/](./src/utils/) | Shared math, symmetry, and randomization |
 | [state/](./src/state/) | App reducer, history wrapper, and Context |
-| [services/](./src/services/) | Persistence, confirmation/export preferences, PNG export |
+| [services/](./src/services/) | Design persistence, export preferences, PNG export, Supabase admin data |
 | [hooks/](./src/hooks/) | React lifecycle and interaction logic |
 | [puzzles/](./src/puzzles/) | Pure seeded puzzle generation, placement validation, and completion |
 | [components/puzzle/](./src/components/puzzle/) | Puzzle target, board, tray, and pointer/keyboard interaction |
@@ -468,12 +470,12 @@ symmetry engine. One representative per group is clickable.
 - `Modal.initialFocusRef` focuses form fields after native opening.
   `useModalState` retains action content through the shared exit animation and
   can defer editor navigation/catalog refresh until closing finishes.
-- Admin [NavigationGuardProvider](./src/components/admin/NavigationGuard.tsx)
+- Admin [NavigationGuardProvider](./src/ui/navigation/NavigationGuard.tsx)
   owns discard decisions and the native `beforeunload` safety net. Each editable
   or mutating view registers its own `{ dirty, pending }` through
-  [useUnsavedDraft](./src/components/admin/useUnsavedDraft.ts); do not merge these
+  [useUnsavedDraft](./src/ui/navigation/useUnsavedDraft.ts); do not merge these
   into one parent dirty boolean or add `window.confirm` at new navigation sites.
-  [useAdminRoute](./src/hooks/useAdminRoute.ts) guards Home before changing the
+  [useAdminRoute](./src/app/useAdminRoute.ts) guards Home before changing the
   hash and reconciles already-triggered hashes. Indexed Back/Forward traversals
   return to the accepted entry while deciding, preserving their destination
   entries for retry; untracked hashes restore the accepted URL in place.

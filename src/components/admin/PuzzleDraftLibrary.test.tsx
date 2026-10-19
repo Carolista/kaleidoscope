@@ -11,7 +11,7 @@ import styles from './AdminPortal.module.css'
 import layoutStyles from './AdminLayout.module.css'
 import iconStyles from '@/components/shared/IconButton.module.css'
 import PuzzleDraftLibrary from './PuzzleDraftLibrary'
-import { useNavigationGuard } from './useNavigationGuard'
+import { useNavigationGuard } from '@/ui/navigation'
 
 const mocks = vi.hoisted(() => ({
 	load: vi.fn(),

@@ -4,8 +4,7 @@ import AppEntry from './AppEntry'
 import { useState, type ReactNode } from 'react'
 import loadingStyles from './components/shared/Loading.module.css'
 import entryStyles from './AppEntry.module.css'
-import useUnsavedDraft from './components/admin/useUnsavedDraft'
-import { NavigationGuardDialog } from './components/admin/NavigationGuard'
+import { NavigationGuardDialog, useUnsavedDraft } from '@/ui/navigation'
 
 vi.mock('./App', () => ({ default: () => <p>Player app</p> }))
 vi.mock('./state/AppContext', () => ({

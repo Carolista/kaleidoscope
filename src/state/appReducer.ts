@@ -4,7 +4,7 @@ import type { ColorScheme } from '@/types/colorScheme'
 import type { GridShapeId } from '@/types/gridShape'
 import type { GridSize } from '@/types/gridSize'
 import { availableGridSizes, defaultGridSizes } from '@/data/gridSizes'
-import { getGroupIdsForShape } from '@/utils/gridShapeRegistry'
+import { getGroupIdsForShape } from '@/shape-geometry/gridShapeRegistry'
 import { generateRandomShapeGroupColors } from '@/utils/randomDesign'
 import { getThemeColors } from './theme'
 

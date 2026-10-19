@@ -49,7 +49,7 @@ import useCheckedIds from './useCheckedIds'
 import { useCatalog, useCatalogInvalidation } from './useAdminCatalog'
 import PuzzleDraftForm from './PuzzleDraftForm'
 import { manageDraftSet, type DraftSet } from '@/services/puzzleSets'
-import useUnsavedDraft from './useUnsavedDraft'
+import { useUnsavedDraft } from '@/ui/navigation'
 import useModalState from '@/hooks/useModalState'
 import { compareSetOrder } from './setOrder'
 

@@ -7,7 +7,7 @@ import type { SchemeSet } from '@/services/schemeSets'
 import { manageSchemeSet } from '@/services/schemeSets'
 import SchemeSetLibrary from './SchemeSetLibrary'
 import { useState } from 'react'
-import { useNavigationGuard } from './useNavigationGuard'
+import { useNavigationGuard } from '@/ui/navigation'
 
 vi.mock('@/services/schemeSets', async importOriginal => ({
 	...(await importOriginal<typeof import('@/services/schemeSets')>()),

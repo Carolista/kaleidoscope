@@ -27,7 +27,7 @@ import {
 import SetCreationDialog from './SetCreationDialog'
 import useModalState from '@/hooks/useModalState'
 import styles from './AdminPortal.module.css'
-import useUnsavedDraft from './useUnsavedDraft'
+import { useUnsavedDraft } from '@/ui/navigation'
 import SortableSetMembers from './SortableSetMembers'
 import useStagedOrder from './useStagedOrder'
 import { useCatalog, useCatalogInvalidation } from './useAdminCatalog'

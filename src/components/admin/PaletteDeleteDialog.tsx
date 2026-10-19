@@ -8,7 +8,7 @@ import {
 	schemeIsUsed,
 	type SchemeUsage,
 } from '@/services/schemeUsage'
-import useUnsavedDraft from './useUnsavedDraft'
+import { useUnsavedDraft } from '@/ui/navigation'
 import PaletteUsageDetails from './PaletteUsageDetails'
 
 export default function PaletteDeleteDialog({

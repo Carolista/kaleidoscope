@@ -12,7 +12,7 @@ import { HEX_PUZZLE_RECIPES } from '@/puzzles/hexPuzzle'
 import styles from './AdminPortal.module.css'
 import layoutStyles from './AdminLayout.module.css'
 import { useState } from 'react'
-import { useNavigationGuard } from './useNavigationGuard'
+import { useNavigationGuard } from '@/ui/navigation'
 import iconStyles from '@/components/shared/IconButton.module.css'
 
 const mocks = vi.hoisted(() => ({

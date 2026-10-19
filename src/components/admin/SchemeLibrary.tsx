@@ -21,7 +21,7 @@ import { loadSchemeUsage, type SchemeUsage } from '@/services/schemeUsage'
 import PaletteUsageDetails from './PaletteUsageDetails'
 import AdminIconButton from './AdminIconButton'
 import SchemeSandbox from './SchemeSandbox'
-import useUnsavedDraft from './useUnsavedDraft'
+import { useUnsavedDraft } from '@/ui/navigation'
 import adminStyles from './AdminPortal.module.css'
 import styles from './SchemeLibrary.module.css'
 import {

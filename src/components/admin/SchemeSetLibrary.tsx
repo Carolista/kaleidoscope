@@ -33,7 +33,7 @@ import {
 	type SchemeSetKind,
 } from '@/services/schemeSets'
 import AdminIconButton from './AdminIconButton'
-import useUnsavedDraft from './useUnsavedDraft'
+import { useUnsavedDraft } from '@/ui/navigation'
 import useStagedOrder from './useStagedOrder'
 import adminStyles from './AdminPortal.module.css'
 

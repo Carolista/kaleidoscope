@@ -6,7 +6,7 @@ import AdminNavigation from './AdminNavigation'
 import PuzzleAuthoring from './PuzzleAuthoring'
 import PuzzleSetLibrary from './PuzzleSetLibrary'
 import SchemeLibrary from './SchemeLibrary'
-import { useNavigationGuard } from './useNavigationGuard'
+import { useNavigationGuard } from '@/ui/navigation'
 
 type CatalogStatus = 'drafts' | 'assigned' | 'scheduled' | 'published'
 

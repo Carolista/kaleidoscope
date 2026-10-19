@@ -13,12 +13,12 @@ import { getSupabaseClient } from '@/services/supabaseClient'
 import { getThemeColors } from '@/state/theme'
 import styles from './AdminPortal.module.css'
 import AdminWorkspace from './AdminWorkspace'
-import useUnsavedDraft from './useUnsavedDraft'
 import {
 	NavigationGuardBoundary,
 	NavigationGuardDialog,
-} from './NavigationGuard'
-import { useNavigationGuard } from './useNavigationGuard'
+	useNavigationGuard,
+	useUnsavedDraft,
+} from '@/ui/navigation'
 import AdminIconButton from './AdminIconButton'
 import { Button, FormField, Input, Loading } from '@/components/shared'
 import {

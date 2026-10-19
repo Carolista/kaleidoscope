@@ -3,7 +3,7 @@ import { useId, useMemo, useState } from 'react'
 import { useAppState } from '@/state/useAppState'
 import { getThemeColors } from '@/state/theme'
 import { useImageExport } from '@/hooks/useImageExport'
-import { computeAspectRatioForShape } from '@/utils/gridShapeRegistry'
+import { computeAspectRatioForShape } from '@/shape-geometry/gridShapeRegistry'
 import {
 	getIncludeGridLines,
 	saveIncludeGridLines,

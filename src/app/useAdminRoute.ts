@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigationGuard } from '@/components/admin/useNavigationGuard'
+import { useNavigationGuard } from '@/ui/navigation'
 
 const indexKey = 'kaleidoscopeRouteIndex'
 function historyIndex(): number | null {

@@ -17,7 +17,7 @@ import {
 import PuzzleMode from '@/components/puzzle/PuzzleMode'
 import styles from './AdminPortal.module.css'
 import PuzzleDraftLibrary from './PuzzleDraftLibrary'
-import useUnsavedDraft from './useUnsavedDraft'
+import { useUnsavedDraft } from '@/ui/navigation'
 import PuzzleDraftForm from './PuzzleDraftForm'
 import { useCatalog, useCatalogInvalidation } from './useAdminCatalog'
 import { Button, Loading } from '@/components/shared'

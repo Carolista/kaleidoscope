@@ -3,7 +3,7 @@ import { colorSchemes } from '@/data/colorSchemes'
 import { defaultGridSizes } from '@/data/gridSizes'
 import type { AppState } from '@/types/appState'
 import type { AppAction } from './appReducer'
-import { getGroupIdsForShape } from '@/utils/gridShapeRegistry'
+import { getGroupIdsForShape } from '@/shape-geometry/gridShapeRegistry'
 import { createInitialHistoryState, historyReducer } from './historyReducer'
 
 function baseState(overrides: Partial<AppState> = {}): AppState {

@@ -14,7 +14,7 @@ import {
 } from '@/puzzles/hexAuthoring'
 import PuzzleAuthoring from './PuzzleAuthoring'
 import AdminWorkspace from './AdminWorkspace'
-import { useNavigationGuard } from './useNavigationGuard'
+import { useNavigationGuard } from '@/ui/navigation'
 import styles from './AdminPortal.module.css'
 import fieldStyles from '@/components/shared/FormField.module.css'
 

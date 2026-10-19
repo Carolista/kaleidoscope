@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import GridTransition from './GridTransition'
 import { supportedGridShapes } from '@/data/gridShapes'
 import { availableGridSizes } from '@/data/gridSizes'
-import { computeAspectRatioForShape } from '@/utils/gridShapeRegistry'
+import { computeAspectRatioForShape } from '@/shape-geometry/gridShapeRegistry'
 
 type FakeAnimation = { cancel: () => void; onfinish: (() => void) | null }
 

@@ -13,3 +13,7 @@ export { default as Spinner } from './Spinner'
 export { default as PaletteStrip } from './PaletteStrip'
 export { default as PaletteChoices } from './PaletteChoices'
 export { default as FormField } from './FormField'
+export {
+	dismissConfirmDialog,
+	isConfirmDialogDismissed,
+} from './confirmDialogPreferences'

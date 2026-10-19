@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { faRotate } from '@fortawesome/sharp-duotone-solid-svg-icons'
-import { isConfirmDialogDismissed } from '@/services/confirmDialogPreferences'
+import { isConfirmDialogDismissed } from '@/components/shared'
 import { useAppState } from '@/state/useAppState'
 import {
 	ConfirmDialog,

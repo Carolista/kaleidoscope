@@ -8,7 +8,7 @@ import type { SchemeUsage } from '@/services/schemeUsage'
 import SchemeLibrary from './SchemeLibrary'
 import type { SchemeSet } from '@/services/schemeSets'
 import { useState } from 'react'
-import { useNavigationGuard } from './useNavigationGuard'
+import { useNavigationGuard } from '@/ui/navigation'
 
 const mocks = vi.hoisted(() => ({
 	load: vi.fn(),
