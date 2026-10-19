@@ -18,9 +18,7 @@ export default function AdminNavigation<T extends string>({
 				<Button
 					key={item.value}
 					aria-current={value === item.value ? 'page' : undefined}
-					onClick={() => {
-						if (value !== item.value) onChange(item.value)
-					}}
+					onClick={() => onChange(item.value)}
 				>
 					{item.label}
 				</Button>

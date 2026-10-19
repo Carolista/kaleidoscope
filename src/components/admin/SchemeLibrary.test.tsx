@@ -8,6 +8,7 @@ import type { SchemeUsage } from '../../services/schemeUsage'
 import SchemeLibrary from './SchemeLibrary'
 import type { SchemeSet } from '../../services/schemeSets'
 import { useState } from 'react'
+import { useNavigationGuard } from './useNavigationGuard'
 
 const mocks = vi.hoisted(() => ({
 	load: vi.fn(),
@@ -76,13 +77,26 @@ async function openSets() {
 	await screen.findByRole('button', { name: 'Edit Cabo' })
 	fireEvent.click(screen.getByRole('button', { name: 'Sets' }))
 }
+// Mirrors AdminWorkspace: choosing any tab is guarded and remounts the view.
 function PaletteWorkspace() {
+	const { requestNavigation } = useNavigationGuard()
 	const [view, setView] = useState<'sets' | 'palettes'>('palettes')
+	const [visit, setVisit] = useState(0)
+	function go(next: 'sets' | 'palettes') {
+		requestNavigation(() => {
+			setView(next)
+			setVisit(n => n + 1)
+		})
+	}
 	return (
 		<>
-			<button onClick={() => setView('sets')}>Sets</button>
-			<button onClick={() => setView('palettes')}>Palette catalog</button>
-			<SchemeLibrary client={client} view={view} />
+			<button onClick={() => go('sets')}>Sets</button>
+			<button onClick={() => go('palettes')}>Palette catalog</button>
+			<SchemeLibrary
+				key={`${view}-${visit}`}
+				client={client}
+				view={view}
+			/>
 		</>
 	)
 }
@@ -306,8 +320,8 @@ describe('palette management', () => {
 			target: { value: 'reward' },
 		})
 		expect(isProtected()).toBe(true)
-		fireEvent.click(screen.getByRole('button', { name: 'Save set' }))
-		await screen.findByText('Set details saved.')
+		fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+		await screen.findByText('Set saved.')
 		expect(mocks.manageSet).toHaveBeenLastCalledWith(client, args[1], {
 			kind: 'update',
 			name: 'New colors',
@@ -315,7 +329,7 @@ describe('palette management', () => {
 		})
 	})
 
-	it('stages member order until Save order, removes immediately, and deletes a set only after confirmation', async () => {
+	it('stages member order until Save, removes immediately, and deletes a set only after confirmation', async () => {
 		const second = { ...scheme, id: 'other', name: 'Other colors' }
 		mocks.sets.mockResolvedValue([
 			{ ...paletteSet, members: [scheme, second] },
@@ -325,7 +339,7 @@ describe('palette management', () => {
 		fireEvent.click(
 			screen.getByRole('button', { name: 'Edit set Warm colors' }),
 		)
-		const saveOrder = screen.getByRole('button', { name: 'Save order' })
+		const saveOrder = screen.getByRole('button', { name: 'Save' })
 		expect(saveOrder).toBeDisabled()
 		fireEvent.keyDown(
 			screen.getByRole('button', { name: 'Reorder Cabo' }),
@@ -345,7 +359,7 @@ describe('palette management', () => {
 		expect(mocks.manageSet).not.toHaveBeenCalled()
 		expect(isProtected()).toBe(true)
 		fireEvent.click(saveOrder)
-		await screen.findByText('Palette order saved.')
+		await screen.findByText('Set saved.')
 		expect(mocks.manageSet).toHaveBeenCalledOnce()
 		expect(mocks.manageSet).toHaveBeenLastCalledWith(client, 'set-one', {
 			kind: 'reorder',
@@ -368,12 +382,8 @@ describe('palette management', () => {
 			kind: 'remove',
 			paletteIds: ['cabo'],
 		})
-		await waitFor(() =>
-			expect(
-				screen.getByRole('button', { name: 'Back to sets' }),
-			).toBeEnabled(),
-		)
-		fireEvent.click(screen.getByRole('button', { name: 'Back to sets' }))
+		await waitFor(() => expect(isProtected()).toBe(false))
+		fireEvent.click(screen.getByRole('button', { name: 'Sets' }))
 		fireEvent.click(
 			screen.getByRole('button', { name: 'Delete set Warm colors' }),
 		)
@@ -424,10 +434,7 @@ describe('palette management', () => {
 			screen.getByRole('button', { name: 'Reorder Cabo' }),
 		).toBeDisabled()
 		expect(
-			screen.queryByRole('button', { name: 'Save set' }),
-		).not.toBeInTheDocument()
-		expect(
-			screen.queryByRole('button', { name: 'Save order' }),
+			screen.queryByRole('button', { name: 'Save' }),
 		).not.toBeInTheDocument()
 	})
 
@@ -442,10 +449,10 @@ describe('palette management', () => {
 			target: { value: 'Renamed colors' },
 		})
 		mocks.sets.mockRejectedValueOnce(new Error('Membership read failed'))
-		fireEvent.click(screen.getByRole('button', { name: 'Save set' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 		await screen.findByText(/Membership read failed/)
 		expect(screen.getByLabelText('Set name')).toHaveValue('Renamed colors')
-		expect(screen.getByRole('button', { name: 'Save set' })).toBeDisabled()
+		expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
 		expect(mocks.manageSet).toHaveBeenCalledTimes(1)
 		fireEvent.click(
 			screen.getByRole('button', { name: 'Retry loading sets' }),

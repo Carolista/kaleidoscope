@@ -2,12 +2,10 @@ import {
 	faPenToSquare,
 	faPlusLarge,
 	faRotate,
-	faSquareArrowLeft,
 	faTrashCan,
 } from '@fortawesome/pro-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { useEffect, useRef, useState, type SubmitEvent } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
 	deleteDraftSet,
 	manageDraftSet,
@@ -17,15 +15,26 @@ import {
 import type { Database } from '../../types/database'
 import HexPuzzleBoard from '../puzzle/HexPuzzleBoard'
 import AdminIconButton from './AdminIconButton'
-import { Button, ConfirmDialog, FormField, Input, Loading } from '@shared'
-import { AdminFeedback, AdminGallery, AdminSectionHeading } from './AdminLayout'
+import { ConfirmDialog, Loading } from '@shared'
+import {
+	AdminFeedback,
+	AdminGallery,
+	AdminSectionHeading,
+	AdminSetCard,
+	AdminSetForm,
+	AdminTag,
+} from './AdminLayout'
 import SetCreationDialog from './SetCreationDialog'
 import useModalState from '../../hooks/useModalState'
 import styles from './AdminPortal.module.css'
 import useUnsavedDraft from './useUnsavedDraft'
-import { useNavigationGuard } from './useNavigationGuard'
 import SortableSetMembers from './SortableSetMembers'
+import useStagedOrder from './useStagedOrder'
 import { useCatalog, useCatalogInvalidation } from './useAdminCatalog'
+
+function roleLabel(kind: string) {
+	return kind === 'core' ? 'Core' : kind === 'reward' ? 'Reward' : 'Pack'
+}
 
 function errorMessage(cause: unknown) {
 	return cause instanceof Error
@@ -33,12 +42,33 @@ function errorMessage(cause: unknown) {
 		: 'Unable to manage draft sets.'
 }
 
+// Applies a successful set action to cached sets without refetching.
+function applyAction(set: DraftSet, action: SetAction): DraftSet {
+	if (action.kind === 'rename')
+		return { ...set, row: { ...set.row, name: action.name.trim() } }
+	if (action.kind !== 'reorder' && action.kind !== 'remove') return set
+	const members =
+		action.kind === 'remove'
+			? set.members.filter(
+					member => !action.puzzleIds.includes(member.puzzleId),
+				)
+			: action.puzzleIds.flatMap(id =>
+					set.members.filter(member => member.puzzleId === id),
+				)
+	return {
+		...set,
+		members: members.map((member, index) => ({
+			...member,
+			position: index + 1,
+		})),
+		preview: members[0]?.preview ?? null,
+	}
+}
+
 export default function PuzzleSetLibrary({
 	client,
-	onBack,
 }: {
 	readonly client: SupabaseClient<Database>
-	readonly onBack?: () => void
 }) {
 	const catalog = useCatalog('puzzleSets', client)
 	const invalidate = useCatalogInvalidation()
@@ -47,7 +77,6 @@ export default function PuzzleSetLibrary({
 	const [selectedId, setSelectedId] = useState<string | null>(null)
 	const [creating, setCreating, creationModal] = useModalState<true>()
 	const [name, setName] = useState('')
-	const [memberIds, setMemberIds] = useState<readonly string[]>([])
 	const addButton = useRef<HTMLButtonElement>(null)
 	const focusAdd = useRef(false)
 	const [pending, setPending] = useState<string | null>(null)
@@ -58,26 +87,14 @@ export default function PuzzleSetLibrary({
 	const [status, setStatus] = useState('')
 	const [deleting, setDeleting, deleteModal] = useModalState<DraftSet>()
 	const selected = sets.find(set => set.row.id === selectedId)
-	const members = [
-		...memberIds.flatMap(id => {
-			const member = selected?.members.find(
-				value => value.puzzleId === id,
-			)
-			return member ? [member] : []
-		}),
-		...(selected?.members.filter(
-			member => !memberIds.includes(member.puzzleId),
-		) ?? []),
-	]
-	const orderDirty =
-		!!selected &&
-		members.some(
-			(member, index) =>
-				member.puzzleId !== selected.members[index]?.puzzleId,
-		)
-	const dirty = !!selected && (name !== selected.row.name || orderDirty)
+	const order = useStagedOrder(
+		selected?.members ?? [],
+		member => member.puzzleId,
+	)
+	const members = order.ordered
+	const nameDirty = !!selected && name.trim() !== selected.row.name
+	const dirty = !!selected && (name !== selected.row.name || order.dirty)
 	useUnsavedDraft({ dirty, pending: busy })
-	const { requestNavigation } = useNavigationGuard()
 	useEffect(() => {
 		if (!loading && !creating && focusAdd.current) {
 			addButton.current?.focus()
@@ -107,75 +124,31 @@ export default function PuzzleSetLibrary({
 			setPending(null)
 		}
 	}
-	async function mutate(id: string, action: SetAction, success: string) {
-		if (working.current) return
+	async function mutate(
+		id: string,
+		actions: readonly SetAction[],
+		success: string,
+	) {
+		if (working.current || !actions.length) return
 		working.current = true
-		setPending(
-			action.kind === 'create'
-				? 'Creating puzzle set…'
-				: 'Saving puzzle set…',
-		)
+		setPending('Saving puzzle set…')
 		setError('')
 		setStatus('')
 		try {
-			await manageDraftSet(client, id, action)
-			setStatus(success)
-			if (action.kind === 'rename') {
-				setName(action.name.trim())
-			}
-			if (action.kind === 'reorder' || action.kind === 'remove') {
-				catalog.update(previous =>
-					previous.map(set => {
-						if (set.row.id !== id) return set
-						const nextMembers =
-							action.kind === 'remove'
-								? set.members.filter(
-										member =>
-											!action.puzzleIds.includes(
-												member.puzzleId,
-											),
-									)
-								: action.puzzleIds.flatMap(puzzleId => {
-										const member = set.members.find(
-											value =>
-												value.puzzleId === puzzleId,
-										)
-										return member ? [member] : []
-									})
-						return {
-							...set,
-							members: nextMembers.map((member, index) => ({
-								...member,
-								position: index + 1,
-							})),
-							preview: nextMembers[0]?.preview ?? null,
-						}
-					}),
-				)
-				if (action.kind === 'remove') {
-					setMemberIds(previous =>
-						previous.filter(id => !action.puzzleIds.includes(id)),
-					)
-				}
-			}
-			if (action.kind === 'rename') {
+			for (const action of actions) {
+				await manageDraftSet(client, id, action)
 				catalog.update(previous =>
 					previous.map(set =>
-						set.row.id === id
-							? {
-									...set,
-									row: {
-										...set.row,
-										name: action.name.trim(),
-									},
-								}
-							: set,
+						set.row.id === id ? applyAction(set, action) : set,
 					),
 				)
+				if (action.kind === 'rename') setName(action.name.trim())
+				if (action.kind === 'remove') order.drop(action.puzzleIds)
+				// Set names and membership appear in the puzzle catalog.
+				if (action.kind === 'rename' || action.kind === 'remove')
+					invalidate('puzzleDrafts')
 			}
-			// Set names and membership appear in the puzzle catalog.
-			if (action.kind === 'rename' || action.kind === 'remove')
-				invalidate('puzzleDrafts')
+			setStatus(success)
 		} catch (cause) {
 			setError(errorMessage(cause))
 		} finally {
@@ -183,48 +156,32 @@ export default function PuzzleSetLibrary({
 			setPending(null)
 		}
 	}
-	function back() {
-		requestNavigation(() => {
-			if (selected) {
-				setSelectedId(null)
-				setName('')
-				setMemberIds([])
-				setError('')
-				setStatus('')
-			} else onBack?.()
-		})
-	}
-	function save(event: SubmitEvent<HTMLFormElement>) {
-		event.preventDefault()
+	function save() {
+		if (!selected) return
 		if (!name.trim()) {
 			setError('Enter a set name.')
 			return
 		}
-		if (selected) {
-			void mutate(
-				selected.row.id,
-				{ kind: 'rename', name },
-				'Set name saved.',
-			)
-		}
+		void mutate(
+			selected.row.id,
+			[
+				...(nameDirty ? [{ kind: 'rename', name } as const] : []),
+				...(order.dirty
+					? [
+							{
+								kind: 'reorder',
+								puzzleIds: members.map(
+									member => member.puzzleId,
+								),
+							} as const,
+						]
+					: []),
+			],
+			'Set saved.',
+		)
 	}
 	return (
 		<section aria-labelledby="draft-sets-title">
-			{(selected || onBack) && (
-				<Button
-					variant="link"
-					type="button"
-					className={styles.backLink}
-					disabled={busy || loading}
-					onClick={back}
-				>
-					<FontAwesomeIcon
-						icon={faSquareArrowLeft}
-						aria-hidden="true"
-					/>{' '}
-					{selected ? 'Back to sets' : 'Back to library'}
-				</Button>
-			)}
 			<AdminSectionHeading
 				id="draft-sets-title"
 				title={selected ? `Set: ${selected.row.name}` : 'Draft sets'}
@@ -260,7 +217,6 @@ export default function PuzzleSetLibrary({
 				}
 				status={status}
 			/>
-			{pending && !deleting && <Loading label={pending} />}
 			{creating && (
 				<SetCreationDialog
 					{...creationModal}
@@ -322,169 +278,67 @@ export default function PuzzleSetLibrary({
 				/>
 			) : selected ? (
 				<>
-					<form
-						className={styles.form}
-						onSubmit={save}
-						aria-label="Rename draft set"
+					<AdminSetForm
+						label="Draft set details"
+						nameId="set-name"
+						name={name}
+						disabled={busy}
+						saveDisabled={!nameDirty && !order.dirty}
+						onNameChange={setName}
+						onSave={save}
 					>
-						<FormField id="set-name" label="Set name">
-							{field => (
-								<Input
-									{...field}
-									required
-									value={name}
-									disabled={busy}
-									onChange={event =>
-										setName(event.target.value)
-									}
-								/>
-							)}
-						</FormField>
-						<p>
-							Role: {selected?.row.kind} · Hexagon ·{' '}
-							{selected?.members.length} puzzles
-						</p>
-						<Button type="submit" disabled={busy || !name.trim()}>
-							Save name
-						</Button>
-					</form>
-					{selected && (
-						<>
-							<p>
-								Add unassigned Set/pack drafts using “Assign to
-								set” in the puzzle gallery. No puzzle count is
-								required.
-							</p>
-							<p>
-								Ordering saves only when you choose Save order.
-								Removal saves immediately without deleting the
-								puzzle. Player selection rules and qualifying
-								routes are configured separately.
-							</p>
-							{!selected.members.length && (
-								<p>This set has no puzzles yet.</p>
-							)}
-							<SortableSetMembers
-								members={members.map(member => ({
-									...member,
-									id: member.puzzleId,
-								}))}
-								noun="puzzles"
-								disabled={busy}
-								preview={member => (
-									<div
-										className={styles.setMemberThumbnail}
-										aria-hidden="true"
-									>
-										{member.preview ? (
-											<HexPuzzleBoard
-												target
-												radius={member.preview.radius}
-												colors={member.preview.target}
-											/>
-										) : (
-											<span>Preview unavailable</span>
-										)}
-									</div>
-								)}
-								onReorder={setMemberIds}
-								onRemove={puzzleId => {
-									void mutate(
-										selected.row.id,
-										{
-											kind: 'remove',
-											puzzleIds: [puzzleId],
-										},
-										'Puzzle removed from set.',
-									)
-								}}
+						<AdminTag>{roleLabel(selected.row.kind)}</AdminTag>
+					</AdminSetForm>
+					{!selected.members.length && <p>No puzzles yet.</p>}
+					<SortableSetMembers
+						members={members.map(member => ({
+							...member,
+							id: member.puzzleId,
+						}))}
+						noun="puzzles"
+						disabled={busy}
+						preview={member => (
+							<div
+								className={styles.setMemberThumbnail}
+								aria-hidden="true"
 							>
-								{(member, index) => (
-									<>
-										{index + 1}. {member.name}
-									</>
+								{member.preview ? (
+									<HexPuzzleBoard
+										target
+										radius={member.preview.radius}
+										colors={member.preview.target}
+									/>
+								) : (
+									<span>Preview unavailable</span>
 								)}
-							</SortableSetMembers>
-							<Button
-								disabled={busy || !orderDirty}
-								onClick={() => {
-									void mutate(
-										selected.row.id,
-										{
-											kind: 'reorder',
-											puzzleIds: members.map(
-												member => member.puzzleId,
-											),
-										},
-										'Puzzle order saved.',
-									)
-								}}
-							>
-								Save order
-							</Button>
-						</>
-					)}
+							</div>
+						)}
+						onReorder={order.setOrder}
+						onRemove={puzzleId => {
+							void mutate(
+								selected.row.id,
+								[{ kind: 'remove', puzzleIds: [puzzleId] }],
+								'Puzzle removed from set.',
+							)
+						}}
+					>
+						{(member, index) => (
+							<>
+								{index + 1}. {member.name}
+							</>
+						)}
+					</SortableSetMembers>
 				</>
 			) : !sets.length ? (
 				!error && !catalog.error && <p>No draft sets yet.</p>
 			) : (
 				<AdminGallery layout="sets">
 					{sets.map(set => (
-						<li
+						<AdminSetCard
 							key={set.row.id}
-							className={styles.setCard}
-							aria-label={`Set ${set.row.name}`}
-						>
-							<div className={styles.setDetails}>
-								<strong>{set.row.name}</strong>
-								<span>
-									{set.row.kind === 'core'
-										? 'Core'
-										: set.row.kind === 'reward'
-											? 'Reward'
-											: 'Pack'}
-								</span>
-								<span>
-									{set.members.length}{' '}
-									{set.members.length === 1
-										? 'puzzle'
-										: 'puzzles'}
-								</span>
-							</div>
-							<div className={styles.setCardActions}>
-								<AdminIconButton
-									icon={faPenToSquare}
-									label={`Edit set ${set.row.name}`}
-									className={styles.editAction}
-									disabled={busy || !!deleting}
-									onClick={() => {
-										setSelectedId(set.row.id)
-										setName(set.row.name)
-										setMemberIds(
-											set.members.map(
-												member => member.puzzleId,
-											),
-										)
-										setStatus('')
-									}}
-								/>
-								<AdminIconButton
-									icon={faTrashCan}
-									label={`Delete set ${set.row.name}`}
-									className={styles.deleteAction}
-									disabled={busy || !!deleting}
-									onClick={() => {
-										setDeleting(set)
-										setDeleteError('')
-										setStatus('')
-									}}
-								/>
-							</div>
-							<div
-								className={styles.setThumbnail}
-								aria-hidden="true"
-							>
-								{set.preview ? (
+							label={`Set ${set.row.name}`}
+							thumbnail={
+								set.preview ? (
 									<HexPuzzleBoard
 										target
 										radius={set.preview.radius}
@@ -496,12 +350,50 @@ export default function PuzzleSetLibrary({
 											? 'Preview unavailable'
 											: 'Empty set'}
 									</span>
-								)}
-							</div>
-						</li>
+								)
+							}
+							actions={
+								<>
+									<AdminIconButton
+										icon={faPenToSquare}
+										label={`Edit set ${set.row.name}`}
+										className={styles.editAction}
+										disabled={busy || !!deleting}
+										onClick={() => {
+											setSelectedId(set.row.id)
+											setName(set.row.name)
+											order.reset()
+											setStatus('')
+											setError('')
+										}}
+									/>
+									<AdminIconButton
+										icon={faTrashCan}
+										label={`Delete set ${set.row.name}`}
+										className={styles.deleteAction}
+										disabled={busy || !!deleting}
+										onClick={() => {
+											setDeleting(set)
+											setDeleteError('')
+											setStatus('')
+										}}
+									/>
+								</>
+							}
+						>
+							<strong>{set.row.name}</strong>
+							<span>{roleLabel(set.row.kind)}</span>
+							<span>
+								{set.members.length}{' '}
+								{set.members.length === 1
+									? 'puzzle'
+									: 'puzzles'}
+							</span>
+						</AdminSetCard>
 					))}
 				</AdminGallery>
 			)}
+			{pending && !deleting && <Loading label={pending} />}
 		</section>
 	)
 }

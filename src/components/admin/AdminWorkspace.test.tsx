@@ -349,7 +349,7 @@ describe('admin workspace navigation', () => {
 		fireEvent.change(screen.getByLabelText('Set name'), {
 			target: { value: 'Renamed collection' },
 		})
-		fireEvent.click(screen.getByRole('button', { name: 'Save name' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 		choose('Admin sections', 'Shapes')
 		expect(
 			screen.getByRole('dialog', { name: 'Operation in progress' }),
@@ -361,6 +361,39 @@ describe('admin workspace navigation', () => {
 			screen.queryByRole('dialog', { name: 'Discard unsaved changes?' }),
 		).not.toBeInTheDocument()
 		await act(async () => finish())
+	})
+	it('returns to the list when the active tab is chosen again', async () => {
+		render(<AdminWorkspace client={client} />)
+		fireEvent.click(
+			await screen.findByRole('button', {
+				name: 'Edit set Design collection',
+			}),
+		)
+		expect(screen.getByLabelText('Set name')).toBeInTheDocument()
+		choose('Puzzles views', 'Sets')
+		expect(
+			await screen.findByRole('button', {
+				name: 'Edit set Design collection',
+			}),
+		).toBeInTheDocument()
+		expect(screen.queryByLabelText('Set name')).not.toBeInTheDocument()
+		choose('Puzzles views', 'Puzzles')
+		fireEvent.click(
+			await screen.findByRole('button', {
+				name: 'Edit draft Unassigned design',
+			}),
+		)
+		expect(
+			screen.queryByRole('button', {
+				name: 'Edit draft Unassigned design',
+			}),
+		).not.toBeInTheDocument()
+		choose('Puzzles status', 'Drafts')
+		expect(
+			await screen.findByRole('button', {
+				name: 'Edit draft Unassigned design',
+			}),
+		).toBeInTheDocument()
 	})
 	it('reuses cached catalogs across navigation and refetches only on request', async () => {
 		render(<AdminWorkspace client={client} />)

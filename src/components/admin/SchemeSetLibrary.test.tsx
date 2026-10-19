@@ -6,6 +6,8 @@ import type { Database } from '../../types/database'
 import type { SchemeSet } from '../../services/schemeSets'
 import { manageSchemeSet } from '../../services/schemeSets'
 import SchemeSetLibrary from './SchemeSetLibrary'
+import { useState } from 'react'
+import { useNavigationGuard } from './useNavigationGuard'
 
 vi.mock('../../services/schemeSets', async importOriginal => ({
 	...(await importOriginal<typeof import('../../services/schemeSets')>()),
@@ -28,19 +30,33 @@ const set: SchemeSet = {
 afterEach(() => vi.resetAllMocks())
 
 describe('palette set loading feedback', () => {
-	it('guards revised metadata on Back, retaining name/role on cancel and discarding only on confirmation', () => {
-		const onBack = vi.fn()
-		render(
-			<SchemeSetLibrary
-				client={client}
-				sets={[set]}
-				loading={false}
-				catalogError=""
-				onBack={onBack}
-				onChanged={vi.fn()}
-				onOrderSaved={vi.fn()}
-			/>,
-		)
+	it('guards revised metadata when the Sets tab is chosen, retaining name/label on cancel and discarding only on confirmation', () => {
+		// Mirrors AdminWorkspace: reselecting the Sets tab remounts the library.
+		function Harness() {
+			const { requestNavigation } = useNavigationGuard()
+			const [visit, setVisit] = useState(0)
+			return (
+				<>
+					<button
+						onClick={() =>
+							requestNavigation(() => setVisit(n => n + 1))
+						}
+					>
+						Sets tab
+					</button>
+					<SchemeSetLibrary
+						key={visit}
+						client={client}
+						sets={[set]}
+						loading={false}
+						catalogError=""
+						onChanged={vi.fn()}
+						onOrderSaved={vi.fn()}
+					/>
+				</>
+			)
+		}
+		render(<Harness />)
 		fireEvent.click(
 			screen.getByRole('button', { name: 'Edit set Warm colors' }),
 		)
@@ -50,24 +66,19 @@ describe('palette set loading feedback', () => {
 		fireEvent.change(screen.getByLabelText('Set label'), {
 			target: { value: 'reward' },
 		})
-		fireEvent.click(screen.getByRole('button', { name: 'Back to sets' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Sets tab' }))
 		expect(
 			screen.getByRole('dialog', { name: 'Discard unsaved changes?' }),
 		).toBeInTheDocument()
 		fireEvent.click(screen.getByRole('button', { name: 'Keep editing' }))
 		expect(screen.getByLabelText('Set name')).toHaveValue('Revised colors')
 		expect(screen.getByLabelText('Set label')).toHaveValue('reward')
-		fireEvent.click(screen.getByRole('button', { name: 'Back to sets' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Sets tab' }))
 		fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }))
 		expect(
 			screen.getByRole('heading', { name: 'Palette sets' }),
 		).toBeInTheDocument()
 		expect(manageSchemeSet).not.toHaveBeenCalled()
-		expect(onBack).not.toHaveBeenCalled()
-		fireEvent.click(
-			screen.getByRole('button', { name: 'Back to palettes' }),
-		)
-		expect(onBack).toHaveBeenCalledOnce()
 	})
 
 	it('keeps cached sets visible but unavailable while refreshing, and shows retry after failure', () => {
@@ -77,7 +88,6 @@ describe('palette set loading feedback', () => {
 			loading: true,
 			refreshing: true,
 			catalogError: '',
-			onBack: vi.fn(),
 			onChanged: vi.fn(),
 			onOrderSaved: vi.fn(),
 		}
@@ -123,7 +133,6 @@ describe('palette set loading feedback', () => {
 				sets={[]}
 				loading={false}
 				catalogError=""
-				onBack={vi.fn()}
 				onChanged={vi.fn()}
 				onOrderSaved={vi.fn()}
 			/>,

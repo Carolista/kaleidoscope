@@ -27,6 +27,8 @@ export default function AdminWorkspace({
 	)
 	const [view, setView] = useState<'sets' | 'items'>('sets')
 	const [status, setStatus] = useState<CatalogStatus>('drafts')
+	// Choosing any tab, including the current one, returns to that view's list.
+	const [visit, setVisit] = useState(0)
 	const { requestNavigation } = useNavigationGuard()
 	const itemLabel = section === 'palettes' ? 'Palettes' : 'Puzzles'
 	const placeholder =
@@ -47,6 +49,7 @@ export default function AdminWorkspace({
 						setSection(next)
 						setView('sets')
 						setStatus('drafts')
+						setVisit(value => value + 1)
 					})
 				}
 			/>
@@ -68,6 +71,7 @@ export default function AdminWorkspace({
 							requestNavigation(() => {
 								setView(next)
 								setStatus('drafts')
+								setVisit(value => value + 1)
 							})
 						}
 					/>
@@ -77,7 +81,10 @@ export default function AdminWorkspace({
 							items={catalogStatuses}
 							value={status}
 							onChange={next =>
-								requestNavigation(() => setStatus(next))
+								requestNavigation(() => {
+									setStatus(next)
+									setVisit(value => value + 1)
+								})
 							}
 						/>
 					)}
@@ -96,7 +103,7 @@ export default function AdminWorkspace({
 						</section>
 					) : section === 'palettes' ? (
 						<SchemeLibrary
-							key={`${view}-${status}`}
+							key={`${view}-${status}-${visit}`}
 							client={client}
 							view={view === 'sets' ? 'sets' : 'palettes'}
 							catalogStatus={
@@ -104,10 +111,10 @@ export default function AdminWorkspace({
 							}
 						/>
 					) : view === 'sets' ? (
-						<PuzzleSetLibrary client={client} />
+						<PuzzleSetLibrary key={visit} client={client} />
 					) : (
 						<PuzzleAuthoring
-							key={status}
+							key={`${status}-${visit}`}
 							client={client}
 							catalogStatus={
 								status === 'assigned' ? 'assigned' : 'drafts'

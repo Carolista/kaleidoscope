@@ -91,9 +91,9 @@ export default function SortableSetMembers<T extends SortableMember>({
 				if (drag.current?.pointerId === event.pointerId) cancelDrag()
 			}}
 		>
-			<p id={helpId}>
+			<p id={helpId} className={styles.visuallyHidden}>
 				Drag the handles to reorder {noun}. With a handle focused, use
-				Up/Down or Home/End. Choose Save order when finished.
+				Up/Down or Home/End. Choose Save when finished.
 			</p>
 			<AdminMemberList>
 				{members.map((member, index) => (
@@ -175,7 +175,7 @@ export default function SortableSetMembers<T extends SortableMember>({
 					</AdminMemberRow>
 				))}
 			</AdminMemberList>
-			<span className={styles.reorderAnnouncement} role="status">
+			<span className={styles.visuallyHidden} role="status">
 				{announcement}
 			</span>
 		</div>
