@@ -326,7 +326,25 @@ saved scheme, so random initial selection was removed.
   autofocus on a closed dialog. Retain action data with `useModalState` until
   `onAfterClose`, so conditional admin flows honor exit motion, focus return,
   and scroll locking. Defer editor removal/refresh when necessary.
-  Synchronous unsaved-navigation guards remain a separate follow-up.
+- Use one asynchronous, application-owned discard decision for admin navigation,
+  not independent synchronous `window.confirm` callers. Register local dirty
+  state and pending operations separately in a shared provider; do not propagate
+  aggregate dirty booleans through the admin tree.
+  Editor/set Back, Home, hash/history navigation, and sign-out share the guard.
+  The current workspace stays mounted until the modal exit completes.
+- **First destination wins:** while a navigation decision is open or closing,
+  ignore later attempts rather than replacing callbacks or opening more discard
+  dialogs. Cancellation preserves data/URL; confirming runs the captured intent
+  once. Failed sign-out retains edits and requires a fresh navigation decision.
+- In-flight operations cannot be discarded. Block navigation with an explanation
+  and require retry after completion; never automatically navigate when the
+  operation finishes. Recheck pending state before executing a confirmed intent.
+  Make the editor inert during sign-out to prevent starting competing writes.
+- Guard Home before mutating the hash. Track same-document history entry indices
+  so blocked Back/Forward restores the accepted entry without overwriting the
+  target; confirmation resumes the traversal once. Reconcile untracked hashes
+  by restoring the accepted URL in place. Keep the native `beforeunload` warning
+  for reload/tab close/cross-document exits, where browsers own the prompt.
 - Keep modal headers stationary and use one viewport-bounded scrolling body.
   Conditional edge fades and chevrons make hidden content discoverable without
   permanent instructions. Background scroll locking preserves page position;

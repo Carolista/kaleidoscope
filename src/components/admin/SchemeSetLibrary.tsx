@@ -22,7 +22,8 @@ import {
 	type SchemeSetKind,
 } from '../../services/schemeSets'
 import AdminIconButton from './AdminIconButton'
-import useUnsavedDraft, { confirmDiscardDraft } from './useUnsavedDraft'
+import useUnsavedDraft from './useUnsavedDraft'
+import { useNavigationGuard } from './useNavigationGuard'
 import adminStyles from './AdminPortal.module.css'
 import styles from './SchemeLibrary.module.css'
 
@@ -34,7 +35,6 @@ export default function SchemeSetLibrary({
 	catalogError,
 	onBack,
 	onChanged,
-	onDirtyChange,
 }: {
 	readonly client: SupabaseClient<Database>
 	readonly sets: readonly SchemeSet[]
@@ -43,7 +43,6 @@ export default function SchemeSetLibrary({
 	readonly catalogError: string
 	readonly onBack: () => void
 	readonly onChanged: () => void
-	readonly onDirtyChange?: (dirty: boolean) => void
 }) {
 	const [editing, setEditing] = useState<{
 		id: string
@@ -52,7 +51,6 @@ export default function SchemeSetLibrary({
 	} | null>(null)
 	const [name, setName] = useState('')
 	const [creating, setCreating, creationModal] = useModalState<true>()
-	const [creationDirty, setCreationDirty] = useState(false)
 	const addButton = useRef<HTMLButtonElement>(null)
 	const focusAdd = useRef(false)
 	const [kind, setKind] = useState<SchemeSetKind>('undecided')
@@ -69,7 +67,8 @@ export default function SchemeSetLibrary({
 		!!editing &&
 		!readOnly &&
 		(name !== editing.name || kind !== editing.kind)
-	useUnsavedDraft(dirty || busy || creationDirty, onDirtyChange)
+	useUnsavedDraft({ dirty, pending: busy })
+	const { requestNavigation } = useNavigationGuard()
 	useEffect(() => {
 		if (!loading && !creating && focusAdd.current) {
 			addButton.current?.focus()
@@ -77,12 +76,13 @@ export default function SchemeSetLibrary({
 		}
 	}, [loading, creating])
 	function back() {
-		if (busy || (dirty && !confirmDiscardDraft())) return
-		if (editing) {
-			setEditing(null)
-			setError('')
-			setStatus('')
-		} else onBack()
+		requestNavigation(() => {
+			if (editing) {
+				setEditing(null)
+				setError('')
+				setStatus('')
+			} else onBack()
+		})
 	}
 	async function mutate(
 		id: string,
@@ -222,7 +222,6 @@ export default function SchemeSetLibrary({
 					initialKind="undecided"
 					confirmLabel="Save set"
 					pendingLabel="Creating palette set…"
-					onDirtyChange={setCreationDirty}
 					onCancel={() => setCreating(null)}
 					onCreate={async (id, name, kind) => {
 						await manageSchemeSet(client, id, {

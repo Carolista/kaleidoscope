@@ -1,27 +1,11 @@
-import { useEffect } from 'react'
+import { useLayoutEffect, useRef } from 'react'
+import { useNavigationGuard, type UnsavedWork } from './useNavigationGuard'
 
-export function confirmDiscardDraft(): boolean {
-	return window.confirm('Discard unsaved admin changes?')
-}
-
-export default function useUnsavedDraft(
-	dirty: boolean,
-	onDirtyChange?: (dirty: boolean) => void,
-) {
-	useEffect(() => {
-		onDirtyChange?.(dirty)
-		return () => onDirtyChange?.(false)
-	}, [dirty, onDirtyChange])
-
-	useEffect(() => {
-		if (!dirty) return
-		function beforeUnload(event: BeforeUnloadEvent) {
-			event.preventDefault()
-			event.returnValue = ''
-		}
-		window.addEventListener('beforeunload', beforeUnload)
-		return () => {
-			window.removeEventListener('beforeunload', beforeUnload)
-		}
-	}, [dirty])
+export default function useUnsavedDraft({ dirty, pending }: UnsavedWork) {
+	const id = useRef(Symbol('admin work'))
+	const { register } = useNavigationGuard()
+	useLayoutEffect(
+		() => register(id.current, { dirty, pending }),
+		[dirty, pending, register],
+	)
 }

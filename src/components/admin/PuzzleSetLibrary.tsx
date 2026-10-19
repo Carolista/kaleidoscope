@@ -25,7 +25,8 @@ import { Button, ConfirmDialog, Input, Loading } from '@shared'
 import SetCreationDialog from './SetCreationDialog'
 import useModalState from '../../hooks/useModalState'
 import styles from './AdminPortal.module.css'
-import useUnsavedDraft, { confirmDiscardDraft } from './useUnsavedDraft'
+import useUnsavedDraft from './useUnsavedDraft'
+import { useNavigationGuard } from './useNavigationGuard'
 
 function errorMessage(cause: unknown) {
 	return cause instanceof Error
@@ -36,17 +37,14 @@ function errorMessage(cause: unknown) {
 export default function PuzzleSetLibrary({
 	client,
 	onBack,
-	onDirtyChange,
 }: {
 	readonly client: SupabaseClient<Database>
 	readonly onBack: () => void
-	readonly onDirtyChange?: (dirty: boolean) => void
 }) {
 	const [sets, setSets] = useState<readonly DraftSet[]>([])
 	const [selectedId, setSelectedId] = useState<string | null>(null)
 	const [creating, setCreating, creationModal] = useModalState<true>()
 	const [name, setName] = useState('')
-	const [creationDirty, setCreationDirty] = useState(false)
 	const addButton = useRef<HTMLButtonElement>(null)
 	const focusAdd = useRef(false)
 	const [loading, setLoading] = useState(true)
@@ -60,7 +58,8 @@ export default function PuzzleSetLibrary({
 	const [reload, setReload] = useState(0)
 	const selected = sets.find(set => set.row.id === selectedId)
 	const dirty = !!selected && name !== selected.row.name
-	useUnsavedDraft(dirty || busy || creationDirty, onDirtyChange)
+	useUnsavedDraft({ dirty, pending: busy })
+	const { requestNavigation } = useNavigationGuard()
 	useEffect(() => {
 		if (!loading && !creating && focusAdd.current) {
 			addButton.current?.focus()
@@ -156,13 +155,14 @@ export default function PuzzleSetLibrary({
 		}
 	}
 	function back() {
-		if (dirty && !confirmDiscardDraft()) return
-		if (selectedId) {
-			setSelectedId(null)
-			setName('')
-			setError('')
-			setStatus('')
-		} else onBack()
+		requestNavigation(() => {
+			if (selectedId) {
+				setSelectedId(null)
+				setName('')
+				setError('')
+				setStatus('')
+			} else onBack()
+		})
 	}
 	function save(event: SubmitEvent<HTMLFormElement>) {
 		event.preventDefault()
@@ -250,7 +250,6 @@ export default function PuzzleSetLibrary({
 					initialKind="core"
 					confirmLabel="Create set"
 					pendingLabel="Creating puzzle set…"
-					onDirtyChange={setCreationDirty}
 					onCancel={() => setCreating(null)}
 					onCreate={async (id, name, kind) => {
 						await manageDraftSet(client, id, {

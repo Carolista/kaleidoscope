@@ -15,7 +15,6 @@ interface SetCreationDialogProps<Kind extends string> {
 	readonly pendingLabel: string
 	readonly onCreate: (id: string, name: string, kind: Kind) => Promise<void>
 	readonly onCancel: () => void
-	readonly onDirtyChange: (dirty: boolean) => void
 }
 
 export default function SetCreationDialog<Kind extends string>({
@@ -30,7 +29,6 @@ export default function SetCreationDialog<Kind extends string>({
 	pendingLabel,
 	onCreate,
 	onCancel,
-	onDirtyChange,
 }: SetCreationDialogProps<Kind>) {
 	const id = useId()
 	const nameInput = useRef<HTMLInputElement>(null)
@@ -40,10 +38,10 @@ export default function SetCreationDialog<Kind extends string>({
 	const [error, setError] = useState('')
 	const working = useRef(false)
 	const request = useRef<{ id: string; content: string } | null>(null)
-	useUnsavedDraft(
-		busy || name.length > 0 || kind !== initialKind,
-		onDirtyChange,
-	)
+	useUnsavedDraft({
+		dirty: name.length > 0 || kind !== initialKind,
+		pending: busy,
+	})
 
 	async function save(event: SubmitEvent<HTMLFormElement>) {
 		event.preventDefault()

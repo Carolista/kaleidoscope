@@ -1,4 +1,5 @@
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, screen } from '@testing-library/react'
+import { renderWithNavigationGuard as render } from '@test/renderWithNavigationGuard'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Database } from '../../types/database'
@@ -27,6 +28,47 @@ const set: SchemeSet = {
 afterEach(() => vi.resetAllMocks())
 
 describe('palette set loading feedback', () => {
+	it('guards revised metadata on Back, retaining name/role on cancel and discarding only on confirmation', () => {
+		const onBack = vi.fn()
+		render(
+			<SchemeSetLibrary
+				client={client}
+				sets={[set]}
+				loading={false}
+				catalogError=""
+				onBack={onBack}
+				onChanged={vi.fn()}
+			/>,
+		)
+		fireEvent.click(
+			screen.getByRole('button', { name: 'Edit set Warm colors' }),
+		)
+		fireEvent.change(screen.getByLabelText('Set name'), {
+			target: { value: 'Revised colors' },
+		})
+		fireEvent.change(screen.getByLabelText('Set label'), {
+			target: { value: 'reward' },
+		})
+		fireEvent.click(screen.getByRole('button', { name: 'Back to sets' }))
+		expect(
+			screen.getByRole('dialog', { name: 'Discard unsaved changes?' }),
+		).toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: 'Keep editing' }))
+		expect(screen.getByLabelText('Set name')).toHaveValue('Revised colors')
+		expect(screen.getByLabelText('Set label')).toHaveValue('reward')
+		fireEvent.click(screen.getByRole('button', { name: 'Back to sets' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }))
+		expect(
+			screen.getByRole('heading', { name: 'Palette sets' }),
+		).toBeInTheDocument()
+		expect(manageSchemeSet).not.toHaveBeenCalled()
+		expect(onBack).not.toHaveBeenCalled()
+		fireEvent.click(
+			screen.getByRole('button', { name: 'Back to palettes' }),
+		)
+		expect(onBack).toHaveBeenCalledOnce()
+	})
+
 	it('keeps cached sets visible but unavailable while refreshing, and shows retry after failure', () => {
 		const props = {
 			client,

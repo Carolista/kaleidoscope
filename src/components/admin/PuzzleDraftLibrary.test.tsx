@@ -1,11 +1,5 @@
-import {
-	act,
-	fireEvent,
-	render,
-	screen,
-	waitFor,
-	within,
-} from '@testing-library/react'
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { renderWithNavigationGuard as render } from '@test/renderWithNavigationGuard'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { generateAuthoredHexPuzzle } from '../../puzzles/hexAuthoring'
 import { HEX_PUZZLE_RECIPES } from '../../puzzles/hexPuzzle'
@@ -347,9 +341,11 @@ describe('draft library', () => {
 		fireEvent.click(randomize)
 		await waitFor(() => expect(randomize).toBeEnabled())
 		expect(words).toEqual([])
-		const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
 		fireEvent.click(screen.getByRole('button', { name: 'Back to library' }))
-		expect(confirm).toHaveBeenCalledOnce()
+		expect(
+			screen.getByRole('dialog', { name: 'Discard unsaved changes?' }),
+		).toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: 'Keep editing' }))
 		mocks.replace.mockRejectedValueOnce(new Error('Replacement failed'))
 		const preview = screen.getByRole('img', {
 			name: 'Target design',
@@ -406,8 +402,8 @@ describe('draft library', () => {
 		const unload = new Event('beforeunload', { cancelable: true })
 		window.dispatchEvent(unload)
 		expect(unload.defaultPrevented).toBe(true)
-		vi.spyOn(window, 'confirm').mockReturnValue(true)
 		fireEvent.click(screen.getByRole('button', { name: 'Back to library' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }))
 		await open()
 		expect(
 			screen.getByRole('img', { name: 'Target design' }).innerHTML,
@@ -795,20 +791,22 @@ describe('draft library', () => {
 	it('warns before leaving unsaved metadata, but not after a successful save', async () => {
 		setup()
 		await open()
-		const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
 		fireEvent.change(screen.getByLabelText('Puzzle name'), {
 			target: { value: 'Unsaved' },
 		})
 		fireEvent.click(screen.getByRole('button', { name: 'Back to library' }))
 		expect(screen.getByLabelText('Puzzle name')).toHaveValue('Unsaved')
-		expect(confirm).toHaveBeenCalledOnce()
+		expect(
+			screen.getByRole('dialog', { name: 'Discard unsaved changes?' }),
+		).toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: 'Keep editing' }))
 		fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }))
 		await screen.findByText('Draft changes saved.')
 		await screen.findByRole('heading', { name: 'Puzzle drafts' })
 		const unload = new Event('beforeunload', { cancelable: true })
 		window.dispatchEvent(unload)
 		expect(unload.defaultPrevented).toBe(false)
-		expect(confirm).toHaveBeenCalledOnce()
+		expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 	})
 	it('preserves edits on failure and surfaces database errors', async () => {
 		setup()

@@ -20,7 +20,6 @@ export default function PaletteDeleteDialog({
 	dirty = false,
 	onCancel,
 	onDeleted,
-	onDirtyChange,
 	open,
 	onAfterClose,
 }: {
@@ -29,7 +28,6 @@ export default function PaletteDeleteDialog({
 	readonly dirty?: boolean
 	readonly onCancel: () => void
 	readonly onDeleted: () => void
-	readonly onDirtyChange: (dirty: boolean) => void
 	readonly open: boolean
 	readonly onAfterClose: () => void
 }) {
@@ -40,7 +38,7 @@ export default function PaletteDeleteDialog({
 	const [retry, setRetry] = useState(0)
 	const [busy, setBusy] = useState(false)
 	const working = useRef(false)
-	useUnsavedDraft(busy, onDirtyChange)
+	useUnsavedDraft({ dirty: false, pending: busy })
 	useEffect(() => {
 		let active = true
 		void loadSchemeUsage(client, scheme.id)

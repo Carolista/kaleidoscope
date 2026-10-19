@@ -90,6 +90,85 @@ beforeEach(() => {
 })
 
 describe('AdminPortal', () => {
+	it.each(['returned', 'thrown'])(
+		'retains unsaved work after a %s sign-out error and protects pending sign-out',
+		async mode => {
+			mocks.getSession.mockResolvedValue({
+				data: { session: session() },
+				error: null,
+			})
+			let finish!: () => void
+			mocks.signOut.mockImplementationOnce(
+				() =>
+					new Promise((resolve, reject) => {
+						finish = () => {
+							if (mode === 'thrown')
+								reject(new Error('Sign-out unavailable'))
+							else
+								resolve({
+									error: { message: 'Sign-out unavailable' },
+								})
+						}
+					}),
+			)
+			render(<AdminPortal />)
+			fireEvent.click(
+				await screen.findByRole('button', { name: 'Manage palettes' }),
+			)
+			fireEvent.click(
+				await screen.findByRole('button', { name: 'New palette' }),
+			)
+			fireEvent.change(screen.getByLabelText('Palette name'), {
+				target: { value: 'Keep my palette' },
+			})
+			const sandbox = screen.getByRole('img', {
+				name: 'Palette sandbox design',
+			}).innerHTML
+			const signOut = screen.getByRole('button', {
+				name: 'Sign out on this device',
+			})
+			fireEvent.click(signOut)
+			fireEvent.click(
+				screen.getByRole('button', { name: 'Discard changes' }),
+			)
+			fireEvent.click(signOut)
+			expect(mocks.signOut).toHaveBeenCalledOnce()
+			expect(
+				screen.getByLabelText('Palette name').closest('[inert]'),
+			).not.toBeNull()
+			const unload = new Event('beforeunload', { cancelable: true })
+			window.dispatchEvent(unload)
+			expect(unload.defaultPrevented).toBe(true)
+			await act(async () => finish())
+			expect(screen.getByRole('alert')).toHaveTextContent(
+				'Sign-out unavailable',
+			)
+			expect(screen.getByLabelText('Palette name')).toHaveValue(
+				'Keep my palette',
+			)
+			expect(
+				screen.getByLabelText('Palette name').closest('[inert]'),
+			).toBeNull()
+			expect(
+				screen.getByRole('img', { name: 'Palette sandbox design' })
+					.innerHTML,
+			).toBe(sandbox)
+			fireEvent.click(
+				screen.getByRole('button', { name: 'Sign out on this device' }),
+			)
+			expect(
+				screen.getByRole('dialog', {
+					name: 'Discard unsaved changes?',
+				}),
+			).toBeInTheDocument()
+			fireEvent.click(
+				screen.getByRole('button', { name: 'Discard changes' }),
+			)
+			await screen.findByRole('button', { name: 'Sign in' })
+			expect(mocks.signOut).toHaveBeenCalledTimes(2)
+		},
+	)
+
 	it('shows shared pending feedback during session restoration and failed sign-in', async () => {
 		let finishSession!: (value: {
 			data: { session: null }
@@ -161,19 +240,21 @@ describe('AdminPortal', () => {
 			screen.getByRole('img', { name: 'Palette sandbox design' })
 				.innerHTML,
 		).toBe(preview)
-		const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
 		fireEvent.click(
 			screen.getByRole('button', { name: 'Sign out on this device' }),
 		)
-		expect(confirm).toHaveBeenCalledWith('Discard unsaved admin changes?')
+		expect(
+			screen.getByRole('dialog', { name: 'Discard unsaved changes?' }),
+		).toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: 'Keep editing' }))
 		expect(mocks.signOut).not.toHaveBeenCalled()
 		expect(screen.getByLabelText('Palette name')).toHaveValue(
 			'Unsaved palette',
 		)
-		confirm.mockReturnValue(true)
 		fireEvent.click(
 			screen.getByRole('button', { name: 'Sign out on this device' }),
 		)
+		fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }))
 		await screen.findByRole('button', { name: 'Sign in' })
 	})
 
@@ -252,17 +333,19 @@ describe('AdminPortal', () => {
 			await screen.findByRole('button', { name: 'Randomize puzzle' }),
 		)
 		await screen.findByLabelText('Puzzle name')
-		const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
 		fireEvent.click(
 			screen.getByRole('button', { name: 'Sign out on this device' }),
 		)
-		expect(confirm).toHaveBeenCalledOnce()
+		expect(
+			screen.getByRole('dialog', { name: 'Discard unsaved changes?' }),
+		).toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: 'Keep editing' }))
 		expect(mocks.signOut).not.toHaveBeenCalled()
 		expect(screen.getByLabelText('Puzzle name')).toBeInTheDocument()
-		confirm.mockReturnValue(true)
 		fireEvent.click(
 			screen.getByRole('button', { name: 'Sign out on this device' }),
 		)
+		fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }))
 		await screen.findByRole('button', { name: 'Sign in' })
 		expect(mocks.signOut).toHaveBeenCalledWith({ scope: 'local' })
 	})

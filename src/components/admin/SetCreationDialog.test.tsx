@@ -1,4 +1,5 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, screen, within } from '@testing-library/react'
+import { renderWithNavigationGuard as render } from '@test/renderWithNavigationGuard'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import SetCreationDialog from './SetCreationDialog'
@@ -19,7 +20,6 @@ describe('set creation dialog', () => {
 				pendingLabel="Creating set…"
 				onCreate={onCreate}
 				onCancel={vi.fn()}
-				onDirtyChange={vi.fn()}
 			/>
 		)
 		const { rerender } = render(dialog(true))
@@ -63,7 +63,6 @@ describe('set creation dialog', () => {
 				pendingLabel="Creating set…"
 				onCreate={onCreate}
 				onCancel={onCancel}
-				onDirtyChange={vi.fn()}
 			/>,
 		)
 		const dialog = screen.getByRole('dialog', { name: 'New set' })

@@ -1,11 +1,5 @@
-import {
-	act,
-	fireEvent,
-	render,
-	screen,
-	within,
-	waitFor,
-} from '@testing-library/react'
+import { act, fireEvent, screen, within, waitFor } from '@testing-library/react'
+import { renderWithNavigationGuard as render } from '@test/renderWithNavigationGuard'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getSupabaseClient } from '../../services/supabaseClient'
 import {
@@ -284,9 +278,11 @@ describe('admin puzzle lab', () => {
 		const unload = new Event('beforeunload', { cancelable: true })
 		window.dispatchEvent(unload)
 		expect(unload.defaultPrevented).toBe(true)
-		const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
 		fireEvent.click(screen.getByRole('button', { name: 'Back to library' }))
-		expect(confirm).toHaveBeenCalledOnce()
+		expect(
+			screen.getByRole('dialog', { name: 'Discard unsaved changes?' }),
+		).toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: 'Keep editing' }))
 		expect(name).toHaveValue('Puzzle 2')
 		mocks.seeds.mockResolvedValueOnce({
 			data: null,
@@ -331,17 +327,17 @@ describe('admin puzzle lab', () => {
 		fireEvent.click(screen.getByRole('button', { name: 'New puzzle' }))
 		await screen.findByLabelText('Recipe')
 		await randomize()
-		const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
 		const unload = new Event('beforeunload', { cancelable: true })
 		window.dispatchEvent(unload)
 		expect(unload.defaultPrevented).toBe(true)
 		fireEvent.click(screen.getByRole('button', { name: 'Back to library' }))
-		expect(confirm).toHaveBeenCalledOnce()
+		expect(
+			screen.getByRole('dialog', { name: 'Discard unsaved changes?' }),
+		).toBeInTheDocument()
 		expect(
 			screen.getByRole('heading', { name: 'New puzzle' }),
 		).toBeInTheDocument()
-		confirm.mockReturnValue(true)
-		fireEvent.click(screen.getByRole('button', { name: 'Back to library' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }))
 		expect(
 			screen.getByRole('heading', { name: 'Puzzle drafts' }),
 		).toBeInTheDocument()

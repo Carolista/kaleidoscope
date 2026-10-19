@@ -1,11 +1,5 @@
-import {
-	act,
-	fireEvent,
-	render,
-	screen,
-	waitFor,
-	within,
-} from '@testing-library/react'
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { renderWithNavigationGuard as render } from '@test/renderWithNavigationGuard'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Database } from '../../types/database'
@@ -83,17 +77,15 @@ async function openSets() {
 }
 function setup() {
 	const onBack = vi.fn()
-	const onDirtyChange = vi.fn()
+	const isProtected = () => {
+		const event = new Event('beforeunload', { cancelable: true })
+		window.dispatchEvent(event)
+		return event.defaultPrevented
+	}
 	return {
-		...render(
-			<SchemeLibrary
-				client={client}
-				onBack={onBack}
-				onDirtyChange={onDirtyChange}
-			/>,
-		),
+		...render(<SchemeLibrary client={client} onBack={onBack} />),
 		onBack,
-		onDirtyChange,
+		isProtected,
 	}
 }
 function sandboxFills() {
@@ -245,14 +237,14 @@ describe('palette management', () => {
 	})
 
 	it('creates Undecided sets over the list with retry-stable IDs and returns to Add, leaving editing separate', async () => {
-		const { onDirtyChange } = setup()
+		const { isProtected } = setup()
 		await openSets()
 		fireEvent.click(screen.getByRole('button', { name: 'New palette set' }))
 		expect(screen.getByLabelText('Set label')).toHaveValue('undecided')
 		fireEvent.change(screen.getByLabelText('Set name'), {
 			target: { value: 'New colors' },
 		})
-		expect(onDirtyChange).toHaveBeenLastCalledWith(true)
+		expect(isProtected()).toBe(true)
 		expect(
 			screen.getByRole('dialog', { name: 'New palette set' }),
 		).toBeInTheDocument()
@@ -285,9 +277,7 @@ describe('palette management', () => {
 		)
 		expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 		expect(mocks.manageSet.mock.calls[1]).toEqual(args)
-		await waitFor(() =>
-			expect(onDirtyChange).toHaveBeenLastCalledWith(false),
-		)
+		await waitFor(() => expect(isProtected()).toBe(false))
 		fireEvent.click(screen.getByRole('button', { name: 'New palette set' }))
 		expect(screen.getByLabelText('Set name')).toHaveValue('')
 		expect(screen.getByLabelText('Set label')).toHaveValue('undecided')
@@ -298,7 +288,7 @@ describe('palette management', () => {
 		fireEvent.change(screen.getByLabelText('Set label'), {
 			target: { value: 'reward' },
 		})
-		expect(onDirtyChange).toHaveBeenLastCalledWith(true)
+		expect(isProtected()).toBe(true)
 		fireEvent.click(screen.getByRole('button', { name: 'Save set' }))
 		await screen.findByText('Set details saved.')
 		expect(mocks.manageSet).toHaveBeenLastCalledWith(client, args[1], {
@@ -518,7 +508,7 @@ describe('palette management', () => {
 	})
 
 	it('creates a palette with a retry-stable ID and reloads after a successful save', async () => {
-		const { onDirtyChange } = setup()
+		const { isProtected } = setup()
 		fireEvent.click(
 			await screen.findByRole('button', { name: 'New palette' }),
 		)
@@ -528,7 +518,7 @@ describe('palette management', () => {
 		fireEvent.change(screen.getByLabelText('Palette name'), {
 			target: { value: ' New art ' },
 		})
-		expect(onDirtyChange).toHaveBeenLastCalledWith(true)
+		expect(isProtected()).toBe(true)
 		mocks.manage.mockRejectedValueOnce(new Error('Response lost'))
 		fireEvent.click(screen.getByRole('button', { name: 'Save palette' }))
 		expect(await screen.findByRole('alert')).toHaveTextContent(
@@ -553,7 +543,7 @@ describe('palette management', () => {
 		expect(
 			await screen.findByRole('button', { name: 'Edit New art' }),
 		).toBeInTheDocument()
-		expect(onDirtyChange).toHaveBeenLastCalledWith(false)
+		expect(isProtected()).toBe(false)
 	})
 
 	it('retains invalid text, blocks save, and restores the same sandbox pattern after correction', async () => {
@@ -594,9 +584,8 @@ describe('palette management', () => {
 	})
 
 	it('preserves a conflicting edit and guards leaving through Back and browser close', async () => {
-		const { onDirtyChange } = setup()
+		const { isProtected } = setup()
 		await openEditor()
-		const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
 		fireEvent.change(screen.getByLabelText('Palette name'), {
 			target: { value: 'Revised' },
 		})
@@ -611,19 +600,18 @@ describe('palette management', () => {
 		fireEvent.click(
 			screen.getByRole('button', { name: 'Back to palettes' }),
 		)
-		expect(confirm).toHaveBeenCalledWith('Discard unsaved admin changes?')
+		expect(
+			screen.getByRole('dialog', { name: 'Discard unsaved changes?' }),
+		).toBeInTheDocument()
 		expect(screen.getByLabelText('Palette name')).toHaveValue('Revised')
 		const event = new Event('beforeunload', { cancelable: true })
 		window.dispatchEvent(event)
 		expect(event.defaultPrevented).toBe(true)
-		confirm.mockReturnValue(true)
-		fireEvent.click(
-			screen.getByRole('button', { name: 'Back to palettes' }),
-		)
+		fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }))
 		expect(
 			screen.getByRole('heading', { name: 'Palettes' }),
 		).toBeInTheDocument()
-		expect(onDirtyChange).toHaveBeenLastCalledWith(false)
+		expect(isProtected()).toBe(false)
 	})
 
 	it('loads usage before confirming named deletion and reloads after success', async () => {

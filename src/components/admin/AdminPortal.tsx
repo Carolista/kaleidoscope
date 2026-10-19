@@ -1,6 +1,7 @@
 import {
 	useEffect,
 	useLayoutEffect,
+	useRef,
 	useState,
 	type CSSProperties,
 	type SubmitEvent,
@@ -12,7 +13,12 @@ import { getSupabaseClient } from '../../services/supabaseClient'
 import { getThemeColors } from '../../state/theme'
 import styles from './AdminPortal.module.css'
 import PuzzleAuthoring from './PuzzleAuthoring'
-import { confirmDiscardDraft } from './useUnsavedDraft'
+import useUnsavedDraft from './useUnsavedDraft'
+import {
+	NavigationGuardBoundary,
+	NavigationGuardDialog,
+} from './NavigationGuard'
+import { useNavigationGuard } from './useNavigationGuard'
 import AdminIconButton from './AdminIconButton'
 import { Button, Input, Loading } from '@shared'
 import {
@@ -67,12 +73,10 @@ function AdminHeader({
 
 function AdminSession({
 	client,
-	onDirtyChange,
 	light,
 	onToggleTheme,
 }: {
 	readonly client: SupabaseClient<Database>
-	readonly onDirtyChange?: (dirty: boolean) => void
 	readonly light: boolean
 	readonly onToggleTheme: () => void
 }) {
@@ -83,11 +87,9 @@ function AdminSession({
 	const [pending, setPending] = useState<string | null>(null)
 	const busy = pending !== null
 	const [retry, setRetry] = useState(0)
-	const [dirty, setDirty] = useState(false)
-	useEffect(() => {
-		onDirtyChange?.(dirty)
-		return () => onDirtyChange?.(false)
-	}, [dirty, onDirtyChange])
+	const signingOut = useRef(false)
+	const { requestNavigation } = useNavigationGuard()
+	useUnsavedDraft({ dirty: false, pending: busy })
 
 	useEffect(() => {
 		let active = true
@@ -185,7 +187,8 @@ function AdminSession({
 	}
 
 	async function signOut() {
-		if (dirty && !confirmDiscardDraft()) return
+		if (signingOut.current) return
+		signingOut.current = true
 		setPending('Signing out…')
 		setError('')
 		try {
@@ -202,6 +205,7 @@ function AdminSession({
 					: 'Unable to sign out. Please try again.',
 			)
 		} finally {
+			signingOut.current = false
 			setPending(null)
 		}
 	}
@@ -223,7 +227,9 @@ function AdminSession({
 									: 'Sign out on this device'
 							}
 							onClick={() => {
-								void signOut()
+								requestNavigation(() => {
+									void signOut()
+								})
 							}}
 							disabled={busy}
 						/>
@@ -267,13 +273,12 @@ function AdminSession({
 					{!checkedRole ? (
 						<Loading label="Checking admin access…" />
 					) : checkedRole.status === 'allowed' ? (
-						<>
+						<div inert={busy}>
 							<PuzzleAuthoring
 								key={session.user.id}
 								client={client}
-								onDirtyChange={setDirty}
 							/>
-						</>
+						</div>
 					) : checkedRole.status === 'denied' ? (
 						<p role="alert">
 							This account does not have admin access. Sign out to
@@ -302,11 +307,7 @@ function AdminSession({
 	)
 }
 
-export default function AdminPortal({
-	onDirtyChange,
-}: {
-	readonly onDirtyChange?: (dirty: boolean) => void
-}) {
+function AdminPage() {
 	const [light, setLight] = useState(false)
 	const { base, accent } = getThemeColors(!light)
 	useLayoutEffect(() => {
@@ -334,7 +335,6 @@ export default function AdminPortal({
 			{connection.client ? (
 				<AdminSession
 					client={connection.client}
-					onDirtyChange={onDirtyChange}
 					light={light}
 					onToggleTheme={() => setLight(value => !value)}
 				/>
@@ -347,6 +347,15 @@ export default function AdminPortal({
 					<p role="alert">{connection.error}</p>
 				</>
 			)}
+			<NavigationGuardDialog />
 		</main>
+	)
+}
+
+export default function AdminPortal() {
+	return (
+		<NavigationGuardBoundary>
+			<AdminPage />
+		</NavigationGuardBoundary>
 	)
 }

@@ -1,10 +1,5 @@
-import {
-	fireEvent,
-	render,
-	screen,
-	waitFor,
-	within,
-} from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { renderWithNavigationGuard as render } from '@test/renderWithNavigationGuard'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getSupabaseClient } from '../../services/supabaseClient'
 import type { DraftSet } from '../../services/puzzleSets'
@@ -329,9 +324,11 @@ describe('draft set workspace', () => {
 		fireEvent.change(screen.getByLabelText('Set name'), {
 			target: { value: 'Revised' },
 		})
-		const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
 		fireEvent.click(screen.getByRole('button', { name: 'Back to sets' }))
-		expect(confirm).toHaveBeenCalledOnce()
+		expect(
+			screen.getByRole('dialog', { name: 'Discard unsaved changes?' }),
+		).toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: 'Keep editing' }))
 		expect(screen.getByLabelText('Set name')).toHaveValue('Revised')
 		mocks.load.mockResolvedValue([
 			{ ...draftSet, row: { ...draftSet.row, name: 'Revised' } },
@@ -344,7 +341,7 @@ describe('draft set workspace', () => {
 			).not.toBeInTheDocument(),
 		)
 		fireEvent.click(screen.getByRole('button', { name: 'Back to sets' }))
-		expect(confirm).toHaveBeenCalledOnce()
+		expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 		expect(mocks.manage).toHaveBeenCalledWith(expect.anything(), 'set', {
 			kind: 'rename',
 			name: 'Revised',
@@ -428,9 +425,11 @@ describe('draft set workspace', () => {
 			'Reload unavailable',
 		)
 		expect(screen.getByLabelText('Set name')).toHaveValue('Not saved yet')
-		const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
 		fireEvent.click(screen.getByRole('button', { name: 'Back to sets' }))
-		expect(confirm).toHaveBeenCalledOnce()
+		expect(
+			screen.getByRole('dialog', { name: 'Discard unsaved changes?' }),
+		).toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: 'Keep editing' }))
 		expect(screen.getByLabelText('Set name')).toHaveValue('Not saved yet')
 	})
 })

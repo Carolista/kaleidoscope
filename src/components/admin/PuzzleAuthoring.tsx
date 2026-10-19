@@ -17,7 +17,8 @@ import {
 import PuzzleMode from '../puzzle/PuzzleMode'
 import styles from './AdminPortal.module.css'
 import PuzzleDraftLibrary from './PuzzleDraftLibrary'
-import useUnsavedDraft, { confirmDiscardDraft } from './useUnsavedDraft'
+import useUnsavedDraft from './useUnsavedDraft'
+import { useNavigationGuard } from './useNavigationGuard'
 import { faSquareArrowLeft } from '@fortawesome/pro-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import PuzzleDraftForm from './PuzzleDraftForm'
@@ -33,10 +34,8 @@ function messageFor(cause: unknown): string {
 
 export default function PuzzleAuthoring({
 	client,
-	onDirtyChange,
 }: {
 	readonly client: SupabaseClient<Database>
-	readonly onDirtyChange?: (dirty: boolean) => void
 }) {
 	const [palettes, setPalettes] = useState<readonly AuthoringPalette[]>([])
 	const [loading, setLoading] = useState(true)
@@ -69,7 +68,8 @@ export default function PuzzleAuthoring({
 		(saved
 			? draftName !== savedName
 			: !!generated || draftName.length > 0 || usage !== 'collection')
-	useUnsavedDraft(dirty || busy, onDirtyChange)
+	useUnsavedDraft({ dirty, pending: busy })
+	const { requestNavigation } = useNavigationGuard()
 
 	useEffect(() => {
 		let active = true
@@ -181,7 +181,6 @@ export default function PuzzleAuthoring({
 		return (
 			<SchemeLibrary
 				client={client}
-				onDirtyChange={onDirtyChange}
 				onBack={() => {
 					setManagingSchemes(false)
 					setLoading(true)
@@ -220,7 +219,6 @@ export default function PuzzleAuthoring({
 						pendingSave.current = null
 						setCreating(true)
 					}}
-					onDirtyChange={onDirtyChange}
 					onRefreshPalettes={refreshPalettes}
 					palettesLoading={loading}
 					palettesRefreshing={reload > 0}
@@ -238,7 +236,7 @@ export default function PuzzleAuthoring({
 					className={styles.backLink}
 					disabled={busy}
 					onClick={() => {
-						if (!dirty || confirmDiscardDraft()) setCreating(false)
+						requestNavigation(() => setCreating(false))
 					}}
 				>
 					<FontAwesomeIcon

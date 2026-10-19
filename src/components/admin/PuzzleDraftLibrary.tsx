@@ -45,7 +45,8 @@ import {
 	manageDraftSet,
 	type DraftSet,
 } from '../../services/puzzleSets'
-import useUnsavedDraft, { confirmDiscardDraft } from './useUnsavedDraft'
+import useUnsavedDraft from './useUnsavedDraft'
+import { useNavigationGuard } from './useNavigationGuard'
 import useModalState from '../../hooks/useModalState'
 
 function message(cause: unknown) {
@@ -60,7 +61,6 @@ function DraftEditor({
 	palettes,
 	onChanged,
 	onBack,
-	onDirtyChange,
 	onRefreshPalettes,
 	palettesLoading,
 	palettesRefreshing,
@@ -71,7 +71,6 @@ function DraftEditor({
 	readonly palettes: readonly AuthoringPalette[]
 	readonly onChanged: (status: string, updated: LibraryDraft | null) => void
 	readonly onBack: () => void
-	readonly onDirtyChange?: (dirty: boolean) => void
 	readonly onRefreshPalettes?: () => void
 	readonly palettesLoading?: boolean
 	readonly palettesRefreshing?: boolean
@@ -106,7 +105,8 @@ function DraftEditor({
 		paletteId !== draft.row.palette_id ||
 		usage !== draft.row.usage ||
 		replacement !== null
-	useUnsavedDraft(dirty || busy, onDirtyChange)
+	useUnsavedDraft({ dirty, pending: busy })
+	const { requestNavigation } = useNavigationGuard()
 
 	async function generate() {
 		if (working.current) return
@@ -225,7 +225,7 @@ function DraftEditor({
 				className={styles.backLink}
 				disabled={busy}
 				onClick={() => {
-					if (!dirty || confirmDiscardDraft()) onBack()
+					requestNavigation(onBack)
 				}}
 			>
 				<FontAwesomeIcon icon={faSquareArrowLeft} aria-hidden="true" />{' '}
@@ -341,7 +341,6 @@ export default function PuzzleDraftLibrary({
 	revision,
 	onNew,
 	onManagePalettes,
-	onDirtyChange,
 	onRefreshPalettes,
 	palettesLoading,
 	palettesRefreshing,
@@ -352,7 +351,6 @@ export default function PuzzleDraftLibrary({
 	readonly revision: number
 	readonly onNew?: () => void
 	readonly onManagePalettes?: () => void
-	readonly onDirtyChange?: (dirty: boolean) => void
 	readonly onRefreshPalettes?: () => void
 	readonly palettesLoading?: boolean
 	readonly palettesRefreshing?: boolean
@@ -380,7 +378,7 @@ export default function PuzzleDraftLibrary({
 	const [actionError, setActionError] = useState('')
 	const [setsRetry, setSetsRetry] = useState(0)
 	const bulkWorking = useRef(false)
-	useUnsavedDraft(bulkBusy, onDirtyChange)
+	useUnsavedDraft({ dirty: false, pending: bulkBusy })
 	useEffect(() => {
 		if (action?.kind !== 'set') return
 		let active = true
@@ -515,7 +513,6 @@ export default function PuzzleDraftLibrary({
 		return (
 			<PuzzleSetLibrary
 				client={client}
-				onDirtyChange={onDirtyChange}
 				onBack={() => {
 					setShowSets(false)
 					setCheckedIds(new Set())
@@ -539,7 +536,6 @@ export default function PuzzleDraftLibrary({
 						setReload(value => value + 1)
 						setStatus('')
 					}}
-					onDirtyChange={onDirtyChange}
 					onRefreshPalettes={onRefreshPalettes}
 					palettesLoading={palettesLoading}
 					palettesRefreshing={palettesRefreshing}

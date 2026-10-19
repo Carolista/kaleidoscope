@@ -1,31 +1,15 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { lazy, Suspense } from 'react'
 import App from './App'
 import { AppStateProvider } from './state/AppContext'
 import Loading from './components/shared/Loading'
 import styles from './AppEntry.module.css'
+import { NavigationGuardProvider } from './components/admin/NavigationGuard'
+import useAdminRoute from './hooks/useAdminRoute'
 
 const AdminPortal = lazy(() => import('./components/admin/AdminPortal'))
 
-export default function AppEntry() {
-	const [admin, setAdmin] = useState(() => window.location.hash === '#/admin')
-	const [adminDirty, setAdminDirty] = useState(false)
-	useEffect(() => {
-		const update = (event: HashChangeEvent) => {
-			const nextAdmin = window.location.hash === '#/admin'
-			if (
-				admin &&
-				!nextAdmin &&
-				adminDirty &&
-				!window.confirm('Discard unsaved admin changes?')
-			) {
-				window.history.replaceState(null, '', event.oldURL)
-				return
-			}
-			setAdmin(nextAdmin)
-		}
-		window.addEventListener('hashchange', update)
-		return () => window.removeEventListener('hashchange', update)
-	}, [admin, adminDirty])
+function Entry() {
+	const admin = useAdminRoute()
 	return admin ? (
 		<Suspense
 			fallback={
@@ -36,11 +20,19 @@ export default function AppEntry() {
 				/>
 			}
 		>
-			<AdminPortal onDirtyChange={setAdminDirty} />
+			<AdminPortal />
 		</Suspense>
 	) : (
 		<AppStateProvider>
 			<App />
 		</AppStateProvider>
+	)
+}
+
+export default function AppEntry() {
+	return (
+		<NavigationGuardProvider>
+			<Entry />
+		</NavigationGuardProvider>
 	)
 }

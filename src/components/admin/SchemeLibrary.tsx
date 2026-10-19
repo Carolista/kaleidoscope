@@ -28,7 +28,8 @@ import {
 import PaletteUsageDetails from './PaletteUsageDetails'
 import AdminIconButton from './AdminIconButton'
 import SchemeSandbox from './SchemeSandbox'
-import useUnsavedDraft, { confirmDiscardDraft } from './useUnsavedDraft'
+import useUnsavedDraft from './useUnsavedDraft'
+import { useNavigationGuard } from './useNavigationGuard'
 import adminStyles from './AdminPortal.module.css'
 import styles from './SchemeLibrary.module.css'
 import Checkbox from '../shared/Checkbox'
@@ -70,14 +71,12 @@ function SchemeEditor({
 	startingColors,
 	onBack,
 	onSaved,
-	onDirtyChange,
 }: {
 	readonly client: SupabaseClient<Database>
 	readonly initial: CatalogScheme | null
 	readonly startingColors: readonly string[]
 	readonly onBack: () => void
 	readonly onSaved: (message: string) => void
-	readonly onDirtyChange?: (dirty: boolean) => void
 }) {
 	const [name, setName] = useState(initial?.name ?? '')
 	const [colors, setColors] = useState<readonly string[]>(startingColors)
@@ -88,7 +87,6 @@ function SchemeEditor({
 	const createRequest = useRef<{ id: string; content: string } | null>(null)
 	const [confirmDelete, setConfirmDelete, editorDeleteModal] =
 		useModalState<true>()
-	const [deleteBusy, setDeleteBusy] = useState(false)
 	const [usage, setUsage] = useState<SchemeUsage | null>(null)
 	const [usageError, setUsageError] = useState('')
 	const [usageReload, setUsageReload] = useState(0)
@@ -98,7 +96,8 @@ function SchemeEditor({
 		!readOnly &&
 		(name !== (initial?.name ?? '') ||
 			colors.some((color, index) => color !== startingColors[index]))
-	useUnsavedDraft(dirty || busy || deleteBusy, onDirtyChange)
+	useUnsavedDraft({ dirty, pending: busy })
+	const { requestNavigation } = useNavigationGuard()
 	const validColors =
 		colors.length === 5 &&
 		colors.every(color => /^#[0-9a-f]{6}$/i.test(color))
@@ -131,7 +130,7 @@ function SchemeEditor({
 		!schemeIsUsed(usage)
 
 	function back() {
-		if (!busy && (!dirty || confirmDiscardDraft())) onBack()
+		requestNavigation(onBack)
 	}
 	async function save(event: SubmitEvent<HTMLFormElement>) {
 		event.preventDefault()
@@ -353,7 +352,6 @@ function SchemeEditor({
 									client={client}
 									scheme={initial}
 									dirty={dirty}
-									onDirtyChange={setDeleteBusy}
 									onCancel={() => setConfirmDelete(null)}
 									onDeleted={() =>
 										setConfirmDelete(null, () =>
@@ -375,11 +373,9 @@ function SchemeEditor({
 export default function SchemeLibrary({
 	client,
 	onBack,
-	onDirtyChange,
 }: {
 	readonly client: SupabaseClient<Database>
 	readonly onBack: () => void
-	readonly onDirtyChange?: (dirty: boolean) => void
 }) {
 	const [schemes, setSchemes] = useState<readonly CatalogScheme[]>([])
 	const [loading, setLoading] = useState(true)
@@ -395,10 +391,8 @@ export default function SchemeLibrary({
 	const [deleting, setDeleting, deleteModal] = useModalState<CatalogScheme>()
 	const [assigning, setAssigning, assignmentModal] = useModalState<true>()
 	const [actionError, setActionError] = useState('')
-	const [deleteBusy, setDeleteBusy] = useState(false)
 	const working = useRef(false)
-	const [childDirty, setChildDirty] = useState(false)
-	useUnsavedDraft(busy || childDirty || deleteBusy, onDirtyChange)
+	useUnsavedDraft({ dirty: false, pending: busy })
 	const [editing, setEditing] = useState<{
 		scheme: CatalogScheme | null
 		startingColors?: ColorScheme['colors']
@@ -489,7 +483,6 @@ export default function SchemeLibrary({
 					refresh()
 				}}
 				onChanged={refresh}
-				onDirtyChange={setChildDirty}
 			/>
 		)
 	if (editing) {
@@ -508,7 +501,6 @@ export default function SchemeLibrary({
 						'#ffffff',
 					]
 				}
-				onDirtyChange={setChildDirty}
 				onBack={() => setEditing(null)}
 				onSaved={message => {
 					setStatus(message)
@@ -629,7 +621,6 @@ export default function SchemeLibrary({
 					{...deleteModal}
 					client={client}
 					scheme={deleting}
-					onDirtyChange={setDeleteBusy}
 					onCancel={() => setDeleting(null)}
 					onDeleted={() => {
 						setDeleting(null, () => {

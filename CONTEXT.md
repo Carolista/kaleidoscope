@@ -42,6 +42,15 @@ with name/palette/recipe choices available for the next generation without chang
 the saved preview. A revised name carries forward; an exactly unchanged saved name
 clears on successful randomization. Leaving with a revised name warns too.
 Leaving unsaved work warns before discarding.
+Application-owned navigation uses one shared admin discard modal: editor/set Back,
+Home, hash/history navigation, and sign-out keep the current view mounted until
+the decision. Keep editing (including X/Escape/backdrop) preserves data and URL;
+Discard changes executes the first requested destination once after the dialog
+closes. Further attempts are ignored until that decision finishes.
+In-flight operations are separate from unsaved edits: navigation is blocked
+with an explanation, never offered as a way to cancel a request already sent.
+Retry navigation after the operation finishes. Sign-out keeps the editor mounted
+and inert while pending; failure restores editing without losing values/previews.
 
 Unassigned drafts can randomize replacement previews and change recipe locally.
 Saving atomically replaces public design/recipe and private provenance/solution
@@ -374,7 +383,17 @@ symmetry engine. One representative per group is clickable.
 - `Modal.initialFocusRef` focuses form fields after native opening.
   `useModalState` retains action content through the shared exit animation and
   can defer editor navigation/catalog refresh until closing finishes.
-  Existing synchronous unsaved-navigation prompts are separate, pending Part 4.
+- Admin [NavigationGuardProvider](./src/components/admin/NavigationGuard.tsx)
+  owns discard decisions and the native `beforeunload` safety net. Each editable
+  or mutating view registers its own `{ dirty, pending }` through
+  [useUnsavedDraft](./src/components/admin/useUnsavedDraft.ts); do not merge these
+  into one parent dirty boolean or add `window.confirm` at new navigation sites.
+  [useAdminRoute](./src/hooks/useAdminRoute.ts) guards Home before changing the
+  hash and reconciles already-triggered hashes. Indexed Back/Forward traversals
+  return to the accepted entry while deciding, preserving their destination
+  entries for retry; untracked hashes restore the accepted URL in place.
+  Reload, tab close, and cross-document exit retain the browser-owned warning:
+  a custom modal cannot replace `beforeunload`.
 - The shape picker uses three scaled versions of each icon (32/48/64px) in
   equal 88px square buttons, without visible shape or size text. Accessible
   names and tooltips identify shape and size as S/M/L. Rows wrap at narrow widths.
