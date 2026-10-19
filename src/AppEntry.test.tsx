@@ -10,7 +10,7 @@ vi.mock('./App', () => ({ default: () => <p>Player app</p> }))
 vi.mock('./state/AppContext', () => ({
 	AppStateProvider: ({ children }: { children: ReactNode }) => children,
 }))
-vi.mock('./components/admin/AdminPortal', () => ({
+vi.mock('@/features/admin/shell/AdminPortal', () => ({
 	default: function MockAdmin() {
 		const [dirty, setDirty] = useState(false)
 		const [pending, setPending] = useState(false)

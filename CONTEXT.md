@@ -43,13 +43,13 @@ Palettes each offer **Sets** (default) | items; items filter by **Unassigned**
 (default) | **Assigned** | **Scheduled** | **Published**. Shapes, Scheduled, and
 Published are placeholders. Everything stays a draft until published; the first
 tab names the unassigned stage. Assigned lists sort by set name, then set position
-([setOrder](./src/components/admin/setOrder.ts)); daily puzzles follow by name. A future top-level orchestration view will map how
+([setOrder](./src/features/admin/sets/setOrder.ts)); daily puzzles follow by name. A future top-level orchestration view will map how
 sets, rewards, and packs connect and roll out. Section/view changes use the
 navigation guard and reset lower choices to their defaults.
 
-[AdminCatalogProvider](./src/components/admin/AdminCatalog.tsx) caches puzzle
+[AdminCatalogProvider](./src/features/admin/catalog/AdminCatalog.tsx) caches puzzle
 sets, puzzle drafts, palettes, and palette sets for the signed-in session.
-Views read them through [useCatalog](./src/components/admin/useAdminCatalog.ts),
+Views read them through [useCatalog](./src/features/admin/catalog/useAdminCatalog.ts),
 so navigation shows cached data instantly. Data reloads only on explicit Refresh
 or after the admin's own saves: local edits update the cache in place, and saves
 affecting another catalog invalidate only catalogs already loaded. Changes made
@@ -82,7 +82,7 @@ use or be deleted. Only live puzzles are frozen. The replacement RPC rechecks
 existence, shape, release and references under the catalog lock.
 Hosted replacement functionality has been confirmed by the user.
 
-Gallery cards ([AdminItemCard](./src/components/admin/AdminLayout.tsx)) are not
+Gallery cards ([AdminItemCard](./src/features/admin/common/AdminLayout.tsx)) are not
 links: a centered thumbnail and details sit above a bottom row with the custom
 checkbox at left and square blue Edit/red Delete icons at right; selected cards
 are highlighted blue. Delete appears only for unassigned drafts, and bulk Delete
@@ -260,6 +260,15 @@ changes should be applied to all four SVG assets.
 - TypeScript; Prettier tabs, single quotes, no semicolons, trailing commas.
 - Short plain comments only for non-obvious logic. No JSDoc.
 - CSS Modules for component styles; plain CSS for global rules. No Tailwind or CSS-in-JS.
+  Each component imports only its own `X.module.css`, next to `X.tsx`. When several
+  components need the same styling, make it a small component (for example
+  `AdminForm`, `PaletteFieldset`, `AdminIconButton tone`) rather than sharing a
+  stylesheet. Admin theme tokens live on the portal page in
+  [AdminPortal.module.css](./src/features/admin/shell/AdminPortal.module.css).
+- Import across folders through barrels (`@/features/admin/common`,
+  `@/domain/shapes`); inside a folder use `./`. Test mocks target the exact
+  module file (`vi.mock('@/features/admin/services/puzzleSets')`). The admin
+  barrel's default export is the portal, which `AppEntry` lazy-loads.
 - **Scheme** in code/file names; **palette** in user-facing text.
   **Theme** refers to dark/light mode, not palettes.
 - Keep persisted shape IDs stable. Import across folders with the single `@/`
@@ -290,7 +299,7 @@ changes should be applied to all four SVG assets.
   immediately; admin owns catalog IDs and bulk selection still requires Apply.
   Keep duplicate colors in their original slots. Interactive painting color
   buttons remain the separate ColorSwatches component.
-- [AdminLayout](./src/components/admin/AdminLayout.tsx) supplies section
+- [AdminLayout](./src/features/admin/common/AdminLayout.tsx) supplies section
   headings/actions, feedback, gallery framing, and ordered member rows. Puzzle,
   palette, and landscape-set cards retain their domain content/layouts; don't
   create another generic gallery or member-action shell for the same pattern.
@@ -327,18 +336,18 @@ changes should be applied to all four SVG assets.
 | --- | --- |
 | Ordinary command / submit | [Button](./src/components/shared/Button.tsx); explicit `type="submit"` for forms |
 | Labelled native field | [FormField](./src/components/shared/FormField.tsx) with [Input/Select](./src/components/shared/FormControl.tsx), including admin sign-in |
-| Player / admin icon action | [PlayerIconButton](./src/components/shared/PlayerIconButton.tsx) / [AdminIconButton](./src/components/admin/AdminIconButton.tsx); generic renderer is [IconButton](./src/components/shared/IconButton.tsx) |
-| Edit / delete / new / refresh | Admin icon action with `faPenToSquare` / `faTrashCan` / `faPlusLarge` / `faRotate`; item-specific label and title |
-| Reorder / unassign | Staged `faGripVertical` drag handle + the set's single Save ([SortableSetMembers](./src/components/admin/SortableSetMembers.tsx)), shared by puzzle and palette sets; `faSquareMinus` unassign preserves the member |
-| Admin catalog data | [useCatalog](./src/components/admin/useAdminCatalog.ts) / `useCatalogInvalidation`; update locally after writes, invalidate other affected catalogs |
-| Section / view tabs | [AdminNavigation](./src/components/admin/AdminNavigation.tsx); wrap changes in `requestNavigation` |
+| Player / admin icon action | [PlayerIconButton](./src/components/shared/PlayerIconButton.tsx) / [AdminIconButton](./src/features/admin/common/AdminIconButton.tsx); generic renderer is [IconButton](./src/components/shared/IconButton.tsx) |
+| Edit / delete / new / refresh | Admin icon action with `faPenToSquare` / `faTrashCan` / `faPlusLarge` / `faRotate`; item-specific label and title; `tone="edit"` (blue) or `tone="delete"` (red) for edit and removal actions |
+| Reorder / unassign | Staged `faGripVertical` drag handle + the set's single Save ([SortableSetMembers](./src/features/admin/sets/SortableSetMembers.tsx)), shared by puzzle and palette sets; `faSquareMinus` unassign preserves the member |
+| Admin catalog data | [useCatalog](./src/features/admin/catalog/useAdminCatalog.ts) / `useCatalogInvalidation`; update locally after writes, invalidate other affected catalogs |
+| Section / view tabs | [AdminNavigation](./src/features/admin/shell/AdminNavigation.tsx); wrap changes in `requestNavigation` |
 | Pending feedback | [Loading](./src/components/shared/Loading.tsx); readable request-specific label, not a success spinner |
 | Confirmation / rich action form | [ConfirmDialog](./src/components/shared/ConfirmDialog.tsx) on [Modal](./src/components/shared/Modal.tsx); errors/pending stay inside |
-| Simple set creation | [SetCreationDialog](./src/components/admin/SetCreationDialog.tsx); close/refresh/focus Add on success |
+| Simple set creation | [SetCreationDialog](./src/features/admin/sets/SetCreationDialog.tsx); close/refresh/focus Add on success |
 | Retain action content during exit | [useModalState](./src/hooks/useModalState.ts); defer destructive view changes until after close |
 | Guard edited/pending navigation | [useUnsavedDraft](./src/ui/navigation/useUnsavedDraft.ts) with [useNavigationGuard](./src/ui/navigation/useNavigationGuard.ts); first destination wins |
 | Decorative palette / palette selection | [PaletteStrip](./src/components/shared/PaletteStrip.tsx) / [PaletteChoices](./src/components/shared/PaletteChoices.tsx); not painting buttons |
-| Section / gallery / ordered members | [AdminLayout](./src/components/admin/AdminLayout.tsx); retain domain card layouts and local async ownership |
+| Section / gallery / ordered members | [AdminLayout](./src/features/admin/common/AdminLayout.tsx); retain domain card layouts and local async ownership |
 
 Native mode/shape/color choice buttons, painting SVG cells, puzzle pieces, and
 the transparent native checkbox input are intentional specialized controls,
@@ -360,11 +369,12 @@ follow-up work.
 | [domain/geometry/](./src/domain/geometry/) | `Point`, shared geometry math, symmetry engine, cell grouping, SVG points |
 | [utils/](./src/utils/) | Color math and design randomization |
 | [state/](./src/state/) | App reducer, history wrapper, and Context |
-| [services/](./src/services/) | Design persistence, export preferences, PNG export, Supabase admin data |
+| [services/](./src/services/) | Design persistence, export preferences, PNG export, Supabase client |
 | [hooks/](./src/hooks/) | React lifecycle and interaction logic |
 | [domain/puzzles/](./src/domain/puzzles/) | Pure seeded puzzle generation, authoring, stored-definition readers, placement validation, and completion |
 | [ui/puzzle/](./src/ui/puzzle/) | Shared `PuzzlePlay` (target, tray, board, pointer/keyboard interaction) and `HexPuzzleBoard` |
 | [features/puzzle/](./src/features/puzzle/) | Player Puzzle Mode: seeded puzzles, Restart/Next, congratulations |
+| [features/admin/](./src/features/admin/) | Lazy-loaded admin portal. `shell/` (portal, workspace, navigation), `catalog/` (session cache), `common/` (layout, icon button, form), `sets/` (shared set editing), one folder per content area (`puzzles/`, `puzzle-sets/`, `palettes/`, `palette-sets/`), `services/` (Supabase reads/writes), `testing/` |
 | [data/](./src/data/) | Local palette catalog |
 | [types/](./src/types/) | Domain types, imported from individual modules |
 

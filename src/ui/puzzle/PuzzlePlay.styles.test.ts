@@ -3,7 +3,7 @@ import { expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 
 const adminCss = readFileSync(
-	'src/components/admin/AdminPortal.module.css',
+	'src/features/admin/shell/AdminPortal.module.css',
 	'utf8',
 )
 const puzzleCss = readFileSync('src/ui/puzzle/PuzzlePlay.module.css', 'utf8')

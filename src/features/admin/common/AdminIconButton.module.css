@@ -1,0 +1,7 @@
+.edit {
+	--icon-color: var(--control-primary);
+}
+
+.delete {
+	--icon-color: var(--control-danger);
+}

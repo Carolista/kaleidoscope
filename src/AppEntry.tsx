@@ -6,7 +6,7 @@ import styles from './AppEntry.module.css'
 import { NavigationGuardProvider } from '@/ui/navigation'
 import useAdminRoute from '@/app/useAdminRoute'
 
-const AdminPortal = lazy(() => import('./components/admin/AdminPortal'))
+const AdminPortal = lazy(() => import('@/features/admin'))
 
 function Entry() {
 	const admin = useAdminRoute()

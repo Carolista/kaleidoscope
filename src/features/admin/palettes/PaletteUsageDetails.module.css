@@ -1,0 +1,17 @@
+.linkedPuzzles {
+	list-style: none;
+	padding: 0;
+}
+
+.linkedPuzzles li {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	margin-block: 0.5rem;
+	overflow-wrap: anywhere;
+}
+
+.thumbnail {
+	width: 5rem;
+	flex: none;
+}

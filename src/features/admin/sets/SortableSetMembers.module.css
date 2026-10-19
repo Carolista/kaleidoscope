@@ -1,0 +1,20 @@
+.sortableMember {
+	padding: 0.5rem;
+	border: 1px solid var(--admin-border);
+	border-radius: var(--control-radius);
+	background: var(--admin-surface);
+}
+
+.draggingMember {
+	border-color: var(--admin-blue);
+	background: var(--admin-selected);
+}
+
+.dragHandle {
+	touch-action: none;
+	cursor: grab;
+}
+
+.dragHandle:active {
+	cursor: grabbing;
+}

@@ -1,8 +1,23 @@
-import { fireEvent, screen } from '@testing-library/react'
+import { fireEvent, render as baseRender, screen } from '@testing-library/react'
+import type { ReactElement, ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
-import { renderWithNavigationGuard as render } from '@/test/renderWithNavigationGuard'
+import {
+	NavigationGuardDialog,
+	NavigationGuardProvider,
+} from './NavigationGuard'
 import useUnsavedDraft from './useUnsavedDraft'
 import { useNavigationGuard } from './useNavigationGuard'
+
+function render(ui: ReactElement) {
+	return baseRender(ui, {
+		wrapper: ({ children }: { children: ReactNode }) => (
+			<NavigationGuardProvider>
+				{children}
+				<NavigationGuardDialog />
+			</NavigationGuardProvider>
+		),
+	})
+}
 
 function Editor({
 	dirty = false,

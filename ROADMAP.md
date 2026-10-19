@@ -73,7 +73,7 @@ Target layout:
 ```
 src/
   app/        entry, routing, navigation guard, global CSS
-  features/   zen/, puzzle/, admin/{shell,sets,puzzles,puzzle-sets,palettes,palette-sets}/
+  features/   zen/, puzzle/, admin/{shell,catalog,common,sets,puzzles,puzzle-sets,palettes,palette-sets,services}/
               (later account/, store/, daily/)
   domain/     React-free: shapes/<shape>/ + registry, puzzles/, palettes/
   ui/         shared components and hooks, grid rendering, shared puzzle board
@@ -95,8 +95,8 @@ Rules:
 | R1  | One `@/` alias; convert all imports                                     | ✅     |
 | R2  | Fix wrong-way dependencies and import cycles                            | ✅     |
 | R3  | Shapes domain: one folder per shape plus a registry                     | ✅     |
-| R4  | Puzzle engine to `domain/`; shared board/tray split from player shell   | 👀 review |
-| R5  | Admin into `features/admin/*` with its services and colocated CSS       | ⬜     |
+| R4  | Puzzle engine to `domain/`; shared board/tray split from player shell   | ✅     |
+| R5  | Admin into `features/admin/*` with its services and colocated CSS       | 👀 review |
 | R6  | Zen into `features/zen`; `app/`, `ui/`, `lib/` settled; barrels         | ⬜     |
 | R7  | Rename "scheme" to "palette" across code                                | ⬜     |
 | R8  | Split large files, share duplicated helpers                             | ⬜     |
