@@ -97,8 +97,8 @@ Rules:
 | R3  | Shapes domain: one folder per shape plus a registry                     | ✅     |
 | R4  | Puzzle engine to `domain/`; shared board/tray split from player shell   | ✅     |
 | R5  | Admin into `features/admin/*` with its services and colocated CSS       | ✅     |
-| R6  | Zen into `features/zen`; `app/`, `ui/`, `lib/` settled; barrels         | 👀 review |
-| R7  | Rename "scheme" to "palette" and `AppState` to `ZenState` across code  | ⬜     |
+| R6  | Zen into `features/zen`; `app/`, `ui/`, `lib/` settled; barrels         | ✅     |
+| R7  | Rename "scheme" to "palette" and `AppState` to `ZenState` across code  | 👀 review |
 | R8  | Split large files, share duplicated helpers                             | ⬜     |
 | R9  | ESLint boundary rules; update CONTEXT architecture                      | ⬜     |
 

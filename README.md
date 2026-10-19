@@ -42,7 +42,7 @@ Today, the application reflects how my engineering approach has evolved. It has 
 - **Six geometric grids, three sizes each:** Hexagon, triangle, diamond star, hexagram, circle rings, and pinwheel. Choose small, medium, or large using scaled shape icons.
 - **18 independent boards:** Each shape and size keeps its own pattern. Switch freely and pick up where you left off; new boards start blank.
 - **Symmetrical painting:** Paint a tile in the editable area and its corresponding cells update across the full design.
-- **Multiple color palettes:** Pick from curated schemes, then choose a color to paint with. Palette changes carry the color pattern over across all boards.
+- **Multiple color palettes:** Pick from curated palettes, then choose a color to paint with. Palette changes carry the color pattern over across all boards.
 - **Design controls:** Randomize or reset the current board, or undo and redo edits and board switches in one session-wide history.
 - **Light and dark themes:** Switch the surrounding canvas theme; tiles painted with the theme colors adapt across all boards. Board switches never change your theme.
 - **Save and share:** Compare PNG previews with or without grid lines, then download your chosen version or share it where the browser supports file sharing. A pulsing logo star indicates image generation and respects reduced-motion preferences. Your grid-line preference is remembered across designs and visits.
@@ -171,7 +171,7 @@ full-width playable board. Visible instructions and piece labels are omitted;
 controls retain accessible names and placement feedback is announced to screen
 readers.
 
-[`generateHexPuzzle(seed, scheme)`](./src/domain/puzzles/hexPuzzle.ts) produces a
+[`generateHexPuzzle(seed, palette)`](./src/domain/puzzles/hexPuzzle.ts) produces a
 serializable, deterministic puzzle definition with the target, fixed-orientation
 colored piece offsets, and a known solution. The current version uses the small
 hexagon and connected pieces of one, two, and three tiles; the UI passes the Cabo

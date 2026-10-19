@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { AppStateProvider, useAppState } from '@/features/zen/state'
+import { ZenStateProvider, useZenState } from '@/features/zen/state'
 import RandomizeDesignButton from './RandomizeDesignButton'
 
 function Harness() {
-	const { state } = useAppState()
+	const { state } = useZenState()
 	return (
 		<>
 			<span data-testid="painted-count">
@@ -19,7 +19,7 @@ function Harness() {
 describe('RandomizeDesignButton', () => {
 	it('generates a design (paints every group) with no confirmation needed', async () => {
 		const user = userEvent.setup()
-		render(<Harness />, { wrapper: AppStateProvider })
+		render(<Harness />, { wrapper: ZenStateProvider })
 
 		expect(screen.getByTestId('painted-count')).toHaveTextContent('0')
 

@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { AppStateProvider } from '@/features/zen/state'
+import { ZenStateProvider } from '@/features/zen/state'
 import DarkModeToggle from './DarkModeToggle'
 
 describe('DarkModeToggle', () => {
 	it('labels itself with the destination mode, and flips the label/icon on click', async () => {
 		const user = userEvent.setup()
-		render(<DarkModeToggle />, { wrapper: AppStateProvider })
+		render(<DarkModeToggle />, { wrapper: ZenStateProvider })
 
 		// App defaults to dark mode, so the destination is light mode.
 		const button = screen.getByRole('button', {

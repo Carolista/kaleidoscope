@@ -3,24 +3,24 @@ import { fireEvent, screen } from '@testing-library/react'
 import { faPalette } from '@fortawesome/sharp-duotone-solid-svg-icons'
 import { faXmark } from '@fortawesome/pro-solid-svg-icons'
 import { renderWithProvider } from '@/test/renderWithProvider'
-import { useAppState } from '@/features/zen/state'
-import { withLightness, colorSchemes } from '@/domain/palettes'
+import { useZenState } from '@/features/zen/state'
+import { withLightness, palettes } from '@/domain/palettes'
 import PlayerIconButton from './PlayerIconButton'
 
 it('keeps palette tint reactive while leaving single-tone icons untinted', () => {
 	function Harness() {
-		const { selectScheme, toggleDarkMode, state } = useAppState()
+		const { selectPalette, toggleDarkMode, state } = useZenState()
 		return (
 			<>
 				<PlayerIconButton icon={faPalette} label="Palette" />
 				<PlayerIconButton icon={faXmark} label="Close" />
-				<button onClick={() => selectScheme(colorSchemes[1])}>
+				<button onClick={() => selectPalette(palettes[1])}>
 					Change palette
 				</button>
 				<button onClick={toggleDarkMode}>Change theme</button>
 				<output>
 					{withLightness(
-						state.currentScheme.colors[0],
+						state.currentPalette.colors[0],
 						state.darkMode ? 50 : 70,
 					)}
 				</output>

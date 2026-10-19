@@ -1,11 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { ColorScheme } from '@/domain/palettes'
+import type { Palette } from '@/domain/palettes'
 import type { Database, Tables } from '@/lib/supabase'
 import type { AuthoringPalette } from '@/domain/puzzles'
 
-export type CatalogScheme = Omit<Tables<'palettes'>, 'colors'> & ColorScheme
+export type CatalogPalette = Omit<Tables<'palettes'>, 'colors'> & Palette
 
-export function readColorScheme(row: {
+export function readPalette(row: {
 	readonly id: string
 	readonly name: string
 	readonly colors: readonly string[]
@@ -27,10 +27,10 @@ export function readColorScheme(row: {
 	return { id: row.id, name: row.name, colors: [a, b, c, d, e] }
 }
 
-export async function loadColorSchemes(
+export async function loadPalettes(
 	client: SupabaseClient<Database>,
-): Promise<CatalogScheme[]> {
-	const schemes: CatalogScheme[] = []
+): Promise<CatalogPalette[]> {
+	const palettes: CatalogPalette[] = []
 	for (let offset = 0; ; offset += 1000) {
 		const { data, error } = await client
 			.from('palettes')
@@ -39,37 +39,36 @@ export async function loadColorSchemes(
 			.range(offset, offset + 999)
 		if (error) throw new Error(`Unable to load palettes: ${error.message}`)
 		if (!data) throw new Error('The palette catalog returned no data.')
-		for (const row of data)
-			schemes.push({ ...row, ...readColorScheme(row) })
+		for (const row of data) palettes.push({ ...row, ...readPalette(row) })
 		if (data.length < 1000)
-			return schemes.sort((a, b) => a.name.localeCompare(b.name))
+			return palettes.sort((a, b) => a.name.localeCompare(b.name))
 	}
 }
 
-export type SchemeAction =
+export type PaletteAction =
 	| {
 			readonly kind: 'create'
 			readonly id: string
-			readonly scheme: ColorScheme
+			readonly palette: Palette
 	  }
 	| {
 			readonly kind: 'update'
-			readonly previous: CatalogScheme
-			readonly scheme: ColorScheme
+			readonly previous: CatalogPalette
+			readonly palette: Palette
 	  }
-	| { readonly kind: 'delete'; readonly previous: CatalogScheme }
+	| { readonly kind: 'delete'; readonly previous: CatalogPalette }
 
-export async function manageColorScheme(
+export async function managePalette(
 	client: SupabaseClient<Database>,
-	action: SchemeAction,
+	action: PaletteAction,
 ): Promise<void> {
 	const id = action.kind === 'create' ? action.id : action.previous.id
 	if (!id.trim() || id !== id.trim())
 		throw new Error('A permanent palette ID is required.')
 	if (action.kind !== 'delete') {
-		if (!action.scheme.name.trim())
+		if (!action.palette.name.trim())
 			throw new Error('Enter a name for the palette.')
-		readColorScheme({ id, ...action.scheme })
+		readPalette({ id, ...action.palette })
 	}
 	if (action.kind === 'delete') {
 		const { data, error } = await client.rpc('delete_palette_draft', {
@@ -88,8 +87,8 @@ export async function manageColorScheme(
 	const { data, error } = await client.rpc('manage_palette_draft', {
 		p_id: id,
 		p_action: action.kind,
-		p_name: action.scheme.name.trim(),
-		p_colors: [...action.scheme.colors],
+		p_name: action.palette.name.trim(),
+		p_colors: [...action.palette.colors],
 		...(action.kind !== 'create'
 			? {
 					p_expected_name: action.previous.name,
@@ -106,7 +105,7 @@ export async function manageColorScheme(
 		)
 }
 
-export async function bulkDeleteColorSchemes(
+export async function bulkDeletePalettes(
 	client: SupabaseClient<Database>,
 	ids: readonly string[],
 ): Promise<void> {

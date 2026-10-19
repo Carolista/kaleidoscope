@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { AppStateProvider } from '@/features/zen/state'
+import { ZenStateProvider } from '@/features/zen/state'
 import {
 	TRIANGLE_GRID_SIZES,
 	computeGridAspectRatio,
@@ -11,7 +11,7 @@ import TriangleGrid from './TriangleGrid'
 
 describe('TriangleGrid', () => {
 	it('exposes exactly 22 clickable tiles, each as an accessible, labeled button', () => {
-		render(<TriangleGrid />, { wrapper: AppStateProvider })
+		render(<TriangleGrid />, { wrapper: ZenStateProvider })
 		const tiles = screen.getAllByRole('button')
 		expect(tiles).toHaveLength(22)
 		expect(tiles[0]).toHaveAccessibleName('Paint tile 1 of 22')
@@ -20,7 +20,7 @@ describe('TriangleGrid', () => {
 
 	it('paints a tile on click and announces it via the live region', async () => {
 		const user = userEvent.setup()
-		render(<TriangleGrid />, { wrapper: AppStateProvider })
+		render(<TriangleGrid />, { wrapper: ZenStateProvider })
 
 		const tile = screen.getByRole('button', {
 			name: 'Paint tile 1 of 22',
@@ -37,7 +37,7 @@ describe('TriangleGrid', () => {
 
 	it('paints a tile via the keyboard (Enter and Space), not just click', async () => {
 		const user = userEvent.setup()
-		render(<TriangleGrid />, { wrapper: AppStateProvider })
+		render(<TriangleGrid />, { wrapper: ZenStateProvider })
 
 		const tile = screen.getByRole('button', {
 			name: 'Paint tile 2 of 22',
@@ -57,7 +57,7 @@ describe('TriangleGrid', () => {
 		'renders the %s grid at size %s',
 		(_size, gridSize) => {
 			const { container } = render(<TriangleGrid gridSize={gridSize} />, {
-				wrapper: AppStateProvider,
+				wrapper: ZenStateProvider,
 			})
 			expect(container.querySelectorAll('polygon')).toHaveLength(
 				gridSize * gridSize,

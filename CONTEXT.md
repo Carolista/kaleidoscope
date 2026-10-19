@@ -269,7 +269,8 @@ changes should be applied to all four SVG assets.
   `@/domain/shapes`); inside a folder use `./`. Test mocks target the exact
   module file (`vi.mock('@/features/admin/services/puzzleSets')`). The admin
   barrel's default export is the portal, which `AppEntry` lazy-loads.
-- **Scheme** in code/file names; **palette** in user-facing text.
+- **Palette** in code, file names, and user-facing text. The only exception is the
+  persisted design record's `schemeName` key, kept so existing saves still load.
   **Theme** refers to dark/light mode, not palettes.
 - Keep persisted shape IDs stable. Import across folders with the single `@/`
   alias for `src/` (kept aligned in [Vite](./vite.config.ts) and
@@ -295,7 +296,7 @@ changes should be applied to all four SVG assets.
   colors: square swatches for choices, continuous strips for catalog/set previews.
   [PaletteChoices](./src/ui/components/PaletteChoices.tsx) owns controlled,
   labelled palette buttons keyed/selected by ID, with optional visible names.
-  Player SchemePicker adapts its local name-based catalog and applies/closes
+  Player PalettePicker adapts its local name-based catalog and applies/closes
   immediately; admin owns catalog IDs and bulk selection still requires Apply.
   Keep duplicate colors in their original slots. Interactive painting color
   buttons remain the separate ColorSwatches component.
@@ -422,20 +423,20 @@ symmetry engine. One representative per group is clickable.
 
 ### State and persistence
 
-- New designs start in dark mode with the first scheme in
-  [colorSchemes.ts](./src/domain/palettes/colorSchemes.ts) and its first color selected.
+- New designs start in dark mode with the first palette in
+  [catalog.ts](./src/domain/palettes/catalog.ts) and its first color selected.
 - Painting toggles a group back to accent when its current color is selected again.
   Unpainted groups also display accent.
 - Each of the 18 shape/size combinations has an independent paint map. Switching
   boards saves the outgoing pattern and restores the incoming one; unvisited
   boards start empty. Paint is never copied between sizes or shapes.
-- Palette and theme are global, not board-specific. Scheme changes remap painted
+- Palette and theme are global, not board-specific. Palette changes remap painted
   palette colors by position on all boards and select the first new color.
   Explicit dark/light toggles remap neutral base/accent paint on all boards;
   switching boards and undo/redo never change the theme.
 - Reset and randomize affect only the active board. Switching shape and size
   together is one undo step.
-- Undoable: paint, scheme, shape, grid size, randomize, reset. Current color, dark mode,
+- Undoable: paint, palette, shape, grid size, randomize, reset. Current color, dark mode,
   and editable-area visibility are tool/view choices, not undo stops.
 - History is one unlimited, session-only chronological timeline across all boards,
   including switches. Restored boards form the session's starting baseline;
@@ -446,7 +447,7 @@ symmetry engine. One representative per group is clickable.
 - Theme toggles do not remap historical snapshots, so undo across a toggle can
   restore older literal neutral colors without changing the current theme.
 - Autosave writes version 5 to `kaleidoscope:design` on state changes. It saves
-  scheme name, selected color, dark mode, shape, per-shape sizes,
+  palette name (stored as `schemeName`), selected color, dark mode, shape, per-shape sizes,
   editable-area preference, and all board paint maps in one record.
   `shapeGroupColors` holds active paint; `savedBoards` holds inactive paint keyed
   by stable `shape:size` IDs (for example, `triangle:sm`), never duplicating the
@@ -456,7 +457,7 @@ symmetry engine. One representative per group is clickable.
   legacy size. Earlier placeholder medium values for Hexagram (v1), Circle Rings
   (v1-2), and Pinwheel (v1-3) migrate to large to preserve their previous grids.
 - Loading rejects malformed records, arrays, invalid six-digit hex colors,
-  unknown versions/shapes/schemes, invalid board keys, and duplicate active-board
+  unknown versions/shapes/palettes, invalid board keys, and duplicate active-board
   entries; fallback is a fresh design. Missing historical
   shape/visibility fields default to hexagon/true. Storage failures never crash the app.
 - Colors retain case and need not belong to the current palette. Unknown group IDs
@@ -514,7 +515,7 @@ symmetry engine. One representative per group is clickable.
 - When the design storage key is absent at startup (checked before autosave; key
   existence, not payload validity), `App` shows the first-visit intro instead of the
   grid, controls, and footer. Intro state is local: a size-4 triangle grid with its
-  5 paintable tiles, and the first scheme's five colors. Choosing a swatch and a tile
+  5 paintable tiles, and the first palette's five colors. Choosing a swatch and a tile
   permanently paints that tile and disables that swatch; after five, dimming is
   released and **Continue** replaces the swatches. Continue shows the regular app
   with a fresh design and the help modal open. Nothing is saved until then. The
@@ -545,7 +546,7 @@ symmetry engine. One representative per group is clickable.
 - The preview reserves the selected shape and size's geometry-derived aspect ratio. Generation failures show an
   error; share failures retain preview/download/retry. Share cancellation is quiet.
   Share appears only when file sharing is supported; download is enabled when ready.
-- Randomization weights each scheme color 18 times and theme base 10 times
+- Randomization weights each palette color 18 times and theme base 10 times
   (90% palette, 10% base). Accent is excluded. The pool is built once per design;
   only groups present at the selected grid size are randomized.
   Duotone tint is computed once per hook invocation.

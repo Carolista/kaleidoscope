@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { faPalette } from '@fortawesome/sharp-duotone-solid-svg-icons'
 import { PlayerIconButton as IconButton } from '@/ui/components'
-import ColorSchemeModal from './ColorSchemeModal'
+import PaletteModal from './PaletteModal'
 
-function ColorSchemeButton() {
+function PaletteButton() {
 	const [open, setOpen] = useState(false)
 
 	return (
@@ -13,9 +13,9 @@ function ColorSchemeButton() {
 				label="Select a different color palette"
 				onClick={() => setOpen(true)}
 			/>
-			<ColorSchemeModal open={open} onClose={() => setOpen(false)} />
+			<PaletteModal open={open} onClose={() => setOpen(false)} />
 		</>
 	)
 }
 
-export default ColorSchemeButton
+export default PaletteButton

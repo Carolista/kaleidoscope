@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase'
 import type {
-	CatalogScheme,
+	CatalogPalette,
 	LibraryDraft,
 	DraftSet,
 } from '@/features/admin/services'
@@ -32,21 +32,21 @@ vi.mock('@/features/admin/services/puzzleSets', async importOriginal => ({
 	loadDraftSets: (...args: unknown[]) => mocks.puzzleSets(...args),
 	manageDraftSet: (...args: unknown[]) => mocks.manageSet(...args),
 }))
-vi.mock('@/features/admin/services/colorSchemes', async importOriginal => ({
+vi.mock('@/features/admin/services/palettes', async importOriginal => ({
 	...(await importOriginal<
-		typeof import('@/features/admin/services/colorSchemes')
+		typeof import('@/features/admin/services/palettes')
 	>()),
-	loadColorSchemes: (...args: unknown[]) => mocks.palettes(...args),
+	loadPalettes: (...args: unknown[]) => mocks.palettes(...args),
 }))
-vi.mock('@/features/admin/services/schemeSets', async importOriginal => ({
+vi.mock('@/features/admin/services/paletteSets', async importOriginal => ({
 	...(await importOriginal<
-		typeof import('@/features/admin/services/schemeSets')
+		typeof import('@/features/admin/services/paletteSets')
 	>()),
-	loadSchemeSets: (...args: unknown[]) => mocks.paletteSets(...args),
+	loadPaletteSets: (...args: unknown[]) => mocks.paletteSets(...args),
 }))
 
 const client = {} as SupabaseClient<Database>
-const palette: CatalogScheme = {
+const palette: CatalogPalette = {
 	id: 'palette',
 	name: 'Unassigned colors',
 	colors: ['#112233', '#223344', '#334455', '#445566', '#556677'],

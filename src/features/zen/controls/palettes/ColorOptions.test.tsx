@@ -5,7 +5,7 @@ import { renderWithProvider } from '@/test/renderWithProvider'
 import ColorOptions from './ColorOptions'
 
 describe('ColorOptions', () => {
-	it('renders 7 swatches: the 5 current-scheme colors plus base and accent', () => {
+	it('renders 7 swatches: the 5 current-palette colors plus base and accent', () => {
 		renderWithProvider(<ColorOptions />)
 		const swatches = screen.getAllByRole('button')
 		expect(swatches).toHaveLength(7)

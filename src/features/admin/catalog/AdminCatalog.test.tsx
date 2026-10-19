@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase'
-import type { SchemeSet } from '@/features/admin/services'
+import type { PaletteSet } from '@/features/admin/services'
 import { AdminCatalogProvider } from './AdminCatalog'
 import { useCatalog, useCatalogInvalidation } from './useAdminCatalog'
 
@@ -11,11 +11,11 @@ const mocks = vi.hoisted(() => ({
 	paletteSets: vi.fn(),
 	puzzleSets: vi.fn(),
 }))
-vi.mock('@/features/admin/services/schemeSets', async importOriginal => ({
+vi.mock('@/features/admin/services/paletteSets', async importOriginal => ({
 	...(await importOriginal<
-		typeof import('@/features/admin/services/schemeSets')
+		typeof import('@/features/admin/services/paletteSets')
 	>()),
-	loadSchemeSets: (...args: unknown[]) => mocks.paletteSets(...args),
+	loadPaletteSets: (...args: unknown[]) => mocks.paletteSets(...args),
 }))
 vi.mock('@/features/admin/services/puzzleSets', async importOriginal => ({
 	...(await importOriginal<
@@ -30,7 +30,7 @@ const set = (name: string) =>
 		row: { id: name, name },
 		kind: 'core',
 		members: [],
-	}) as never as SchemeSet
+	}) as never as PaletteSet
 const wrapper = ({ children }: { children: ReactNode }) => (
 	<AdminCatalogProvider>{children}</AdminCatalogProvider>
 )
@@ -72,7 +72,7 @@ describe('admin catalog cache', () => {
 	it('keeps local updates over an older in-flight response', async () => {
 		const { result } = renderHook(() => useHarness(), { wrapper })
 		await waitFor(() => expect(result.current.catalog.loading).toBe(false))
-		let resolve: (value: SchemeSet[]) => void = () => {}
+		let resolve: (value: PaletteSet[]) => void = () => {}
 		mocks.paletteSets.mockReturnValueOnce(
 			new Promise(done => {
 				resolve = done

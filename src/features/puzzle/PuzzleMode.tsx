@@ -6,13 +6,13 @@ import {
 	Modal,
 	PlayerIconButton,
 } from '@/ui/components'
-import { colorSchemes } from '@/domain/palettes'
+import { palettes } from '@/domain/palettes'
 import { createPuzzleSeed, generateHexPuzzle } from '@/domain/puzzles'
 import { PuzzlePlay, type PuzzlePlayHandle } from '@/ui/puzzle'
 import styles from './PuzzleMode.module.css'
 
 function createPuzzle(seed = createPuzzleSeed()) {
-	return generateHexPuzzle(seed, colorSchemes[1])
+	return generateHexPuzzle(seed, palettes[1])
 }
 
 export default function PuzzleMode({

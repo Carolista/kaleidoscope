@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { AppStateProvider } from '@/features/zen/state'
+import { ZenStateProvider } from '@/features/zen/state'
 import {
 	PINWHEEL_GRID_SIZES,
 	computeGridAspectRatio,
@@ -11,7 +11,7 @@ import PinwheelGrid from './PinwheelGrid'
 
 describe('PinwheelGrid', () => {
 	it('exposes exactly 9 clickable tiles, each as an accessible, labeled button', () => {
-		render(<PinwheelGrid />, { wrapper: AppStateProvider })
+		render(<PinwheelGrid />, { wrapper: ZenStateProvider })
 		const tiles = screen.getAllByRole('button')
 		expect(tiles).toHaveLength(9)
 		expect(tiles[0]).toHaveAccessibleName('Paint tile 1 of 9')
@@ -20,7 +20,7 @@ describe('PinwheelGrid', () => {
 
 	it('paints a tile on click and announces it via the live region', async () => {
 		const user = userEvent.setup()
-		render(<PinwheelGrid />, { wrapper: AppStateProvider })
+		render(<PinwheelGrid />, { wrapper: ZenStateProvider })
 
 		const tile = screen.getByRole('button', {
 			name: 'Paint tile 1 of 9',
@@ -37,7 +37,7 @@ describe('PinwheelGrid', () => {
 
 	it('paints a tile via the keyboard (Enter and Space), not just click', async () => {
 		const user = userEvent.setup()
-		render(<PinwheelGrid />, { wrapper: AppStateProvider })
+		render(<PinwheelGrid />, { wrapper: ZenStateProvider })
 
 		const tile = screen.getByRole('button', {
 			name: 'Paint tile 2 of 9',
@@ -57,7 +57,7 @@ describe('PinwheelGrid', () => {
 		'renders the %s grid at %s row and %s column steps',
 		(_size, { rowSteps, colSteps }) => {
 			render(<PinwheelGrid rowSteps={rowSteps} colSteps={colSteps} />, {
-				wrapper: AppStateProvider,
+				wrapper: ZenStateProvider,
 			})
 			const grid = screen.getByRole('group', {
 				name: 'Kaleidoscope pinwheel grid',

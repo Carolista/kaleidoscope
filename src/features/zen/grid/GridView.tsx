@@ -3,7 +3,7 @@ import type { CSSProperties, Ref } from 'react'
 import type { Point } from '@/domain/geometry'
 import { useIsTouchDevice } from '@/ui/hooks'
 import { getThemeColors } from '@/domain/palettes'
-import { useAppState } from '@/features/zen/state'
+import { useZenState } from '@/features/zen/state'
 import CircleCell from './CircleCell'
 import PolygonCell from './PolygonCell'
 import styles from './GridView.module.css'
@@ -49,7 +49,7 @@ function GridView({
 	hoverAreaPath,
 	interaction,
 }: GridViewProps) {
-	const { state, paintShapeGroup } = useAppState()
+	const { state, paintShapeGroup } = useZenState()
 	const { base, accent } = getThemeColors(state.darkMode)
 	const isTouch = useIsTouchDevice()
 	const [isHovering, setIsHovering] = useState(false)

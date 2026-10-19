@@ -1,14 +1,14 @@
 import { useId } from 'react'
 import { Modal, ModalHeader } from '@/ui/components'
-import SchemePicker from './SchemePicker'
-import styles from './ColorSchemeModal.module.css'
+import PalettePicker from './PalettePicker'
+import styles from './PaletteModal.module.css'
 
-export interface ColorSchemeModalProps {
+export interface PaletteModalProps {
 	readonly open: boolean
 	readonly onClose: () => void
 }
 
-function ColorSchemeModal({ open, onClose }: ColorSchemeModalProps) {
+function PaletteModal({ open, onClose }: PaletteModalProps) {
 	const titleId = useId()
 	return (
 		<Modal
@@ -26,10 +26,10 @@ function ColorSchemeModal({ open, onClose }: ColorSchemeModalProps) {
 			}
 		>
 			<div className={styles.content}>
-				<SchemePicker onSelected={onClose} />
+				<PalettePicker onSelected={onClose} />
 			</div>
 		</Modal>
 	)
 }
 
-export default ColorSchemeModal
+export default PaletteModal

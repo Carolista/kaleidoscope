@@ -3,21 +3,21 @@ import { renderWithNavigationGuard as render } from '@/features/admin/testing'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Database } from '@/lib/supabase'
-import type { SchemeSet } from '@/features/admin/services'
-import { manageSchemeSet } from '@/features/admin/services'
-import SchemeSetLibrary from './SchemeSetLibrary'
+import type { PaletteSet } from '@/features/admin/services'
+import { managePaletteSet } from '@/features/admin/services'
+import PaletteSetLibrary from './PaletteSetLibrary'
 import { useState } from 'react'
 import { useNavigationGuard } from '@/ui/navigation'
 
-vi.mock('@/features/admin/services/schemeSets', async importOriginal => ({
+vi.mock('@/features/admin/services/paletteSets', async importOriginal => ({
 	...(await importOriginal<
-		typeof import('@/features/admin/services/schemeSets')
+		typeof import('@/features/admin/services/paletteSets')
 	>()),
-	manageSchemeSet: vi.fn(),
+	managePaletteSet: vi.fn(),
 }))
 
 const client = {} as SupabaseClient<Database>
-const set: SchemeSet = {
+const set: PaletteSet = {
 	row: {
 		id: 'set',
 		name: 'Warm colors',
@@ -46,7 +46,7 @@ describe('palette set loading feedback', () => {
 					>
 						Sets tab
 					</button>
-					<SchemeSetLibrary
+					<PaletteSetLibrary
 						key={visit}
 						client={client}
 						sets={[set]}
@@ -80,7 +80,7 @@ describe('palette set loading feedback', () => {
 		expect(
 			screen.getByRole('heading', { name: 'Palette sets' }),
 		).toBeInTheDocument()
-		expect(manageSchemeSet).not.toHaveBeenCalled()
+		expect(managePaletteSet).not.toHaveBeenCalled()
 	})
 
 	it('keeps cached sets visible but unavailable while refreshing, and shows retry after failure', () => {
@@ -93,7 +93,7 @@ describe('palette set loading feedback', () => {
 			onChanged: vi.fn(),
 			onOrderSaved: vi.fn(),
 		}
-		const { rerender } = render(<SchemeSetLibrary {...props} />)
+		const { rerender } = render(<PaletteSetLibrary {...props} />)
 		const status = screen.getByRole('status')
 		expect(status).toHaveTextContent('Refreshing palette sets…')
 		expect(status.querySelector('img')).toHaveAttribute(
@@ -105,7 +105,7 @@ describe('palette set loading feedback', () => {
 			screen.getByRole('button', { name: 'Edit set Warm colors' }),
 		).toBeDisabled()
 		rerender(
-			<SchemeSetLibrary
+			<PaletteSetLibrary
 				{...props}
 				loading={false}
 				catalogError="Offline"
@@ -124,13 +124,13 @@ describe('palette set loading feedback', () => {
 
 	it('keeps a failed creation retryable and ends pending feedback', async () => {
 		let fail!: (cause: Error) => void
-		vi.mocked(manageSchemeSet).mockReturnValueOnce(
+		vi.mocked(managePaletteSet).mockReturnValueOnce(
 			new Promise((_resolve, reject) => {
 				fail = reject
 			}),
 		)
 		render(
-			<SchemeSetLibrary
+			<PaletteSetLibrary
 				client={client}
 				sets={[]}
 				loading={false}

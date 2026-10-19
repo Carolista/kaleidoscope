@@ -4,11 +4,11 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Database } from '@/lib/supabase'
 import type {
-	CatalogScheme,
-	SchemeUsage,
-	SchemeSet,
+	CatalogPalette,
+	PaletteUsage,
+	PaletteSet,
 } from '@/features/admin/services'
-import SchemeLibrary from './SchemeLibrary'
+import PaletteLibrary from './PaletteLibrary'
 import { useState } from 'react'
 import { useNavigationGuard } from '@/ui/navigation'
 
@@ -20,29 +20,29 @@ const mocks = vi.hoisted(() => ({
 	manageSet: vi.fn(),
 	bulkDelete: vi.fn(),
 }))
-vi.mock('@/features/admin/services/schemeSets', async importOriginal => ({
+vi.mock('@/features/admin/services/paletteSets', async importOriginal => ({
 	...(await importOriginal<
-		typeof import('@/features/admin/services/schemeSets')
+		typeof import('@/features/admin/services/paletteSets')
 	>()),
-	loadSchemeSets: (...args: unknown[]) => mocks.sets(...args),
-	manageSchemeSet: (...args: unknown[]) => mocks.manageSet(...args),
+	loadPaletteSets: (...args: unknown[]) => mocks.sets(...args),
+	managePaletteSet: (...args: unknown[]) => mocks.manageSet(...args),
 }))
-vi.mock('@/features/admin/services/colorSchemes', async importOriginal => ({
+vi.mock('@/features/admin/services/palettes', async importOriginal => ({
 	...(await importOriginal<
-		typeof import('@/features/admin/services/colorSchemes')
+		typeof import('@/features/admin/services/palettes')
 	>()),
-	loadColorSchemes: (...args: unknown[]) => mocks.load(...args),
-	manageColorScheme: (...args: unknown[]) => mocks.manage(...args),
-	bulkDeleteColorSchemes: (...args: unknown[]) => mocks.bulkDelete(...args),
+	loadPalettes: (...args: unknown[]) => mocks.load(...args),
+	managePalette: (...args: unknown[]) => mocks.manage(...args),
+	bulkDeletePalettes: (...args: unknown[]) => mocks.bulkDelete(...args),
 }))
-vi.mock('@/features/admin/services/schemeUsage', async importOriginal => ({
+vi.mock('@/features/admin/services/paletteUsage', async importOriginal => ({
 	...(await importOriginal<
-		typeof import('@/features/admin/services/schemeUsage')
+		typeof import('@/features/admin/services/paletteUsage')
 	>()),
-	loadSchemeUsage: (...args: unknown[]) => mocks.usage(...args),
+	loadPaletteUsage: (...args: unknown[]) => mocks.usage(...args),
 }))
 const client = {} as SupabaseClient<Database>
-const scheme: CatalogScheme = {
+const samplePalette: CatalogPalette = {
 	id: 'cabo',
 	name: 'Cabo',
 	colors: ['#112233', '#223344', '#334455', '#445566', '#556677'],
@@ -50,7 +50,7 @@ const scheme: CatalogScheme = {
 	published_at: null,
 	release_at: null,
 }
-const emptyUsage: SchemeUsage = {
+const emptyUsage: PaletteUsage = {
 	puzzles: [],
 	rewards: [],
 	packs: [],
@@ -58,7 +58,7 @@ const emptyUsage: SchemeUsage = {
 	grants: 0,
 	corrections: 0,
 }
-const paletteSet: SchemeSet = {
+const paletteSet: PaletteSet = {
 	row: {
 		id: 'set-one',
 		name: 'Warm colors',
@@ -67,11 +67,11 @@ const paletteSet: SchemeSet = {
 		release_at: null,
 	},
 	kind: 'undecided',
-	members: [scheme],
+	members: [samplePalette],
 }
 beforeEach(() => {
 	vi.resetAllMocks()
-	mocks.load.mockResolvedValue([scheme])
+	mocks.load.mockResolvedValue([samplePalette])
 	mocks.manage.mockResolvedValue(undefined)
 	mocks.usage.mockResolvedValue(emptyUsage)
 	mocks.sets.mockResolvedValue([])
@@ -102,7 +102,7 @@ function PaletteWorkspace() {
 		<>
 			<button onClick={() => go('sets')}>Sets</button>
 			<button onClick={() => go('palettes')}>Palette catalog</button>
-			<SchemeLibrary
+			<PaletteLibrary
 				key={`${view}-${visit}`}
 				client={client}
 				view={view}
@@ -250,8 +250,8 @@ describe('palette management', () => {
 	})
 
 	it('selects all shown palettes and highlights selected cards', async () => {
-		const loose = { ...scheme, id: 'loose', name: 'Loose' }
-		mocks.load.mockResolvedValue([scheme, loose])
+		const loose = { ...samplePalette, id: 'loose', name: 'Loose' }
+		mocks.load.mockResolvedValue([samplePalette, loose])
 		setup()
 		const selectAll = await screen.findByRole('checkbox', {
 			name: 'Select all',
@@ -275,7 +275,11 @@ describe('palette management', () => {
 	})
 
 	it('orders assigned palettes by set name, then position within the set', async () => {
-		const palette = (id: string, name: string) => ({ ...scheme, id, name })
+		const palette = (id: string, name: string) => ({
+			...samplePalette,
+			id,
+			name,
+		})
 		const [a1, a2, b1] = [
 			palette('a1', 'Zebra'),
 			palette('a2', 'Apple'),
@@ -295,7 +299,7 @@ describe('palette management', () => {
 			},
 		])
 		render(
-			<SchemeLibrary
+			<PaletteLibrary
 				client={client}
 				view="palettes"
 				catalogStatus="assigned"
@@ -310,8 +314,8 @@ describe('palette management', () => {
 	})
 
 	it('bulk deletes only unassigned draft palettes and keeps failures visible', async () => {
-		const loose = { ...scheme, id: 'loose', name: 'Loose' }
-		mocks.load.mockResolvedValue([scheme, loose])
+		const loose = { ...samplePalette, id: 'loose', name: 'Loose' }
+		mocks.load.mockResolvedValue([samplePalette, loose])
 		mocks.sets.mockResolvedValue([paletteSet])
 		mocks.bulkDelete.mockRejectedValueOnce(new Error('Palette in use'))
 		mocks.bulkDelete.mockResolvedValueOnce(undefined)
@@ -338,7 +342,7 @@ describe('palette management', () => {
 		expect(
 			screen.getByRole('checkbox', { name: 'Select Loose' }),
 		).toBeChecked()
-		mocks.load.mockResolvedValue([scheme])
+		mocks.load.mockResolvedValue([samplePalette])
 		fireEvent.click(
 			within(dialog).getByRole('button', { name: 'Delete palettes' }),
 		)
@@ -348,8 +352,8 @@ describe('palette management', () => {
 	})
 
 	it('offers deletion only for unassigned draft palettes', async () => {
-		const loose = { ...scheme, id: 'loose', name: 'Loose' }
-		mocks.load.mockResolvedValue([scheme, loose])
+		const loose = { ...samplePalette, id: 'loose', name: 'Loose' }
+		mocks.load.mockResolvedValue([samplePalette, loose])
 		mocks.sets.mockResolvedValue([paletteSet])
 		setup()
 		fireEvent.click(
@@ -436,9 +440,9 @@ describe('palette management', () => {
 	})
 
 	it('stages member order until Save, removes immediately, and deletes a set only after confirmation', async () => {
-		const second = { ...scheme, id: 'other', name: 'Other colors' }
+		const second = { ...samplePalette, id: 'other', name: 'Other colors' }
 		mocks.sets.mockResolvedValue([
-			{ ...paletteSet, members: [scheme, second] },
+			{ ...paletteSet, members: [samplePalette, second] },
 		])
 		const { isProtected } = setup()
 		await openSets()
@@ -576,15 +580,15 @@ describe('palette management', () => {
 	it.each([false, true])(
 		'duplicates colors into an unnamed new draft without copying identity or release state (published: %s)',
 		async published => {
-			const source: CatalogScheme = {
-				...scheme,
+			const source: CatalogPalette = {
+				...samplePalette,
 				id: 'source',
 				name: 'Source',
 				colors: ['#abcdef', '#123456', '#abcdef', '#fedcba', '#654321'],
 				published_at: published ? '2000-01-01' : null,
 				release_at: published ? '2000-01-01' : null,
 			}
-			mocks.load.mockResolvedValue([scheme, source])
+			mocks.load.mockResolvedValue([samplePalette, source])
 			setup()
 			fireEvent.click(
 				await screen.findByRole('button', { name: 'Duplicate Source' }),
@@ -609,7 +613,7 @@ describe('palette management', () => {
 			expect(request).toEqual({
 				kind: 'create',
 				id: expect.any(String),
-				scheme: { name: 'My variation', colors: source.colors },
+				palette: { name: 'My variation', colors: source.colors },
 			})
 			expect(request.id).not.toBe(source.id)
 		},
@@ -617,16 +621,16 @@ describe('palette management', () => {
 
 	it('shows draft, scheduled, and live palettes and keeps prepared ones read-only', async () => {
 		mocks.load.mockResolvedValue([
-			scheme,
+			samplePalette,
 			{
-				...scheme,
+				...samplePalette,
 				id: 'scheduled',
 				name: 'Scheduled art',
 				published_at: '2026-01-01',
 				release_at: '2099-01-01',
 			},
 			{
-				...scheme,
+				...samplePalette,
 				id: 'live',
 				name: 'Live art',
 				published_at: '2000-01-01',
@@ -682,12 +686,12 @@ describe('palette management', () => {
 		const firstRequest = mocks.manage.mock.calls[0][1]
 		expect(firstRequest).toMatchObject({
 			kind: 'create',
-			scheme: { name: 'New art', colors: scheme.colors },
+			palette: { name: 'New art', colors: samplePalette.colors },
 		})
 		expect(firstRequest.id).toMatch(/^[0-9a-f-]{36}$/)
 		mocks.load.mockResolvedValue([
-			scheme,
-			{ ...scheme, id: firstRequest.id, name: 'New art' },
+			samplePalette,
+			{ ...samplePalette, id: firstRequest.id, name: 'New art' },
 		])
 		fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 		expect(
@@ -712,7 +716,7 @@ describe('palette management', () => {
 		expect(
 			screen.queryByRole('img', { name: 'Palette sandbox design' }),
 		).not.toBeInTheDocument()
-		fireEvent.change(first, { target: { value: scheme.colors[0] } })
+		fireEvent.change(first, { target: { value: samplePalette.colors[0] } })
 		expect(sandboxFills()).toEqual(original)
 		fireEvent.change(screen.getByLabelText('Pick color 1'), {
 			target: { value: '#abcdef' },
@@ -720,17 +724,17 @@ describe('palette management', () => {
 		expect(first).toHaveValue('#abcdef')
 		expect(sandboxFills()).toEqual(
 			original.map(color =>
-				color === scheme.colors[0] ? '#abcdef' : color,
+				color === samplePalette.colors[0] ? '#abcdef' : color,
 			),
 		)
 		fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 		await screen.findByRole('heading', { name: 'Palettes' })
 		expect(mocks.manage).toHaveBeenCalledWith(client, {
 			kind: 'update',
-			previous: scheme,
-			scheme: {
+			previous: samplePalette,
+			palette: {
 				name: 'Cabo',
-				colors: ['#abcdef', ...scheme.colors.slice(1)],
+				colors: ['#abcdef', ...samplePalette.colors.slice(1)],
 			},
 		})
 	})
@@ -801,7 +805,7 @@ describe('palette management', () => {
 		expect(await screen.findByText('Deleted "Cabo".')).toBeInTheDocument()
 		expect(mocks.manage).toHaveBeenCalledWith(client, {
 			kind: 'delete',
-			previous: scheme,
+			previous: samplePalette,
 		})
 		await screen.findByText(
 			'No palettes yet. Create a draft to get started.',
@@ -1040,7 +1044,7 @@ describe('palette management', () => {
 	})
 
 	it('uses one shared catalog status for initial and empty-catalog refresh reads, then clears it on failure', async () => {
-		let finish!: (schemes: readonly CatalogScheme[]) => void
+		let finish!: (palettes: readonly CatalogPalette[]) => void
 		mocks.load.mockReturnValueOnce(
 			new Promise(resolve => {
 				finish = resolve

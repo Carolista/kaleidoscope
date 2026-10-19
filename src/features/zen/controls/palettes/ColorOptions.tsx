@@ -1,15 +1,15 @@
-import { useAppState } from '@/features/zen/state'
+import { useZenState } from '@/features/zen/state'
 import { getThemeColors } from '@/domain/palettes'
 import ColorSwatches from './ColorSwatches'
 
-// The 7 colors the user can currently paint with: the active scheme's 5
+// The 7 colors the user can currently paint with: the active palette's 5
 // colors, plus the always-available base and accent (swap with dark mode).
 function ColorOptions() {
-	const { state, selectColor } = useAppState()
+	const { state, selectColor } = useZenState()
 	const { base, accent } = getThemeColors(state.darkMode)
 
 	const options: { readonly color: string; readonly label: string }[] = [
-		...state.currentScheme.colors.map((color, i) => ({
+		...state.currentPalette.colors.map((color, i) => ({
 			color,
 			label: `Color ${i + 1}`,
 		})),

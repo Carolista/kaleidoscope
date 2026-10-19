@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useIsTouchDevice } from '@/ui/hooks'
 import { buildExportClone } from '@/features/zen/export/imageExportService'
-import { AppStateProvider } from '@/features/zen/state'
+import { ZenStateProvider } from '@/features/zen/state'
 import {
 	CIRCLE_RINGS_GRID_SIZES,
 	computeGridAspectRatio,
@@ -21,7 +21,7 @@ beforeEach(() => {
 describe('CircleRingsGrid', () => {
 	it('keeps the wedge highlighted across gaps without making them paintable', () => {
 		const { container } = render(<CircleRingsGrid />, {
-			wrapper: AppStateProvider,
+			wrapper: ZenStateProvider,
 		})
 		const svg = screen.getByRole('group')
 		const hoverArea = container.querySelector('path')!
@@ -61,7 +61,7 @@ describe('CircleRingsGrid', () => {
 		'fits the hover disk to the circle envelope for $ringCount rings at size $ringSize',
 		props => {
 			const { container } = render(<CircleRingsGrid {...props} />, {
-				wrapper: AppStateProvider,
+				wrapper: ZenStateProvider,
 			})
 			const outerRadius = Math.max(
 				...[...container.querySelectorAll('circle')].map(
@@ -81,7 +81,7 @@ describe('CircleRingsGrid', () => {
 
 	it('leaves the hover disk invisible in exported images', () => {
 		const { container } = render(<CircleRingsGrid />, {
-			wrapper: AppStateProvider,
+			wrapper: ZenStateProvider,
 		})
 		const clone = buildExportClone(
 			container.querySelector('svg')!,
@@ -96,7 +96,7 @@ describe('CircleRingsGrid', () => {
 	})
 
 	it('exposes exactly 16 clickable tiles, each as an accessible, labeled button', () => {
-		render(<CircleRingsGrid />, { wrapper: AppStateProvider })
+		render(<CircleRingsGrid />, { wrapper: ZenStateProvider })
 		const tiles = screen.getAllByRole('button')
 		expect(tiles).toHaveLength(16)
 		expect(tiles[0]).toHaveAccessibleName('Paint tile 1 of 16')
@@ -105,7 +105,7 @@ describe('CircleRingsGrid', () => {
 
 	it('paints a tile on click and announces it via the live region', async () => {
 		const user = userEvent.setup()
-		render(<CircleRingsGrid />, { wrapper: AppStateProvider })
+		render(<CircleRingsGrid />, { wrapper: ZenStateProvider })
 
 		const tile = screen.getByRole('button', {
 			name: 'Paint tile 1 of 16',
@@ -122,7 +122,7 @@ describe('CircleRingsGrid', () => {
 
 	it('paints a tile via the keyboard (Enter and Space), not just click', async () => {
 		const user = userEvent.setup()
-		render(<CircleRingsGrid />, { wrapper: AppStateProvider })
+		render(<CircleRingsGrid />, { wrapper: ZenStateProvider })
 
 		const tile = screen.getByRole('button', {
 			name: 'Paint tile 2 of 16',
@@ -140,7 +140,7 @@ describe('CircleRingsGrid', () => {
 
 	it('renders every cell as a <circle>, never a <polygon>', () => {
 		const { container } = render(<CircleRingsGrid />, {
-			wrapper: AppStateProvider,
+			wrapper: ZenStateProvider,
 		})
 		expect(container.querySelectorAll('circle').length).toBeGreaterThan(0)
 		expect(container.querySelectorAll('polygon')).toHaveLength(0)
@@ -148,7 +148,7 @@ describe('CircleRingsGrid', () => {
 
 	it('gives every circle a strictly positive radius, with the center dot tied for smallest (with ring 1) and the outermost ring strictly the largest', () => {
 		const { container } = render(<CircleRingsGrid />, {
-			wrapper: AppStateProvider,
+			wrapper: ZenStateProvider,
 		})
 		const radii = [...container.querySelectorAll('circle')].map(circle =>
 			Number(circle.getAttribute('r')),
@@ -167,7 +167,7 @@ describe('CircleRingsGrid', () => {
 		'renders the %s grid with %s rings',
 		(_size, ringCount) => {
 			render(<CircleRingsGrid ringCount={ringCount} />, {
-				wrapper: AppStateProvider,
+				wrapper: ZenStateProvider,
 			})
 			const grid = screen.getByRole('group', {
 				name: 'Kaleidoscope circle rings grid',

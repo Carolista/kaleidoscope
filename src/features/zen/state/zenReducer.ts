@@ -1,6 +1,6 @@
-import { colorSchemes, getThemeColors } from '@/domain/palettes'
-import type { AppState, BoardId, PaintMap } from './appState'
-import type { ColorScheme } from '@/domain/palettes'
+import { palettes, getThemeColors } from '@/domain/palettes'
+import type { ZenState, BoardId, PaintMap } from './zenState'
+import type { Palette } from '@/domain/palettes'
 import type { GridShapeId, GridSize } from '@/domain/shapes'
 import {
 	availableGridSizes,
@@ -9,8 +9,8 @@ import {
 } from '@/domain/shapes'
 import { generateRandomShapeGroupColors } from './randomDesign'
 
-export type AppAction =
-	| { readonly type: 'SELECT_SCHEME'; readonly scheme: ColorScheme }
+export type ZenAction =
+	| { readonly type: 'SELECT_PALETTE'; readonly palette: Palette }
 	| { readonly type: 'SELECT_COLOR'; readonly color: string }
 	| { readonly type: 'PAINT_SHAPE_GROUP'; readonly groupId: string }
 	| { readonly type: 'TOGGLE_DARK_MODE' }
@@ -28,11 +28,11 @@ export type AppAction =
 			readonly size: GridSize
 	  }
 
-export function createInitialAppState(): AppState {
-	const currentScheme = colorSchemes[0]
+export function createInitialZenState(): ZenState {
+	const currentPalette = palettes[0]
 	return {
-		currentScheme,
-		currentColor: currentScheme.colors[0],
+		currentPalette,
+		currentColor: currentPalette.colors[0],
 		darkMode: true,
 		showEditableArea: true,
 		gridShape: 'hexagon',
@@ -43,10 +43,10 @@ export function createInitialAppState(): AppState {
 }
 
 function switchBoard(
-	state: AppState,
+	state: ZenState,
 	shape: GridShapeId,
 	size: GridSize,
-): AppState {
+): ZenState {
 	if (
 		!availableGridSizes[shape].includes(size) ||
 		state.gridSizes[shape] === size
@@ -61,10 +61,10 @@ function switchBoard(
 }
 
 function activateBoard(
-	state: AppState,
+	state: ZenState,
 	shape: GridShapeId,
 	size: GridSize,
-): AppState {
+): ZenState {
 	const outgoing: BoardId = `${state.gridShape}:${state.gridSizes[state.gridShape]}`
 	const incoming: BoardId = `${shape}:${size}`
 	if (outgoing === incoming) return state
@@ -84,9 +84,9 @@ function activateBoard(
 }
 
 function mapPaint(
-	state: AppState,
+	state: ZenState,
 	transform: (color: string) => string,
-): Pick<AppState, 'shapeGroupColors' | 'savedBoards'> {
+): Pick<ZenState, 'shapeGroupColors' | 'savedBoards'> {
 	const remap = (paint: PaintMap) =>
 		Object.fromEntries(
 			Object.entries(paint).map(([id, color]) => [id, transform(color)]),
@@ -102,13 +102,13 @@ function mapPaint(
 	}
 }
 
-export function appReducer(state: AppState, action: AppAction): AppState {
+export function zenReducer(state: ZenState, action: ZenAction): ZenState {
 	switch (action.type) {
-		case 'SELECT_SCHEME': {
-			const oldColors = state.currentScheme.colors
-			const newColors = action.scheme.colors
-			// Remap any tile painted with one of the old scheme's colors to the
-			// color at the same position in the new scheme, so the design's
+		case 'SELECT_PALETTE': {
+			const oldColors = state.currentPalette.colors
+			const newColors = action.palette.colors
+			// Remap any tile painted with one of the old palette's colors to the
+			// color at the same position in the new palette, so the design's
 			// pattern carries over. Tiles painted base/accent are left as-is.
 			const paint = mapPaint(state, color => {
 				const colorIndex = oldColors.indexOf(color)
@@ -116,7 +116,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
 			})
 			return {
 				...state,
-				currentScheme: action.scheme,
+				currentPalette: action.palette,
 				currentColor: newColors[0],
 				...paint,
 			}
@@ -167,7 +167,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
 					state.gridShape,
 					state.gridSizes[state.gridShape],
 				),
-				state.currentScheme,
+				state.currentPalette,
 				base,
 			)
 			return { ...state, shapeGroupColors }

@@ -1,9 +1,9 @@
 import { TriangleGrid } from '@/features/zen/grid'
 import { Button } from '@/ui/components'
-import { useAppState } from '@/features/zen/state'
+import { useZenState } from '@/features/zen/state'
 import { useState } from 'react'
 import { TRIANGLE_GRID_SIZES } from '@/domain/shapes/triangle'
-import { ColorSwatches } from '@/features/zen/controls/color-schemes'
+import { ColorSwatches } from '@/features/zen/controls/palettes'
 import styles from './IntroSequence.module.css'
 
 // The intro demonstrates the smallest selectable triangle size (5 groups).
@@ -20,14 +20,14 @@ interface IntroDesign {
 }
 
 function IntroSequence({ onContinue }: IntroSequenceProps) {
-	const { state } = useAppState()
+	const { state } = useZenState()
 	const [design, setDesign] = useState<IntroDesign>({
 		selectedColor: null,
 		groupColors: {},
 	})
 	const usedColors = Object.values(design.groupColors)
 	const complete = usedColors.length === INTRO_TILE_COUNT
-	const options = state.currentScheme.colors.map((color, i) => ({
+	const options = state.currentPalette.colors.map((color, i) => ({
 		color,
 		label: `Color ${i + 1}`,
 	}))

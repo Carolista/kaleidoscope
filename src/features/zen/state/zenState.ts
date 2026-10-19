@@ -1,12 +1,12 @@
-import type { ColorScheme } from '@/domain/palettes'
+import type { Palette } from '@/domain/palettes'
 import type { GridShapeId, GridSize } from '@/domain/shapes'
 
 export type BoardId = `${GridShapeId}:${GridSize}`
 export type PaintMap = Readonly<Record<string, string>>
 export type SavedBoards = Readonly<Partial<Record<BoardId, PaintMap>>>
 
-export interface AppState {
-	readonly currentScheme: ColorScheme
+export interface ZenState {
+	readonly currentPalette: Palette
 	readonly currentColor: string
 	readonly darkMode: boolean
 	// Whether the editable wedge is permanently highlighted (dimming the

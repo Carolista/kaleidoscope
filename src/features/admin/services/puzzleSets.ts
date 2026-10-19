@@ -5,7 +5,7 @@ import {
 	readAuthoredHexPuzzle,
 	renderAuthoredHexPuzzle,
 } from '@/domain/puzzles'
-import { readColorScheme } from './colorSchemes'
+import { readPalette } from './palettes'
 
 export type SetKind = 'core' | 'reward' | 'paid'
 export interface DraftSet {
@@ -102,7 +102,7 @@ async function loadPreviews(
 			row.id,
 			renderAuthoredHexPuzzle(
 				readAuthoredHexPuzzle(row, row.puzzle_authoring),
-				readColorScheme(row.palettes),
+				readPalette(row.palettes),
 			),
 		)
 	}

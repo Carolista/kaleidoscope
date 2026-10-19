@@ -1,6 +1,6 @@
 // One small parallelogram within the pinwheel shape. `row` counts lattice
 // steps toward the spoke's `sideRight` vertex, `col` toward its `sideLeft`
-// vertex — the same scheme as DiamondStarCell — but unlike the diamond
+// vertex — the same palette as DiamondStarCell — but unlike the diamond
 // star, the pinwheel deliberately uses a *different* step count per axis
 // (`rowSteps` vs `colSteps` in PinwheelLayout), so the lattice itself
 // isn't mirror-symmetric even though the spoke's outline is: that

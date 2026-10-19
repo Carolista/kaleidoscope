@@ -1,20 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { AppStateProvider, savePersistedState } from '@/features/zen/state'
+import { ZenStateProvider, savePersistedState } from '@/features/zen/state'
 import App from './PlayerApp'
 import styles from './PlayerApp.module.css'
 import headerStyles from '@/app/layout/Header.module.css'
 import { useIsTouchDevice } from '@/ui/hooks'
 import { supportedGridShapes, defaultGridSizes } from '@/domain/shapes'
 import { PINWHEEL_GRID_SIZES } from '@/domain/shapes/pinwheel'
-import { colorSchemes } from '@/domain/palettes'
+import { palettes } from '@/domain/palettes'
 
 vi.mock('@/ui/hooks/useIsTouchDevice')
 const mockUseIsTouchDevice = vi.mocked(useIsTouchDevice)
 
 function renderApp() {
-	return render(<App />, { wrapper: AppStateProvider })
+	return render(<App />, { wrapper: ZenStateProvider })
 }
 
 // Any saved record means this isn't a first visit, so the intro is skipped.
@@ -190,8 +190,8 @@ describe('App', () => {
 		'renders a restored $id design using the correct grid',
 		({ id }) => {
 			savePersistedState({
-				currentScheme: colorSchemes[0],
-				currentColor: colorSchemes[0].colors[0],
+				currentPalette: palettes[0],
+				currentColor: palettes[0].colors[0],
 				darkMode: true,
 				showEditableArea: true,
 				gridShape: id,
@@ -211,8 +211,8 @@ describe('App', () => {
 
 	it('renders the selected Circle Rings size', () => {
 		savePersistedState({
-			currentScheme: colorSchemes[0],
-			currentColor: colorSchemes[0].colors[0],
+			currentPalette: palettes[0],
+			currentColor: palettes[0].colors[0],
 			darkMode: true,
 			showEditableArea: true,
 			gridShape: 'circleRings',
@@ -234,8 +234,8 @@ describe('App', () => {
 
 	it('renders the selected Pinwheel size', () => {
 		savePersistedState({
-			currentScheme: colorSchemes[0],
-			currentColor: colorSchemes[0].colors[0],
+			currentPalette: palettes[0],
+			currentColor: palettes[0].colors[0],
 			darkMode: true,
 			showEditableArea: true,
 			gridShape: 'pinwheel',
@@ -278,7 +278,7 @@ describe('App', () => {
 
 	it('does not show the controls modal on load for a device that already has a saved design', () => {
 		// hasPersistedDesign only checks that the storage key exists, not
-		// that its contents are well-formed, so an arbitrary scheme name is
+		// that its contents are well-formed, so an arbitrary palette name is
 		// fine here.
 		localStorage.setItem(
 			'kaleidoscope:design',

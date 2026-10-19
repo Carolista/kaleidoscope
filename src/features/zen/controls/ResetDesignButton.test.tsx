@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { AppStateProvider, useAppState } from '@/features/zen/state'
+import { ZenStateProvider, useZenState } from '@/features/zen/state'
 import ResetDesignButton from './ResetDesignButton'
 
 // Paints one group so we can observe whether reset actually clears it.
 function Harness() {
-	const { state, paintShapeGroup } = useAppState()
+	const { state, paintShapeGroup } = useZenState()
 	return (
 		<>
 			<button onClick={() => paintShapeGroup('0,0')}>
@@ -27,7 +27,7 @@ describe('ResetDesignButton', () => {
 
 	it('asks for confirmation before resetting, and does nothing on cancel', async () => {
 		const user = userEvent.setup()
-		render(<Harness />, { wrapper: AppStateProvider })
+		render(<Harness />, { wrapper: ZenStateProvider })
 
 		await user.click(screen.getByText('Paint test group'))
 		expect(screen.getByTestId('painted-count')).toHaveTextContent('1')
@@ -50,7 +50,7 @@ describe('ResetDesignButton', () => {
 
 	it('clears the design on confirm', async () => {
 		const user = userEvent.setup()
-		render(<Harness />, { wrapper: AppStateProvider })
+		render(<Harness />, { wrapper: ZenStateProvider })
 
 		await user.click(screen.getByText('Paint test group'))
 		await user.click(
@@ -65,7 +65,7 @@ describe('ResetDesignButton', () => {
 
 	it('skips the confirmation on future clicks once "don\'t show this again" is checked and confirmed', async () => {
 		const user = userEvent.setup()
-		render(<Harness />, { wrapper: AppStateProvider })
+		render(<Harness />, { wrapper: ZenStateProvider })
 
 		await user.click(screen.getByText('Paint test group'))
 		await user.click(

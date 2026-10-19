@@ -1,34 +1,34 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { ColorScheme } from '@/domain/palettes'
+import type { Palette } from '@/domain/palettes'
 import {
 	generateRandomShapeGroupColors,
 	pickRandomPaintColor,
 } from './randomDesign'
 
-const SCHEME: ColorScheme = {
-	name: 'Test Scheme',
+const PALETTE: Palette = {
+	name: 'Test Palette',
 	colors: ['#111111', '#222222', '#333333', '#444444', '#555555'],
 }
 const BASE = '#000000'
 
 describe('pickRandomPaintColor', () => {
-	it('weights scheme colors far more heavily than base (90% scheme, 10% base)', () => {
-		// The pool is 5 scheme colors x 18 + base x 10 = 100 entries;
+	it('weights palette colors far more heavily than base (90% palette, 10% base)', () => {
+		// The pool is 5 palette colors x 18 + base x 10 = 100 entries;
 		// random() in [0, 1) maps linearly onto pool index.
-		expect(pickRandomPaintColor(SCHEME, BASE, () => 0)).toBe(
-			SCHEME.colors[0],
+		expect(pickRandomPaintColor(PALETTE, BASE, () => 0)).toBe(
+			PALETTE.colors[0],
 		)
-		expect(pickRandomPaintColor(SCHEME, BASE, () => 0.89)).toBe(
-			SCHEME.colors[4],
+		expect(pickRandomPaintColor(PALETTE, BASE, () => 0.89)).toBe(
+			PALETTE.colors[4],
 		)
-		expect(pickRandomPaintColor(SCHEME, BASE, () => 0.9)).toBe(BASE)
-		expect(pickRandomPaintColor(SCHEME, BASE, () => 0.99)).toBe(BASE)
+		expect(pickRandomPaintColor(PALETTE, BASE, () => 0.9)).toBe(BASE)
+		expect(pickRandomPaintColor(PALETTE, BASE, () => 0.99)).toBe(BASE)
 	})
 
-	it('only ever returns one of the scheme colors or base (never accent)', () => {
-		const possible = new Set([...SCHEME.colors, BASE])
+	it('only ever returns one of the palette colors or base (never accent)', () => {
+		const possible = new Set([...PALETTE.colors, BASE])
 		for (let i = 0; i < 50; i++) {
-			expect(possible).toContain(pickRandomPaintColor(SCHEME, BASE))
+			expect(possible).toContain(pickRandomPaintColor(PALETTE, BASE))
 		}
 	})
 })
@@ -45,20 +45,20 @@ describe('generateRandomShapeGroupColors', () => {
 		}
 		const result = generateRandomShapeGroupColors(
 			groupIds,
-			SCHEME,
+			PALETTE,
 			BASE,
 			random,
 		)
 		expect(Object.keys(result)).toEqual(groupIds)
 		expect(random).toHaveBeenCalledTimes(groupIds.length)
 		const expected = [
-			...SCHEME.colors.flatMap(color => Array(18).fill(color)),
+			...PALETTE.colors.flatMap(color => Array(18).fill(color)),
 			...Array(10).fill(BASE),
 		]
 		expect(Object.values(result)).toEqual(expected)
 		for (let index = 0; index < 100; index++) {
 			expect(result[groupIds[index]]).toBe(
-				pickRandomPaintColor(SCHEME, BASE, () => (index + 0.5) / 100),
+				pickRandomPaintColor(PALETTE, BASE, () => (index + 0.5) / 100),
 			)
 		}
 	})
@@ -66,14 +66,14 @@ describe('generateRandomShapeGroupColors', () => {
 	it('returns an empty design without consuming random values when there are no groups', () => {
 		const random = vi.fn()
 		expect(
-			generateRandomShapeGroupColors([], SCHEME, BASE, random),
+			generateRandomShapeGroupColors([], PALETTE, BASE, random),
 		).toEqual({})
 		expect(random).not.toHaveBeenCalled()
 	})
 
 	it('assigns a color to every given group id', () => {
 		const groupIds = ['a', 'b', 'c']
-		const result = generateRandomShapeGroupColors(groupIds, SCHEME, BASE)
+		const result = generateRandomShapeGroupColors(groupIds, PALETTE, BASE)
 		expect(Object.keys(result).sort()).toEqual(groupIds.sort())
 	})
 
@@ -81,10 +81,10 @@ describe('generateRandomShapeGroupColors', () => {
 		const groupIds = ['a', 'b']
 		const result = generateRandomShapeGroupColors(
 			groupIds,
-			SCHEME,
+			PALETTE,
 			BASE,
 			() => 0,
 		)
-		expect(result).toEqual({ a: SCHEME.colors[0], b: SCHEME.colors[0] })
+		expect(result).toEqual({ a: PALETTE.colors[0], b: PALETTE.colors[0] })
 	})
 })

@@ -2,10 +2,10 @@ import { createRef } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { colorSchemes } from '@/domain/palettes'
+import { palettes } from '@/domain/palettes'
 import { defaultGridSizes } from '@/domain/shapes'
 import { useIsTouchDevice } from '@/ui/hooks'
-import { savePersistedState, useAppState } from '@/features/zen/state'
+import { savePersistedState, useZenState } from '@/features/zen/state'
 import { renderWithProvider } from '@/test/renderWithProvider'
 import cellStyles from './Cell.module.css'
 import polygonStyles from './PolygonCell.module.css'
@@ -14,17 +14,17 @@ import type { GridCell } from './GridView'
 
 vi.mock('@/ui/hooks/useIsTouchDevice')
 const mockUseIsTouchDevice = vi.mocked(useIsTouchDevice)
-const paintColor = colorSchemes[0].colors[0]
+const paintColor = palettes[0].colors[0]
 
 function ToggleHighlight() {
-	const { toggleEditableArea } = useAppState()
+	const { toggleEditableArea } = useZenState()
 	return <button onClick={toggleEditableArea}>Toggle highlight</button>
 }
 
 beforeEach(() => {
 	localStorage.clear()
 	savePersistedState({
-		currentScheme: colorSchemes[0],
+		currentPalette: palettes[0],
 		currentColor: paintColor,
 		darkMode: true,
 		showEditableArea: true,

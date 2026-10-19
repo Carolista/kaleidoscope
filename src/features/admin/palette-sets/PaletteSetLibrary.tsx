@@ -30,11 +30,11 @@ import {
 import { useModalState } from '@/ui/hooks'
 import type { Database } from '@/lib/supabase'
 import {
-	manageSchemeSet,
-	schemeSetLabels,
-	type SchemeSet,
-	type SchemeSetAction,
-	type SchemeSetKind,
+	managePaletteSet,
+	paletteSetLabels,
+	type PaletteSet,
+	type PaletteSetAction,
+	type PaletteSetKind,
 } from '@/features/admin/services'
 import { useUnsavedDraft } from '@/ui/navigation'
 
@@ -44,7 +44,7 @@ function errorMessage(cause: unknown) {
 		: 'Unable to manage palette sets.'
 }
 
-export default function SchemeSetLibrary({
+export default function PaletteSetLibrary({
 	client,
 	sets,
 	loading,
@@ -54,7 +54,7 @@ export default function SchemeSetLibrary({
 	onOrderSaved,
 }: {
 	readonly client: SupabaseClient<Database>
-	readonly sets: readonly SchemeSet[]
+	readonly sets: readonly PaletteSet[]
 	readonly loading: boolean
 	readonly refreshing?: boolean
 	readonly catalogError: string
@@ -67,18 +67,18 @@ export default function SchemeSetLibrary({
 	const [editing, setEditing] = useState<{
 		id: string
 		name: string
-		kind: SchemeSetKind
+		kind: PaletteSetKind
 	} | null>(null)
 	const [name, setName] = useState('')
 	const [creating, setCreating, creationModal] = useModalState<true>()
 	const addButton = useRef<HTMLButtonElement>(null)
 	const focusAdd = useRef(false)
-	const [kind, setKind] = useState<SchemeSetKind>('undecided')
+	const [kind, setKind] = useState<PaletteSetKind>('undecided')
 	const [error, setError] = useState('')
 	const [deleteError, setDeleteError] = useState('')
 	const [status, setStatus] = useState('')
 	const [busy, setBusy] = useState(false)
-	const [deleting, setDeleting, deleteModal] = useModalState<SchemeSet>()
+	const [deleting, setDeleting, deleteModal] = useModalState<PaletteSet>()
 	const working = useRef(false)
 	const selected = sets.find(set => set.row.id === editing?.id)
 	const readOnly = !!selected?.row.published_at || !!selected?.row.release_at
@@ -100,7 +100,7 @@ export default function SchemeSetLibrary({
 	}, [loading, creating])
 	async function mutate(
 		id: string,
-		actions: readonly SchemeSetAction[],
+		actions: readonly PaletteSetAction[],
 		message: string,
 	) {
 		if (working.current || loading || catalogError || !actions.length)
@@ -114,7 +114,7 @@ export default function SchemeSetLibrary({
 		let changed = false
 		try {
 			for (const action of actions) {
-				await manageSchemeSet(client, id, action)
+				await managePaletteSet(client, id, action)
 				if (action.kind === 'reorder')
 					onOrderSaved(id, action.paletteIds)
 				else changed = true
@@ -164,9 +164,9 @@ export default function SchemeSetLibrary({
 		)
 	}
 	return (
-		<section aria-labelledby="scheme-sets-title">
+		<section aria-labelledby="palette-sets-title">
 			<AdminSectionHeading
-				id="scheme-sets-title"
+				id="palette-sets-title"
 				title={
 					editing
 						? `Palette set: ${editing.name}${readOnly ? ' (read-only)' : ''}`
@@ -221,13 +221,13 @@ export default function SchemeSetLibrary({
 					title="New palette set"
 					formLabel="Palette set details"
 					kindLabel="Set label"
-					kinds={schemeSetLabels}
+					kinds={paletteSetLabels}
 					initialKind="undecided"
 					confirmLabel="Save set"
 					pendingLabel="Creating palette set…"
 					onCancel={() => setCreating(null)}
 					onCreate={async (id, name, kind) => {
-						await manageSchemeSet(client, id, {
+						await managePaletteSet(client, id, {
 							kind: 'create',
 							name,
 							role: kind,
@@ -243,7 +243,7 @@ export default function SchemeSetLibrary({
 				<>
 					<AdminSetForm
 						label="Palette set details"
-						nameId="scheme-set-name"
+						nameId="palette-set-name"
 						name={name}
 						disabled={unavailable}
 						readOnly={readOnly}
@@ -251,7 +251,7 @@ export default function SchemeSetLibrary({
 						onNameChange={setName}
 						onSave={save}
 					>
-						<FormField label="Set label" id="scheme-set-kind">
+						<FormField label="Set label" id="palette-set-kind">
 							{field => (
 								<Select
 									{...field}
@@ -268,7 +268,7 @@ export default function SchemeSetLibrary({
 											setKind(value)
 									}}
 								>
-									{Object.entries(schemeSetLabels).map(
+									{Object.entries(paletteSetLabels).map(
 										([value, label]) => (
 											<option key={value} value={value}>
 												{label}
@@ -373,7 +373,7 @@ export default function SchemeSetLibrary({
 							}
 						>
 							<strong>{set.row.name}</strong>
-							<span>{schemeSetLabels[set.kind]}</span>
+							<span>{paletteSetLabels[set.kind]}</span>
 							<span>
 								{set.members.length}{' '}
 								{set.members.length === 1

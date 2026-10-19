@@ -2,10 +2,10 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { describe, expect, it, vi } from 'vitest'
 import type { Database } from '@/lib/supabase'
 import {
-	loadSchemeSets,
-	manageSchemeSet,
-	type SchemeSetAction,
-} from './schemeSets'
+	loadPaletteSets,
+	managePaletteSet,
+	type PaletteSetAction,
+} from './paletteSets'
 
 const row = {
 	id: 'set-one',
@@ -57,7 +57,7 @@ function setup() {
 describe('palette set catalog', () => {
 	it('loads ordered palette swatches for every set in one membership query', async () => {
 		const { client, selects, orders, filters, members } = setup()
-		expect(await loadSchemeSets(client)).toEqual([
+		expect(await loadPaletteSets(client)).toEqual([
 			{ row, kind: 'undecided', members: [palette] },
 		])
 		expect(selects).toHaveBeenCalledWith(
@@ -73,7 +73,7 @@ describe('palette set catalog', () => {
 	it('skips membership reads when there are no palette sets', async () => {
 		const { client, sets, members } = setup()
 		sets.mockResolvedValueOnce({ data: [], error: null })
-		expect(await loadSchemeSets(client)).toEqual([])
+		expect(await loadPaletteSets(client)).toEqual([])
 		expect(members).not.toHaveBeenCalled()
 	})
 
@@ -88,7 +88,7 @@ describe('palette set catalog', () => {
 			}),
 			error: null,
 		})
-		const result = await loadSchemeSets(client)
+		const result = await loadPaletteSets(client)
 		expect(result).toHaveLength(1001)
 		expect(result[0].members).toHaveLength(1001)
 		expect(sets.mock.calls).toEqual([
@@ -109,11 +109,11 @@ describe('palette set catalog', () => {
 				data: null,
 				error: { message: 'Offline' },
 			})
-			await expect(loadSchemeSets(setupResult.client)).rejects.toThrow(
+			await expect(loadPaletteSets(setupResult.client)).rejects.toThrow(
 				'Offline',
 			)
 			setupResult[key].mockResolvedValueOnce({ data: null, error: null })
-			await expect(loadSchemeSets(setupResult.client)).rejects.toThrow(
+			await expect(loadPaletteSets(setupResult.client)).rejects.toThrow(
 				'returned no data',
 			)
 		},
@@ -125,14 +125,14 @@ describe('palette set catalog', () => {
 			data: [{ ...row, kind: 'free' }],
 			error: null,
 		})
-		await expect(loadSchemeSets(client)).rejects.toThrow(
+		await expect(loadPaletteSets(client)).rejects.toThrow(
 			'unsupported label',
 		)
 		members.mockResolvedValueOnce({
 			data: [{ pack_id: row.id, palettes: null }],
 			error: null,
 		})
-		await expect(loadSchemeSets(client)).rejects.toThrow(
+		await expect(loadPaletteSets(client)).rejects.toThrow(
 			'could not be resolved',
 		)
 		members.mockResolvedValueOnce({
@@ -141,7 +141,7 @@ describe('palette set catalog', () => {
 			],
 			error: null,
 		})
-		await expect(loadSchemeSets(client)).rejects.toThrow(
+		await expect(loadPaletteSets(client)).rejects.toThrow(
 			'five six-digit hex colors',
 		)
 	})
@@ -167,11 +167,11 @@ describe('palette set operations', () => {
 			{ p_palette_ids: ['b', 'a'] },
 		],
 		[{ kind: 'delete' }, {}],
-	] satisfies [SchemeSetAction, object][])(
+	] satisfies [PaletteSetAction, object][])(
 		'confirms one %j request',
 		async (action, args) => {
 			const rpc = vi.fn().mockResolvedValue({ data: row.id, error: null })
-			await manageSchemeSet(clientFrom({ rpc }), row.id, action)
+			await managePaletteSet(clientFrom({ rpc }), row.id, action)
 			expect(rpc).toHaveBeenCalledExactlyOnceWith('manage_palette_set', {
 				p_id: row.id,
 				p_action: action.kind,
@@ -187,7 +187,7 @@ describe('palette set operations', () => {
 		})
 		const client = clientFrom({ rpc })
 		await expect(
-			manageSchemeSet(client, row.id, {
+			managePaletteSet(client, row.id, {
 				kind: 'assign',
 				paletteIds: ['art'],
 			}),
@@ -195,7 +195,7 @@ describe('palette set operations', () => {
 		for (const data of [null, 'another-set']) {
 			rpc.mockResolvedValue({ data, error: null })
 			await expect(
-				manageSchemeSet(client, row.id, { kind: 'delete' }),
+				managePaletteSet(client, row.id, { kind: 'delete' }),
 			).rejects.toThrow('not confirmed')
 		}
 	})

@@ -1,4 +1,4 @@
-// The two non-scheme colors always available to paint with: a light one and a dark one.
+// The two non-palette colors always available to paint with: a light one and a dark one.
 export interface ThemeColors {
 	readonly base: string
 	readonly accent: string

@@ -1,24 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { colorSchemes } from '@/domain/palettes'
+import { palettes } from '@/domain/palettes'
 import {
 	supportedGridShapes,
 	defaultGridSizes,
 	legacyGridSizes,
 } from '@/domain/shapes'
-import type { AppState } from './appState'
-import { appReducer } from './appReducer'
+import type { ZenState } from './zenState'
+import { zenReducer } from './zenReducer'
 import {
-	loadInitialAppState,
+	loadInitialZenState,
 	savePersistedState,
 	hasPersistedDesign,
 } from './storageService'
 
 const STORAGE_KEY = 'kaleidoscope:design'
 
-function baseState(overrides: Partial<AppState> = {}): AppState {
+function baseState(overrides: Partial<ZenState> = {}): ZenState {
 	return {
-		currentScheme: colorSchemes[0],
-		currentColor: colorSchemes[0].colors[0],
+		currentPalette: palettes[0],
+		currentColor: palettes[0].colors[0],
 		darkMode: false,
 		showEditableArea: true,
 		gridShape: 'hexagon',
@@ -40,25 +40,25 @@ describe('storageService', () => {
 			(['sm', 'md', 'lg'] as const).map(size => ({ shape: id, size })),
 		)
 		boards.forEach(({ shape, size }, index) => {
-			saved = appReducer(saved, {
+			saved = zenReducer(saved, {
 				type: 'SELECT_GRID_SHAPE',
 				shape,
 				size,
 			})
-			saved = appReducer(saved, {
+			saved = zenReducer(saved, {
 				type: 'SELECT_COLOR',
 				color: `#${index.toString(16).padStart(6, '0')}`,
 			})
-			saved = appReducer(saved, {
+			saved = zenReducer(saved, {
 				type: 'PAINT_SHAPE_GROUP',
 				groupId: '0',
 			})
 		})
 		savePersistedState(saved)
-		let restored = loadInitialAppState()
+		let restored = loadInitialZenState()
 		expect(restored).toEqual(saved)
 		boards.forEach(({ shape, size }, index) => {
-			restored = appReducer(restored, {
+			restored = zenReducer(restored, {
 				type: 'SELECT_GRID_SHAPE',
 				shape,
 				size,
@@ -76,7 +76,7 @@ describe('storageService', () => {
 				STORAGE_KEY,
 				JSON.stringify({
 					version,
-					schemeName: colorSchemes[0].name,
+					schemeName: palettes[0].name,
 					currentColor: '#123456',
 					darkMode: false,
 					gridShape: 'triangle',
@@ -84,10 +84,10 @@ describe('storageService', () => {
 					shapeGroupColors: { '0': '#123456' },
 				}),
 			)
-			const restored = loadInitialAppState()
+			const restored = loadInitialZenState()
 			expect(restored.shapeGroupColors).toEqual({ '0': '#123456' })
 			expect(restored.savedBoards).toEqual({})
-			const switched = appReducer(restored, {
+			const switched = zenReducer(restored, {
 				type: 'SELECT_GRID_SIZE',
 				shape: 'triangle',
 				size: 'md',
@@ -112,34 +112,34 @@ describe('storageService', () => {
 		const payload = JSON.parse(localStorage.getItem(STORAGE_KEY)!)
 		payload.savedBoards = savedBoards
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
-		expect(loadInitialAppState().savedBoards).toEqual({})
-		expect(loadInitialAppState().darkMode).toBe(true)
+		expect(loadInitialZenState().savedBoards).toEqual({})
+		expect(loadInitialZenState().darkMode).toBe(true)
 	})
 
-	it('loadInitialAppState falls back to a fresh random state when nothing is saved', () => {
-		const state = loadInitialAppState()
-		expect(colorSchemes).toContain(state.currentScheme)
+	it('loadInitialZenState falls back to a fresh random state when nothing is saved', () => {
+		const state = loadInitialZenState()
+		expect(palettes).toContain(state.currentPalette)
 		expect(state.shapeGroupColors).toEqual({})
 	})
 
-	it('round-trips a saved design back through loadInitialAppState', () => {
+	it('round-trips a saved design back through loadInitialZenState', () => {
 		const saved = baseState({
-			currentScheme: colorSchemes[2],
-			currentColor: colorSchemes[2].colors[1],
+			currentPalette: palettes[2],
+			currentColor: palettes[2].colors[1],
 			darkMode: true,
 			gridShape: 'triangle',
-			shapeGroupColors: { '0,0': colorSchemes[2].colors[1] },
+			shapeGroupColors: { '0,0': palettes[2].colors[1] },
 		})
 		savePersistedState(saved)
 
-		const loaded = loadInitialAppState()
+		const loaded = loadInitialZenState()
 		expect(loaded).toEqual(saved)
 	})
 
 	it.each(supportedGridShapes)('restores supported shape $id', ({ id }) => {
 		const saved = baseState({ gridShape: id })
 		savePersistedState(saved)
-		expect(loadInitialAppState()).toEqual(saved)
+		expect(loadInitialZenState()).toEqual(saved)
 	})
 
 	it.each(['#000000', '#ffffff', '#ABCDEF', '#aB12Cd'])(
@@ -150,7 +150,7 @@ describe('storageService', () => {
 				shapeGroupColors: { 'historical-group-id': color },
 			})
 			savePersistedState(saved)
-			expect(loadInitialAppState()).toEqual(saved)
+			expect(loadInitialZenState()).toEqual(saved)
 		},
 	)
 
@@ -184,7 +184,7 @@ describe('storageService', () => {
 				STORAGE_KEY,
 				JSON.stringify({
 					version: 1,
-					schemeName: colorSchemes[0].name,
+					schemeName: palettes[0].name,
 					currentColor: '#123456',
 					darkMode: false,
 					showEditableArea: false,
@@ -193,10 +193,10 @@ describe('storageService', () => {
 					...overrides,
 				}),
 			)
-			const state = loadInitialAppState()
+			const state = loadInitialZenState()
 			expect(state).toEqual({
-				currentScheme: state.currentScheme,
-				currentColor: state.currentScheme.colors[0],
+				currentPalette: state.currentPalette,
+				currentColor: state.currentPalette.colors[0],
 				darkMode: true,
 				showEditableArea: true,
 				gridShape: 'hexagon',
@@ -204,7 +204,7 @@ describe('storageService', () => {
 				savedBoards: {},
 				shapeGroupColors: {},
 			})
-			expect(colorSchemes).toContain(state.currentScheme)
+			expect(palettes).toContain(state.currentPalette)
 		}
 	})
 
@@ -221,15 +221,15 @@ describe('storageService', () => {
 			STORAGE_KEY,
 			JSON.stringify({
 				version: 1,
-				schemeName: colorSchemes[0].name,
+				schemeName: palettes[0].name,
 				currentColor: '#123456',
 				darkMode: false,
 				shapeGroupColors,
 			}),
 		)
-		const state = loadInitialAppState()
+		const state = loadInitialZenState()
 		expect(state.darkMode).toBe(true)
-		expect(state.currentColor).toBe(state.currentScheme.colors[0])
+		expect(state.currentColor).toBe(state.currentPalette.colors[0])
 		expect(state.shapeGroupColors).toEqual({})
 	})
 
@@ -237,7 +237,7 @@ describe('storageService', () => {
 		'rejects non-record payload %j without changing the saved-key existence policy',
 		payload => {
 			localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
-			expect(loadInitialAppState().shapeGroupColors).toEqual({})
+			expect(loadInitialZenState().shapeGroupColors).toEqual({})
 			expect(hasPersistedDesign()).toBe(true)
 		},
 	)
@@ -247,13 +247,13 @@ describe('storageService', () => {
 			STORAGE_KEY,
 			JSON.stringify({
 				version: 1,
-				schemeName: colorSchemes[0].name,
+				schemeName: palettes[0].name,
 				currentColor: '#ABCDEF',
 				darkMode: false,
 				shapeGroupColors: { a: '#123456' },
 			}),
 		)
-		expect(loadInitialAppState()).toEqual(
+		expect(loadInitialZenState()).toEqual(
 			baseState({
 				currentColor: '#ABCDEF',
 				gridSizes: { ...defaultGridSizes, hexagon: 'lg' },
@@ -271,7 +271,7 @@ describe('storageService', () => {
 			},
 		})
 		savePersistedState(saved)
-		expect(loadInitialAppState()).toEqual(saved)
+		expect(loadInitialZenState()).toEqual(saved)
 
 		const legacy = JSON.parse(localStorage.getItem(STORAGE_KEY)!) as Record<
 			string,
@@ -281,7 +281,7 @@ describe('storageService', () => {
 		legacy.version = 4
 		legacy.gridShape = 'triangle'
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(legacy))
-		expect(loadInitialAppState().gridSizes).toEqual({
+		expect(loadInitialZenState().gridSizes).toEqual({
 			...defaultGridSizes,
 			triangle: legacyGridSizes.triangle,
 		})
@@ -299,7 +299,7 @@ describe('storageService', () => {
 		legacy.version = 1
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(legacy))
 
-		expect(loadInitialAppState().gridSizes.hexagram).toBe('lg')
+		expect(loadInitialZenState().gridSizes.hexagram).toBe('lg')
 	})
 
 	it.each([{ hexagon: 'extra-large' }, { pinwheel: 'xl' }])(
@@ -309,14 +309,14 @@ describe('storageService', () => {
 				STORAGE_KEY,
 				JSON.stringify({
 					version: 1,
-					schemeName: colorSchemes[0].name,
+					schemeName: palettes[0].name,
 					currentColor: '#123456',
 					darkMode: false,
 					gridSizes,
 					shapeGroupColors: {},
 				}),
 			)
-			expect(loadInitialAppState().gridSizes).toEqual(defaultGridSizes)
+			expect(loadInitialZenState().gridSizes).toEqual(defaultGridSizes)
 		},
 	)
 
@@ -325,7 +325,7 @@ describe('storageService', () => {
 			STORAGE_KEY,
 			JSON.stringify({
 				version: 2,
-				schemeName: colorSchemes[0].name,
+				schemeName: palettes[0].name,
 				currentColor: '#123456',
 				darkMode: false,
 				gridShape: 'circleRings',
@@ -334,7 +334,7 @@ describe('storageService', () => {
 			}),
 		)
 
-		expect(loadInitialAppState().gridSizes.circleRings).toBe('lg')
+		expect(loadInitialZenState().gridSizes.circleRings).toBe('lg')
 	})
 
 	it('migrates pre-Pinwheel-size MD values to LG to preserve the previous grid', () => {
@@ -342,7 +342,7 @@ describe('storageService', () => {
 			STORAGE_KEY,
 			JSON.stringify({
 				version: 3,
-				schemeName: colorSchemes[0].name,
+				schemeName: palettes[0].name,
 				currentColor: '#123456',
 				darkMode: false,
 				gridShape: 'pinwheel',
@@ -351,28 +351,28 @@ describe('storageService', () => {
 			}),
 		)
 
-		expect(loadInitialAppState().gridSizes.pinwheel).toBe('lg')
+		expect(loadInitialZenState().gridSizes.pinwheel).toBe('lg')
 	})
 
-	it('falls back to a fresh random state when the saved scheme name no longer exists', () => {
+	it('falls back to a fresh random state when the saved palette name no longer exists', () => {
 		localStorage.setItem(
 			STORAGE_KEY,
 			JSON.stringify({
 				version: 1,
-				schemeName: 'Not A Real Scheme',
+				schemeName: 'Not A Real Palette',
 				currentColor: '#123456',
 				darkMode: true,
 				shapeGroupColors: {},
 			}),
 		)
-		const state = loadInitialAppState()
-		expect(colorSchemes).toContain(state.currentScheme)
+		const state = loadInitialZenState()
+		expect(palettes).toContain(state.currentPalette)
 	})
 
 	it('falls back to a fresh random state on corrupted JSON', () => {
 		localStorage.setItem(STORAGE_KEY, '{ not valid json')
-		const state = loadInitialAppState()
-		expect(colorSchemes).toContain(state.currentScheme)
+		const state = loadInitialZenState()
+		expect(palettes).toContain(state.currentPalette)
 	})
 
 	it('falls back to a fresh random state when the saved version is unrecognized', () => {
@@ -380,14 +380,14 @@ describe('storageService', () => {
 			STORAGE_KEY,
 			JSON.stringify({
 				version: 999,
-				schemeName: colorSchemes[0].name,
-				currentColor: colorSchemes[0].colors[0],
+				schemeName: palettes[0].name,
+				currentColor: palettes[0].colors[0],
 				darkMode: false,
 				shapeGroupColors: {},
 			}),
 		)
-		const state = loadInitialAppState()
-		expect(colorSchemes).toContain(state.currentScheme)
+		const state = loadInitialZenState()
+		expect(palettes).toContain(state.currentPalette)
 	})
 
 	it('falls back to a fresh random state when shapeGroupColors has non-string values', () => {
@@ -395,14 +395,14 @@ describe('storageService', () => {
 			STORAGE_KEY,
 			JSON.stringify({
 				version: 1,
-				schemeName: colorSchemes[0].name,
-				currentColor: colorSchemes[0].colors[0],
+				schemeName: palettes[0].name,
+				currentColor: palettes[0].colors[0],
 				darkMode: false,
 				shapeGroupColors: { a: 123 },
 			}),
 		)
-		const state = loadInitialAppState()
-		expect(colorSchemes).toContain(state.currentScheme)
+		const state = loadInitialZenState()
+		expect(palettes).toContain(state.currentPalette)
 		expect(state.shapeGroupColors).toEqual({})
 	})
 
@@ -411,13 +411,13 @@ describe('storageService', () => {
 			STORAGE_KEY,
 			JSON.stringify({
 				version: 1,
-				schemeName: colorSchemes[0].name,
-				currentColor: colorSchemes[0].colors[0],
+				schemeName: palettes[0].name,
+				currentColor: palettes[0].colors[0],
 				darkMode: false,
 				shapeGroupColors: {},
 			}),
 		)
-		const state = loadInitialAppState()
+		const state = loadInitialZenState()
 		expect(state.showEditableArea).toBe(true)
 	})
 
@@ -426,15 +426,15 @@ describe('storageService', () => {
 			STORAGE_KEY,
 			JSON.stringify({
 				version: 1,
-				schemeName: colorSchemes[0].name,
-				currentColor: colorSchemes[0].colors[0],
+				schemeName: palettes[0].name,
+				currentColor: palettes[0].colors[0],
 				darkMode: false,
 				showEditableArea: 'yes',
 				shapeGroupColors: {},
 			}),
 		)
-		const state = loadInitialAppState()
-		expect(colorSchemes).toContain(state.currentScheme)
+		const state = loadInitialZenState()
+		expect(palettes).toContain(state.currentPalette)
 	})
 
 	it('defaults gridShape to hexagon when loading a design saved before that field existed', () => {
@@ -442,13 +442,13 @@ describe('storageService', () => {
 			STORAGE_KEY,
 			JSON.stringify({
 				version: 1,
-				schemeName: colorSchemes[0].name,
-				currentColor: colorSchemes[0].colors[0],
+				schemeName: palettes[0].name,
+				currentColor: palettes[0].colors[0],
 				darkMode: false,
 				shapeGroupColors: {},
 			}),
 		)
-		const state = loadInitialAppState()
+		const state = loadInitialZenState()
 		expect(state.gridShape).toBe('hexagon')
 	})
 
@@ -457,15 +457,15 @@ describe('storageService', () => {
 			STORAGE_KEY,
 			JSON.stringify({
 				version: 1,
-				schemeName: colorSchemes[0].name,
-				currentColor: colorSchemes[0].colors[0],
+				schemeName: palettes[0].name,
+				currentColor: palettes[0].colors[0],
 				darkMode: false,
 				gridShape: 'octagon',
 				shapeGroupColors: {},
 			}),
 		)
-		const state = loadInitialAppState()
-		expect(colorSchemes).toContain(state.currentScheme)
+		const state = loadInitialZenState()
+		expect(palettes).toContain(state.currentPalette)
 	})
 
 	it('savePersistedState swallows storage errors instead of throwing', () => {
@@ -478,13 +478,13 @@ describe('storageService', () => {
 		setItemSpy.mockRestore()
 	})
 
-	it('loadInitialAppState swallows storage access errors instead of throwing', () => {
+	it('loadInitialZenState swallows storage access errors instead of throwing', () => {
 		const getItemSpy = vi
 			.spyOn(Storage.prototype, 'getItem')
 			.mockImplementation(() => {
 				throw new Error('storage disabled')
 			})
-		expect(() => loadInitialAppState()).not.toThrow()
+		expect(() => loadInitialZenState()).not.toThrow()
 		getItemSpy.mockRestore()
 	})
 

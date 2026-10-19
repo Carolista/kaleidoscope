@@ -1,11 +1,11 @@
 import { useEffect } from 'react'
 import { faRotateLeft, faRotateRight } from '@fortawesome/pro-solid-svg-icons'
-import { useAppState } from '@/features/zen/state'
+import { useZenState } from '@/features/zen/state'
 import { PlayerIconButton as IconButton } from '@/ui/components'
 import styles from './UndoRedoButtons.module.css'
 
 function UndoRedoButtons() {
-	const { undo, redo, canUndo, canRedo } = useAppState()
+	const { undo, redo, canUndo, canRedo } = useZenState()
 
 	useEffect(() => {
 		function handleKeyDown(event: KeyboardEvent) {

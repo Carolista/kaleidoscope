@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { AppStateProvider } from '@/features/zen/state'
+import { ZenStateProvider } from '@/features/zen/state'
 import {
 	HEXAGRAM_GRID_SIZES,
 	computeGridAspectRatio,
@@ -11,7 +11,7 @@ import HexagramGrid from './HexagramGrid'
 
 describe('HexagramGrid', () => {
 	it('exposes exactly 20 clickable tiles, each as an accessible, labeled button', () => {
-		render(<HexagramGrid />, { wrapper: AppStateProvider })
+		render(<HexagramGrid />, { wrapper: ZenStateProvider })
 		const tiles = screen.getAllByRole('button')
 		expect(tiles).toHaveLength(20)
 		expect(tiles[0]).toHaveAccessibleName('Paint tile 1 of 20')
@@ -20,7 +20,7 @@ describe('HexagramGrid', () => {
 
 	it('paints a tile on click and announces it via the live region', async () => {
 		const user = userEvent.setup()
-		render(<HexagramGrid />, { wrapper: AppStateProvider })
+		render(<HexagramGrid />, { wrapper: ZenStateProvider })
 
 		const tile = screen.getByRole('button', {
 			name: 'Paint tile 1 of 20',
@@ -37,7 +37,7 @@ describe('HexagramGrid', () => {
 
 	it('paints a tile via the keyboard (Enter and Space), not just click', async () => {
 		const user = userEvent.setup()
-		render(<HexagramGrid />, { wrapper: AppStateProvider })
+		render(<HexagramGrid />, { wrapper: ZenStateProvider })
 
 		const tile = screen.getByRole('button', {
 			name: 'Paint tile 2 of 20',
@@ -57,7 +57,7 @@ describe('HexagramGrid', () => {
 		'renders the %s grid at subdivision %s',
 		(_size, gridSize) => {
 			const { container } = render(<HexagramGrid gridSize={gridSize} />, {
-				wrapper: AppStateProvider,
+				wrapper: ZenStateProvider,
 			})
 			expect(container.querySelectorAll('polygon')).toHaveLength(
 				12 * gridSize ** 2,

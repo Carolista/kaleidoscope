@@ -1,15 +1,15 @@
 import { useState } from 'react'
-import type { ColorScheme } from '@/domain/palettes'
+import type { Palette } from '@/domain/palettes'
 import { getGroupIds, HEXAGON_GRID_RADII } from '@/domain/shapes/hexagon'
 import { HexPuzzleBoard } from '@/ui/puzzle'
 import { faWandMagicSparkles } from '@fortawesome/pro-solid-svg-icons'
 import { AdminIconButton, AdminSectionHeading } from '@/features/admin/common'
-import styles from './SchemeSandbox.module.css'
+import styles from './PaletteSandbox.module.css'
 
-export default function SchemeSandbox({
+export default function PaletteSandbox({
 	colors,
 }: {
-	readonly colors: ColorScheme['colors'] | null
+	readonly colors: Palette['colors'] | null
 }) {
 	const [assignments, setAssignments] = useState(() => randomize())
 	function randomize() {
@@ -31,7 +31,7 @@ export default function SchemeSandbox({
 	return (
 		<section className={styles.sandbox} aria-label="Palette sandbox">
 			<AdminSectionHeading
-				id="scheme-sandbox-title"
+				id="palette-sandbox-title"
 				title="Sandbox"
 				level={3}
 			>

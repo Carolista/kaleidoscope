@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { colorSchemes } from '@/domain/palettes'
+import { palettes } from '@/domain/palettes'
 import { renderWithProvider } from '@/test/renderWithProvider'
 import IntroSequence from './IntroSequence'
 
-const FIRST_SCHEME_COLORS = colorSchemes[0].colors
+const FIRST_PALETTE_COLORS = palettes[0].colors
 
 async function placeColor(
 	user: ReturnType<typeof userEvent.setup>,
@@ -25,7 +25,7 @@ describe('IntroSequence', () => {
 		localStorage.clear()
 	})
 
-	it('starts with the welcome message, the first scheme, and no paintable tiles', () => {
+	it('starts with the welcome message, the first palette, and no paintable tiles', () => {
 		renderWithProvider(<IntroSequence onContinue={vi.fn()} />)
 
 		expect(
@@ -37,7 +37,7 @@ describe('IntroSequence', () => {
 			),
 		).toBeInTheDocument()
 
-		const swatches = FIRST_SCHEME_COLORS.map((_, i) =>
+		const swatches = FIRST_PALETTE_COLORS.map((_, i) =>
 			screen.getByRole('button', { name: `Color ${i + 1}` }),
 		)
 		expect(swatches).toHaveLength(5)

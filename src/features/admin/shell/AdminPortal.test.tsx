@@ -30,10 +30,10 @@ vi.mock('@/features/admin/services/puzzleSets', () => ({
 	manageDraftSet: vi.fn(),
 	deleteDraftSet: vi.fn(),
 }))
-vi.mock('@/features/admin/services/schemeSets', () => ({
-	loadSchemeSets: async () => [],
-	manageSchemeSet: vi.fn(),
-	schemeSetLabels: {
+vi.mock('@/features/admin/services/paletteSets', () => ({
+	loadPaletteSets: async () => [],
+	managePaletteSet: vi.fn(),
+	paletteSetLabels: {
 		undecided: 'Undecided',
 		core: 'Core',
 		reward: 'Reward',

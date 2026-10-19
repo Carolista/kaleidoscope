@@ -1,7 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { describe, expect, it, vi } from 'vitest'
 import type { Database } from '@/lib/supabase'
-import { loadSchemeUsage, schemeIsUsed, type SchemeUsage } from './schemeUsage'
+import {
+	loadPaletteUsage,
+	paletteIsUsed,
+	type PaletteUsage,
+} from './paletteUsage'
 
 function clientFrom(value: object) {
 	return value as SupabaseClient<Database>
@@ -81,7 +85,7 @@ function setup() {
 describe('palette usage', () => {
 	it('reads stored target slots and references without private solutions or account identities', async () => {
 		const { client, selects, filters } = setup()
-		const usage = await loadSchemeUsage(client, 'cabo')
+		const usage = await loadPaletteUsage(client, 'cabo')
 		expect(usage).toEqual({
 			puzzles: [
 				{
@@ -141,7 +145,7 @@ describe('palette usage', () => {
 				error: null,
 			})
 		}
-		const usage = await loadSchemeUsage(client, 'cabo')
+		const usage = await loadPaletteUsage(client, 'cabo')
 		expect(usage.puzzles).toHaveLength(1001)
 		expect(usage.rewards).toHaveLength(1001)
 		expect(usage.packs).toHaveLength(1001)
@@ -171,7 +175,7 @@ describe('palette usage', () => {
 			],
 			error: null,
 		})
-		const usage = await loadSchemeUsage(client, 'cabo')
+		const usage = await loadPaletteUsage(client, 'cabo')
 		expect(usage.puzzles.map(value => value.context)).toEqual([
 			'Daily',
 			'Unassigned Set/pack',
@@ -187,11 +191,11 @@ describe('palette usage', () => {
 				data: null,
 				error: { message: 'Offline' },
 			})
-			await expect(loadSchemeUsage(client, 'cabo')).rejects.toThrow(
+			await expect(loadPaletteUsage(client, 'cabo')).rejects.toThrow(
 				'Offline',
 			)
 			pages[table].mockResolvedValueOnce({ data: null, error: null })
-			await expect(loadSchemeUsage(client, 'cabo')).rejects.toThrow(
+			await expect(loadPaletteUsage(client, 'cabo')).rejects.toThrow(
 				'returned no data',
 			)
 			const unresolved =
@@ -207,7 +211,7 @@ describe('palette usage', () => {
 				data: [unresolved],
 				error: null,
 			})
-			await expect(loadSchemeUsage(client, 'cabo')).rejects.toThrow(
+			await expect(loadPaletteUsage(client, 'cabo')).rejects.toThrow(
 				'could not be resolved',
 			)
 		},
@@ -225,11 +229,11 @@ describe('palette usage', () => {
 				count: null,
 				error: { message: 'Count offline' },
 			})
-			await expect(loadSchemeUsage(client, 'cabo')).rejects.toThrow(
+			await expect(loadPaletteUsage(client, 'cabo')).rejects.toThrow(
 				'Count offline',
 			)
 			counts[table].mockResolvedValueOnce({ count: null, error: null })
-			await expect(loadSchemeUsage(client, 'cabo')).rejects.toThrow(
+			await expect(loadPaletteUsage(client, 'cabo')).rejects.toThrow(
 				'count was not returned',
 			)
 		},
@@ -246,13 +250,13 @@ describe('palette usage', () => {
 			],
 			error: null,
 		})
-		await expect(loadSchemeUsage(client, 'cabo')).rejects.toThrow(
+		await expect(loadPaletteUsage(client, 'cabo')).rejects.toThrow(
 			'Invalid puzzle palette slot',
 		)
 	})
 
 	it('treats every reference kind as a deletion blocker', () => {
-		const empty: SchemeUsage = {
+		const empty: PaletteUsage = {
 			puzzles: [],
 			rewards: [],
 			packs: [],
@@ -260,7 +264,7 @@ describe('palette usage', () => {
 			grants: 0,
 			corrections: 0,
 		}
-		expect(schemeIsUsed(empty)).toBe(false)
+		expect(paletteIsUsed(empty)).toBe(false)
 		for (const usage of [
 			{
 				...empty,
@@ -274,7 +278,7 @@ describe('palette usage', () => {
 			{ ...empty, grants: 1 },
 			{ ...empty, corrections: 1 },
 		])
-			expect(schemeIsUsed(usage)).toBe(true)
+			expect(paletteIsUsed(usage)).toBe(true)
 	})
 
 	it('permits draft organizational membership but blocks prepared set membership', async () => {
@@ -283,7 +287,9 @@ describe('palette usage', () => {
 		pages.reward_palettes.mockResolvedValue({ data: [], error: null })
 		for (const count of Object.values(counts))
 			count.mockResolvedValue({ count: 0, error: null })
-		expect(schemeIsUsed(await loadSchemeUsage(client, 'cabo'))).toBe(false)
+		expect(paletteIsUsed(await loadPaletteUsage(client, 'cabo'))).toBe(
+			false,
+		)
 		pages.palette_pack_palettes.mockResolvedValue({
 			data: [
 				{
@@ -297,8 +303,8 @@ describe('palette usage', () => {
 			],
 			error: null,
 		})
-		const usage = await loadSchemeUsage(client, 'cabo')
+		const usage = await loadPaletteUsage(client, 'cabo')
 		expect(usage.preparedPacks).toBe(1)
-		expect(schemeIsUsed(usage)).toBe(true)
+		expect(paletteIsUsed(usage)).toBe(true)
 	})
 })

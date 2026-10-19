@@ -1,6 +1,6 @@
 import type { RefObject } from 'react'
 import { useId, useMemo, useState } from 'react'
-import { useAppState } from '@/features/zen/state'
+import { useZenState } from '@/features/zen/state'
 import { getThemeColors } from '@/domain/palettes'
 import { useImageExport } from './useImageExport'
 import { computeAspectRatioForShape } from '@/domain/shapes'
@@ -24,7 +24,7 @@ function SaveImageModal({ open, svgRef, onClose }: SaveImageModalProps) {
 	if (open && !previewOpen) setPreviewOpen(true)
 	const [includeGridLines, setIncludeGridLines] =
 		useState(getIncludeGridLines)
-	const { state } = useAppState()
+	const { state } = useZenState()
 	const gridSize = state.gridSizes[state.gridShape]
 	const { base } = getThemeColors(state.darkMode)
 	const { exportState, canShare, handleDownload, handleShare } =

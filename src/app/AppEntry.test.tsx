@@ -7,8 +7,8 @@ import entryStyles from './AppEntry.module.css'
 import { NavigationGuardDialog, useUnsavedDraft } from '@/ui/navigation'
 
 vi.mock('./PlayerApp', () => ({ default: () => <p>Player app</p> }))
-vi.mock('@/features/zen/state/AppContext', () => ({
-	AppStateProvider: ({ children }: { children: ReactNode }) => children,
+vi.mock('@/features/zen/state/ZenStateProvider', () => ({
+	ZenStateProvider: ({ children }: { children: ReactNode }) => children,
 }))
 vi.mock('@/features/admin/shell/AdminPortal', () => ({
 	default: function MockAdmin() {

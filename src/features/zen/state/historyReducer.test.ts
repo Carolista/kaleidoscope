@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from 'vitest'
-import { colorSchemes } from '@/domain/palettes'
+import { palettes } from '@/domain/palettes'
 import { defaultGridSizes, getGroupIdsForShape } from '@/domain/shapes'
-import type { AppState } from './appState'
-import type { AppAction } from './appReducer'
+import type { ZenState } from './zenState'
+import type { ZenAction } from './zenReducer'
 import { createInitialHistoryState, historyReducer } from './historyReducer'
 
-function baseState(overrides: Partial<AppState> = {}): AppState {
+function baseState(overrides: Partial<ZenState> = {}): ZenState {
 	return {
-		currentScheme: colorSchemes[0],
-		currentColor: colorSchemes[0].colors[0],
+		currentPalette: palettes[0],
+		currentColor: palettes[0].colors[0],
 		darkMode: false,
 		showEditableArea: true,
 		gridShape: 'hexagon',
@@ -54,15 +54,15 @@ describe('historyReducer', () => {
 		expect(history.present.darkMode).toBe(true)
 	})
 
-	const noOpActions: AppAction[] = [
+	const noOpActions: ZenAction[] = [
 		{ type: 'SELECT_GRID_SHAPE', shape: 'hexagon' },
 		{ type: 'RESET_DESIGN' },
-		{ type: 'SELECT_SCHEME', scheme: colorSchemes[0] },
+		{ type: 'SELECT_PALETTE', palette: palettes[0] },
 		{
-			type: 'SELECT_SCHEME',
-			scheme: { ...colorSchemes[0], colors: [...colorSchemes[0].colors] },
+			type: 'SELECT_PALETTE',
+			palette: { ...palettes[0], colors: [...palettes[0].colors] },
 		},
-		{ type: 'SELECT_COLOR', color: colorSchemes[0].colors[0] },
+		{ type: 'SELECT_COLOR', color: palettes[0].colors[0] },
 	]
 
 	it.each(noOpActions)(
@@ -98,12 +98,12 @@ describe('historyReducer', () => {
 				historyReducer(unchanged, { type: 'REDO' }).present
 					.shapeGroupColors,
 			).toEqual({
-				b: colorSchemes[0].colors[0],
+				b: palettes[0].colors[0],
 			})
 		},
 	)
 
-	it('reselecting an equivalent scheme resets the selected tool color but preserves history', () => {
+	it('reselecting an equivalent palette resets the selected tool color but preserves history', () => {
 		let history = createInitialHistoryState(baseState())
 		history = historyReducer(history, {
 			type: 'PAINT_SHAPE_GROUP',
@@ -112,19 +112,19 @@ describe('historyReducer', () => {
 		history = historyReducer(history, { type: 'UNDO' })
 		history = historyReducer(history, {
 			type: 'SELECT_COLOR',
-			color: colorSchemes[0].colors[3],
+			color: palettes[0].colors[3],
 		})
 		const next = historyReducer(history, {
-			type: 'SELECT_SCHEME',
-			scheme: colorSchemes[0],
+			type: 'SELECT_PALETTE',
+			palette: palettes[0],
 		})
-		expect(next.present.currentColor).toBe(colorSchemes[0].colors[0])
+		expect(next.present.currentColor).toBe(palettes[0].colors[0])
 		expect(next.past).toBe(history.past)
 		expect(next.future).toBe(history.future)
 		expect(
 			historyReducer(next, { type: 'REDO' }).present.shapeGroupColors,
 		).toEqual({
-			a: colorSchemes[0].colors[0],
+			a: palettes[0].colors[0],
 		})
 	})
 
@@ -156,9 +156,7 @@ describe('historyReducer', () => {
 		const groupIds = getGroupIdsForShape('hexagon')
 		const state = baseState({
 			shapeGroupColors: Object.fromEntries(
-				[...groupIds]
-					.reverse()
-					.map(id => [id, colorSchemes[0].colors[0]]),
+				[...groupIds].reverse().map(id => [id, palettes[0].colors[0]]),
 			),
 		})
 		let history = createInitialHistoryState(state)
@@ -178,11 +176,11 @@ describe('historyReducer', () => {
 	})
 
 	it.each([
-		{ ...colorSchemes[0], name: 'Renamed palette' },
-		{ name: colorSchemes[0].name, colors: colorSchemes[1].colors },
+		{ ...palettes[0], name: 'Renamed palette' },
+		{ name: palettes[0].name, colors: palettes[1].colors },
 	])(
-		'records a real scheme change to $name even when one field matches',
-		scheme => {
+		'records a real palette change to $name even when one field matches',
+		palette => {
 			let history = createInitialHistoryState(baseState())
 			history = historyReducer(history, {
 				type: 'PAINT_SHAPE_GROUP',
@@ -190,17 +188,17 @@ describe('historyReducer', () => {
 			})
 			history = historyReducer(history, { type: 'UNDO' })
 			const next = historyReducer(history, {
-				type: 'SELECT_SCHEME',
-				scheme,
+				type: 'SELECT_PALETTE',
+				palette,
 			})
 			expect(next.past).toHaveLength(history.past.length + 1)
 			expect(next.future).toEqual([])
-			expect(next.present.currentScheme).toBe(scheme)
+			expect(next.present.currentPalette).toBe(palette)
 			const undone = historyReducer(next, { type: 'UNDO' })
-			expect(undone.present.currentScheme).toBe(colorSchemes[0])
+			expect(undone.present.currentPalette).toBe(palettes[0])
 			expect(
-				historyReducer(undone, { type: 'REDO' }).present.currentScheme,
-			).toBe(scheme)
+				historyReducer(undone, { type: 'REDO' }).present.currentPalette,
+			).toBe(palette)
 		},
 	)
 
@@ -370,34 +368,34 @@ describe('historyReducer', () => {
 		expect(history.past).toBe(pastBefore)
 	})
 
-	it('maps the selected palette position on scheme undo and redo', () => {
-		const originalScheme = colorSchemes[0]
-		const nextScheme = colorSchemes[1]
+	it('maps the selected palette position on palette undo and redo', () => {
+		const originalPalette = palettes[0]
+		const nextPalette = palettes[1]
 		let history = createInitialHistoryState(baseState())
 		history = historyReducer(history, {
-			type: 'SELECT_SCHEME',
-			scheme: nextScheme,
+			type: 'SELECT_PALETTE',
+			palette: nextPalette,
 		})
 		history = historyReducer(history, {
 			type: 'SELECT_COLOR',
-			color: nextScheme.colors[3],
+			color: nextPalette.colors[3],
 		})
 
 		expect(history.past).toHaveLength(1)
 		history = historyReducer(history, { type: 'UNDO' })
-		expect(history.present.currentScheme).toBe(originalScheme)
-		expect(history.present.currentColor).toBe(originalScheme.colors[3])
+		expect(history.present.currentPalette).toBe(originalPalette)
+		expect(history.present.currentColor).toBe(originalPalette.colors[3])
 
 		history = historyReducer(history, { type: 'REDO' })
-		expect(history.present.currentScheme).toBe(nextScheme)
-		expect(history.present.currentColor).toBe(nextScheme.colors[3])
+		expect(history.present.currentPalette).toBe(nextPalette)
+		expect(history.present.currentColor).toBe(nextPalette.colors[3])
 	})
 
-	it('paints with the reconciled color after undoing a scheme change', () => {
+	it('paints with the reconciled color after undoing a palette change', () => {
 		let history = createInitialHistoryState(baseState())
 		history = historyReducer(history, {
-			type: 'SELECT_SCHEME',
-			scheme: colorSchemes[1],
+			type: 'SELECT_PALETTE',
+			palette: palettes[1],
 		})
 		history = historyReducer(history, { type: 'UNDO' })
 		history = historyReducer(history, {
@@ -405,34 +403,34 @@ describe('historyReducer', () => {
 			groupId: '0,0',
 		})
 
-		expect(history.present.currentColor).toBe(colorSchemes[0].colors[0])
+		expect(history.present.currentColor).toBe(palettes[0].colors[0])
 		expect(history.present.shapeGroupColors['0,0']).toBe(
-			colorSchemes[0].colors[0],
+			palettes[0].colors[0],
 		)
 	})
 
 	it('preserves a selected color already present at another position in the restored palette', () => {
-		const originalScheme = colorSchemes[0]
-		const nextScheme = {
+		const originalPalette = palettes[0]
+		const nextPalette = {
 			name: 'Overlapping palette',
 			colors: [
-				originalScheme.colors[1],
-				originalScheme.colors[2],
-				originalScheme.colors[3],
-				originalScheme.colors[4],
-				originalScheme.colors[0],
+				originalPalette.colors[1],
+				originalPalette.colors[2],
+				originalPalette.colors[3],
+				originalPalette.colors[4],
+				originalPalette.colors[0],
 			] as const,
 		}
 		let history = createInitialHistoryState(baseState())
 		history = historyReducer(history, {
-			type: 'SELECT_SCHEME',
-			scheme: nextScheme,
+			type: 'SELECT_PALETTE',
+			palette: nextPalette,
 		})
 		history = historyReducer(history, { type: 'UNDO' })
 
-		expect(history.present.currentColor).toBe(originalScheme.colors[1])
+		expect(history.present.currentColor).toBe(originalPalette.colors[1])
 		history = historyReducer(history, { type: 'REDO' })
-		expect(history.present.currentColor).toBe(originalScheme.colors[1])
+		expect(history.present.currentColor).toBe(originalPalette.colors[1])
 	})
 
 	it.each([
@@ -441,12 +439,12 @@ describe('historyReducer', () => {
 		[true, '#222222'],
 		[true, '#ffffff'],
 	])(
-		'preserves neutral %s mode color %s across scheme undo and redo',
+		'preserves neutral %s mode color %s across palette undo and redo',
 		(darkMode, color) => {
 			let history = createInitialHistoryState(baseState({ darkMode }))
 			history = historyReducer(history, {
-				type: 'SELECT_SCHEME',
-				scheme: colorSchemes[1],
+				type: 'SELECT_PALETTE',
+				palette: palettes[1],
 			})
 			history = historyReducer(history, {
 				type: 'SELECT_COLOR',

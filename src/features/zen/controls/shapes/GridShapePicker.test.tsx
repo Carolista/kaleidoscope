@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { AppStateProvider, useAppState } from '@/features/zen/state'
+import { ZenStateProvider, useZenState } from '@/features/zen/state'
 import { gridShapes, gridSizeOptions } from '@/domain/shapes'
 import GridShapePicker from './GridShapePicker'
 
 function Harness({ onSelected }: { onSelected?: () => void }) {
-	const { paintShapeGroup, state, undo, redo } = useAppState()
+	const { paintShapeGroup, state, undo, redo } = useZenState()
 	return (
 		<>
 			<button onClick={() => paintShapeGroup('0')}>Paint</button>
@@ -24,7 +24,7 @@ describe('GridShapePicker', () => {
 	beforeEach(() => localStorage.clear())
 
 	it('renders icon-only options with accessible names and selects Hexagon medium by default', () => {
-		render(<GridShapePicker />, { wrapper: AppStateProvider })
+		render(<GridShapePicker />, { wrapper: ZenStateProvider })
 		expect(screen.getAllByRole('button')).toHaveLength(18)
 		for (const { label } of gridShapes) {
 			for (const size of gridSizeOptions) {
@@ -49,7 +49,7 @@ describe('GridShapePicker', () => {
 		const user = userEvent.setup()
 		const onSelected = vi.fn()
 		render(<Harness onSelected={onSelected} />, {
-			wrapper: AppStateProvider,
+			wrapper: ZenStateProvider,
 		})
 		await user.click(screen.getByRole('button', { name: 'Paint' }))
 		const original = screen.getByTestId('paint').textContent

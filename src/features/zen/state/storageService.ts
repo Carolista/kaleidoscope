@@ -1,6 +1,6 @@
-import type { AppState } from './appState'
+import type { ZenState } from './zenState'
 import type { GridShapeId } from '@/domain/shapes'
-import { colorSchemes } from '@/domain/palettes'
+import { palettes } from '@/domain/palettes'
 import {
 	isGridShapeId,
 	availableGridSizes,
@@ -8,7 +8,7 @@ import {
 	isGridSize,
 	legacyGridSizes,
 } from '@/domain/shapes'
-import { createInitialAppState } from './appReducer'
+import { createInitialZenState } from './zenReducer'
 
 const STORAGE_KEY = 'kaleidoscope:design'
 
@@ -27,6 +27,7 @@ interface PersistedDesign {
 		| typeof CIRCLE_RINGS_STORAGE_VERSION
 		| typeof PINWHEEL_STORAGE_VERSION
 		| typeof STORAGE_VERSION
+	// Stored key from before "scheme" was renamed to "palette"; keep it so saves load.
 	readonly schemeName: string
 	readonly currentColor: string
 	readonly darkMode: boolean
@@ -39,15 +40,15 @@ interface PersistedDesign {
 	readonly gridShape?: GridShapeId
 	// Older saved designs have no remembered sizes and migrate their active
 	// shape to the closest equivalent of its previously available grid.
-	readonly gridSizes?: Partial<AppState['gridSizes']>
+	readonly gridSizes?: Partial<ZenState['gridSizes']>
 	readonly shapeGroupColors: Readonly<Record<string, string>>
-	readonly savedBoards?: AppState['savedBoards']
+	readonly savedBoards?: ZenState['savedBoards']
 }
 
-function toPersistedDesign(state: AppState): PersistedDesign {
+function toPersistedDesign(state: ZenState): PersistedDesign {
 	return {
 		version: STORAGE_VERSION,
-		schemeName: state.currentScheme.name,
+		schemeName: state.currentPalette.name,
 		currentColor: state.currentColor,
 		darkMode: state.darkMode,
 		showEditableArea: state.showEditableArea,
@@ -58,13 +59,13 @@ function toPersistedDesign(state: AppState): PersistedDesign {
 	}
 }
 
-// Scheme is persisted by name and re-linked to the live `colorSchemes` data
-// on load, rather than persisting the scheme object itself, so a design
-// saved by one version of the app still works if a scheme's colors are
+// The palette is persisted by name and re-linked to the live `palettes` catalog
+// on load, rather than persisting the palette object itself, so a design
+// saved by one version of the app still works if a palette's colors are
 // ever tweaked later.
-function fromPersistedDesign(data: PersistedDesign): AppState | null {
-	const scheme = colorSchemes.find(s => s.name === data.schemeName)
-	if (!scheme) return null
+function fromPersistedDesign(data: PersistedDesign): ZenState | null {
+	const palette = palettes.find(s => s.name === data.schemeName)
+	if (!palette) return null
 	const gridShape = data.gridShape ?? 'hexagon'
 	const gridSizes = data.gridSizes
 		? { ...defaultGridSizes, ...data.gridSizes }
@@ -90,7 +91,7 @@ function fromPersistedDesign(data: PersistedDesign): AppState | null {
 	}
 
 	return {
-		currentScheme: scheme,
+		currentPalette: palette,
 		currentColor: data.currentColor,
 		darkMode: data.darkMode,
 		showEditableArea: data.showEditableArea ?? true,
@@ -171,20 +172,20 @@ function isPersistedDesign(data: unknown): data is PersistedDesign {
 // Falls back to a fresh initial state (same as a first-ever visit)
 // whenever there's nothing usable to restore: no saved design, corrupted
 // JSON, malformed paint maps/colors, an unrecognized shape/version, or a
-// scheme name that no longer exists. Also swallows any storage access error
+// palette name that no longer exists. Also swallows any storage access error
 // (e.g. disabled localStorage in a private-browsing mode) rather than crashing
 // the app.
-export function loadInitialAppState(): AppState {
+export function loadInitialZenState(): ZenState {
 	try {
 		const raw = localStorage.getItem(STORAGE_KEY)
-		if (!raw) return createInitialAppState()
+		if (!raw) return createInitialZenState()
 
 		const parsed: unknown = JSON.parse(raw)
-		if (!isPersistedDesign(parsed)) return createInitialAppState()
+		if (!isPersistedDesign(parsed)) return createInitialZenState()
 
-		return fromPersistedDesign(parsed) ?? createInitialAppState()
+		return fromPersistedDesign(parsed) ?? createInitialZenState()
 	} catch {
-		return createInitialAppState()
+		return createInitialZenState()
 	}
 }
 
@@ -199,7 +200,7 @@ export function hasPersistedDesign(): boolean {
 	}
 }
 
-export function savePersistedState(state: AppState): void {
+export function savePersistedState(state: ZenState): void {
 	try {
 		localStorage.setItem(
 			STORAGE_KEY,

@@ -1,4 +1,4 @@
-import type { ColorScheme } from '@/domain/palettes'
+import type { Palette } from '@/domain/palettes'
 import {
 	generateHexPuzzle,
 	type HexPuzzle,
@@ -6,7 +6,7 @@ import {
 	type PuzzlePlacements,
 } from './hexPuzzle'
 
-export interface AuthoringPalette extends ColorScheme {
+export interface AuthoringPalette extends Palette {
 	readonly id: string
 }
 
@@ -107,7 +107,7 @@ export function renderAuthoredHexPuzzle(
 		shape: 'hexagon',
 		seed: authored.seed,
 		radius: authored.definition.geometry.radius,
-		schemeName: palette.name,
+		paletteName: palette.name,
 		rotationAllowed: authored.recipe.rotation,
 		target: Object.fromEntries(
 			Object.entries(authored.definition.target).map(([key, slot]) => [

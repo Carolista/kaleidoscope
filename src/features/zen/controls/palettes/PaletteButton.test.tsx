@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { AppStateProvider } from '@/features/zen/state'
-import ColorSchemeButton from './ColorSchemeButton'
+import { ZenStateProvider } from '@/features/zen/state'
+import PaletteButton from './PaletteButton'
 
-describe('ColorSchemeButton', () => {
-	it('opens the color palette modal (with the scheme picker) and closes it', async () => {
+describe('PaletteButton', () => {
+	it('opens the color palette modal (with the palette picker) and closes it', async () => {
 		const user = userEvent.setup()
-		render(<ColorSchemeButton />, { wrapper: AppStateProvider })
+		render(<PaletteButton />, { wrapper: ZenStateProvider })
 
 		expect(
 			screen.queryByRole('dialog', { name: 'Color Palette' }),
@@ -41,9 +41,9 @@ describe('ColorSchemeButton', () => {
 		)
 	})
 
-	it('closes automatically once a scheme is selected', async () => {
+	it('closes automatically once a palette is selected', async () => {
 		const user = userEvent.setup()
-		render(<ColorSchemeButton />, { wrapper: AppStateProvider })
+		render(<PaletteButton />, { wrapper: ZenStateProvider })
 
 		await user.click(
 			screen.getByRole('button', {

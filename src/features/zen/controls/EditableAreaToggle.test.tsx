@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { AppStateProvider } from '@/features/zen/state'
+import { ZenStateProvider } from '@/features/zen/state'
 import EditableAreaToggle from './EditableAreaToggle'
 import { useIsTouchDevice } from '@/ui/hooks'
 
@@ -12,7 +12,7 @@ describe('EditableAreaToggle', () => {
 	it('renders nothing on non-touch devices', () => {
 		mockUseIsTouchDevice.mockReturnValue(false)
 		const { container } = render(<EditableAreaToggle />, {
-			wrapper: AppStateProvider,
+			wrapper: ZenStateProvider,
 		})
 		expect(container).toBeEmptyDOMElement()
 	})
@@ -20,7 +20,7 @@ describe('EditableAreaToggle', () => {
 	it('labels itself with the destination state, and flips the label/icon on click', async () => {
 		mockUseIsTouchDevice.mockReturnValue(true)
 		const user = userEvent.setup()
-		render(<EditableAreaToggle />, { wrapper: AppStateProvider })
+		render(<EditableAreaToggle />, { wrapper: ZenStateProvider })
 
 		// Defaults on, so the destination is hiding it.
 		const button = screen.getByRole('button', {

@@ -1,8 +1,8 @@
-import type { ColorScheme } from './colorScheme'
+import type { Palette } from './palette'
 
 // Hex values for palettes copied, rather efficiently, from https://coolors.co/palettes/trending
 // Ported from the original app's scripts.js.
-export const colorSchemes: readonly ColorScheme[] = [
+export const palettes: readonly Palette[] = [
 	{
 		name: 'Tahiti',
 		colors: ['#ff9f1c', '#ffbf69', '#ffecb6', '#cbf3f0', '#2ec4b6'],

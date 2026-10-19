@@ -1,10 +1,10 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { generateHexagonCells, getGroupIds } from '@/domain/shapes/hexagon'
-import type { ColorScheme } from '@/domain/palettes'
-import SchemeSandbox from './SchemeSandbox'
+import type { Palette } from '@/domain/palettes'
+import PaletteSandbox from './PaletteSandbox'
 
-const colors: ColorScheme['colors'] = [
+const colors: Palette['colors'] = [
 	'#112233',
 	'#223344',
 	'#334455',
@@ -30,7 +30,7 @@ describe('palette sandbox', () => {
 				() => [0, 0.2, 0.4, 0.6, 0.8, 0.999][index++ % 6],
 			)
 		const write = vi.spyOn(Storage.prototype, 'setItem')
-		render(<SchemeSandbox colors={colors} />)
+		render(<PaletteSandbox colors={colors} />)
 		const cells = generateHexagonCells(4)
 		const painted = fills()
 		expect(painted).toHaveLength(61)
@@ -53,37 +53,37 @@ describe('palette sandbox', () => {
 		const random = vi
 			.spyOn(Math, 'random')
 			.mockImplementation(() => [0, 0.2, 0.4, 0.6, 0.8][index++ % 5])
-		const duplicate: ColorScheme['colors'] = [
+		const duplicate: Palette['colors'] = [
 			'#abcdef',
 			'#abcdef',
 			'#abcdef',
 			'#abcdef',
 			'#abcdef',
 		]
-		const view = render(<SchemeSandbox colors={duplicate} />)
+		const view = render(<PaletteSandbox colors={duplicate} />)
 		const calls = random.mock.calls.length
 		expect(new Set(fills())).toEqual(new Set(['#abcdef']))
-		view.rerender(<SchemeSandbox colors={colors} />)
+		view.rerender(<PaletteSandbox colors={colors} />)
 		expect(new Set(fills())).toEqual(new Set(colors))
 		expect(random).toHaveBeenCalledTimes(calls)
 		const original = fills()
-		view.rerender(<SchemeSandbox colors={null} />)
+		view.rerender(<PaletteSandbox colors={null} />)
 		expect(screen.queryByRole('img')).not.toBeInTheDocument()
 		expect(
 			screen.getByText(/Enter five valid hex colors/),
 		).toBeInTheDocument()
-		view.rerender(<SchemeSandbox colors={colors} />)
+		view.rerender(<PaletteSandbox colors={colors} />)
 		expect(fills()).toEqual(original)
 		expect(random).toHaveBeenCalledTimes(calls)
 	})
 
 	it('randomizes only on request, not on parent/theme rerenders', () => {
 		const random = vi.spyOn(Math, 'random').mockReturnValue(0)
-		const view = render(<SchemeSandbox colors={colors} />)
+		const view = render(<PaletteSandbox colors={colors} />)
 		const original = fills()
 		const calls = random.mock.calls.length
 		random.mockReturnValue(0.72)
-		view.rerender(<SchemeSandbox colors={colors} />)
+		view.rerender(<PaletteSandbox colors={colors} />)
 		expect(fills()).toEqual(original)
 		expect(random).toHaveBeenCalledTimes(calls)
 		fireEvent.click(screen.getByRole('button', { name: 'Randomize' }))
@@ -96,7 +96,7 @@ describe('palette sandbox', () => {
 		for (let slot = 0; slot < 5; slot++) {
 			for (const value of [slot / 5, (slot + 1) / 5 - 0.000001]) {
 				random.mockReturnValue(value)
-				const view = render(<SchemeSandbox colors={colors} />)
+				const view = render(<PaletteSandbox colors={colors} />)
 				expect(new Set(fills())).toEqual(new Set([colors[slot]]))
 				view.unmount()
 			}

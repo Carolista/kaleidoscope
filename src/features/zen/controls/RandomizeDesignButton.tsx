@@ -1,9 +1,9 @@
 import { faMagicWandSparkles } from '@fortawesome/sharp-duotone-solid-svg-icons'
-import { useAppState } from '@/features/zen/state'
+import { useZenState } from '@/features/zen/state'
 import { PlayerIconButton as IconButton } from '@/ui/components'
 
 function RandomizeDesignButton() {
-	const { randomizeDesign } = useAppState()
+	const { randomizeDesign } = useZenState()
 
 	return (
 		<IconButton

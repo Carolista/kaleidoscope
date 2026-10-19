@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProvider } from '@/test/renderWithProvider'
-import { colorSchemes } from '@/domain/palettes'
+import { palettes } from '@/domain/palettes'
 import { generateHexagonCells } from '@/domain/shapes/hexagon'
 import { coordinateKey, generateHexPuzzle, pieceCells } from '@/domain/puzzles'
 import PuzzleMode from './PuzzleMode'
@@ -16,7 +16,7 @@ import {
 } from '@/test/puzzleInteraction'
 
 const seed = 'ui-puzzle'
-const puzzle = generateHexPuzzle(seed, colorSchemes[1])
+const puzzle = generateHexPuzzle(seed, palettes[1])
 function solvePuzzle() {
 	for (const [index, piece] of puzzle.pieces.entries()) {
 		dragTo(

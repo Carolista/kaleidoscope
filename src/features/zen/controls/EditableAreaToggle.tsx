@@ -1,5 +1,5 @@
 import { faEye, faEyeSlash } from '@fortawesome/sharp-duotone-solid-svg-icons'
-import { useAppState } from '@/features/zen/state'
+import { useZenState } from '@/features/zen/state'
 import { useIsTouchDevice } from '@/ui/hooks'
 import { PlayerIconButton as IconButton } from '@/ui/components'
 
@@ -9,7 +9,7 @@ import { PlayerIconButton as IconButton } from '@/ui/components'
 // renders on touch devices since mouse/trackpad users already have hover.
 function EditableAreaToggle() {
 	const isTouch = useIsTouchDevice()
-	const { state, toggleEditableArea } = useAppState()
+	const { state, toggleEditableArea } = useZenState()
 
 	if (!isTouch) return null
 

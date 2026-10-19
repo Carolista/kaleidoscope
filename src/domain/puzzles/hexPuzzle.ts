@@ -1,4 +1,4 @@
-import type { ColorScheme } from '@/domain/palettes'
+import type { Palette } from '@/domain/palettes'
 import type { GridSize } from '@/domain/shapes'
 import type { AxialCoord } from '@/domain/shapes/hexagon'
 import {
@@ -73,7 +73,7 @@ export interface HexPuzzle {
 	readonly shape: 'hexagon'
 	readonly seed: string
 	readonly radius: number
-	readonly schemeName: string
+	readonly paletteName: string
 	readonly target: Readonly<Record<string, string>>
 	readonly pieces: readonly PuzzlePiece[]
 	readonly solution: PuzzlePlacements
@@ -177,7 +177,7 @@ function partition(
 // Keep the original default recipe reproducible for the player POC.
 export function generateHexPuzzle(
 	seed: string,
-	scheme: ColorScheme,
+	palette: Palette,
 	recipe: {
 		readonly size: GridSize
 		readonly rotation: boolean
@@ -185,8 +185,8 @@ export function generateHexPuzzle(
 ): HexPuzzle {
 	if (!seed.trim()) throw new Error('A puzzle seed is required.')
 	if (
-		scheme.colors.length !== 5 ||
-		scheme.colors.some(color => !/^#[0-9a-f]{6}$/i.test(color))
+		palette.colors.length !== 5 ||
+		palette.colors.some(color => !/^#[0-9a-f]{6}$/i.test(color))
 	) {
 		throw new Error(
 			'A puzzle requires a palette of five six-digit hex colors.',
@@ -206,7 +206,7 @@ export function generateHexPuzzle(
 	const target = Object.fromEntries(
 		cells.map(cell => [
 			cell.groupId,
-			scheme.colors[Math.floor(random() * scheme.colors.length)],
+			palette.colors[Math.floor(random() * palette.colors.length)],
 		]),
 	)
 	const solution: Record<string, PuzzlePlacement> = {}
@@ -238,7 +238,7 @@ export function generateHexPuzzle(
 		shape: 'hexagon',
 		seed,
 		radius,
-		schemeName: scheme.name,
+		paletteName: palette.name,
 		target,
 		pieces,
 		solution,

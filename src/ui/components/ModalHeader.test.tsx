@@ -5,7 +5,7 @@ import { useImageExport } from '@/features/zen/export'
 import SaveImageModal from '@/features/zen/export/SaveImageModal'
 import { renderWithProvider } from '@/test/renderWithProvider'
 import ControlsModal from '@/features/zen/controls/ControlsModal'
-import ColorSchemeModal from '@/features/zen/controls/color-schemes/ColorSchemeModal'
+import PaletteModal from '@/features/zen/controls/palettes/PaletteModal'
 import GridShapeModal from '@/features/zen/controls/shapes/GridShapeModal'
 import Modal from './Modal'
 import ModalHeader from './ModalHeader'
@@ -19,7 +19,7 @@ const modals = [
 		closeLabel: 'Close controls help',
 	},
 	{
-		Component: ColorSchemeModal,
+		Component: PaletteModal,
 		title: 'Color Palette',
 		closeLabel: 'Close color palette selector',
 	},

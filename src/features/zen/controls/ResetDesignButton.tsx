@@ -5,12 +5,12 @@ import {
 	ConfirmDialog,
 	PlayerIconButton as IconButton,
 } from '@/ui/components'
-import { useAppState } from '@/features/zen/state'
+import { useZenState } from '@/features/zen/state'
 
 const DONT_SHOW_AGAIN_KEY = 'reset-design'
 
 function ResetDesignButton() {
-	const { resetDesign } = useAppState()
+	const { resetDesign } = useZenState()
 	const [confirming, setConfirming] = useState(false)
 
 	return (

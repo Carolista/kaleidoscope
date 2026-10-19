@@ -2,19 +2,19 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { describe, expect, it, vi } from 'vitest'
 import type { Database } from '@/lib/supabase'
 import {
-	bulkDeleteColorSchemes,
-	loadColorSchemes,
-	manageColorScheme,
-	readColorScheme,
-	type CatalogScheme,
-	type SchemeAction,
-} from './colorSchemes'
+	bulkDeletePalettes,
+	loadPalettes,
+	managePalette,
+	readPalette,
+	type CatalogPalette,
+	type PaletteAction,
+} from './palettes'
 
 function client(value: object) {
 	return value as SupabaseClient<Database>
 }
 
-const scheme: CatalogScheme = {
+const palette: CatalogPalette = {
 	id: 'stable-id',
 	name: 'Test',
 	colors: ['#112233', '#223344', '#334455', '#445566', '#556677'],
@@ -26,9 +26,9 @@ const scheme: CatalogScheme = {
 describe('palette catalog', () => {
 	it('reads ordered colors, preserving duplicates and case', () => {
 		const colors = ['#ABCdef', '#112233', '#112233', '#000000', '#ffffff']
-		expect(readColorScheme({ ...scheme, colors })).toEqual({
-			id: scheme.id,
-			name: scheme.name,
+		expect(readPalette({ ...palette, colors })).toEqual({
+			id: palette.id,
+			name: palette.name,
 			colors,
 		})
 	})
@@ -37,21 +37,21 @@ describe('palette catalog', () => {
 		[
 			[],
 			['#112233'],
-			[...scheme.colors, '#abcdef'],
-			['#123', ...scheme.colors.slice(1)],
-			['112233', ...scheme.colors.slice(1)],
-			['#gggggg', ...scheme.colors.slice(1)],
-			[' #112233', ...scheme.colors.slice(1)],
+			[...palette.colors, '#abcdef'],
+			['#123', ...palette.colors.slice(1)],
+			['112233', ...palette.colors.slice(1)],
+			['#gggggg', ...palette.colors.slice(1)],
+			[' #112233', ...palette.colors.slice(1)],
 		].map(colors => ({ colors })),
 	)('rejects invalid ordered colors $colors', ({ colors }) => {
-		expect(() => readColorScheme({ ...scheme, colors })).toThrow(
+		expect(() => readPalette({ ...palette, colors })).toThrow(
 			'five six-digit hex colors',
 		)
 	})
 
 	it('paginates by stable ID and returns all records sorted by name', async () => {
 		const first = Array.from({ length: 1000 }, (_, index) => ({
-			...scheme,
+			...palette,
 			id: `id-${index}`,
 			name: `Z ${index}`,
 		}))
@@ -59,13 +59,13 @@ describe('palette catalog', () => {
 			.fn()
 			.mockResolvedValueOnce({ data: first, error: null })
 			.mockResolvedValueOnce({
-				data: [{ ...scheme, id: 'last', name: 'A' }],
+				data: [{ ...palette, id: 'last', name: 'A' }],
 				error: null,
 			})
 		const order = vi.fn(() => ({ range }))
 		const select = vi.fn(() => ({ order }))
 		const from = vi.fn(() => ({ select }))
-		const result = await loadColorSchemes(client({ from }))
+		const result = await loadPalettes(client({ from }))
 		expect(result).toHaveLength(1001)
 		expect(result[0].id).toBe('last')
 		expect(result[0].revision).toBe(3)
@@ -82,7 +82,7 @@ describe('palette catalog', () => {
 		const range = vi
 			.fn()
 			.mockResolvedValueOnce({
-				data: Array(1000).fill(scheme),
+				data: Array(1000).fill(palette),
 				error: null,
 			})
 			.mockResolvedValueOnce({
@@ -92,7 +92,7 @@ describe('palette catalog', () => {
 		const from = () => ({
 			select: () => ({ order: () => ({ range }) }),
 		})
-		await expect(loadColorSchemes(client({ from }))).rejects.toThrow(
+		await expect(loadPalettes(client({ from }))).rejects.toThrow(
 			'Unable to load palettes: Offline',
 		)
 	})
@@ -102,16 +102,16 @@ describe('palette catalog', () => {
 		const from = () => ({
 			select: () => ({ order: () => ({ range }) }),
 		})
-		expect(await loadColorSchemes(client({ from }))).toEqual([])
+		expect(await loadPalettes(client({ from }))).toEqual([])
 		range.mockResolvedValue({ data: null, error: null })
-		await expect(loadColorSchemes(client({ from }))).rejects.toThrow(
+		await expect(loadPalettes(client({ from }))).rejects.toThrow(
 			'returned no data',
 		)
 		range.mockResolvedValue({
-			data: [{ ...scheme, colors: ['#123'] }],
+			data: [{ ...palette, colors: ['#123'] }],
 			error: null,
 		})
-		await expect(loadColorSchemes(client({ from }))).rejects.toThrow(
+		await expect(loadPalettes(client({ from }))).rejects.toThrow(
 			'five six-digit hex colors',
 		)
 	})
@@ -123,46 +123,46 @@ describe('draft palette operations', () => {
 			{
 				kind: 'create',
 				id: 'new-id',
-				scheme: { ...scheme, name: ' New ' },
+				palette: { ...palette, name: ' New ' },
 			},
 			{
 				p_id: 'new-id',
 				p_action: 'create',
 				p_name: 'New',
-				p_colors: [...scheme.colors],
+				p_colors: [...palette.colors],
 			},
 		],
 		[
 			{
 				kind: 'update',
-				previous: scheme,
-				scheme: { ...scheme, name: ' Renamed ' },
+				previous: palette,
+				palette: { ...palette, name: ' Renamed ' },
 			},
 			{
-				p_id: scheme.id,
+				p_id: palette.id,
 				p_action: 'update',
 				p_name: 'Renamed',
-				p_colors: [...scheme.colors],
-				p_expected_name: scheme.name,
-				p_expected_colors: [...scheme.colors],
+				p_colors: [...palette.colors],
+				p_expected_name: palette.name,
+				p_expected_colors: [...palette.colors],
 				p_expected_revision: 3,
 			},
 		],
 		[
-			{ kind: 'delete', previous: scheme },
+			{ kind: 'delete', previous: palette },
 			{
-				p_id: scheme.id,
-				p_expected_name: scheme.name,
-				p_expected_colors: [...scheme.colors],
+				p_id: palette.id,
+				p_expected_name: palette.name,
+				p_expected_colors: [...palette.colors],
 				p_expected_revision: 3,
 			},
 		],
-	] satisfies [SchemeAction, object][])(
+	] satisfies [PaletteAction, object][])(
 		'sends one verified %j operation',
 		async (action, args) => {
 			const id = action.kind === 'create' ? action.id : action.previous.id
 			const rpc = vi.fn().mockResolvedValue({ data: id, error: null })
-			await manageColorScheme(client({ rpc }), action)
+			await managePalette(client({ rpc }), action)
 			expect(rpc).toHaveBeenCalledExactlyOnceWith(
 				action.kind === 'delete'
 					? 'delete_palette_draft'
@@ -180,11 +180,11 @@ describe('draft palette operations', () => {
 				error: { message: 'Response lost' },
 			})
 			.mockResolvedValueOnce({ data: 'new-id', error: null })
-		const action = { kind: 'create', id: 'new-id', scheme } as const
-		await expect(
-			manageColorScheme(client({ rpc }), action),
-		).rejects.toThrow('Response lost')
-		await manageColorScheme(client({ rpc }), action)
+		const action = { kind: 'create', id: 'new-id', palette } as const
+		await expect(managePalette(client({ rpc }), action)).rejects.toThrow(
+			'Response lost',
+		)
+		await managePalette(client({ rpc }), action)
 		expect(rpc.mock.calls[0]).toEqual(rpc.mock.calls[1])
 	})
 
@@ -193,14 +193,14 @@ describe('draft palette operations', () => {
 			data: null,
 			error: { message: 'Refresh and review before retrying.' },
 		})
-		const action = { kind: 'delete', previous: scheme } as const
-		await expect(
-			manageColorScheme(client({ rpc }), action),
-		).rejects.toThrow('Refresh and review')
+		const action = { kind: 'delete', previous: palette } as const
+		await expect(managePalette(client({ rpc }), action)).rejects.toThrow(
+			'Refresh and review',
+		)
 		for (const data of [null, 'other-id']) {
 			rpc.mockResolvedValue({ data, error: null })
 			await expect(
-				manageColorScheme(client({ rpc }), action),
+				managePalette(client({ rpc }), action),
 			).rejects.toThrow('not confirmed')
 		}
 	})
@@ -209,26 +209,26 @@ describe('draft palette operations', () => {
 		const rpc = vi.fn()
 		for (const id of ['', ' new-id ']) {
 			await expect(
-				manageColorScheme(client({ rpc }), {
+				managePalette(client({ rpc }), {
 					kind: 'create',
 					id,
-					scheme,
+					palette,
 				}),
 			).rejects.toThrow('permanent palette ID')
 		}
 		await expect(
-			manageColorScheme(client({ rpc }), {
+			managePalette(client({ rpc }), {
 				kind: 'update',
-				previous: scheme,
-				scheme: { ...scheme, name: '   ' },
+				previous: palette,
+				palette: { ...palette, name: '   ' },
 			}),
 		).rejects.toThrow('Enter a name')
 		await expect(
-			manageColorScheme(client({ rpc }), {
+			managePalette(client({ rpc }), {
 				kind: 'create',
 				id: 'new',
-				scheme: {
-					...scheme,
+				palette: {
+					...palette,
 					colors: ['bad', '#223344', '#334455', '#445566', '#556677'],
 				},
 			}),
@@ -240,7 +240,7 @@ describe('draft palette operations', () => {
 describe('bulk palette deletion', () => {
 	it('deletes every selected palette in one confirmed request', async () => {
 		const rpc = vi.fn().mockResolvedValue({ data: ['b', 'a'], error: null })
-		await bulkDeleteColorSchemes(client({ rpc }), ['a', 'b'])
+		await bulkDeletePalettes(client({ rpc }), ['a', 'b'])
 		expect(rpc).toHaveBeenCalledExactlyOnceWith(
 			'bulk_delete_palette_drafts',
 			{ p_ids: ['a', 'b'] },
@@ -248,7 +248,7 @@ describe('bulk palette deletion', () => {
 		for (const data of [null, ['a'], ['a', 'a'], ['a', 'c']]) {
 			rpc.mockResolvedValue({ data, error: null })
 			await expect(
-				bulkDeleteColorSchemes(client({ rpc }), ['a', 'b']),
+				bulkDeletePalettes(client({ rpc }), ['a', 'b']),
 			).rejects.toThrow('not confirmed')
 		}
 		rpc.mockResolvedValue({
@@ -256,7 +256,7 @@ describe('bulk palette deletion', () => {
 			error: { message: 'Palette "A" is in a set' },
 		})
 		await expect(
-			bulkDeleteColorSchemes(client({ rpc }), ['a', 'b']),
+			bulkDeletePalettes(client({ rpc }), ['a', 'b']),
 		).rejects.toThrow('Unable to delete palettes: Palette "A" is in a set')
 	})
 })

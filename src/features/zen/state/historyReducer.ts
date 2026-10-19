@@ -1,14 +1,14 @@
-import type { AppState, PaintMap } from './appState'
-import type { AppAction } from './appReducer'
+import type { ZenState, PaintMap } from './zenState'
+import type { ZenAction } from './zenReducer'
 import { supportedGridShapes } from '@/domain/shapes'
-import { appReducer } from './appReducer'
+import { zenReducer } from './zenReducer'
 import { getThemeColors } from '@/domain/palettes'
 
 // Only the design content itself is undoable — picking a current color or
 // toggling dark mode are just viewing/tool choices, not something a user
 // would expect "undo" to step back through.
-const UNDOABLE_ACTION_TYPES = new Set<AppAction['type']>([
-	'SELECT_SCHEME',
+const UNDOABLE_ACTION_TYPES = new Set<ZenAction['type']>([
+	'SELECT_PALETTE',
 	'PAINT_SHAPE_GROUP',
 	'RESET_DESIGN',
 	'RANDOMIZE_DESIGN',
@@ -17,8 +17,8 @@ const UNDOABLE_ACTION_TYPES = new Set<AppAction['type']>([
 ])
 
 type DesignSnapshot = Pick<
-	AppState,
-	| 'currentScheme'
+	ZenState,
+	| 'currentPalette'
 	| 'gridShape'
 	| 'gridSizes'
 	| 'shapeGroupColors'
@@ -26,21 +26,21 @@ type DesignSnapshot = Pick<
 >
 
 export interface HistoryState {
-	readonly present: AppState
+	readonly present: ZenState
 	readonly past: readonly DesignSnapshot[]
 	readonly future: readonly DesignSnapshot[]
 }
 
 export type HistoryAction =
-	AppAction | { readonly type: 'UNDO' } | { readonly type: 'REDO' }
+	ZenAction | { readonly type: 'UNDO' } | { readonly type: 'REDO' }
 
-export function createInitialHistoryState(present: AppState): HistoryState {
+export function createInitialHistoryState(present: ZenState): HistoryState {
 	return { present, past: [], future: [] }
 }
 
-function snapshotOf(state: AppState): DesignSnapshot {
+function snapshotOf(state: ZenState): DesignSnapshot {
 	return {
-		currentScheme: state.currentScheme,
+		currentPalette: state.currentPalette,
 		gridShape: state.gridShape,
 		gridSizes: state.gridSizes,
 		shapeGroupColors: state.shapeGroupColors,
@@ -48,15 +48,15 @@ function snapshotOf(state: AppState): DesignSnapshot {
 	}
 }
 
-function sameDesign(previous: AppState, next: AppState): boolean {
+function sameDesign(previous: ZenState, next: ZenState): boolean {
 	if (
 		previous.gridShape !== next.gridShape ||
 		supportedGridShapes.some(
 			({ id }) => previous.gridSizes[id] !== next.gridSizes[id],
 		) ||
-		previous.currentScheme.name !== next.currentScheme.name ||
-		!previous.currentScheme.colors.every(
-			(color, index) => color === next.currentScheme.colors[index],
+		previous.currentPalette.name !== next.currentPalette.name ||
+		!previous.currentPalette.colors.every(
+			(color, index) => color === next.currentPalette.colors[index],
 		)
 	) {
 		return false
@@ -85,17 +85,17 @@ function samePaint(previous: PaintMap, next: PaintMap): boolean {
 	)
 }
 
-function applySnapshot(state: AppState, snapshot: DesignSnapshot): AppState {
+function applySnapshot(state: ZenState, snapshot: DesignSnapshot): ZenState {
 	let currentColor = state.currentColor
 	const { base, accent } = getThemeColors(state.darkMode)
 	if (
 		currentColor !== base &&
 		currentColor !== accent &&
-		!snapshot.currentScheme.colors.includes(currentColor)
+		!snapshot.currentPalette.colors.includes(currentColor)
 	) {
-		const colorIndex = state.currentScheme.colors.indexOf(currentColor)
+		const colorIndex = state.currentPalette.colors.indexOf(currentColor)
 		if (colorIndex !== -1) {
-			currentColor = snapshot.currentScheme.colors[colorIndex]
+			currentColor = snapshot.currentPalette.colors[colorIndex]
 		}
 	}
 	return { ...state, ...snapshot, currentColor }
@@ -125,7 +125,7 @@ export function historyReducer(
 		}
 	}
 
-	const present = appReducer(history.present, action)
+	const present = zenReducer(history.present, action)
 	if (present === history.present) return history
 
 	if (!UNDOABLE_ACTION_TYPES.has(action.type)) {
@@ -135,7 +135,7 @@ export function historyReducer(
 	}
 
 	if (sameDesign(history.present, present)) {
-		// Reselecting a scheme can reset the paint tool without changing the design.
+		// Reselecting a palette can reset the paint tool without changing the design.
 		if (
 			present.currentColor === history.present.currentColor &&
 			present.darkMode === history.present.darkMode &&

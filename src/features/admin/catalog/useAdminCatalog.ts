@@ -1,10 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createContext, useContext, useEffect } from 'react'
 import {
-	loadColorSchemes,
+	loadPalettes,
 	loadPuzzleDrafts,
 	loadDraftSets,
-	loadSchemeSets,
+	loadPaletteSets,
 } from '@/features/admin/services'
 import type { Database } from '@/lib/supabase'
 
@@ -13,8 +13,8 @@ export type Client = SupabaseClient<Database>
 export const catalogLoaders = {
 	puzzleSets: (client: Client) => loadDraftSets(client, true),
 	puzzleDrafts: loadPuzzleDrafts,
-	palettes: loadColorSchemes,
-	paletteSets: loadSchemeSets,
+	palettes: loadPalettes,
+	paletteSets: loadPaletteSets,
 }
 
 export type CatalogKey = keyof typeof catalogLoaders

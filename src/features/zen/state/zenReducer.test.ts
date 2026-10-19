@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { colorSchemes } from '@/domain/palettes'
+import { palettes } from '@/domain/palettes'
 import {
 	defaultGridSizes,
 	supportedGridShapes,
 	getGroupIdsForShape,
 } from '@/domain/shapes'
-import { appReducer, createInitialAppState } from './appReducer'
-import type { AppState } from './appState'
+import { zenReducer, createInitialZenState } from './zenReducer'
+import type { ZenState } from './zenState'
 
-describe('createInitialAppState', () => {
-	it('uses the first scheme and defaults current color to its first color', () => {
-		const state = createInitialAppState()
-		expect(state.currentScheme).toBe(colorSchemes[0])
-		expect(state.currentColor).toBe(colorSchemes[0].colors[0])
+describe('createInitialZenState', () => {
+	it('uses the first palette and defaults current color to its first color', () => {
+		const state = createInitialZenState()
+		expect(state.currentPalette).toBe(palettes[0])
+		expect(state.currentColor).toBe(palettes[0].colors[0])
 		expect(state.darkMode).toBe(true)
 		expect(state.showEditableArea).toBe(true)
 		expect(state.gridShape).toBe('hexagon')
@@ -21,10 +21,10 @@ describe('createInitialAppState', () => {
 	})
 })
 
-function baseState(overrides: Partial<AppState> = {}): AppState {
+function baseState(overrides: Partial<ZenState> = {}): ZenState {
 	return {
-		currentScheme: colorSchemes[0],
-		currentColor: colorSchemes[0].colors[0],
+		currentPalette: palettes[0],
+		currentColor: palettes[0].colors[0],
 		darkMode: false,
 		showEditableArea: true,
 		gridShape: 'hexagon',
@@ -35,30 +35,30 @@ function baseState(overrides: Partial<AppState> = {}): AppState {
 	}
 }
 
-describe('appReducer', () => {
+describe('zenReducer', () => {
 	it('restores independent paint on every one of the 18 boards without changing theme or palette', () => {
 		let state = baseState()
 		const boards = supportedGridShapes.flatMap(({ id }) =>
 			(['sm', 'md', 'lg'] as const).map(size => ({ shape: id, size })),
 		)
 		boards.forEach(({ shape, size }, index) => {
-			state = appReducer(state, {
+			state = zenReducer(state, {
 				type: 'SELECT_GRID_SHAPE',
 				shape,
 				size,
 			})
 			expect(state.shapeGroupColors).toEqual({})
-			state = appReducer(state, {
+			state = zenReducer(state, {
 				type: 'SELECT_COLOR',
 				color: `#${index.toString(16).padStart(6, '0')}`,
 			})
-			state = appReducer(state, {
+			state = zenReducer(state, {
 				type: 'PAINT_SHAPE_GROUP',
 				groupId: '0',
 			})
 		})
 		boards.forEach(({ shape, size }, index) => {
-			state = appReducer(state, {
+			state = zenReducer(state, {
 				type: 'SELECT_GRID_SHAPE',
 				shape,
 				size,
@@ -67,37 +67,37 @@ describe('appReducer', () => {
 				'0': `#${index.toString(16).padStart(6, '0')}`,
 			})
 			expect(state.darkMode).toBe(false)
-			expect(state.currentScheme).toBe(colorSchemes[0])
+			expect(state.currentPalette).toBe(palettes[0])
 		})
 		expect(Object.keys(state.savedBoards)).toHaveLength(17)
 	})
 
 	it('remaps palette colors and explicit theme toggles on inactive boards as well', () => {
 		const state = baseState({
-			shapeGroupColors: { a: colorSchemes[0].colors[1] },
+			shapeGroupColors: { a: palettes[0].colors[1] },
 			savedBoards: {
 				'triangle:sm': {
-					a: colorSchemes[0].colors[2],
+					a: palettes[0].colors[2],
 					b: '#ffffff',
 					c: '#222222',
 					d: '#abcdef',
 				},
 			},
 		})
-		const changed = appReducer(state, {
-			type: 'SELECT_SCHEME',
-			scheme: colorSchemes[1],
+		const changed = zenReducer(state, {
+			type: 'SELECT_PALETTE',
+			palette: palettes[1],
 		})
 		expect(changed.savedBoards['triangle:sm']).toEqual({
-			a: colorSchemes[1].colors[2],
+			a: palettes[1].colors[2],
 			b: '#ffffff',
 			c: '#222222',
 			d: '#abcdef',
 		})
 		expect(changed.darkMode).toBe(false)
-		const toggled = appReducer(changed, { type: 'TOGGLE_DARK_MODE' })
+		const toggled = zenReducer(changed, { type: 'TOGGLE_DARK_MODE' })
 		expect(toggled.savedBoards['triangle:sm']).toEqual({
-			a: colorSchemes[1].colors[2],
+			a: palettes[1].colors[2],
 			b: '#222222',
 			c: '#ffffff',
 			d: '#abcdef',
@@ -109,61 +109,61 @@ describe('appReducer', () => {
 			shapeGroupColors: { a: '#abcdef' },
 			savedBoards: { 'triangle:sm': { b: '#123456' } },
 		})
-		expect(appReducer(state, { type: 'RESET_DESIGN' }).savedBoards).toBe(
+		expect(zenReducer(state, { type: 'RESET_DESIGN' }).savedBoards).toBe(
 			state.savedBoards,
 		)
 		expect(
-			appReducer(state, { type: 'RANDOMIZE_DESIGN' }).savedBoards,
+			zenReducer(state, { type: 'RANDOMIZE_DESIGN' }).savedBoards,
 		).toBe(state.savedBoards)
 	})
 
-	it('SELECT_SCHEME switches scheme and resets current color to its first color', () => {
+	it('SELECT_PALETTE switches palette and resets current color to its first color', () => {
 		const state = baseState({ currentColor: '#abcdef' })
-		const next = appReducer(state, {
-			type: 'SELECT_SCHEME',
-			scheme: colorSchemes[3],
+		const next = zenReducer(state, {
+			type: 'SELECT_PALETTE',
+			palette: palettes[3],
 		})
-		expect(next.currentScheme).toBe(colorSchemes[3])
-		expect(next.currentColor).toBe(colorSchemes[3].colors[0])
+		expect(next.currentPalette).toBe(palettes[3])
+		expect(next.currentColor).toBe(palettes[3].colors[0])
 	})
 
-	it('SELECT_SCHEME remaps painted groups with an old-scheme color to the new scheme color at the same position', () => {
-		const oldScheme = colorSchemes[0]
-		const newScheme = colorSchemes[1]
+	it('SELECT_PALETTE remaps painted groups with an old-palette color to the new palette color at the same position', () => {
+		const oldPalette = palettes[0]
+		const newPalette = palettes[1]
 		const state = baseState({
-			currentScheme: oldScheme,
+			currentPalette: oldPalette,
 			shapeGroupColors: {
-				a: oldScheme.colors[0],
-				b: oldScheme.colors[2],
+				a: oldPalette.colors[0],
+				b: oldPalette.colors[2],
 			},
 		})
-		const next = appReducer(state, {
-			type: 'SELECT_SCHEME',
-			scheme: newScheme,
+		const next = zenReducer(state, {
+			type: 'SELECT_PALETTE',
+			palette: newPalette,
 		})
 		expect(next.shapeGroupColors).toEqual({
-			a: newScheme.colors[0],
-			b: newScheme.colors[2],
+			a: newPalette.colors[0],
+			b: newPalette.colors[2],
 		})
 	})
 
-	it('SELECT_SCHEME leaves painted groups with base/accent (or any non-scheme color) untouched', () => {
-		const oldScheme = colorSchemes[0]
-		const newScheme = colorSchemes[1]
+	it('SELECT_PALETTE leaves painted groups with base/accent (or any non-palette color) untouched', () => {
+		const oldPalette = palettes[0]
+		const newPalette = palettes[1]
 		const state = baseState({
-			currentScheme: oldScheme,
+			currentPalette: oldPalette,
 			shapeGroupColors: { a: '#222222', b: '#ffffff' },
 		})
-		const next = appReducer(state, {
-			type: 'SELECT_SCHEME',
-			scheme: newScheme,
+		const next = zenReducer(state, {
+			type: 'SELECT_PALETTE',
+			palette: newPalette,
 		})
 		expect(next.shapeGroupColors).toEqual({ a: '#222222', b: '#ffffff' })
 	})
 
 	it('SELECT_COLOR sets the current color directly', () => {
 		const state = baseState()
-		const next = appReducer(state, {
+		const next = zenReducer(state, {
 			type: 'SELECT_COLOR',
 			color: '#123456',
 		})
@@ -173,7 +173,7 @@ describe('appReducer', () => {
 	it('SELECT_COLOR preserves the state reference for the already-selected color', () => {
 		const state = baseState()
 		expect(
-			appReducer(state, {
+			zenReducer(state, {
 				type: 'SELECT_COLOR',
 				color: state.currentColor,
 			}),
@@ -184,7 +184,7 @@ describe('appReducer', () => {
 		'painting accent onto default or explicit accent is a no-op in dark mode %s',
 		darkMode => {
 			const accent = darkMode ? '#ffffff' : '#222222'
-			const paintMaps: AppState['shapeGroupColors'][] = [
+			const paintMaps: ZenState['shapeGroupColors'][] = [
 				{},
 				{ a: accent },
 			]
@@ -195,7 +195,7 @@ describe('appReducer', () => {
 					shapeGroupColors,
 				})
 				expect(
-					appReducer(state, {
+					zenReducer(state, {
 						type: 'PAINT_SHAPE_GROUP',
 						groupId: 'a',
 					}),
@@ -206,7 +206,7 @@ describe('appReducer', () => {
 
 	it('PAINT_SHAPE_GROUP paints an unpainted group with the current color', () => {
 		const state = baseState({ currentColor: '#ff0000' })
-		const next = appReducer(state, {
+		const next = zenReducer(state, {
 			type: 'PAINT_SHAPE_GROUP',
 			groupId: '0,0',
 		})
@@ -218,7 +218,7 @@ describe('appReducer', () => {
 			currentColor: '#ff0000',
 			shapeGroupColors: { '0,0': '#ff0000' },
 		})
-		const next = appReducer(state, {
+		const next = zenReducer(state, {
 			type: 'PAINT_SHAPE_GROUP',
 			groupId: '0,0',
 		})
@@ -230,7 +230,7 @@ describe('appReducer', () => {
 			currentColor: '#00ff00',
 			shapeGroupColors: { '0,0': '#ff0000' },
 		})
-		const next = appReducer(state, {
+		const next = zenReducer(state, {
 			type: 'PAINT_SHAPE_GROUP',
 			groupId: '0,0',
 		})
@@ -239,7 +239,7 @@ describe('appReducer', () => {
 
 	it('TOGGLE_DARK_MODE flips the darkMode flag', () => {
 		const state = baseState({ darkMode: false })
-		expect(appReducer(state, { type: 'TOGGLE_DARK_MODE' }).darkMode).toBe(
+		expect(zenReducer(state, { type: 'TOGGLE_DARK_MODE' }).darkMode).toBe(
 			true,
 		)
 	})
@@ -249,7 +249,7 @@ describe('appReducer', () => {
 			darkMode: false,
 			shapeGroupColors: { a: '#222222', b: '#ffffff', c: '#ff0000' },
 		})
-		const next = appReducer(state, { type: 'TOGGLE_DARK_MODE' })
+		const next = zenReducer(state, { type: 'TOGGLE_DARK_MODE' })
 		expect(next.shapeGroupColors).toEqual({
 			a: '#ffffff',
 			b: '#222222',
@@ -261,19 +261,19 @@ describe('appReducer', () => {
 		const state = baseState({
 			shapeGroupColors: { a: '#ff0000', b: '#00ff00' },
 		})
-		const next = appReducer(state, { type: 'RESET_DESIGN' })
+		const next = zenReducer(state, { type: 'RESET_DESIGN' })
 		expect(next.shapeGroupColors).toEqual({})
 	})
 
 	it('RESET_DESIGN preserves the state reference when already empty', () => {
 		const state = baseState()
-		expect(appReducer(state, { type: 'RESET_DESIGN' })).toBe(state)
+		expect(zenReducer(state, { type: 'RESET_DESIGN' })).toBe(state)
 	})
-	it('RANDOMIZE_DESIGN assigns every group id a color from the current scheme or theme base (never accent)', () => {
+	it('RANDOMIZE_DESIGN assigns every group id a color from the current palette or theme base (never accent)', () => {
 		const state = baseState({ darkMode: false })
-		const next = appReducer(state, { type: 'RANDOMIZE_DESIGN' })
+		const next = zenReducer(state, { type: 'RANDOMIZE_DESIGN' })
 		const possible = new Set([
-			...state.currentScheme.colors,
+			...state.currentPalette.colors,
 			'#ffffff', // light-mode base
 		])
 		const groupIds = Object.keys(next.shapeGroupColors)
@@ -287,18 +287,18 @@ describe('appReducer', () => {
 		const state = baseState({
 			shapeGroupColors: { 'not-a-real-group-id': '#ff0000' },
 		})
-		const next = appReducer(state, { type: 'RANDOMIZE_DESIGN' })
+		const next = zenReducer(state, { type: 'RANDOMIZE_DESIGN' })
 		expect(next.shapeGroupColors['not-a-real-group-id']).toBeUndefined()
 	})
 
 	it('TOGGLE_EDITABLE_AREA flips the showEditableArea flag', () => {
 		const state = baseState({ showEditableArea: true })
 		expect(
-			appReducer(state, { type: 'TOGGLE_EDITABLE_AREA' })
+			zenReducer(state, { type: 'TOGGLE_EDITABLE_AREA' })
 				.showEditableArea,
 		).toBe(false)
 		expect(
-			appReducer(baseState({ showEditableArea: false }), {
+			zenReducer(baseState({ showEditableArea: false }), {
 				type: 'TOGGLE_EDITABLE_AREA',
 			}).showEditableArea,
 		).toBe(true)
@@ -309,7 +309,7 @@ describe('appReducer', () => {
 			gridShape: 'hexagon',
 			shapeGroupColors: { '0,0': '#ff0000' },
 		})
-		const next = appReducer(state, {
+		const next = zenReducer(state, {
 			type: 'SELECT_GRID_SHAPE',
 			shape: 'triangle',
 		})
@@ -323,7 +323,7 @@ describe('appReducer', () => {
 			gridShape: 'hexagon',
 			shapeGroupColors: { '0,0': '#ff0000' },
 		})
-		const next = appReducer(state, {
+		const next = zenReducer(state, {
 			type: 'SELECT_GRID_SHAPE',
 			shape: 'hexagon',
 		})
@@ -341,7 +341,7 @@ describe('appReducer', () => {
 				[removedGroupId]: '#00ff00',
 			},
 		})
-		const next = appReducer(state, {
+		const next = zenReducer(state, {
 			type: 'SELECT_GRID_SIZE',
 			shape: 'hexagon',
 			size: 'sm',
@@ -363,7 +363,7 @@ describe('appReducer', () => {
 				[removedGroupId]: '#00ff00',
 			},
 		})
-		const next = appReducer(state, {
+		const next = zenReducer(state, {
 			type: 'SELECT_GRID_SIZE',
 			shape: 'triangle',
 			size: 'sm',
@@ -385,7 +385,7 @@ describe('appReducer', () => {
 				[removedGroupId]: '#00ff00',
 			},
 		})
-		const next = appReducer(state, {
+		const next = zenReducer(state, {
 			type: 'SELECT_GRID_SIZE',
 			shape: 'diamondStar',
 			size: 'sm',
@@ -409,7 +409,7 @@ describe('appReducer', () => {
 				[removedGroupId]: '#00ff00',
 			},
 		})
-		const next = appReducer(state, {
+		const next = zenReducer(state, {
 			type: 'SELECT_GRID_SIZE',
 			shape: 'hexagram',
 			size: 'sm',
@@ -436,7 +436,7 @@ describe('appReducer', () => {
 				[removedGroupId]: '#00ff00',
 			},
 		})
-		const next = appReducer(state, {
+		const next = zenReducer(state, {
 			type: 'SELECT_GRID_SIZE',
 			shape: 'circleRings',
 			size: 'sm',
@@ -465,7 +465,7 @@ describe('appReducer', () => {
 				[removedGroupId]: '#00ff00',
 			},
 		})
-		const next = appReducer(state, {
+		const next = zenReducer(state, {
 			type: 'SELECT_GRID_SIZE',
 			shape: 'pinwheel',
 			size: 'sm',
@@ -478,7 +478,7 @@ describe('appReducer', () => {
 	it('SELECT_GRID_SIZE changes an available shape size', () => {
 		const state = baseState()
 		expect(
-			appReducer(state, {
+			zenReducer(state, {
 				type: 'SELECT_GRID_SIZE',
 				shape: 'hexagon',
 				size: 'sm',

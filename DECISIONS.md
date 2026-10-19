@@ -69,8 +69,11 @@ remaining recommendations do not supersede the decisions below.
   export options. Keep its native input for labelling and keyboard interaction;
   the decorative checkmark uses the same duotone tint as other app icons.
   Call sites retain their own placement and text sizing.
-- Use **scheme** in code and **palette** in UI; reserve **theme** for dark/light mode.
-  This replaces the ambiguous `ColorThemeButton`/`ColorThemeModal` names.
+- Use **palette** in code and UI; reserve **theme** for dark/light mode. Code
+  originally said "scheme" and was renamed to match the UI and the database
+  (`palettes`). The persisted `schemeName` key keeps its name so saves still load.
+  Zen's state types are `ZenState`/`ZenStateProvider`/`useZenState`, so they are
+  not mistaken for app-wide state.
   Geometry export names were not broadly renamed.
 - Use one `@/` path alias instead of per-folder aliases. Per-folder aliases had
   to be kept in sync in two configs and never covered every folder, which left
@@ -320,14 +323,14 @@ without changing those consumers.
 
 ### Design edits versus tool choices
 
-History wraps the app reducer with snapshots of scheme, shape, per-shape sizes,
+History wraps the Zen reducer with snapshots of palette, shape, per-shape sizes,
 and all board paint maps. This keeps painting, palette changes, shape/size changes, randomization, and reset
 undoable without restoring old tool/view settings.
 
 - History is one unlimited chronological timeline for the session, not a separate
   stack per board, and is not persisted. All restored boards form the initial
   baseline; undo follows subsequent edits and switches in order.
-- No-op designs neither add snapshots nor clear redo. Scheme reselection still
+- No-op designs neither add snapshots nor clear redo. Palette reselection still
   resets the selected paint color, but that tool-only change preserves history.
 - If snapshot restoration makes a selected palette color unavailable, follow
   its position into the restored palette. Keep colors already available there
@@ -349,7 +352,7 @@ undoable without restoring old tool/view settings.
 
 ### Persistence
 
-Save scheme names rather than objects to relink to live palette data. Selected
+Save palette names rather than objects to relink to live palette data. Selected
 and painted colors remain literal hex values; updating palette data does not
 migrate them automatically.
 
@@ -380,9 +383,9 @@ The first-visit rule uses **storage-key existence**, checked before autosave,
 not successful restoration or a separate "seen" preference. Autosave can
 write a design without painting; help remains manually accessible.
 
-A first visit always starts with the first scheme in the data rather than a
+A first visit always starts with the first palette in the data rather than a
 random one, so the intro is identical for everyone. Returning users get their
-saved scheme, so random initial selection was removed.
+saved palette, so random initial selection was removed.
 
 ## Interaction and accessibility
 
@@ -501,7 +504,7 @@ inherit optical offsets. Reduced motion disables animation without hiding labels
 Render individually imported Font Awesome definitions through `FontAwesomeIcon`,
 replacing the earlier Kit-script approach. Import core CSS once and disable
 automatic injection. The unused Kit package and registry entry were removed.
-Duotone secondary layers use the first scheme color normalized to lightness
+Duotone secondary layers use the first palette color normalized to lightness
 50 in dark mode or 70 in light mode, fully opaque; single-tone icons skip tint.
 
 **Background flicker constraint:** set literal background colors without transitions.

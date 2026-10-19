@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { AppStateProvider, useAppState } from '@/features/zen/state'
+import { ZenStateProvider, useZenState } from '@/features/zen/state'
 import UndoRedoButtons from './UndoRedoButtons'
 
 function Harness() {
-	const { state, paintShapeGroup } = useAppState()
+	const { state, paintShapeGroup } = useZenState()
 	return (
 		<>
 			<button onClick={() => paintShapeGroup('0,0')}>Paint</button>
@@ -25,14 +25,14 @@ describe('UndoRedoButtons', () => {
 	})
 
 	it('disables both buttons when there is no history yet', () => {
-		render(<Harness />, { wrapper: AppStateProvider })
+		render(<Harness />, { wrapper: ZenStateProvider })
 		expect(screen.getByRole('button', { name: 'Undo' })).toBeDisabled()
 		expect(screen.getByRole('button', { name: 'Redo' })).toBeDisabled()
 	})
 
 	it('undoes and redoes a paint action via the buttons', async () => {
 		const user = userEvent.setup()
-		render(<Harness />, { wrapper: AppStateProvider })
+		render(<Harness />, { wrapper: ZenStateProvider })
 
 		await user.click(screen.getByText('Paint'))
 		expect(screen.getByTestId('painted-count')).toHaveTextContent('1')
@@ -48,7 +48,7 @@ describe('UndoRedoButtons', () => {
 
 	it('undoes and redoes via keyboard shortcuts', async () => {
 		const user = userEvent.setup()
-		render(<Harness />, { wrapper: AppStateProvider })
+		render(<Harness />, { wrapper: ZenStateProvider })
 
 		await user.click(screen.getByText('Paint'))
 		expect(screen.getByTestId('painted-count')).toHaveTextContent('1')

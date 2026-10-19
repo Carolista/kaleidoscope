@@ -3,31 +3,31 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { Button, ConfirmDialog, Loading } from '@/ui/components'
 import type { Database } from '@/lib/supabase'
 import {
-	manageColorScheme,
-	type CatalogScheme,
-	loadSchemeUsage,
-	schemeIsUsed,
-	type SchemeUsage,
+	managePalette,
+	type CatalogPalette,
+	loadPaletteUsage,
+	paletteIsUsed,
+	type PaletteUsage,
 } from '@/features/admin/services'
 import { useUnsavedDraft } from '@/ui/navigation'
 import PaletteUsageDetails from './PaletteUsageDetails'
 
 export default function PaletteDeleteDialog({
 	client,
-	scheme,
+	palette,
 	onCancel,
 	onDeleted,
 	open,
 	onAfterClose,
 }: {
 	readonly client: SupabaseClient<Database>
-	readonly scheme: CatalogScheme
+	readonly palette: CatalogPalette
 	readonly onCancel: () => void
 	readonly onDeleted: () => void
 	readonly open: boolean
 	readonly onAfterClose: () => void
 }) {
-	const [usage, setUsage] = useState<SchemeUsage | null>(null)
+	const [usage, setUsage] = useState<PaletteUsage | null>(null)
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState('')
 	const [usageError, setUsageError] = useState('')
@@ -37,7 +37,7 @@ export default function PaletteDeleteDialog({
 	useUnsavedDraft({ dirty: false, pending: busy })
 	useEffect(() => {
 		let active = true
-		void loadSchemeUsage(client, scheme.id)
+		void loadPaletteUsage(client, palette.id)
 			.then(value => {
 				if (active) setUsage(value)
 			})
@@ -55,13 +55,13 @@ export default function PaletteDeleteDialog({
 		return () => {
 			active = false
 		}
-	}, [client, scheme.id, retry])
+	}, [client, palette.id, retry])
 	const blocked =
 		!open ||
-		!!scheme.published_at ||
-		!!scheme.release_at ||
+		!!palette.published_at ||
+		!!palette.release_at ||
 		!usage ||
-		schemeIsUsed(usage) ||
+		paletteIsUsed(usage) ||
 		loading ||
 		!!usageError
 	async function remove() {
@@ -70,9 +70,9 @@ export default function PaletteDeleteDialog({
 		setBusy(true)
 		setError('')
 		try {
-			await manageColorScheme(client, {
+			await managePalette(client, {
 				kind: 'delete',
-				previous: scheme,
+				previous: palette,
 			})
 			onDeleted()
 		} catch (cause) {
@@ -93,7 +93,7 @@ export default function PaletteDeleteDialog({
 			title="Confirm palette deletion"
 			closeLabel="Close palette deletion"
 			destructive
-			message={`Delete "${scheme.name}" permanently? Any draft set membership will be removed.`}
+			message={`Delete "${palette.name}" permanently? Any draft set membership will be removed.`}
 			confirmLabel="Confirm delete palette"
 			cancelLabel="Cancel deletion"
 			confirmDisabled={blocked}
@@ -124,13 +124,16 @@ export default function PaletteDeleteDialog({
 			)}
 			{usage && !loading && !usageError && (
 				<>
-					{schemeIsUsed(usage) && (
+					{paletteIsUsed(usage) && (
 						<p>This palette is in use and cannot be deleted.</p>
 					)}
-					<PaletteUsageDetails usage={usage} colors={scheme.colors} />
+					<PaletteUsageDetails
+						usage={usage}
+						colors={palette.colors}
+					/>
 				</>
 			)}
-			{(scheme.published_at || scheme.release_at) && (
+			{(palette.published_at || palette.release_at) && (
 				<p>Published or scheduled palettes cannot be deleted.</p>
 			)}
 		</ConfirmDialog>

@@ -3,7 +3,7 @@ import {
 	availableGridSizes,
 	gridSizeOptions,
 } from '@/domain/shapes'
-import { useAppState } from '@/features/zen/state'
+import { useZenState } from '@/features/zen/state'
 import type { GridShapeId, GridSize } from '@/domain/shapes'
 import GridShapeIcon from './GridShapeIcon'
 import styles from './GridShapePicker.module.css'
@@ -15,7 +15,7 @@ export interface GridShapePickerProps {
 }
 
 function GridShapePicker({ onSelected }: GridShapePickerProps) {
-	const { state, selectGridShape, selectGridSize } = useAppState()
+	const { state, selectGridShape, selectGridSize } = useZenState()
 
 	function chooseSize(shape: GridShapeId, size: GridSize) {
 		if (shape === state.gridShape) {

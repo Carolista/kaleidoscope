@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { colorSchemes, withLightness } from '@/domain/palettes'
-import { useAppState } from '@/features/zen/state'
+import { palettes, withLightness } from '@/domain/palettes'
+import { useZenState } from '@/features/zen/state'
 import { renderWithProvider } from '@/test/renderWithProvider'
 import Checkbox from './Checkbox'
 
@@ -86,7 +86,7 @@ describe('Checkbox', () => {
 
 	it('updates the checked icon tint with the current palette and theme', async () => {
 		function Harness() {
-			const { state, selectScheme, toggleDarkMode } = useAppState()
+			const { state, selectPalette, toggleDarkMode } = useZenState()
 			return (
 				<>
 					<Checkbox
@@ -94,13 +94,13 @@ describe('Checkbox', () => {
 						checked
 						onChange={() => {}}
 					/>
-					<button onClick={() => selectScheme(colorSchemes[1])}>
+					<button onClick={() => selectPalette(palettes[1])}>
 						Change palette
 					</button>
 					<button onClick={toggleDarkMode}>Change theme</button>
 					<output>
 						{withLightness(
-							state.currentScheme.colors[0],
+							state.currentPalette.colors[0],
 							state.darkMode ? 50 : 70,
 						)}
 					</output>

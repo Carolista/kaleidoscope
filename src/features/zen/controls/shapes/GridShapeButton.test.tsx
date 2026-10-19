@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { AppStateProvider } from '@/features/zen/state'
+import { ZenStateProvider } from '@/features/zen/state'
 import GridShapeButton from './GridShapeButton'
 
 describe('GridShapeButton', () => {
@@ -11,7 +11,7 @@ describe('GridShapeButton', () => {
 
 	it('opens the grid shape modal (with the shape picker) and closes it', async () => {
 		const user = userEvent.setup()
-		render(<GridShapeButton />, { wrapper: AppStateProvider })
+		render(<GridShapeButton />, { wrapper: ZenStateProvider })
 
 		expect(screen.queryByRole('heading', { name: 'Grid Shape' })).toBeNull()
 
@@ -42,7 +42,7 @@ describe('GridShapeButton', () => {
 
 	it('closes automatically after switching boards without confirmation', async () => {
 		const user = userEvent.setup()
-		render(<GridShapeButton />, { wrapper: AppStateProvider })
+		render(<GridShapeButton />, { wrapper: ZenStateProvider })
 
 		await user.click(
 			screen.getByRole('button', { name: 'Select a different shape' }),
@@ -58,7 +58,7 @@ describe('GridShapeButton', () => {
 
 	it('closes automatically after changing the active shape size', async () => {
 		const user = userEvent.setup()
-		render(<GridShapeButton />, { wrapper: AppStateProvider })
+		render(<GridShapeButton />, { wrapper: ZenStateProvider })
 
 		await user.click(
 			screen.getByRole('button', { name: 'Select a different shape' }),

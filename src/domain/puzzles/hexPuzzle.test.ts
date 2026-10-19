@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { colorSchemes } from '@/domain/palettes'
+import { palettes } from '@/domain/palettes'
 import { generateHexagonCells } from '@/domain/shapes/hexagon'
 import {
 	coordinateKey,
@@ -11,34 +11,34 @@ import {
 } from './hexPuzzle'
 import type { PuzzlePlacements } from './hexPuzzle'
 
-const scheme = colorSchemes[1]
+const palette = palettes[1]
 
 describe('easy hex puzzle generation', () => {
 	it('reproduces the complete definition for a seed and varies between seeds', () => {
-		expect(generateHexPuzzle('cabo', scheme)).toEqual(
-			generateHexPuzzle('cabo', scheme),
+		expect(generateHexPuzzle('cabo', palette)).toEqual(
+			generateHexPuzzle('cabo', palette),
 		)
-		expect(generateHexPuzzle('cabo', scheme)).not.toEqual(
-			generateHexPuzzle('another', scheme),
+		expect(generateHexPuzzle('cabo', palette)).not.toEqual(
+			generateHexPuzzle('another', palette),
 		)
 	})
 
 	it('produces a complete serializable definition for future set/pack authoring', () => {
-		const puzzle = generateHexPuzzle('published-puzzle', scheme)
+		const puzzle = generateHexPuzzle('published-puzzle', palette)
 		expect(JSON.parse(JSON.stringify(puzzle))).toEqual(puzzle)
 		expect(puzzle).toMatchObject({
 			version: 1,
 			shape: 'hexagon',
 			seed: 'published-puzzle',
 			radius: 3,
-			schemeName: 'Cabo',
+			paletteName: 'Cabo',
 		})
 	})
 
 	it.each(Array.from({ length: 100 }, (_, i) => `seed-${i}`))(
 		'generates a solvable, connected, exact 1 + 2 + 3 partition for %s',
 		seed => {
-			const puzzle = generateHexPuzzle(seed, scheme)
+			const puzzle = generateHexPuzzle(seed, palette)
 			const wedge = generateHexagonCells(puzzle.radius).filter(
 				cell => cell.isClickable,
 			)
@@ -75,7 +75,7 @@ describe('easy hex puzzle generation', () => {
 				expect(reached.size).toBe(piece.tiles.length)
 				expect(
 					piece.tiles.every(tile =>
-						scheme.colors.includes(tile.color),
+						palette.colors.includes(tile.color),
 					),
 				).toBe(true)
 				expect(piece.tiles[0]).toMatchObject({ q: 0, r: 0 })
@@ -96,7 +96,7 @@ describe('easy hex puzzle generation', () => {
 	)
 
 	it('rejects invalid generation inputs explicitly', () => {
-		expect(() => generateHexPuzzle('', scheme)).toThrow('seed')
+		expect(() => generateHexPuzzle('', palette)).toThrow('seed')
 		expect(() =>
 			generateHexPuzzle('seed', {
 				name: 'Invalid',
@@ -107,7 +107,7 @@ describe('easy hex puzzle generation', () => {
 })
 
 describe('piece placement', () => {
-	const puzzle = generateHexPuzzle('placement', scheme)
+	const puzzle = generateHexPuzzle('placement', palette)
 	const single = puzzle.pieces.find(piece => piece.tiles.length === 1)!
 	const other = puzzle.pieces.find(piece => piece.tiles.length > 1)!
 

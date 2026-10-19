@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { colorSchemes } from '@/domain/palettes'
+import { palettes } from '@/domain/palettes'
 import {
 	coordinateKey,
 	generateHexPuzzle,
@@ -34,7 +34,7 @@ describe('PuzzlePlay', () => {
 	it('places the tray action beside the pieces and keeps feedback for screen readers only', () => {
 		const preview = generateHexPuzzle(
 			'preview-layout',
-			colorSchemes[1],
+			palettes[1],
 			HEX_PUZZLE_RECIPES[0],
 		)
 		renderPlay(preview)
@@ -50,11 +50,7 @@ describe('PuzzlePlay', () => {
 		const recipe = HEX_PUZZLE_RECIPES.find(
 			value => value.id === 'moderate-small',
 		)!
-		const rotated = generateHexPuzzle(
-			'tray-rotation',
-			colorSchemes[1],
-			recipe,
-		)
+		const rotated = generateHexPuzzle('tray-rotation', palettes[1], recipe)
 		renderPlay(rotated)
 		const index = rotated.pieces.findIndex(piece => piece.tiles.length > 1)
 		const button = pieceButton(index)
@@ -104,11 +100,7 @@ describe('PuzzlePlay', () => {
 			const recipe = HEX_PUZZLE_RECIPES.find(
 				value => value.id === 'moderate-small',
 			)!
-			const rotated = generateHexPuzzle(
-				'tray-drag',
-				colorSchemes[1],
-				recipe,
-			)
+			const rotated = generateHexPuzzle('tray-drag', palettes[1], recipe)
 			renderPlay(rotated)
 			const index = rotated.pieces.findIndex(
 				piece => piece.tiles.length > 1,
@@ -131,7 +123,7 @@ describe('PuzzlePlay', () => {
 			)!
 			const rotated = generateHexPuzzle(
 				'tray-return',
-				colorSchemes[1],
+				palettes[1],
 				recipe,
 			)
 			renderPlay(rotated)

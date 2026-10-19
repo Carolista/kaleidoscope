@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { AppStateProvider } from '@/features/zen'
+import { ZenStateProvider } from '@/features/zen'
 import { Loading } from '@/ui/components'
 import PlayerApp from './PlayerApp'
 import styles from './AppEntry.module.css'
@@ -23,9 +23,9 @@ function Entry() {
 			<AdminPortal />
 		</Suspense>
 	) : (
-		<AppStateProvider>
+		<ZenStateProvider>
 			<PlayerApp />
-		</AppStateProvider>
+		</ZenStateProvider>
 	)
 }
 

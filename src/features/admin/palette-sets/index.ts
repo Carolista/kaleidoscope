@@ -1,1 +1,1 @@
-export { default as SchemeSetLibrary } from './SchemeSetLibrary'
+export { default as PaletteSetLibrary } from './PaletteSetLibrary'

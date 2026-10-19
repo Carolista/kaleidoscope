@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { AppStateProvider } from '@/features/zen/state'
+import { ZenStateProvider } from '@/features/zen/state'
 import {
 	DIAMOND_STAR_GRID_SIZES,
 	computeGridAspectRatio,
@@ -11,7 +11,7 @@ import DiamondStarGrid from './DiamondStarGrid'
 
 describe('DiamondStarGrid', () => {
 	it('exposes exactly 10 clickable tiles, each as an accessible, labeled button', () => {
-		render(<DiamondStarGrid />, { wrapper: AppStateProvider })
+		render(<DiamondStarGrid />, { wrapper: ZenStateProvider })
 		const tiles = screen.getAllByRole('button')
 		expect(tiles).toHaveLength(10)
 		expect(tiles[0]).toHaveAccessibleName('Paint tile 1 of 10')
@@ -20,7 +20,7 @@ describe('DiamondStarGrid', () => {
 
 	it('paints a tile on click and announces it via the live region', async () => {
 		const user = userEvent.setup()
-		render(<DiamondStarGrid />, { wrapper: AppStateProvider })
+		render(<DiamondStarGrid />, { wrapper: ZenStateProvider })
 
 		const tile = screen.getByRole('button', {
 			name: 'Paint tile 1 of 10',
@@ -37,7 +37,7 @@ describe('DiamondStarGrid', () => {
 
 	it('paints a tile via the keyboard (Enter and Space), not just click', async () => {
 		const user = userEvent.setup()
-		render(<DiamondStarGrid />, { wrapper: AppStateProvider })
+		render(<DiamondStarGrid />, { wrapper: ZenStateProvider })
 
 		const tile = screen.getByRole('button', {
 			name: 'Paint tile 2 of 10',
@@ -58,7 +58,7 @@ describe('DiamondStarGrid', () => {
 		(_size, gridSize) => {
 			const { container } = render(
 				<DiamondStarGrid gridSize={gridSize} />,
-				{ wrapper: AppStateProvider },
+				{ wrapper: ZenStateProvider },
 			)
 			expect(container.querySelectorAll('polygon')).toHaveLength(
 				6 * gridSize ** 2,

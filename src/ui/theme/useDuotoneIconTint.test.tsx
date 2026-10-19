@@ -2,11 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import { faXmark } from '@fortawesome/pro-solid-svg-icons'
 import { faPalette, faShapes } from '@fortawesome/sharp-duotone-solid-svg-icons'
-import { colorSchemes } from '@/domain/palettes'
+import { palettes } from '@/domain/palettes'
 import { defaultGridSizes } from '@/domain/shapes'
 import {
-	AppStateProvider,
-	useAppState,
+	ZenStateProvider,
+	useZenState,
 	savePersistedState,
 } from '@/features/zen/state'
 import * as colorMath from '@/domain/palettes'
@@ -16,8 +16,8 @@ describe('useDuotoneIconTint', () => {
 	beforeEach(() => {
 		localStorage.clear()
 		savePersistedState({
-			currentScheme: colorSchemes[0],
-			currentColor: colorSchemes[0].colors[0],
+			currentPalette: palettes[0],
+			currentColor: palettes[0].colors[0],
 			darkMode: true,
 			showEditableArea: true,
 			gridShape: 'hexagon',
@@ -30,13 +30,10 @@ describe('useDuotoneIconTint', () => {
 	afterEach(() => vi.restoreAllMocks())
 
 	it('computes one tint per hook invocation and shares it across duotone icons only', () => {
-		const expectedColor = colorMath.withLightness(
-			colorSchemes[0].colors[0],
-			50,
-		)
+		const expectedColor = colorMath.withLightness(palettes[0].colors[0], 50)
 		const compute = vi.spyOn(colorMath, 'withLightness')
 		const { result } = renderHook(() => useDuotoneIconTint(), {
-			wrapper: AppStateProvider,
+			wrapper: ZenStateProvider,
 		})
 		const tint = result.current(faPalette)
 		expect(tint).toEqual({
@@ -48,21 +45,21 @@ describe('useDuotoneIconTint', () => {
 		expect(compute).toHaveBeenCalledTimes(1)
 	})
 
-	it('updates the tint when the active scheme or dark/light mode changes', () => {
+	it('updates the tint when the active palette or dark/light mode changes', () => {
 		const { result } = renderHook(
 			() => ({
 				tint: useDuotoneIconTint(),
-				...useAppState(),
+				...useZenState(),
 			}),
-			{ wrapper: AppStateProvider },
+			{ wrapper: ZenStateProvider },
 		)
-		act(() => result.current.selectScheme(colorSchemes[1]))
+		act(() => result.current.selectPalette(palettes[1]))
 		expect(result.current.tint(faPalette)?.['--fa-secondary-color']).toBe(
-			colorMath.withLightness(colorSchemes[1].colors[0], 50),
+			colorMath.withLightness(palettes[1].colors[0], 50),
 		)
 		act(() => result.current.toggleDarkMode())
 		expect(result.current.tint(faPalette)?.['--fa-secondary-color']).toBe(
-			colorMath.withLightness(colorSchemes[1].colors[0], 70),
+			colorMath.withLightness(palettes[1].colors[0], 70),
 		)
 		expect(result.current.tint(faXmark)).toBeUndefined()
 	})

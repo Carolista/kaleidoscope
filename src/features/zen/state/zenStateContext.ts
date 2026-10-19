@@ -1,11 +1,11 @@
 import { createContext } from 'react'
-import type { AppState } from './appState'
-import type { ColorScheme } from '@/domain/palettes'
+import type { ZenState } from './zenState'
+import type { Palette } from '@/domain/palettes'
 import type { GridShapeId, GridSize } from '@/domain/shapes'
 
-export interface AppStateContextValue {
-	readonly state: AppState
-	readonly selectScheme: (scheme: ColorScheme) => void
+export interface ZenStateContextValue {
+	readonly state: ZenState
+	readonly selectPalette: (palette: Palette) => void
 	readonly selectColor: (color: string) => void
 	readonly paintShapeGroup: (groupId: string) => void
 	readonly toggleDarkMode: () => void
@@ -20,4 +20,4 @@ export interface AppStateContextValue {
 	readonly canRedo: boolean
 }
 
-export const AppStateContext = createContext<AppStateContextValue | null>(null)
+export const ZenStateContext = createContext<ZenStateContextValue | null>(null)

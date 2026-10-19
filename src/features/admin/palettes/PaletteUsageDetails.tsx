@@ -1,5 +1,5 @@
-import type { ColorScheme } from '@/domain/palettes'
-import { schemeIsUsed, type SchemeUsage } from '@/features/admin/services'
+import type { Palette } from '@/domain/palettes'
+import { paletteIsUsed, type PaletteUsage } from '@/features/admin/services'
 import { HexPuzzleBoard } from '@/ui/puzzle'
 import styles from './PaletteUsageDetails.module.css'
 
@@ -7,10 +7,10 @@ export default function PaletteUsageDetails({
 	usage,
 	colors,
 }: {
-	readonly usage: SchemeUsage
-	readonly colors: ColorScheme['colors'] | null
+	readonly usage: PaletteUsage
+	readonly colors: Palette['colors'] | null
 }) {
-	if (!schemeIsUsed(usage)) return <p>Not used anywhere.</p>
+	if (!paletteIsUsed(usage)) return <p>Not used anywhere.</p>
 	return (
 		<>
 			{usage.starters > 0 && <p>Included in starter offerings.</p>}

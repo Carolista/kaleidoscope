@@ -1,19 +1,19 @@
 import { useCallback, useEffect, useMemo, useReducer } from 'react'
 import type { ReactNode } from 'react'
-import type { ColorScheme } from '@/domain/palettes'
+import type { Palette } from '@/domain/palettes'
 import type { GridShapeId, GridSize } from '@/domain/shapes'
 import { createInitialHistoryState, historyReducer } from './historyReducer'
-import { loadInitialAppState, savePersistedState } from './storageService'
+import { loadInitialZenState, savePersistedState } from './storageService'
 import { PlayerThemeContext } from '@/ui/theme'
-import { AppStateContext } from './appStateContext'
+import { ZenStateContext } from './zenStateContext'
 
-export function AppStateProvider({
+export function ZenStateProvider({
 	children,
 }: {
 	readonly children: ReactNode
 }) {
 	const [history, dispatch] = useReducer(historyReducer, undefined, () =>
-		createInitialHistoryState(loadInitialAppState()),
+		createInitialHistoryState(loadInitialZenState()),
 	)
 	const { present: state } = history
 
@@ -21,8 +21,8 @@ export function AppStateProvider({
 		savePersistedState(state)
 	}, [state])
 
-	const selectScheme = useCallback(
-		(scheme: ColorScheme) => dispatch({ type: 'SELECT_SCHEME', scheme }),
+	const selectPalette = useCallback(
+		(palette: Palette) => dispatch({ type: 'SELECT_PALETTE', palette }),
 		[],
 	)
 	const selectColor = useCallback(
@@ -69,7 +69,7 @@ export function AppStateProvider({
 	const value = useMemo(
 		() => ({
 			state,
-			selectScheme,
+			selectPalette,
 			selectColor,
 			paintShapeGroup,
 			toggleDarkMode,
@@ -85,7 +85,7 @@ export function AppStateProvider({
 		}),
 		[
 			state,
-			selectScheme,
+			selectPalette,
 			selectColor,
 			paintShapeGroup,
 			toggleDarkMode,
@@ -104,17 +104,17 @@ export function AppStateProvider({
 	const theme = useMemo(
 		() => ({
 			darkMode: state.darkMode,
-			palette: state.currentScheme,
+			palette: state.currentPalette,
 			toggleDarkMode,
 		}),
-		[state.darkMode, state.currentScheme, toggleDarkMode],
+		[state.darkMode, state.currentPalette, toggleDarkMode],
 	)
 
 	return (
-		<AppStateContext.Provider value={value}>
+		<ZenStateContext.Provider value={value}>
 			<PlayerThemeContext.Provider value={theme}>
 				{children}
 			</PlayerThemeContext.Provider>
-		</AppStateContext.Provider>
+		</ZenStateContext.Provider>
 	)
 }

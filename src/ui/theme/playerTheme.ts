@@ -1,11 +1,11 @@
 import { createContext, useContext } from 'react'
-import type { ColorScheme } from '@/domain/palettes'
+import type { Palette } from '@/domain/palettes'
 
 // The player-wide look that shared player UI needs (icon tint, theme toggle),
 // without depending on any one mode's state. Zen's state provider supplies it.
 export interface PlayerTheme {
 	readonly darkMode: boolean
-	readonly palette: ColorScheme
+	readonly palette: Palette
 	readonly toggleDarkMode: () => void
 }
 

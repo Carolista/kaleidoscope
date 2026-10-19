@@ -10,17 +10,17 @@ import {
 	faLayerGroup,
 } from '@fortawesome/pro-solid-svg-icons'
 import type { Database } from '@/lib/supabase'
-import type { ColorScheme } from '@/domain/palettes'
+import type { Palette } from '@/domain/palettes'
 import {
-	bulkDeleteColorSchemes,
-	manageColorScheme,
-	readColorScheme,
-	type CatalogScheme,
-	loadSchemeUsage,
-	type SchemeUsage,
-	manageSchemeSet,
-	schemeSetLabels,
-	type SchemeSet,
+	bulkDeletePalettes,
+	managePalette,
+	readPalette,
+	type CatalogPalette,
+	loadPaletteUsage,
+	type PaletteUsage,
+	managePaletteSet,
+	paletteSetLabels,
+	type PaletteSet,
 } from '@/features/admin/services'
 import PaletteUsageDetails from './PaletteUsageDetails'
 import {
@@ -33,10 +33,10 @@ import {
 	useCheckedIds,
 	AdminForm,
 } from '@/features/admin/common'
-import SchemeSandbox from './SchemeSandbox'
+import PaletteSandbox from './PaletteSandbox'
 import { useUnsavedDraft } from '@/ui/navigation'
-import styles from './SchemeLibrary.module.css'
-import { SchemeSetLibrary } from '@/features/admin/palette-sets'
+import styles from './PaletteLibrary.module.css'
+import { PaletteSetLibrary } from '@/features/admin/palette-sets'
 import { useCatalog, useCatalogInvalidation } from '@/features/admin/catalog'
 import {
 	Button,
@@ -55,21 +55,21 @@ function errorMessage(cause: unknown): string {
 	return cause instanceof Error ? cause.message : 'Unable to manage palettes.'
 }
 
-function releaseState(scheme: CatalogScheme): string {
-	if (!scheme.published_at) return 'Draft'
-	return scheme.release_at && Date.parse(scheme.release_at) > Date.now()
+function releaseState(palette: CatalogPalette): string {
+	if (!palette.published_at) return 'Draft'
+	return palette.release_at && Date.parse(palette.release_at) > Date.now()
 		? 'Scheduled'
 		: 'Live'
 }
 
-function SchemeEditor({
+function PaletteEditor({
 	client,
 	initial,
 	startingColors,
 	onSaved,
 }: {
 	readonly client: SupabaseClient<Database>
-	readonly initial: CatalogScheme | null
+	readonly initial: CatalogPalette | null
 	readonly startingColors: readonly string[]
 	readonly onSaved: (message: string) => void
 }) {
@@ -80,7 +80,7 @@ function SchemeEditor({
 	const busy = pending !== null
 	const working = useRef(false)
 	const createRequest = useRef<{ id: string; content: string } | null>(null)
-	const [usage, setUsage] = useState<SchemeUsage | null>(null)
+	const [usage, setUsage] = useState<PaletteUsage | null>(null)
 	const [usageError, setUsageError] = useState('')
 	const [usageLoading, setUsageLoading] = useState(!!initial)
 	const readOnly = !!initial?.published_at || !!initial?.release_at
@@ -92,13 +92,12 @@ function SchemeEditor({
 	const validColors =
 		colors.length === 5 &&
 		colors.every(color => /^#[0-9a-f]{6}$/i.test(color))
-			? readColorScheme({ id: initial?.id ?? 'preview', name, colors })
-					.colors
+			? readPalette({ id: initial?.id ?? 'preview', name, colors }).colors
 			: null
 	useEffect(() => {
 		if (!initial) return
 		let active = true
-		void loadSchemeUsage(client, initial.id)
+		void loadPaletteUsage(client, initial.id)
 			.then(next => {
 				if (active) setUsage(next)
 			})
@@ -124,24 +123,24 @@ function SchemeEditor({
 		setPending('Saving palette…')
 		setError('')
 		try {
-			const scheme = { name: name.trim(), colors: validColors }
+			const palette = { name: name.trim(), colors: validColors }
 			if (initial) {
-				await manageColorScheme(client, {
+				await managePalette(client, {
 					kind: 'update',
 					previous: initial,
-					scheme,
+					palette,
 				})
 			} else {
-				const content = JSON.stringify(scheme)
+				const content = JSON.stringify(palette)
 				if (createRequest.current?.content !== content)
 					createRequest.current = { id: crypto.randomUUID(), content }
-				await manageColorScheme(client, {
+				await managePalette(client, {
 					kind: 'create',
 					id: createRequest.current.id,
-					scheme,
+					palette,
 				})
 			}
-			onSaved(`Saved "${scheme.name}" as a draft palette.`)
+			onSaved(`Saved "${palette.name}" as a draft palette.`)
 		} catch (cause) {
 			setError(errorMessage(cause))
 		} finally {
@@ -150,8 +149,8 @@ function SchemeEditor({
 		}
 	}
 	return (
-		<section aria-labelledby="scheme-editor-title">
-			<h2 id="scheme-editor-title">
+		<section aria-labelledby="palette-editor-title">
+			<h2 id="palette-editor-title">
 				{initial
 					? `${readOnly ? 'View' : 'Edit'} palette`
 					: 'New palette'}
@@ -167,7 +166,7 @@ function SchemeEditor({
 					aria-label={initial ? 'Edit palette' : 'Create palette'}
 				>
 					<div className={styles.nameRow}>
-						<FormField label="Palette name" id="scheme-name">
+						<FormField label="Palette name" id="palette-name">
 							{field => (
 								<Input
 									{...field}
@@ -211,7 +210,7 @@ function SchemeEditor({
 							}
 							return (
 								<div className={styles.colorRow} key={index}>
-									<label htmlFor={`scheme-color-${index}`}>
+									<label htmlFor={`palette-color-${index}`}>
 										Color {index + 1}
 									</label>
 									{valid ? (
@@ -232,14 +231,14 @@ function SchemeEditor({
 										</span>
 									)}
 									<Input
-										id={`scheme-color-${index}`}
+										id={`palette-color-${index}`}
 										value={color}
 										required
 										pattern="#[0-9A-Fa-f]{6}"
 										aria-invalid={!valid}
 										aria-describedby={
 											!valid
-												? `scheme-color-error-${index}`
+												? `palette-color-error-${index}`
 												: undefined
 										}
 										spellCheck={false}
@@ -249,7 +248,7 @@ function SchemeEditor({
 									/>
 									{!valid && (
 										<span
-											id={`scheme-color-error-${index}`}
+											id={`palette-color-error-${index}`}
 											className={styles.colorError}
 										>
 											Use # and six hex digits.
@@ -260,12 +259,12 @@ function SchemeEditor({
 						})}
 					</fieldset>
 				</AdminForm>
-				<SchemeSandbox colors={validColors} />
+				<PaletteSandbox colors={validColors} />
 			</div>
 			{initial && (
 				<section aria-label="Palette usage">
 					<AdminSectionHeading
-						id="scheme-usage-title"
+						id="palette-usage-title"
 						title="Usage"
 						level={3}
 					/>
@@ -283,7 +282,7 @@ function SchemeEditor({
 	)
 }
 
-export default function SchemeLibrary({
+export default function PaletteLibrary({
 	client,
 	view = 'palettes',
 	catalogStatus,
@@ -295,8 +294,8 @@ export default function SchemeLibrary({
 	const paletteCatalog = useCatalog('palettes', client, view === 'palettes')
 	const setCatalog = useCatalog('paletteSets', client)
 	const invalidate = useCatalogInvalidation()
-	const schemes: readonly CatalogScheme[] = paletteCatalog.data ?? []
-	const sets: readonly SchemeSet[] = setCatalog.data ?? []
+	const palettes: readonly CatalogPalette[] = paletteCatalog.data ?? []
+	const sets: readonly PaletteSet[] = setCatalog.data ?? []
 	const loading = paletteCatalog.loading || setCatalog.loading
 	const refreshing = paletteCatalog.refreshing || setCatalog.refreshing
 	const catalogError =
@@ -321,7 +320,7 @@ export default function SchemeLibrary({
 		? targetChoice
 		: ''
 	const [busy, setBusy] = useState(false)
-	const [deleting, setDeleting, deleteModal] = useModalState<CatalogScheme>()
+	const [deleting, setDeleting, deleteModal] = useModalState<CatalogPalette>()
 	const [assigning, setAssigning, assignmentModal] = useModalState<true>()
 	const [bulkDeleting, setBulkDeleting, bulkDeleteModal] =
 		useModalState<true>()
@@ -329,44 +328,46 @@ export default function SchemeLibrary({
 	const working = useRef(false)
 	useUnsavedDraft({ dirty: false, pending: busy })
 	const [editing, setEditing] = useState<{
-		scheme: CatalogScheme | null
-		startingColors?: ColorScheme['colors']
+		palette: CatalogPalette | null
+		startingColors?: Palette['colors']
 	} | null>(null)
-	const filteredSchemes = schemes.filter(scheme => {
-		const set = setOf(scheme.id)
+	const filteredPalettes = palettes.filter(palette => {
+		const set = setOf(palette.id)
 		return (
 			(filter === 'all' ||
 				(filter === 'ungrouped' ? !set : set?.row.id === filter)) &&
 			(!catalogStatus ||
-				(!scheme.published_at &&
-					!scheme.release_at &&
+				(!palette.published_at &&
+					!palette.release_at &&
 					!!set === (catalogStatus === 'assigned')))
 		)
 	})
-	const visibleSchemes =
+	const visiblePalettes =
 		catalogStatus === 'assigned'
-			? [...filteredSchemes].sort((a, b) =>
+			? [...filteredPalettes].sort((a, b) =>
 					compareSetOrder(setOrderKey(a), setOrderKey(b)),
 				)
-			: filteredSchemes
-	const selection = useCheckedIds(visibleSchemes.map(scheme => scheme.id))
+			: filteredPalettes
+	const selection = useCheckedIds(visiblePalettes.map(palette => palette.id))
 	const checked = selection.checked
 	function setOf(id: string) {
 		return sets.find(set => set.members.some(member => member.id === id))
 	}
-	function setOrderKey(scheme: CatalogScheme) {
-		const set = setOf(scheme.id)
+	function setOrderKey(palette: CatalogPalette) {
+		const set = setOf(palette.id)
 		return {
 			setName: set?.row.name ?? null,
 			position:
-				set?.members.findIndex(member => member.id === scheme.id) ??
+				set?.members.findIndex(member => member.id === palette.id) ??
 				null,
-			name: scheme.name,
+			name: palette.name,
 		}
 	}
 	// Only unassigned drafts may be deleted.
-	function deletable(scheme: CatalogScheme) {
-		return !scheme.published_at && !scheme.release_at && !setOf(scheme.id)
+	function deletable(palette: CatalogPalette) {
+		return (
+			!palette.published_at && !palette.release_at && !setOf(palette.id)
+		)
 	}
 	function refresh(preserveSelection = false, palettes = true) {
 		if (!preserveSelection) selection.clear()
@@ -381,7 +382,7 @@ export default function SchemeLibrary({
 		setBusy(true)
 		setActionError('')
 		try {
-			await manageSchemeSet(client, targetSet, {
+			await managePaletteSet(client, targetSet, {
 				kind: 'assign',
 				paletteIds: selection.ids,
 			})
@@ -405,7 +406,7 @@ export default function SchemeLibrary({
 		setActionError('')
 		const count = checked.size
 		try {
-			await bulkDeleteColorSchemes(client, selection.ids)
+			await bulkDeletePalettes(client, selection.ids)
 			setBulkDeleting(null, () => {
 				setStatus(`Deleted ${count} palette${count === 1 ? '' : 's'}.`)
 				refresh()
@@ -417,10 +418,10 @@ export default function SchemeLibrary({
 			setBusy(false)
 		}
 	}
-	const checkedSchemes = schemes.filter(scheme => checked.has(scheme.id))
+	const checkedPalettes = palettes.filter(palette => checked.has(palette.id))
 	if (view === 'sets')
 		return (
-			<SchemeSetLibrary
+			<PaletteSetLibrary
 				client={client}
 				sets={sets}
 				loading={loading}
@@ -447,13 +448,13 @@ export default function SchemeLibrary({
 		)
 	if (editing) {
 		return (
-			<SchemeEditor
+			<PaletteEditor
 				client={client}
-				initial={editing.scheme}
+				initial={editing.palette}
 				startingColors={
 					editing.startingColors ??
-					editing.scheme?.colors ??
-					schemes[0]?.colors ?? [
+					editing.palette?.colors ??
+					palettes[0]?.colors ?? [
 						'#ffffff',
 						'#ffffff',
 						'#ffffff',
@@ -472,9 +473,9 @@ export default function SchemeLibrary({
 		)
 	}
 	return (
-		<section aria-labelledby="scheme-library-title">
+		<section aria-labelledby="palette-library-title">
 			<AdminSectionHeading
-				id="scheme-library-title"
+				id="palette-library-title"
 				title={
 					catalogStatus === 'assigned'
 						? 'Assigned palettes'
@@ -487,7 +488,7 @@ export default function SchemeLibrary({
 					disabled={busy || loading || !!error}
 					onClick={() => {
 						setStatus('')
-						setEditing({ scheme: null })
+						setEditing({ palette: null })
 					}}
 				/>
 				<AdminIconButton
@@ -498,7 +499,7 @@ export default function SchemeLibrary({
 				/>
 				{catalogStatus !== 'drafts' && (
 					<Select
-						id="scheme-set-filter"
+						id="palette-set-filter"
 						aria-label="Show palettes"
 						value={filter}
 						disabled={loading || busy}
@@ -511,7 +512,7 @@ export default function SchemeLibrary({
 						<option value="ungrouped">No set</option>
 						{sets.map(set => (
 							<option key={set.row.id} value={set.row.id}>
-								{set.row.name} ({schemeSetLabels[set.kind]})
+								{set.row.name} ({paletteSetLabels[set.kind]})
 							</option>
 						))}
 					</Select>
@@ -522,7 +523,7 @@ export default function SchemeLibrary({
 				<PaletteDeleteDialog
 					{...deleteModal}
 					client={client}
-					scheme={deleting}
+					palette={deleting}
 					onCancel={() => setDeleting(null)}
 					onDeleted={() => {
 						setDeleting(null, () => {
@@ -548,11 +549,11 @@ export default function SchemeLibrary({
 					onCancel={() => setAssigning(null)}
 				>
 					<ul>
-						{checkedSchemes.map(scheme => (
-							<li key={scheme.id}>{scheme.name}</li>
+						{checkedPalettes.map(palette => (
+							<li key={palette.id}>{palette.name}</li>
 						))}
 					</ul>
-					<FormField id="scheme-assign-set" label="Palette set">
+					<FormField id="palette-assign-set" label="Palette set">
 						{field => (
 							<Select
 								{...field}
@@ -599,8 +600,8 @@ export default function SchemeLibrary({
 					onCancel={() => setBulkDeleting(null)}
 				>
 					<ul>
-						{checkedSchemes.map(scheme => (
-							<li key={scheme.id}>{scheme.name}</li>
+						{checkedPalettes.map(palette => (
+							<li key={palette.id}>{palette.name}</li>
 						))}
 					</ul>
 				</ConfirmDialog>
@@ -617,7 +618,7 @@ export default function SchemeLibrary({
 			{!loading && !error && (
 				<AdminSelectionBar
 					label="Bulk palette actions"
-					shown={visibleSchemes.length}
+					shown={visiblePalettes.length}
 					checked={checked.size}
 					disabled={busy}
 					onSelectAll={selection.setAll}
@@ -633,7 +634,7 @@ export default function SchemeLibrary({
 							setAssigning(true)
 						}}
 					/>
-					{checkedSchemes.every(deletable) && (
+					{checkedPalettes.every(deletable) && (
 						<AdminIconButton
 							icon={faTrashCan}
 							label="Delete selected"
@@ -648,28 +649,28 @@ export default function SchemeLibrary({
 			)}
 			{!loading &&
 				!error &&
-				(visibleSchemes.length ? (
+				(visiblePalettes.length ? (
 					<AdminGallery layout="palettes">
-						{visibleSchemes.map(scheme => {
-							const state = releaseState(scheme)
-							const set = setOf(scheme.id)
+						{visiblePalettes.map(palette => {
+							const state = releaseState(palette)
+							const set = setOf(palette.id)
 							return (
 								<AdminItemCard
-									key={scheme.id}
-									label={`Palette ${scheme.name}`}
-									selectLabel={`Select ${scheme.name}`}
-									selected={checked.has(scheme.id)}
+									key={palette.id}
+									label={`Palette ${palette.name}`}
+									selectLabel={`Select ${palette.name}`}
+									selected={checked.has(palette.id)}
 									selectDisabled={
 										busy ||
 										!!set?.row.published_at ||
 										!!set?.row.release_at
 									}
 									onSelect={value =>
-										selection.toggle(scheme.id, value)
+										selection.toggle(palette.id, value)
 									}
 									preview={
 										<PaletteStrip
-											colors={scheme.colors}
+											colors={palette.colors}
 											variant="continuous"
 										/>
 									}
@@ -677,52 +678,52 @@ export default function SchemeLibrary({
 										<>
 											<AdminIconButton
 												icon={faCopy}
-												label={`Duplicate ${scheme.name}`}
+												label={`Duplicate ${palette.name}`}
 												disabled={busy}
 												onClick={() => {
 													setStatus('')
 													setEditing({
-														scheme: null,
+														palette: null,
 														startingColors:
-															scheme.colors,
+															palette.colors,
 													})
 												}}
 											/>
 											<AdminIconButton
 												icon={
-													scheme.published_at
+													palette.published_at
 														? faEye
 														: faPenToSquare
 												}
-												label={`${scheme.published_at ? 'View' : 'Edit'} ${scheme.name}`}
+												label={`${palette.published_at ? 'View' : 'Edit'} ${palette.name}`}
 												disabled={busy}
 												tone="edit"
 												onClick={() => {
 													setStatus('')
-													setEditing({ scheme })
+													setEditing({ palette })
 												}}
 											/>
-											{deletable(scheme) && (
+											{deletable(palette) && (
 												<AdminIconButton
 													icon={faTrashCan}
-													label={`Delete ${scheme.name}`}
+													label={`Delete ${palette.name}`}
 													tone="delete"
 													disabled={busy}
 													onClick={() => {
 														setStatus('')
-														setDeleting(scheme)
+														setDeleting(palette)
 													}}
 												/>
 											)}
 										</>
 									}
 								>
-									<strong>{scheme.name}</strong>
+									<strong>{palette.name}</strong>
 									{state !== 'Draft' && <span>{state}</span>}
 									{set && (
 										<span>
 											{set.row.name} ·{' '}
-											{schemeSetLabels[set.kind]}
+											{paletteSetLabels[set.kind]}
 										</span>
 									)}
 								</AdminItemCard>
@@ -731,7 +732,7 @@ export default function SchemeLibrary({
 					</AdminGallery>
 				) : (
 					<p>
-						{schemes.length
+						{palettes.length
 							? 'No palettes match this view.'
 							: 'No palettes yet. Create a draft to get started.'}
 					</p>

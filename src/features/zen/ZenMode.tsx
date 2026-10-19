@@ -7,14 +7,11 @@ import {
 	UndoRedoButtons,
 } from '@/features/zen/controls'
 import { GridShapeButton } from '@/features/zen/controls/shapes'
-import {
-	ColorOptions,
-	ColorSchemeButton,
-} from '@/features/zen/controls/color-schemes'
+import { ColorOptions, PaletteButton } from '@/features/zen/controls/palettes'
 import { SaveImageButton } from '@/features/zen/export'
 import { GridTransition, ShapeGrid } from '@/features/zen/grid'
 import { IntroSequence } from '@/features/zen/intro'
-import { useAppState } from '@/features/zen/state'
+import { useZenState } from '@/features/zen/state'
 import { DarkModeToggle } from '@/ui/components'
 import styles from './ZenMode.module.css'
 
@@ -27,7 +24,7 @@ export default function ZenMode({
 	readonly showIntro: boolean
 	readonly onIntroComplete: () => void
 }) {
-	const { state } = useAppState()
+	const { state } = useZenState()
 	const svgRef = useRef<SVGSVGElement>(null)
 
 	return showIntro ? (
@@ -59,7 +56,7 @@ export default function ZenMode({
 				>
 					<div className={styles.buttonRow}>
 						<EditableAreaToggle />
-						<ColorSchemeButton />
+						<PaletteButton />
 						<RandomizeDesignButton />
 						<ResetDesignButton />
 					</div>

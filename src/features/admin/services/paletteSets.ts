@@ -1,17 +1,17 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database, Tables } from '@/lib/supabase'
-import { readColorScheme } from './colorSchemes'
+import { readPalette } from './palettes'
 
-export type SchemeSetKind = 'undecided' | 'core' | 'reward' | 'paid'
-export const schemeSetLabels: Record<SchemeSetKind, string> = {
+export type PaletteSetKind = 'undecided' | 'core' | 'reward' | 'paid'
+export const paletteSetLabels: Record<PaletteSetKind, string> = {
 	undecided: 'Undecided',
 	core: 'Core',
 	reward: 'Reward',
 	paid: 'Pack',
 }
-export interface SchemeSet {
+export interface PaletteSet {
 	readonly row: Tables<'palette_packs'>
-	readonly kind: SchemeSetKind
+	readonly kind: PaletteSetKind
 	readonly members: readonly {
 		readonly id: string
 		readonly name: string
@@ -19,10 +19,10 @@ export interface SchemeSet {
 	}[]
 }
 
-export async function loadSchemeSets(
+export async function loadPaletteSets(
 	client: SupabaseClient<Database>,
-): Promise<SchemeSet[]> {
-	const rows: (Tables<'palette_packs'> & { kind: SchemeSetKind })[] = []
+): Promise<PaletteSet[]> {
+	const rows: (Tables<'palette_packs'> & { kind: PaletteSetKind })[] = []
 	for (let offset = 0; ; offset += 1000) {
 		const { data, error } = await client
 			.from('palette_packs')
@@ -47,7 +47,7 @@ export async function loadSchemeSets(
 		}
 		if (data.length < 1000) break
 	}
-	const members = new Map<string, SchemeSet['members'][number][]>()
+	const members = new Map<string, PaletteSet['members'][number][]>()
 	for (let start = 0; rows.length > 0; start += 1000) {
 		const result = await client
 			.from('palette_pack_palettes')
@@ -67,7 +67,7 @@ export async function loadSchemeSets(
 					'A palette set member could not be resolved. Refresh the catalog.',
 				)
 			const list = members.get(member.pack_id) ?? []
-			list.push(readColorScheme(member.palettes))
+			list.push(readPalette(member.palettes))
 			members.set(member.pack_id, list)
 		}
 		if (result.data.length < 1000) break
@@ -81,11 +81,11 @@ export async function loadSchemeSets(
 		.sort((a, b) => a.row.name.localeCompare(b.row.name))
 }
 
-export type SchemeSetAction =
+export type PaletteSetAction =
 	| {
 			readonly kind: 'create' | 'update'
 			readonly name: string
-			readonly role: SchemeSetKind
+			readonly role: PaletteSetKind
 	  }
 	| {
 			readonly kind: 'assign' | 'remove' | 'reorder'
@@ -93,10 +93,10 @@ export type SchemeSetAction =
 	  }
 	| { readonly kind: 'delete' }
 
-export async function manageSchemeSet(
+export async function managePaletteSet(
 	client: SupabaseClient<Database>,
 	id: string,
-	action: SchemeSetAction,
+	action: PaletteSetAction,
 ): Promise<void> {
 	const { data, error } = await client.rpc('manage_palette_set', {
 		p_id: id,

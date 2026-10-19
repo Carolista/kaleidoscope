@@ -5,7 +5,7 @@ import { AdminCatalogProvider } from '@/features/admin/catalog'
 import AdminNavigation from './AdminNavigation'
 import { PuzzleAuthoring } from '@/features/admin/puzzles'
 import { PuzzleSetLibrary } from '@/features/admin/puzzle-sets'
-import { SchemeLibrary } from '@/features/admin/palettes'
+import { PaletteLibrary } from '@/features/admin/palettes'
 import { useNavigationGuard } from '@/ui/navigation'
 
 type CatalogStatus = 'drafts' | 'assigned' | 'scheduled' | 'published'
@@ -102,7 +102,7 @@ export default function AdminWorkspace({
 							</p>
 						</section>
 					) : section === 'palettes' ? (
-						<SchemeLibrary
+						<PaletteLibrary
 							key={`${view}-${status}-${visit}`}
 							client={client}
 							view={view === 'sets' ? 'sets' : 'palettes'}

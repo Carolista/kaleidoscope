@@ -1,17 +1,17 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { AppStateProvider } from '@/features/zen/state'
-import { colorSchemes } from '@/domain/palettes'
-import SchemePicker from './SchemePicker'
+import { ZenStateProvider } from '@/features/zen/state'
+import { palettes } from '@/domain/palettes'
+import PalettePicker from './PalettePicker'
 import ColorOptions from './ColorOptions'
 
-describe('SchemePicker', () => {
+describe('PalettePicker', () => {
 	it('applies a palette immediately and invokes the containing dialog close callback', async () => {
 		const user = userEvent.setup()
 		const onSelected = vi.fn()
-		render(<SchemePicker onSelected={onSelected} />, {
-			wrapper: AppStateProvider,
+		render(<PalettePicker onSelected={onSelected} />, {
+			wrapper: ZenStateProvider,
 		})
 		const target = screen
 			.getAllByRole('button')
@@ -20,21 +20,21 @@ describe('SchemePicker', () => {
 		expect(target).toHaveAttribute('aria-pressed', 'true')
 		expect(onSelected).toHaveBeenCalledOnce()
 	})
-	it('renders one button per color scheme', () => {
-		render(<SchemePicker />, { wrapper: AppStateProvider })
-		expect(screen.getAllByRole('button')).toHaveLength(colorSchemes.length)
-		for (const scheme of colorSchemes) {
+	it('renders one button per color palette', () => {
+		render(<PalettePicker />, { wrapper: ZenStateProvider })
+		expect(screen.getAllByRole('button')).toHaveLength(palettes.length)
+		for (const palette of palettes) {
 			expect(
 				screen.getByRole('button', {
-					name: `Select the ${scheme.name} color palette`,
+					name: `Select the ${palette.name} color palette`,
 				}),
 			).toBeInTheDocument()
 		}
 	})
 
-	it('marks exactly one scheme as pressed, and switches which one on click', async () => {
+	it('marks exactly one palette as pressed, and switches which one on click', async () => {
 		const user = userEvent.setup()
-		render(<SchemePicker />, { wrapper: AppStateProvider })
+		render(<PalettePicker />, { wrapper: ZenStateProvider })
 
 		const buttons = screen.getAllByRole('button')
 		const pressedBefore = buttons.filter(
@@ -42,8 +42,8 @@ describe('SchemePicker', () => {
 		)
 		expect(pressedBefore).toHaveLength(1)
 
-		// Pick any scheme other than the randomly-chosen initial one, so this
-		// test is correct regardless of which scheme happened to start active.
+		// Pick any palette other than the randomly-chosen initial one, so this
+		// test is correct regardless of which palette happened to start active.
 		const target = buttons.find(button => button !== pressedBefore[0])!
 		await user.click(target)
 
@@ -51,17 +51,17 @@ describe('SchemePicker', () => {
 		expect(pressedBefore[0]).toHaveAttribute('aria-pressed', 'false')
 	})
 
-	it('updates the available current-color swatches when a new scheme is selected', async () => {
+	it('updates the available current-color swatches when a new palette is selected', async () => {
 		const user = userEvent.setup()
 		function Harness() {
 			return (
 				<>
-					<SchemePicker />
+					<PalettePicker />
 					<ColorOptions />
 				</>
 			)
 		}
-		render(<Harness />, { wrapper: AppStateProvider })
+		render(<Harness />, { wrapper: ZenStateProvider })
 
 		const buttons = screen.getAllByRole('button')
 		const pressedBefore = buttons.find(
@@ -72,17 +72,17 @@ describe('SchemePicker', () => {
 			.getAttribute('aria-label')!
 			.replace('Select the ', '')
 			.replace(' color palette', '')
-		const targetScheme = colorSchemes.find(
-			scheme => scheme.name === targetName,
+		const targetPalette = palettes.find(
+			palette => palette.name === targetName,
 		)!
 
 		await user.click(target)
 
-		// ColorOptions' first swatch should now be the new scheme's first
+		// ColorOptions' first swatch should now be the new palette's first
 		// color, and it should be the newly-selected current color (per
-		// SELECT_SCHEME).
+		// SELECT_PALETTE).
 		expect(screen.getByLabelText('Color 1')).toHaveStyle({
-			backgroundColor: targetScheme.colors[0],
+			backgroundColor: targetPalette.colors[0],
 		})
 		expect(screen.getByLabelText('Color 1')).toHaveAttribute(
 			'aria-pressed',

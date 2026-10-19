@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase'
 import { readHexPuzzleTarget } from '@/domain/puzzles'
 
-export interface SchemeUsage {
+export interface PaletteUsage {
 	readonly puzzles: readonly {
 		readonly id: string
 		readonly name: string
@@ -17,7 +17,7 @@ export interface SchemeUsage {
 	readonly corrections: number
 }
 
-export function schemeIsUsed(usage: SchemeUsage): boolean {
+export function paletteIsUsed(usage: PaletteUsage): boolean {
 	return !!(
 		usage.puzzles.length ||
 		usage.rewards.length ||
@@ -28,11 +28,11 @@ export function schemeIsUsed(usage: SchemeUsage): boolean {
 	)
 }
 
-export async function loadSchemeUsage(
+export async function loadPaletteUsage(
 	client: SupabaseClient<Database>,
 	id: string,
-): Promise<SchemeUsage> {
-	const puzzles: SchemeUsage['puzzles'][number][] = []
+): Promise<PaletteUsage> {
+	const puzzles: PaletteUsage['puzzles'][number][] = []
 	for (let offset = 0; ; offset += 1000) {
 		const { data, error } = await client
 			.from('puzzles')
