@@ -244,6 +244,24 @@ changes should be applied to all four SVG assets.
   They forward native props/refs; `Button` defaults to `type="button"` and forms
   explicitly request `type="submit"`. Keep visual swatches and gameplay pieces
   specialized rather than applying command-button styling to them.
+- Use [FormField](./src/components/shared/FormField.tsx) for ordinary stacked
+  label/control rows. Its render function supplies the control ID and optional
+  help/error associations; spread those onto the native Input/Select, retaining
+  native required, disabled, ref, and submit behavior. Specialized paired
+  hex/native-color inputs and inline filter controls keep their own layouts.
+- [PaletteStrip](./src/components/shared/PaletteStrip.tsx) owns decorative ordered
+  colors: square swatches for choices, continuous strips for catalog/set previews.
+  [PaletteChoices](./src/components/shared/PaletteChoices.tsx) owns controlled,
+  labelled palette buttons keyed/selected by ID, with optional visible names.
+  Player SchemePicker adapts its local name-based catalog and applies/closes
+  immediately; admin owns catalog IDs and bulk selection still requires Apply.
+  Keep duplicate colors in their original slots. Interactive painting color
+  buttons remain the separate ColorSwatches component.
+- [AdminLayout](./src/components/admin/AdminLayout.tsx) supplies section
+  headings/actions, feedback, gallery framing, and ordered member rows. Puzzle,
+  palette, and landscape-set cards retain their domain content/layouts; don't
+  create another generic gallery or member-action shell for the same pattern.
+  Loading, empty-data decisions, retries, and writes stay with their owners.
 - `IconButton`, `CloseButton`, and `ModalHeader` do not require player state.
   Player palette-aware actions use `PlayerIconButton`; admin's `AdminIconButton`
   supplies the compact size to the same renderer.
@@ -252,6 +270,8 @@ changes should be applied to all four SVG assets.
   `--icon-glyph-size` overrides scoped to admin. Admin retains Urbanist text,
   compact controls, and blue/red actions; do not restore blanket page button rules.
   `Button` variants are `solid`, `outline`, `primary`, and `link`.
+  Palette-choice sizing and selected/hover colors similarly inherit scoped
+  `--palette-choice-*` tokens; admin must not import the player picker's CSS.
 - Shared `Checkbox` keeps a native, labelled input beneath a custom box, with
   visible keyboard focus and a checked duotone icon tinted by the active palette.
   Confirmation preferences and the save-image grid-line option use it.

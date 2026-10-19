@@ -7,6 +7,7 @@ import { puzzleDraftArgs } from '../../services/puzzleDrafts'
 import type { LibraryDraft } from '../../services/puzzleLibrary'
 import { getSupabaseClient } from '../../services/supabaseClient'
 import styles from './AdminPortal.module.css'
+import layoutStyles from './AdminLayout.module.css'
 import iconStyles from '../shared/IconButton.module.css'
 import PuzzleDraftLibrary from './PuzzleDraftLibrary'
 
@@ -444,7 +445,7 @@ describe('draft library', () => {
 			'data-icon',
 			'rotate',
 		)
-		expect(refresh.parentElement).toHaveClass(styles.galleryControls)
+		expect(refresh.parentElement).toHaveClass(layoutStyles.actions)
 		const filter = screen.getByLabelText('Show drafts')
 		expect(filter).toHaveAccessibleName('Show drafts')
 		expect(screen.queryByText('Show drafts')).not.toBeInTheDocument()

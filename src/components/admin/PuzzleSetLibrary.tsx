@@ -21,7 +21,14 @@ import {
 import type { Database } from '../../types/database'
 import HexPuzzleBoard from '../puzzle/HexPuzzleBoard'
 import AdminIconButton from './AdminIconButton'
-import { Button, ConfirmDialog, Input, Loading } from '@shared'
+import { Button, ConfirmDialog, FormField, Input, Loading } from '@shared'
+import {
+	AdminFeedback,
+	AdminGallery,
+	AdminMemberList,
+	AdminMemberRow,
+	AdminSectionHeading,
+} from './AdminLayout'
 import SetCreationDialog from './SetCreationDialog'
 import useModalState from '../../hooks/useModalState'
 import styles from './AdminPortal.module.css'
@@ -203,12 +210,12 @@ export default function PuzzleSetLibrary({
 				<FontAwesomeIcon icon={faSquareArrowLeft} aria-hidden="true" />{' '}
 				{selectedId ? 'Back to sets' : 'Back to library'}
 			</Button>
-			<div className={styles.galleryHeading}>
-				<h2 id="draft-sets-title">
-					{selected ? `Set: ${selected.row.name}` : 'Draft sets'}
-				</h2>
+			<AdminSectionHeading
+				id="draft-sets-title"
+				title={selected ? `Set: ${selected.row.name}` : 'Draft sets'}
+			>
 				{!selected && (
-					<div className={styles.galleryControls}>
+					<>
 						<AdminIconButton
 							icon={faPlusLarge}
 							label="New set"
@@ -230,11 +237,10 @@ export default function PuzzleSetLibrary({
 								setReload(value => value + 1)
 							}}
 						/>
-					</div>
+					</>
 				)}
-			</div>
-			{error && <p role="alert">{error}</p>}
-			{status && <p role="status">{status}</p>}
+			</AdminSectionHeading>
+			<AdminFeedback error={error} status={status} />
 			{pending && !deleting && <Loading label={pending} />}
 			{creating && (
 				<SetCreationDialog
@@ -303,16 +309,19 @@ export default function PuzzleSetLibrary({
 						onSubmit={save}
 						aria-label="Rename draft set"
 					>
-						<div className={styles.metadataField}>
-							<label htmlFor="set-name">Set name</label>
-							<Input
-								id="set-name"
-								required
-								value={name}
-								disabled={busy}
-								onChange={event => setName(event.target.value)}
-							/>
-						</div>
+						<FormField id="set-name" label="Set name">
+							{field => (
+								<Input
+									{...field}
+									required
+									value={name}
+									disabled={busy}
+									onChange={event =>
+										setName(event.target.value)
+									}
+								/>
+							)}
+						</FormField>
 						<p>
 							Role: {selected?.row.kind} · Hexagon ·{' '}
 							{selected?.members.length} puzzles
@@ -337,74 +346,94 @@ export default function PuzzleSetLibrary({
 							{!selected.members.length && (
 								<p>This set has no puzzles yet.</p>
 							)}
-							<ol className={styles.setMembers}>
+							<AdminMemberList>
 								{selected.members.map((member, index) => (
-									<li key={member.puzzleId}>
-										<div
-											className={
-												styles.setMemberThumbnail
-											}
-											aria-hidden="true"
-										>
-											{member.preview ? (
-												<HexPuzzleBoard
-													target
-													radius={
-														member.preview.radius
+									<AdminMemberRow
+										key={member.puzzleId}
+										preview={
+											<div
+												className={
+													styles.setMemberThumbnail
+												}
+												aria-hidden="true"
+											>
+												{member.preview ? (
+													<HexPuzzleBoard
+														target
+														radius={
+															member.preview
+																.radius
+														}
+														colors={
+															member.preview
+																.target
+														}
+													/>
+												) : (
+													<span>
+														Preview unavailable
+													</span>
+												)}
+											</div>
+										}
+										actions={
+											<>
+												<AdminIconButton
+													icon={faArrowUp}
+													label={`Move ${member.name} up`}
+													disabled={
+														busy || index === 0
 													}
-													colors={
-														member.preview.target
+													onClick={() =>
+														move(index, -1)
 													}
 												/>
-											) : (
-												<span>Preview unavailable</span>
-											)}
-										</div>
-										<span>
-											{index + 1}. {member.name}
-										</span>
-										<AdminIconButton
-											icon={faArrowUp}
-											label={`Move ${member.name} up`}
-											disabled={busy || index === 0}
-											onClick={() => move(index, -1)}
-										/>
-										<AdminIconButton
-											icon={faArrowDown}
-											label={`Move ${member.name} down`}
-											disabled={
-												busy ||
-												index ===
-													selected.members.length - 1
-											}
-											onClick={() => move(index, 1)}
-										/>
-										<AdminIconButton
-											icon={faSquareMinus}
-											className={styles.minus}
-											label={`Remove ${member.name} from set`}
-											disabled={busy}
-											onClick={() => {
-												void mutate(
-													selected.row.id,
-													{
-														kind: 'remove',
-														puzzleIds: [
-															member.puzzleId,
-														],
-													},
-													'Puzzle removed from set.',
-												)
-											}}
-										/>
-									</li>
+												<AdminIconButton
+													icon={faArrowDown}
+													label={`Move ${member.name} down`}
+													disabled={
+														busy ||
+														index ===
+															selected.members
+																.length -
+																1
+													}
+													onClick={() =>
+														move(index, 1)
+													}
+												/>
+												<AdminIconButton
+													icon={faSquareMinus}
+													className={styles.minus}
+													label={`Remove ${member.name} from set`}
+													disabled={busy}
+													onClick={() => {
+														void mutate(
+															selected.row.id,
+															{
+																kind: 'remove',
+																puzzleIds: [
+																	member.puzzleId,
+																],
+															},
+															'Puzzle removed from set.',
+														)
+													}}
+												/>
+											</>
+										}
+									>
+										{index + 1}. {member.name}
+									</AdminMemberRow>
 								))}
-							</ol>
+							</AdminMemberList>
 						</>
 					)}
 				</>
+			) : !sets.length ? (
+				!error && <p>No draft sets yet.</p>
 			) : (
-				<ul className={styles.setCards}>
+				<AdminGallery layout="sets">
 					{sets.map(set => (
 						<li
 							key={set.row.id}
@@ -471,8 +500,7 @@ export default function PuzzleSetLibrary({
 							</div>
 						</li>
 					))}
-					{!sets.length && !error && <li>No draft sets yet.</li>}
-				</ul>
+				</AdminGallery>
 			)}
 		</section>
 	)

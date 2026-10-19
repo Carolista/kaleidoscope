@@ -1,11 +1,17 @@
 import { faRotate, faWandMagicSparkles } from '@fortawesome/pro-solid-svg-icons'
-import { useId, type SubmitEvent } from 'react'
+import type { SubmitEvent } from 'react'
 import type { AuthoringPalette } from '../../puzzles/hexAuthoring'
 import { HEX_PUZZLE_RECIPES } from '../../puzzles/hexPuzzle'
 import type { PuzzleUsage } from '../../services/puzzleDrafts'
-import paletteStyles from '../controls/color-schemes/SchemePicker.module.css'
 import AdminIconButton from './AdminIconButton'
-import { Button, Input, Loading, Select } from '@shared'
+import {
+	Button,
+	FormField,
+	Input,
+	Loading,
+	PaletteChoices,
+	Select,
+} from '@shared'
 import styles from './AdminPortal.module.css'
 
 interface DraftMetadata {
@@ -52,7 +58,6 @@ export default function PuzzleDraftForm({
 	readonly generation?: DraftGeneration
 	readonly onSubmit: (event: SubmitEvent<HTMLFormElement>) => void
 }) {
-	const id = useId()
 	return (
 		<form
 			onSubmit={onSubmit}
@@ -66,7 +71,7 @@ export default function PuzzleDraftForm({
 					<fieldset
 						className={styles.palettePicker}
 						aria-label="Palette"
-						disabled={busy || palettesLoading || palettesError}
+						disabled={busy || palettesLoading || !!palettesError}
 					>
 						<legend className={styles.paletteHeading}>
 							Palette
@@ -98,89 +103,62 @@ export default function PuzzleDraftForm({
 								catalog before generating.
 							</p>
 						) : (
-							<ul className={paletteStyles.list}>
-								{palettes.map(palette => (
-									<li key={palette.id}>
-										<button
-											type="button"
-											className={styles.paletteOption}
-											aria-label={`Select the ${palette.name} color palette`}
-											aria-pressed={
-												paletteId === palette.id
-											}
-											onClick={() =>
-												onPaletteChange(palette.id)
-											}
-										>
-											<span
-												className={styles.paletteColors}
-												aria-hidden="true"
-											>
-												{palette.colors.map(
-													(color, index) => (
-														<span
-															key={index}
-															className={
-																paletteStyles.swatch
-															}
-															style={{
-																backgroundColor:
-																	color,
-															}}
-														/>
-													),
-												)}
-											</span>
-											<span>{palette.name}</span>
-										</button>
-									</li>
-								))}
-							</ul>
+							<PaletteChoices
+								palettes={palettes}
+								selectedId={paletteId}
+								onSelect={onPaletteChange}
+								showNames
+								disabled={
+									busy || palettesLoading || palettesError
+								}
+							/>
 						)}
 					</fieldset>
 				</div>
 				<div className={styles.draftControls}>
-					<div className={styles.metadataField}>
-						<label htmlFor={`${id}-name`}>Puzzle name</label>
-						<Input
-							id={`${id}-name`}
-							value={metadata.name}
-							required
-							disabled={busy}
-							onChange={event =>
-								metadata.onNameChange(event.target.value)
-							}
-						/>
-					</div>
+					<FormField label="Puzzle name">
+						{field => (
+							<Input
+								{...field}
+								value={metadata.name}
+								required
+								disabled={busy}
+								onChange={event =>
+									metadata.onNameChange(event.target.value)
+								}
+							/>
+						)}
+					</FormField>
 					{generation ? (
 						<div className={styles.recipeControls}>
-							<div className={styles.metadataField}>
-								<label htmlFor={`${id}-recipe`}>Recipe</label>
-								<Select
-									id={`${id}-recipe`}
-									value={generation.recipeId}
-									disabled={
-										busy ||
-										palettesLoading ||
-										palettesError ||
-										palettes.length === 0
-									}
-									onChange={event =>
-										generation.onRecipeChange(
-											event.target.value,
-										)
-									}
-								>
-									{HEX_PUZZLE_RECIPES.map(recipe => (
-										<option
-											key={recipe.id}
-											value={recipe.id}
-										>
-											{recipe.label}
-										</option>
-									))}
-								</Select>
-							</div>
+							<FormField label="Recipe">
+								{field => (
+									<Select
+										{...field}
+										value={generation.recipeId}
+										disabled={
+											busy ||
+											palettesLoading ||
+											palettesError ||
+											palettes.length === 0
+										}
+										onChange={event =>
+											generation.onRecipeChange(
+												event.target.value,
+											)
+										}
+									>
+										{HEX_PUZZLE_RECIPES.map(recipe => (
+											<option
+												key={recipe.id}
+												value={recipe.id}
+											>
+												{recipe.label}
+											</option>
+										))}
+									</Select>
+								)}
+							</FormField>
 							<AdminIconButton
 								icon={faWandMagicSparkles}
 								label="Randomize puzzle"
@@ -194,37 +172,41 @@ export default function PuzzleDraftForm({
 							/>
 						</div>
 					) : (
-						<div className={styles.metadataField}>
-							<label htmlFor={`${id}-recipe`}>Recipe</label>
-							<Input
-								id={`${id}-recipe`}
-								value={metadata.recipeLabel ?? ''}
-								readOnly
-							/>
-						</div>
+						<FormField label="Recipe">
+							{field => (
+								<Input
+									{...field}
+									value={metadata.recipeLabel ?? ''}
+									readOnly
+								/>
+							)}
+						</FormField>
 					)}
 					<div className={styles.metadataForm}>
-						<div className={styles.metadataField}>
-							<label htmlFor={`${id}-usage`}>Intended use</label>
-							<Select
-								id={`${id}-usage`}
-								value={metadata.usage}
-								disabled={
-									busy || metadata.locked || metadata.assigned
-								}
-								onChange={event => {
-									const value = event.target.value
-									if (
-										value === 'collection' ||
-										value === 'daily'
-									)
-										metadata.onUsageChange(value)
-								}}
-							>
-								<option value="collection">Set/pack</option>
-								<option value="daily">Daily</option>
-							</Select>
-						</div>
+						<FormField label="Intended use">
+							{field => (
+								<Select
+									{...field}
+									value={metadata.usage}
+									disabled={
+										busy ||
+										metadata.locked ||
+										metadata.assigned
+									}
+									onChange={event => {
+										const value = event.target.value
+										if (
+											value === 'collection' ||
+											value === 'daily'
+										)
+											metadata.onUsageChange(value)
+									}}
+								>
+									<option value="collection">Set/pack</option>
+									<option value="daily">Daily</option>
+								</Select>
+							)}
+						</FormField>
 						<Button
 							variant="primary"
 							type="submit"

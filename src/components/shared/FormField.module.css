@@ -1,0 +1,24 @@
+.field {
+	display: grid;
+	gap: 0.5rem;
+	min-width: 0;
+}
+
+.field input,
+.field select {
+	width: 100%;
+	min-width: 0;
+	box-sizing: border-box;
+}
+
+.help,
+.error {
+	margin: 0;
+	font-size: 0.8125rem;
+	line-height: 1.4;
+	overflow-wrap: anywhere;
+}
+
+.error {
+	color: var(--control-danger, #ce4141);
+}

@@ -1,6 +1,8 @@
 import { colorSchemes } from '@data/colorSchemes'
 import { useAppState } from '@state/useAppState'
-import styles from './SchemePicker.module.css'
+import PaletteChoices from '@shared/PaletteChoices'
+
+const choices = colorSchemes.map(scheme => ({ ...scheme, id: scheme.name }))
 
 export interface SchemePickerProps {
 	// Called right after a scheme is selected, so the containing modal can
@@ -15,32 +17,16 @@ function SchemePicker({ onSelected }: SchemePickerProps) {
 	const { state, selectScheme } = useAppState()
 
 	return (
-		<ul className={styles.list}>
-			{colorSchemes.map(scheme => (
-				<li key={scheme.name}>
-					<button
-						type="button"
-						className={styles.schemeButton}
-						title={scheme.name}
-						aria-pressed={state.currentScheme.name === scheme.name}
-						aria-label={`Select the ${scheme.name} color palette`}
-						onClick={() => {
-							selectScheme(scheme)
-							onSelected?.()
-						}}
-					>
-						{scheme.colors.map((color, i) => (
-							<span
-								key={i}
-								className={styles.swatch}
-								style={{ backgroundColor: color }}
-								aria-hidden="true"
-							/>
-						))}
-					</button>
-				</li>
-			))}
-		</ul>
+		<PaletteChoices
+			palettes={choices}
+			selectedId={state.currentScheme.name}
+			onSelect={id => {
+				const scheme = colorSchemes.find(scheme => scheme.name === id)
+				if (!scheme) throw new Error(`Unknown player palette: ${id}`)
+				selectScheme(scheme)
+				onSelected?.()
+			}}
+		/>
 	)
 }
 

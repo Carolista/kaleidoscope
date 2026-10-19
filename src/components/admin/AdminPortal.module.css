@@ -27,6 +27,16 @@
 	--button-text: var(--accent);
 	--button-hover: color-mix(in srgb, var(--admin-surface) 85%, var(--accent));
 	--icon-glyph-size: 1rem;
+	--palette-choice-justify: flex-start;
+	--palette-choice-gap: 0.25rem 0.5rem;
+	--palette-choice-width: 100%;
+	--palette-choice-height: 2.5rem;
+	--palette-choice-padding: 0.25rem;
+	--palette-choice-margin: 0.125rem 0;
+	--palette-choice-radius: var(--control-radius);
+	--palette-choice-highlight: var(--admin-blue);
+	--palette-choice-selected-border: var(--admin-blue);
+	--palette-choice-selected-surface: var(--admin-selected);
 	color-scheme: dark;
 	max-width: 44rem;
 	margin: 0 auto;
@@ -45,8 +55,6 @@
 }
 
 .header,
-.galleryHeading,
-.galleryControls,
 .paletteHeading {
 	display: flex;
 	align-items: center;
@@ -95,15 +103,6 @@
 	font-size: 1.125rem;
 	margin-block: 0.5rem;
 	text-transform: uppercase;
-}
-
-.galleryHeading {
-	flex-wrap: wrap;
-}
-
-.galleryControls {
-	flex-wrap: wrap;
-	justify-content: flex-end;
 }
 
 .backLink {
@@ -172,19 +171,6 @@
 	align-items: end;
 }
 
-.metadataField {
-	display: grid;
-	gap: 0.5rem;
-	min-width: 0;
-}
-
-.metadataField input,
-.metadataField select {
-	width: 100%;
-	min-width: 0;
-	box-sizing: border-box;
-}
-
 .metadataForm button {
 	margin-block: 0;
 }
@@ -199,8 +185,7 @@
 	color: var(--admin-blue);
 }
 
-:where(.page) a:focus-visible,
-.paletteOption:focus-visible {
+:where(.page) a:focus-visible {
 	outline: 2px solid var(--admin-blue);
 	outline-offset: 3px;
 }
@@ -226,59 +211,11 @@
 	overflow-y: auto;
 }
 
-.page .paletteOption {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: 0.25rem 0.5rem;
-	width: 100%;
-	min-height: 2.5rem;
-	padding: 0.25rem;
-	margin: 0.125rem 0;
-	border: 2px solid transparent;
-	background: transparent;
-	color: inherit;
-	text-align: left;
-	border-radius: var(--control-radius);
-	cursor: pointer;
-}
-
-.paletteOption:disabled {
-	cursor: default;
-	opacity: var(--control-disabled-opacity);
-}
-
-.page .paletteOption[aria-pressed='true'] {
-	border-color: var(--admin-blue);
-	background: var(--admin-selected);
-}
-
-.page .paletteOption:hover {
-	border-color: var(--admin-blue);
-}
-
-.paletteColors {
-	display: flex;
-	flex-shrink: 0;
-}
-
-.draftList {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
-	gap: 0.75rem;
-	list-style: none;
-	padding: 0;
-}
-
 .draftCard {
 	display: grid;
 	align-content: start;
 	gap: 0.375rem;
-	padding: 0.75rem;
-	border: 1px solid var(--admin-border);
-	border-radius: 0.375rem;
 	text-align: center;
-	overflow-wrap: anywhere;
 }
 
 .draftCard[data-selected='true'] {
@@ -350,11 +287,6 @@
 	aspect-ratio: 1;
 }
 
-.setMembers {
-	padding: 0;
-	list-style: none;
-}
-
 .setMemberThumbnail {
 	width: clamp(3.5rem, 12vw, 6rem);
 	flex: none;
@@ -365,35 +297,8 @@
 	font-size: 0.8125rem;
 }
 
-.setMembers li {
-	display: flex;
-	align-items: center;
-	gap: 0.375rem;
-	margin-block: 0.5rem;
-}
-
-.setMembers li > span {
-	flex: 1;
-	min-width: 0;
-	overflow-wrap: anywhere;
-}
-
-.setCards {
-	display: grid;
-	grid-template-columns: repeat(2, minmax(0, 1fr));
-	gap: 0.75rem;
-	list-style: none;
-	padding: 0;
-}
-
 .minus {
 	--icon-color: var(--control-danger);
-}
-
-@media (max-width: 640px) {
-	.setCards {
-		grid-template-columns: minmax(0, 1fr);
-	}
 }
 
 .setCard {
@@ -401,9 +306,6 @@
 	grid-template-columns: minmax(5rem, 8rem) minmax(0, 1fr);
 	grid-template-rows: auto 1fr;
 	gap: 0.375rem 0.75rem;
-	padding: 0.75rem;
-	border: 1px solid var(--admin-border);
-	border-radius: 0.375rem;
 }
 
 .setDetails {

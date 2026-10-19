@@ -115,9 +115,17 @@ describe('palette management', () => {
 		expect(
 			screen.queryByRole('button', { name: 'Edit Cabo' }),
 		).not.toBeInTheDocument()
+		expect(
+			screen.getByText('No palettes match this view.'),
+		).toBeInTheDocument()
+		expect(screen.queryByRole('list')).not.toBeInTheDocument()
+		expect(screen.queryByText(/No palettes yet/)).not.toBeInTheDocument()
 		fireEvent.change(screen.getByLabelText('Show palettes'), {
 			target: { value: 'set-one' },
 		})
+		expect(
+			screen.queryByText('No palettes match this view.'),
+		).not.toBeInTheDocument()
 		fireEvent.click(screen.getByRole('checkbox', { name: 'Select Cabo' }))
 		fireEvent.change(screen.getByLabelText('Assign selected to set'), {
 			target: { value: 'set-two' },

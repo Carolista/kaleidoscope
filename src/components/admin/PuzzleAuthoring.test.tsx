@@ -13,6 +13,7 @@ import {
 } from '../../puzzles/hexAuthoring'
 import PuzzleAuthoring from './PuzzleAuthoring'
 import styles from './AdminPortal.module.css'
+import fieldStyles from '../shared/FormField.module.css'
 
 const seed = '00000001000000010000000100000001'
 
@@ -367,7 +368,7 @@ describe('admin puzzle lab', () => {
 		).toHaveLength(2)
 		expect(document.querySelectorAll('form')).toHaveLength(1)
 		expect(screen.getByLabelText('Puzzle name').parentElement).toHaveClass(
-			styles.metadataField,
+			fieldStyles.field,
 		)
 		fireEvent.change(screen.getByLabelText('Puzzle name'), {
 			target: { value: 'Saved design' },

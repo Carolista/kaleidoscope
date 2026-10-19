@@ -33,11 +33,11 @@ import {
 import { HEX_PUZZLE_RECIPES } from '../../puzzles/hexPuzzle'
 import HexPuzzleBoard from '../puzzle/HexPuzzleBoard'
 import PuzzleMode from '../puzzle/PuzzleMode'
-import paletteStyles from '../controls/color-schemes/SchemePicker.module.css'
 import styles from './AdminPortal.module.css'
 import Checkbox from '../shared/Checkbox'
 import AdminIconButton from './AdminIconButton'
-import { Button, ConfirmDialog, Loading, Select } from '@shared'
+import { Button, ConfirmDialog, Loading, PaletteChoices, Select } from '@shared'
+import { AdminFeedback, AdminGallery, AdminSectionHeading } from './AdminLayout'
 import PuzzleDraftForm from './PuzzleDraftForm'
 import PuzzleSetLibrary from './PuzzleSetLibrary'
 import {
@@ -236,7 +236,7 @@ function DraftEditor({
 				{puzzle.recipe.label} ·{' '}
 				{draft.assigned ? 'Assigned' : 'Unassigned'}
 			</p>
-			{error && <p role="alert">{error}</p>}
+			<AdminFeedback error={error} />
 			{pending && !confirmDelete && <Loading label={pending} />}
 			<PuzzleDraftForm
 				mode="edit"
@@ -525,7 +525,7 @@ export default function PuzzleDraftLibrary({
 	if (selected) {
 		return (
 			<>
-				{status && <p role="status">{status}</p>}
+				<AdminFeedback status={status} />
 				<DraftEditor
 					key={selected.row.id}
 					client={client}
@@ -563,65 +563,61 @@ export default function PuzzleDraftLibrary({
 	}
 	return (
 		<section aria-labelledby="draft-library-title">
-			<div className={styles.galleryHeading}>
-				<h2 id="draft-library-title">Puzzle drafts</h2>
-				<div className={styles.galleryControls}>
-					{onManagePalettes && (
-						<AdminIconButton
-							icon={faPalette}
-							label="Manage palettes"
-							disabled={bulkBusy}
-							onClick={onManagePalettes}
-						/>
-					)}
+			<AdminSectionHeading id="draft-library-title" title="Puzzle drafts">
+				{onManagePalettes && (
 					<AdminIconButton
-						icon={faLayerGroup}
-						label="Manage sets"
+						icon={faPalette}
+						label="Manage palettes"
 						disabled={bulkBusy}
-						onClick={() => {
-							setShowSets(true)
-							setAction(null)
-							setStatus('')
-						}}
+						onClick={onManagePalettes}
 					/>
-					{onNew && (
-						<AdminIconButton
-							icon={faPlusLarge}
-							label="New puzzle"
-							disabled={bulkBusy}
-							onClick={onNew}
-						/>
-					)}
+				)}
+				<AdminIconButton
+					icon={faLayerGroup}
+					label="Manage sets"
+					disabled={bulkBusy}
+					onClick={() => {
+						setShowSets(true)
+						setAction(null)
+						setStatus('')
+					}}
+				/>
+				{onNew && (
 					<AdminIconButton
-						icon={faRotate}
-						label="Refresh drafts"
-						disabled={loading || bulkBusy}
-						onClick={() => {
-							setCheckedIds(new Set())
-							setAction(null)
-							setReload(value => value + 1)
-						}}
-					/>
-					<Select
-						id="draft-filter"
-						aria-label="Show drafts"
-						value={filter}
+						icon={faPlusLarge}
+						label="New puzzle"
 						disabled={bulkBusy}
-						onChange={event => {
-							setFilter(event.target.value)
-							setSelectedId(null)
-							setCheckedIds(new Set())
-							setAction(null)
-						}}
-					>
-						<option value="all">All uses</option>
-						<option value="collection">Set/pack</option>
-						<option value="daily">Daily</option>
-					</Select>
-				</div>
-			</div>
-			{error && <p role="alert">{error}</p>}
-			{status && <p role="status">{status}</p>}
+						onClick={onNew}
+					/>
+				)}
+				<AdminIconButton
+					icon={faRotate}
+					label="Refresh drafts"
+					disabled={loading || bulkBusy}
+					onClick={() => {
+						setCheckedIds(new Set())
+						setAction(null)
+						setReload(value => value + 1)
+					}}
+				/>
+				<Select
+					id="draft-filter"
+					aria-label="Show drafts"
+					value={filter}
+					disabled={bulkBusy}
+					onChange={event => {
+						setFilter(event.target.value)
+						setSelectedId(null)
+						setCheckedIds(new Set())
+						setAction(null)
+					}}
+				>
+					<option value="all">All uses</option>
+					<option value="collection">Set/pack</option>
+					<option value="daily">Daily</option>
+				</Select>
+			</AdminSectionHeading>
+			<AdminFeedback error={error} status={status} />
 			{palettesLoading && (
 				<Loading
 					label={
@@ -852,51 +848,20 @@ export default function PuzzleDraftLibrary({
 									}
 								>
 									<legend>Bulk palette</legend>
-									<ul className={paletteStyles.list}>
-										{palettes.map(palette => (
-											<li key={palette.id}>
-												<button
-													type="button"
-													className={
-														styles.paletteOption
-													}
-													aria-pressed={
-														bulkPaletteId ===
-														palette.id
-													}
-													aria-label={`Apply ${palette.name} to selected drafts`}
-													onClick={() =>
-														setBulkPaletteId(
-															palette.id,
-														)
-													}
-												>
-													<span
-														className={
-															styles.paletteColors
-														}
-														aria-hidden="true"
-													>
-														{palette.colors.map(
-															(color, index) => (
-																<span
-																	key={index}
-																	className={
-																		paletteStyles.swatch
-																	}
-																	style={{
-																		backgroundColor:
-																			color,
-																	}}
-																/>
-															),
-														)}
-													</span>
-													<span>{palette.name}</span>
-												</button>
-											</li>
-										))}
-									</ul>
+									<PaletteChoices
+										palettes={palettes}
+										selectedId={bulkPaletteId}
+										onSelect={setBulkPaletteId}
+										showNames
+										disabled={
+											bulkBusy ||
+											palettesLoading ||
+											!!palettesError
+										}
+										label={palette =>
+											`Apply ${palette.name} to selected drafts`
+										}
+									/>
 								</fieldset>
 							)}
 							{action.kind === 'set' && actionError && (
@@ -916,7 +881,7 @@ export default function PuzzleDraftLibrary({
 						</ConfirmDialog>
 					)}
 					{!visible.length && <p>No drafts match this view.</p>}
-					<ul className={styles.draftList}>
+					<AdminGallery layout="puzzles">
 						{visible.map(draft => {
 							const palette = palettes.find(
 								value => value.id === draft.puzzle.paletteId,
@@ -1027,7 +992,7 @@ export default function PuzzleDraftLibrary({
 								</li>
 							)
 						})}
-					</ul>
+					</AdminGallery>
 				</>
 			)}
 		</section>

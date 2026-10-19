@@ -32,6 +32,27 @@ remaining recommendations do not supersede the decisions below.
   buttons to `type="button"`; use explicit native submit buttons for forms.
   Familiar compact actions reuse icons and accessible labels, while Save,
   Apply, Sign in, and confirmation choices retain explicit text.
+- Share palette presentation, not palette ownership. `PaletteStrip` renders
+  decorative ordered slots (including duplicate colors), while `PaletteChoices`
+  takes stable IDs, selected ID, and a selection callback. The player wrapper
+  adapts its existing name-based catalog without changing persistence, applies
+  immediately, and closes its modal. Admin retains database IDs/loading and
+  explicit bulk Apply. Interactive painting swatches remain distinct.
+- Extract proven admin compositions through `AdminLayout`: heading/actions,
+  error/success feedback, responsive gallery framing, and ordered member rows.
+  Keep puzzle/palette/landscape-set card content, native color editing, empty
+  messages, retry decisions, and asynchronous lifecycles local. No universal
+  page template or generic CRUD abstraction; these domains have different
+  eligibility, cancellation, refresh, and mutation semantics.
+- Ordinary stacked fields use `FormField` for labels, consistent spacing, and
+  optional help/error associations. Its render function supplies native control
+  attributes without cloning children or changing native form semantics.
+  Inline filter/assignment controls and paired color inputs remain specialized.
+- Palette-choice and admin-layout CSS live with those shared presentations.
+  Admin supplies inherited palette-choice tokens, not a copy of the player
+  picker styles. Gallery framing owns common card borders/padding; local card
+  classes own content layout and selection. Preserve square puzzle cards and
+  responsive two-column landscape set cards rather than flattening them.
 - Reuse the palette-aware custom `Checkbox` for confirmation preferences and
   export options. Keep its native input for labelling and keyboard interaction;
   the decorative checkmark uses the same duotone tint as other app icons.

@@ -1,5 +1,5 @@
 import { useId, useRef, useState, type SubmitEvent } from 'react'
-import { ConfirmDialog, Input, Select } from '@shared'
+import { ConfirmDialog, FormField, Input, Select } from '@shared'
 import useUnsavedDraft from './useUnsavedDraft'
 import styles from './AdminPortal.module.css'
 
@@ -91,34 +91,42 @@ export default function SetCreationDialog<Kind extends string>({
 				className={styles.form}
 				onSubmit={save}
 			>
-				<label htmlFor={`${id}-name`}>Set name</label>
-				<Input
-					id={`${id}-name`}
-					ref={nameInput}
-					required
-					value={name}
-					disabled={busy || !open}
-					onChange={event => setName(event.target.value)}
-				/>
-				<label htmlFor={`${id}-kind`}>{kindLabel}</label>
-				<Select
-					id={`${id}-kind`}
-					value={kind}
-					disabled={busy || !open}
-					onChange={event => {
-						const value = Object.keys(kinds).find(
-							(value): value is Kind =>
-								value === event.target.value,
-						)
-						if (value !== undefined) setKind(value)
-					}}
-				>
-					{Object.entries<string>(kinds).map(([value, label]) => (
-						<option key={value} value={value}>
-							{label}
-						</option>
-					))}
-				</Select>
+				<FormField label="Set name" id={`${id}-name`}>
+					{field => (
+						<Input
+							{...field}
+							ref={nameInput}
+							required
+							value={name}
+							disabled={busy || !open}
+							onChange={event => setName(event.target.value)}
+						/>
+					)}
+				</FormField>
+				<FormField label={kindLabel} id={`${id}-kind`}>
+					{field => (
+						<Select
+							{...field}
+							value={kind}
+							disabled={busy || !open}
+							onChange={event => {
+								const value = Object.keys(kinds).find(
+									(value): value is Kind =>
+										value === event.target.value,
+								)
+								if (value !== undefined) setKind(value)
+							}}
+						>
+							{Object.entries<string>(kinds).map(
+								([value, label]) => (
+									<option key={value} value={value}>
+										{label}
+									</option>
+								),
+							)}
+						</Select>
+					)}
+				</FormField>
 			</form>
 		</ConfirmDialog>
 	)

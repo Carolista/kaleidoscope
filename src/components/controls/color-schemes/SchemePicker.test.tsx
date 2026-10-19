@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AppStateProvider } from '@state/AppContext'
@@ -7,6 +7,19 @@ import SchemePicker from './SchemePicker'
 import ColorOptions from './ColorOptions'
 
 describe('SchemePicker', () => {
+	it('applies a palette immediately and invokes the containing dialog close callback', async () => {
+		const user = userEvent.setup()
+		const onSelected = vi.fn()
+		render(<SchemePicker onSelected={onSelected} />, {
+			wrapper: AppStateProvider,
+		})
+		const target = screen
+			.getAllByRole('button')
+			.find(button => button.getAttribute('aria-pressed') === 'false')!
+		await user.click(target)
+		expect(target).toHaveAttribute('aria-pressed', 'true')
+		expect(onSelected).toHaveBeenCalledOnce()
+	})
 	it('renders one button per color scheme', () => {
 		render(<SchemePicker />, { wrapper: AppStateProvider })
 		expect(screen.getAllByRole('button')).toHaveLength(colorSchemes.length)

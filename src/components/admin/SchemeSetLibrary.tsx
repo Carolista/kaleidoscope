@@ -10,7 +10,22 @@ import {
 	faTrashCan,
 } from '@fortawesome/pro-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Button, ConfirmDialog, Input, Loading, Select } from '@shared'
+import {
+	Button,
+	ConfirmDialog,
+	FormField,
+	Input,
+	Loading,
+	PaletteStrip,
+	Select,
+} from '@shared'
+import {
+	AdminFeedback,
+	AdminGallery,
+	AdminMemberList,
+	AdminMemberRow,
+	AdminSectionHeading,
+} from './AdminLayout'
 import SetCreationDialog from './SetCreationDialog'
 import useModalState from '../../hooks/useModalState'
 import type { Database } from '../../types/database'
@@ -25,7 +40,6 @@ import AdminIconButton from './AdminIconButton'
 import useUnsavedDraft from './useUnsavedDraft'
 import { useNavigationGuard } from './useNavigationGuard'
 import adminStyles from './AdminPortal.module.css'
-import styles from './SchemeLibrary.module.css'
 
 export default function SchemeSetLibrary({
 	client,
@@ -152,10 +166,12 @@ export default function SchemeSetLibrary({
 				<FontAwesomeIcon icon={faSquareArrowLeft} aria-hidden="true" />{' '}
 				{editing ? 'Back to sets' : 'Back to palettes'}
 			</Button>
-			<div className={adminStyles.galleryHeading}>
-				<h2 id="scheme-sets-title">
-					{editing ? `Palette set: ${editing.name}` : 'Palette sets'}
-				</h2>
+			<AdminSectionHeading
+				id="scheme-sets-title"
+				title={
+					editing ? `Palette set: ${editing.name}` : 'Palette sets'
+				}
+			>
 				{!editing && (
 					<AdminIconButton
 						icon={faPlusLarge}
@@ -169,13 +185,13 @@ export default function SchemeSetLibrary({
 						}}
 					/>
 				)}
-			</div>
+			</AdminSectionHeading>
 			<p>
 				Labels organize palettes only. Core does not make them free;
 				Reward does not grant a bundle. Puzzle palettes are independent
 				of these sets.
 			</p>
-			{error && <p role="alert">{error}</p>}
+			<AdminFeedback error={error} />
 			{catalogError && (
 				<p role="alert">
 					{catalogError}{' '}
@@ -188,7 +204,7 @@ export default function SchemeSetLibrary({
 					</Button>
 				</p>
 			)}
-			{status && <p role="status">{status}</p>}
+			<AdminFeedback status={status} />
 			{busy && !deleting && (
 				<Loading
 					label={
@@ -243,38 +259,46 @@ export default function SchemeSetLibrary({
 						aria-label="Palette set details"
 						onSubmit={save}
 					>
-						<label htmlFor="scheme-set-name">Set name</label>
-						<Input
-							id="scheme-set-name"
-							value={name}
-							disabled={unavailable || readOnly}
-							required
-							onChange={event => setName(event.target.value)}
-						/>
-						<label htmlFor="scheme-set-kind">Set label</label>
-						<Select
-							id="scheme-set-kind"
-							value={kind}
-							disabled={unavailable || readOnly}
-							onChange={event => {
-								const value = event.target.value
-								if (
-									value === 'undecided' ||
-									value === 'core' ||
-									value === 'reward' ||
-									value === 'paid'
-								)
-									setKind(value)
-							}}
-						>
-							{Object.entries(schemeSetLabels).map(
-								([value, label]) => (
-									<option key={value} value={value}>
-										{label}
-									</option>
-								),
+						<FormField label="Set name" id="scheme-set-name">
+							{field => (
+								<Input
+									{...field}
+									value={name}
+									disabled={unavailable || readOnly}
+									required
+									onChange={event =>
+										setName(event.target.value)
+									}
+								/>
 							)}
-						</Select>
+						</FormField>
+						<FormField label="Set label" id="scheme-set-kind">
+							{field => (
+								<Select
+									{...field}
+									value={kind}
+									disabled={unavailable || readOnly}
+									onChange={event => {
+										const value = event.target.value
+										if (
+											value === 'undecided' ||
+											value === 'core' ||
+											value === 'reward' ||
+											value === 'paid'
+										)
+											setKind(value)
+									}}
+								>
+									{Object.entries(schemeSetLabels).map(
+										([value, label]) => (
+											<option key={value} value={value}>
+												{label}
+											</option>
+										),
+									)}
+								</Select>
+							)}
+						</FormField>
 						{!readOnly && (
 							<Button
 								type="submit"
@@ -297,73 +321,77 @@ export default function SchemeSetLibrary({
 							{selected.members.length === 0 && (
 								<p>This set has no palettes yet.</p>
 							)}
-							<ol className={adminStyles.setMembers}>
+							<AdminMemberList>
 								{selected.members.map((member, index) => (
-									<li key={member.id}>
-										<span>
-											<span
-												className={styles.swatches}
-												aria-hidden="true"
-											>
-												{member.colors.map(
-													(color, slot) => (
-														<span
-															key={slot}
-															style={{
-																backgroundColor:
-																	color,
-															}}
-														/>
-													),
-												)}
-											</span>
-											{member.name}
-										</span>
-										<AdminIconButton
-											icon={faArrowUp}
-											label={`Move ${member.name} up`}
-											disabled={
-												unavailable ||
-												readOnly ||
-												index === 0
-											}
-											onClick={() => move(index, -1)}
+									<AdminMemberRow
+										key={member.id}
+										actions={
+											<>
+												<AdminIconButton
+													icon={faArrowUp}
+													label={`Move ${member.name} up`}
+													disabled={
+														unavailable ||
+														readOnly ||
+														index === 0
+													}
+													onClick={() =>
+														move(index, -1)
+													}
+												/>
+												<AdminIconButton
+													icon={faArrowDown}
+													label={`Move ${member.name} down`}
+													disabled={
+														unavailable ||
+														readOnly ||
+														index ===
+															selected.members
+																.length -
+																1
+													}
+													onClick={() =>
+														move(index, 1)
+													}
+												/>
+												<AdminIconButton
+													icon={faSquareMinus}
+													label={`Remove ${member.name} from set`}
+													disabled={
+														unavailable || readOnly
+													}
+													className={
+														adminStyles.minus
+													}
+													onClick={() => {
+														void mutate(
+															selected.row.id,
+															{
+																kind: 'remove',
+																paletteIds: [
+																	member.id,
+																],
+															},
+															'Palette removed; its design is unchanged.',
+														)
+													}}
+												/>
+											</>
+										}
+									>
+										<PaletteStrip
+											colors={member.colors}
+											variant="continuous"
 										/>
-										<AdminIconButton
-											icon={faArrowDown}
-											label={`Move ${member.name} down`}
-											disabled={
-												unavailable ||
-												readOnly ||
-												index ===
-													selected.members.length - 1
-											}
-											onClick={() => move(index, 1)}
-										/>
-										<AdminIconButton
-											icon={faSquareMinus}
-											label={`Remove ${member.name} from set`}
-											disabled={unavailable || readOnly}
-											className={adminStyles.minus}
-											onClick={() => {
-												void mutate(
-													selected.row.id,
-													{
-														kind: 'remove',
-														paletteIds: [member.id],
-													},
-													'Palette removed; its design is unchanged.',
-												)
-											}}
-										/>
-									</li>
+										{member.name}
+									</AdminMemberRow>
 								))}
-							</ol>
+							</AdminMemberList>
 						</>
 					)}
 				</>
 			) : (
-				<ul className={adminStyles.setCards}>
+				<AdminGallery layout="sets">
 					{sets.map(set => (
 						<li
 							key={set.row.id}
@@ -373,20 +401,11 @@ export default function SchemeSetLibrary({
 							<div className={adminStyles.setThumbnail}>
 								{set.members.length === 0 && 'Empty set'}
 								{set.members.slice(0, 3).map(member => (
-									<span
+									<PaletteStrip
 										key={member.id}
-										className={styles.swatches}
-										aria-hidden="true"
-									>
-										{member.colors.map((color, index) => (
-											<span
-												key={index}
-												style={{
-													backgroundColor: color,
-												}}
-											/>
-										))}
-									</span>
+										colors={member.colors}
+										variant="continuous"
+									/>
 								))}
 							</div>
 							<div className={adminStyles.setDetails}>
@@ -432,7 +451,7 @@ export default function SchemeSetLibrary({
 							</div>
 						</li>
 					))}
-				</ul>
+				</AdminGallery>
 			)}
 			{deleting && (
 				<ConfirmDialog

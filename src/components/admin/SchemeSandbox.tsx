@@ -8,6 +8,7 @@ import HexPuzzleBoard from '../puzzle/HexPuzzleBoard'
 import { faWandMagicSparkles } from '@fortawesome/pro-solid-svg-icons'
 import AdminIconButton from './AdminIconButton'
 import styles from './SchemeLibrary.module.css'
+import { AdminSectionHeading } from './AdminLayout'
 
 export default function SchemeSandbox({
 	colors,
@@ -33,14 +34,17 @@ export default function SchemeSandbox({
 		: {}
 	return (
 		<section className={styles.sandbox} aria-label="Palette sandbox">
-			<div className={styles.heading}>
-				<h3>Sandbox</h3>
+			<AdminSectionHeading
+				id="scheme-sandbox-title"
+				title="Sandbox"
+				level={3}
+			>
 				<AdminIconButton
 					icon={faWandMagicSparkles}
 					label="Randomize"
 					onClick={() => setAssignments(randomize())}
 				/>
-			</div>
+			</AdminSectionHeading>
 			{colors ? (
 				<HexPuzzleBoard
 					target

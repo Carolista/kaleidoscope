@@ -231,6 +231,7 @@ describe('draft set workspace', () => {
 			screen.getByRole('button', { name: 'Confirm delete set' }),
 		)
 		await screen.findByText('No draft sets yet.')
+		expect(screen.queryByRole('list')).not.toBeInTheDocument()
 		expect(screen.getByRole('status')).toHaveTextContent(
 			'Its puzzles remain in the library',
 		)
