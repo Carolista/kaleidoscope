@@ -245,6 +245,14 @@ describe('triangle puzzles', () => {
 				expect(mod3(moved.q)).toBe(
 					rotation % 2 ? 3 - mod3(cell.q) : mod3(cell.q),
 				)
+				const center = triangle.center(moved, 1)
+				const corners = triangle.corners(moved, 1)
+				expect(center.x).toBeCloseTo(
+					corners.reduce((sum, point) => sum + point.x, 0) / 3,
+				)
+				expect(center.y).toBeCloseTo(
+					corners.reduce((sum, point) => sum + point.y, 0) / 3,
+				)
 				const angle = (rotation * Math.PI) / 3
 				expect(triangle.corners(moved, 1).map(pointKey).sort()).toEqual(
 					triangle

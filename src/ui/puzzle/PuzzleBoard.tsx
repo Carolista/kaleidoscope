@@ -1,36 +1,52 @@
 import { useMemo } from 'react'
 import type { PointerEvent, Ref } from 'react'
-import {
-	generateHexagonCells,
-	axialToPixel,
-	boundingBox,
-	hexagonCorners,
-} from '@/domain/shapes/hexagon'
 import type { AxialCoord } from '@/domain/shapes/hexagon'
-import { pointsToSvgAttr } from '@/domain/geometry'
-import { coordinateKey, pieceCells, rotateCoordinate } from '@/domain/puzzles'
-import type { PuzzlePiece, PuzzlePlacements } from '@/domain/puzzles'
-import styles from './HexPuzzleBoard.module.css'
+import { pointsToSvgAttr, polygonBoundingBox } from '@/domain/geometry'
+import {
+	coordinateKey,
+	pieceCells,
+	puzzleShapes,
+	rotateCoordinate,
+} from '@/domain/puzzles'
+import type {
+	PuzzlePiece,
+	PuzzlePlacements,
+	PuzzleShapeId,
+} from '@/domain/puzzles'
+import styles from './PuzzleBoard.module.css'
 
-const layout = { orientation: 'flat', size: 16 } as const
-
-function polygonPoints(cell: AxialCoord): string {
-	return pointsToSvgAttr(hexagonCorners(axialToPixel(cell, layout), layout))
+// SVG units per tile edge: a hexagon's circumradius, or a triangle's side.
+const tileSizes: Readonly<Record<PuzzleShapeId, number>> = {
+	hexagon: 16,
+	triangle: 28,
 }
 
-function viewBoxFor(cells: readonly AxialCoord[]): string {
-	const { minX, minY, maxX, maxY } = boundingBox(
-		cells.map(cell => axialToPixel(cell, layout)),
-		layout,
+function cornersFor(shape: PuzzleShapeId, cell: AxialCoord) {
+	return puzzleShapes[shape].corners(cell, tileSizes[shape])
+}
+
+function polygonPoints(shape: PuzzleShapeId, cell: AxialCoord): string {
+	return pointsToSvgAttr(cornersFor(shape, cell))
+}
+
+function viewBoxFor(
+	shape: PuzzleShapeId,
+	cells: readonly AxialCoord[],
+): string {
+	const { minX, minY, maxX, maxY } = polygonBoundingBox(
+		cells.map(cell => cornersFor(shape, cell)),
 	)
 	const padding = 3
 	return `${minX - padding} ${minY - padding} ${maxX - minX + padding * 2} ${maxY - minY + padding * 2}`
 }
 
-function pieceOutline(tiles: readonly AxialCoord[]): string {
+function pieceOutline(
+	shape: PuzzleShapeId,
+	tiles: readonly AxialCoord[],
+): string {
 	const edges = new Map<string, string>()
 	for (const tile of tiles) {
-		const corners = hexagonCorners(axialToPixel(tile, layout), layout)
+		const corners = cornersFor(shape, tile)
 		for (let i = 0; i < corners.length; i++) {
 			const start = corners[i]
 			const end = corners[(i + 1) % corners.length]
@@ -50,9 +66,11 @@ function pieceOutline(tiles: readonly AxialCoord[]): string {
 }
 
 export function PieceGraphic({
+	shape,
 	piece,
 	drag,
 }: {
+	readonly shape: PuzzleShapeId
 	readonly piece: PuzzlePiece
 	readonly drag?: {
 		readonly x: number
@@ -61,8 +79,10 @@ export function PieceGraphic({
 		readonly scale: number
 	}
 }) {
-	const grabbed = drag ? axialToPixel(drag.offset, layout) : null
-	const [minX, minY, width, height] = viewBoxFor(piece.tiles)
+	const grabbed = drag
+		? puzzleShapes[shape].center(drag.offset, tileSizes[shape])
+		: null
+	const [minX, minY, width, height] = viewBoxFor(shape, piece.tiles)
 		.split(' ')
 		.map(Number)
 	// Reserve the largest rotated bounds so tray slots and tile scale stay fixed.
@@ -70,6 +90,7 @@ export function PieceGraphic({
 		Math.max(
 			...Array.from({ length: 6 }, (_, rotation) => {
 				const bounds = viewBoxFor(
+					shape,
 					piece.tiles.map(tile => rotateCoordinate(tile, rotation)),
 				)
 					.split(' ')
@@ -100,7 +121,7 @@ export function PieceGraphic({
 			{piece.tiles.map((tile, index) => (
 				<polygon
 					key={coordinateKey(tile)}
-					points={polygonPoints(tile)}
+					points={polygonPoints(shape, tile)}
 					fill={tile.color}
 					data-piece-tile={index}
 					className={styles.pieceTile}
@@ -110,9 +131,10 @@ export function PieceGraphic({
 	)
 }
 
-interface HexPuzzleBoardProps {
+interface PuzzleBoardProps {
 	readonly label?: string
-	readonly radius: number
+	readonly shape: PuzzleShapeId
+	readonly gridSize: number
 	readonly colors: Readonly<Record<string, string>>
 	readonly target?: boolean
 	readonly solved?: boolean
@@ -128,9 +150,10 @@ interface HexPuzzleBoardProps {
 	) => void
 }
 
-export default function HexPuzzleBoard({
+export default function PuzzleBoard({
 	label,
-	radius,
+	shape,
+	gridSize,
 	colors,
 	target = false,
 	solved = false,
@@ -141,21 +164,33 @@ export default function HexPuzzleBoard({
 	onActivate,
 	onReturn,
 	onGrab,
-}: HexPuzzleBoardProps) {
-	const cells = useMemo(() => generateHexagonCells(radius), [radius])
+}: PuzzleBoardProps) {
+	const cells = useMemo(
+		() => puzzleShapes[shape].cells(gridSize),
+		[shape, gridSize],
+	)
 	const wedge = cells.filter(cell => cell.isClickable)
+	// Colors are keyed by wedge coordinates; mirrored cells follow their group.
+	const wedgeKeys = new Map(
+		wedge.map(cell => [cell.groupId, coordinateKey(cell)]),
+	)
 	const placedPieces = pieces.flatMap((piece, index) => {
 		const anchor = placements[piece.id]
 		if (!anchor) return []
 		const tiles = pieceCells(piece, anchor)
 		return [
-			{ piece, number: index + 1, tiles, outline: pieceOutline(tiles) },
+			{
+				piece,
+				number: index + 1,
+				tiles,
+				outline: pieceOutline(shape, tiles),
+			},
 		]
 	})
 	return (
 		<svg
 			ref={svgRef}
-			viewBox={viewBoxFor(cells)}
+			viewBox={viewBoxFor(shape, cells)}
 			className={styles.gridGraphic}
 			role={target ? 'img' : 'group'}
 			aria-label={label ?? (target ? 'Target design' : 'Puzzle board')}
@@ -163,6 +198,7 @@ export default function HexPuzzleBoard({
 			{cells.map(cell => {
 				const interactive = cell.isClickable && !target && !solved
 				const tileNumber = wedge.indexOf(cell) + 1
+				const fill = colors[wedgeKeys.get(cell.groupId) ?? '']
 				const placedPiece = interactive
 					? placedPieces.find(({ tiles }) =>
 							tiles.some(
@@ -174,8 +210,8 @@ export default function HexPuzzleBoard({
 				return (
 					<polygon
 						key={coordinateKey(cell)}
-						points={polygonPoints(cell)}
-						fill={colors[cell.groupId] ?? 'var(--base)'}
+						points={polygonPoints(shape, cell)}
+						fill={fill ?? 'var(--base)'}
 						className={
 							target || solved
 								? styles.targetCell
@@ -190,7 +226,7 @@ export default function HexPuzzleBoard({
 						tabIndex={interactive ? 0 : undefined}
 						aria-label={
 							interactive
-								? `Puzzle tile ${tileNumber} of ${wedge.length}, ${colors[cell.groupId] ? 'occupied' : 'empty'}`
+								? `Puzzle tile ${tileNumber} of ${wedge.length}, ${fill ? 'occupied' : 'empty'}`
 								: undefined
 						}
 						aria-hidden={interactive || target ? undefined : true}

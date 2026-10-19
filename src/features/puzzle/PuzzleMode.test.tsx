@@ -6,7 +6,7 @@ import { palettes } from '@/domain/palettes'
 import { generateHexagonCells } from '@/domain/shapes/hexagon'
 import { coordinateKey, generatePuzzle, pieceCells } from '@/domain/puzzles'
 import PuzzleMode from './PuzzleMode'
-import styles from '@/ui/puzzle/HexPuzzleBoard.module.css'
+import styles from '@/ui/puzzle/PuzzleBoard.module.css'
 import {
 	dragTo,
 	hitTest,

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { Palette } from '@/domain/palettes'
 import { getGroupIds, HEXAGON_GRID_RADII } from '@/domain/shapes/hexagon'
-import { HexPuzzleBoard } from '@/ui/puzzle'
+import { PuzzleBoard } from '@/ui/puzzle'
 import { faWandMagicSparkles } from '@fortawesome/pro-solid-svg-icons'
 import { AdminIconButton, AdminSectionHeading } from '@/features/admin/common'
 import styles from './PaletteSandbox.module.css'
@@ -42,10 +42,11 @@ export default function PaletteSandbox({
 				/>
 			</AdminSectionHeading>
 			{colors ? (
-				<HexPuzzleBoard
+				<PuzzleBoard
 					target
 					label="Palette sandbox design"
-					radius={HEXAGON_GRID_RADII.md}
+					shape="hexagon"
+					gridSize={HEXAGON_GRID_RADII.md}
 					colors={resolved}
 				/>
 			) : (

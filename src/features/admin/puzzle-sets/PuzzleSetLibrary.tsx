@@ -13,7 +13,7 @@ import {
 	type SetAction,
 } from '@/features/admin/services'
 import type { Database } from '@/lib/supabase'
-import { HexPuzzleBoard } from '@/ui/puzzle'
+import { PuzzleBoard } from '@/ui/puzzle'
 import {
 	AdminIconButton,
 	AdminFeedback,
@@ -305,9 +305,10 @@ export default function PuzzleSetLibrary({
 								aria-hidden="true"
 							>
 								{member.preview ? (
-									<HexPuzzleBoard
+									<PuzzleBoard
 										target
-										radius={member.preview.gridSize}
+										shape={member.preview.shape}
+										gridSize={member.preview.gridSize}
 										colors={member.preview.target}
 									/>
 								) : (
@@ -341,9 +342,10 @@ export default function PuzzleSetLibrary({
 							label={`Set ${set.row.name}`}
 							thumbnail={
 								set.preview ? (
-									<HexPuzzleBoard
+									<PuzzleBoard
 										target
-										radius={set.preview.gridSize}
+										shape={set.preview.shape}
+										gridSize={set.preview.gridSize}
 										colors={set.preview.target}
 									/>
 								) : (

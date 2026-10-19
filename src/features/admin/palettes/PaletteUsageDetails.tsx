@@ -1,6 +1,6 @@
 import type { Palette } from '@/domain/palettes'
 import { paletteIsUsed, type PaletteUsage } from '@/features/admin/services'
-import { HexPuzzleBoard } from '@/ui/puzzle'
+import { PuzzleBoard } from '@/ui/puzzle'
 import styles from './PaletteUsageDetails.module.css'
 
 export default function PaletteUsageDetails({
@@ -46,10 +46,11 @@ export default function PaletteUsageDetails({
 							<li key={puzzle.id}>
 								{puzzle.preview && colors && (
 									<div className={styles.thumbnail}>
-										<HexPuzzleBoard
+										<PuzzleBoard
 											target
 											label={`${puzzle.name} palette preview`}
-											radius={puzzle.preview.radius}
+											shape="hexagon"
+											gridSize={puzzle.preview.radius}
 											colors={Object.fromEntries(
 												Object.entries(
 													puzzle.preview.target,

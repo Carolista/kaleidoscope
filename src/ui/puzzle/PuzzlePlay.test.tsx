@@ -5,6 +5,7 @@ import { palettes } from '@/domain/palettes'
 import {
 	coordinateKey,
 	generatePuzzle,
+	pieceCells,
 	PUZZLE_RECIPES,
 	type Puzzle,
 } from '@/domain/puzzles'
@@ -163,4 +164,84 @@ describe('PuzzlePlay', () => {
 			expect(destination).toHaveAttribute('fill', 'var(--base)')
 		},
 	)
+
+	describe('triangle puzzles', () => {
+		const recipe = PUZZLE_RECIPES.find(
+			value => value.id === 'moderate-small',
+		)!
+		const triangle = generatePuzzle(
+			'triangle-play',
+			palettes[1],
+			recipe,
+			'triangle',
+		)
+		const firstCell = (index: number) => {
+			const piece = triangle.pieces[index]
+			return coordinateKey(
+				pieceCells(piece, triangle.solution[piece.id])[0],
+			)
+		}
+
+		it('renders triangular target and board tiles with a five-tile wedge', () => {
+			renderPlay(triangle)
+			for (const name of ['Target design', 'Puzzle board']) {
+				const svg = screen.getByRole(
+					name === 'Puzzle board' ? 'group' : 'img',
+					{
+						name,
+					},
+				)
+				const polygons = [...svg.querySelectorAll('polygon')]
+				expect(polygons).toHaveLength(16)
+				for (const polygon of polygons)
+					expect(
+						polygon.getAttribute('points')!.split(' '),
+					).toHaveLength(3)
+			}
+			expect(
+				document.querySelectorAll('[data-puzzle-cell]'),
+			).toHaveLength(5)
+		})
+
+		it('solves by rotating with the keyboard and placing each first tile', async () => {
+			const user = userEvent.setup()
+			renderPlay(triangle)
+			for (const [index, piece] of triangle.pieces.entries()) {
+				pieceButton(index).focus()
+				const turns = triangle.solution[piece.id].rotation ?? 0
+				for (let i = 0; i < (turns || 6); i++)
+					await user.keyboard('{Enter}')
+				tileAt(firstCell(index)).focus()
+				await user.keyboard('{Enter}')
+				expect(pieceButton(index)).toHaveAccessibleName(/on board/)
+			}
+			expect(screen.getByRole('status')).toHaveTextContent('Solved.')
+			const board = screen.getByRole('group', { name: 'Puzzle board' })
+			for (const polygon of board.querySelectorAll('polygon'))
+				expect(polygon).not.toHaveAttribute('fill', 'var(--base)')
+		})
+
+		it('drops a rotated piece by the grabbed tile', async () => {
+			const user = userEvent.setup()
+			renderPlay(triangle)
+			const index = triangle.pieces.findIndex(
+				piece => piece.tiles.length > 1,
+			)
+			const piece = triangle.pieces[index]
+			const button = pieceButton(index)
+			for (
+				let i = 0;
+				i < (triangle.solution[piece.id].rotation ?? 0);
+				i++
+			)
+				await user.click(button)
+			dragTo(button, tileAt(firstCell(index)))
+			expect(button).toHaveAccessibleName(/on board/)
+			for (const cell of pieceCells(piece, triangle.solution[piece.id]))
+				expect(tileAt(coordinateKey(cell))).toHaveAttribute(
+					'fill',
+					cell.color,
+				)
+		})
+	})
 })

@@ -19,7 +19,7 @@ import {
 	manageDraftSet,
 	type DraftSet,
 } from '@/features/admin/services'
-import { HexPuzzleBoard } from '@/ui/puzzle'
+import { PuzzleBoard } from '@/ui/puzzle'
 import PaletteFieldset from './PaletteFieldset'
 import styles from './PuzzleDraftLibrary.module.css'
 import {
@@ -561,9 +561,10 @@ export default function PuzzleDraftLibrary({
 												aria-hidden="true"
 												className={styles.thumbnail}
 											>
-												<HexPuzzleBoard
+												<PuzzleBoard
 													target
-													radius={preview.gridSize}
+													shape={preview.shape}
+													gridSize={preview.gridSize}
 													colors={preview.target}
 												/>
 											</span>

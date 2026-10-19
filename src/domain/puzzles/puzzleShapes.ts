@@ -29,6 +29,7 @@ export interface PuzzleShape {
 	// of those offsets land on other cells.
 	readonly anchorFor: (cell: AxialCoord) => AxialCoord
 	readonly corners: (cell: AxialCoord, size: number) => Point[]
+	readonly center: (cell: AxialCoord, size: number) => Point
 }
 
 const hexDirections: readonly AxialCoord[] = [
@@ -52,6 +53,7 @@ const hexagon: PuzzleShape = {
 		const layout = { orientation: 'flat', size } as const
 		return hexagonCorners(axialToPixel(cell, layout), layout)
 	},
+	center: (cell, size) => axialToPixel(cell, { orientation: 'flat', size }),
 }
 
 // Triangle tiles are addressed by 3x their centroid in axial coordinates of the
@@ -90,6 +92,11 @@ function triangleVertices(cell: AxialCoord): AxialCoord[] {
 
 const SQRT3 = Math.sqrt(3)
 
+// Converts 3x-scaled axial coordinates to pixels in the triangle basis.
+function trianglePixel({ q, r }: AxialCoord, size: number): Point {
+	return { x: size * (q + r / 2), y: size * r * (SQRT3 / 2) }
+}
+
 const triangle: PuzzleShape = {
 	id: 'triangle',
 	gridSizes: TRIANGLE_GRID_SIZES,
@@ -115,10 +122,8 @@ const triangle: PuzzleShape = {
 		return { q: 3 * q, r: 3 * r }
 	},
 	corners: (cell, size) =>
-		triangleVertices(cell).map(({ q, r }) => ({
-			x: size * (q + r / 2),
-			y: size * r * (SQRT3 / 2),
-		})),
+		triangleVertices(cell).map(vertex => trianglePixel(vertex, size)),
+	center: (cell, size) => trianglePixel(cell, size / 3),
 }
 
 export const puzzleShapes: Readonly<Record<PuzzleShapeId, PuzzleShape>> = {

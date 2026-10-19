@@ -1,2 +1,2 @@
-export { default as HexPuzzleBoard, PieceGraphic } from './HexPuzzleBoard'
+export { default as PuzzleBoard, PieceGraphic } from './PuzzleBoard'
 export { default as PuzzlePlay, type PuzzlePlayHandle } from './PuzzlePlay'

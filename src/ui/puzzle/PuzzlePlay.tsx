@@ -1,6 +1,7 @@
 import type { PointerEvent, ReactNode, Ref } from 'react'
 import { useImperativeHandle, useRef, useState } from 'react'
 import {
+	anchorAt,
 	coordinateKey,
 	getPuzzleColors,
 	type Puzzle,
@@ -12,7 +13,7 @@ import {
 	rotateCoordinate,
 } from '@/domain/puzzles'
 import type { AxialCoord } from '@/domain/shapes/hexagon'
-import HexPuzzleBoard, { PieceGraphic } from './HexPuzzleBoard'
+import PuzzleBoard, { PieceGraphic } from './PuzzleBoard'
 import styles from './PuzzlePlay.module.css'
 
 interface DragState {
@@ -87,6 +88,12 @@ export default function PuzzlePlay({
 		)
 	}
 
+	// Keyboard and click placement put the piece's first tile on the cell.
+	function placeAt(id: string, cell: AxialCoord) {
+		const piece = currentPuzzle.pieces.find(piece => piece.id === id)
+		if (piece) place(id, anchorAt(piece, cell, rotations[id] ?? 0))
+	}
+
 	function place(id: string, anchor: AxialCoord) {
 		if (solved) return
 		const result = placePuzzlePiece(currentPuzzle, placements, id, {
@@ -136,7 +143,7 @@ export default function PuzzlePlay({
 			occupied?.id !== selectedId &&
 			(keyboard || !currentPuzzle.rotationAllowed)
 		)
-			place(selectedId, cell)
+			placeAt(selectedId, cell)
 		else {
 			if (occupied) selectPiece(occupied.id)
 			else setMessage('Choose a piece from the tray first.')
@@ -321,8 +328,9 @@ export default function PuzzlePlay({
 		>
 			<div className={styles.goalAndPieces}>
 				<figure className={styles.target}>
-					<HexPuzzleBoard
-						radius={currentPuzzle.gridSize}
+					<PuzzleBoard
+						shape={currentPuzzle.shape}
+						gridSize={currentPuzzle.gridSize}
 						colors={currentPuzzle.target}
 						target
 					/>
@@ -363,16 +371,20 @@ export default function PuzzlePlay({
 								startDrag(event, piece, piece.tiles[tileIndex])
 							}}
 						>
-							<PieceGraphic piece={piece} />
+							<PieceGraphic
+								shape={currentPuzzle.shape}
+								piece={piece}
+							/>
 						</button>
 					))}
 				</div>
 				{trayAction}
 			</div>
 			<div className={styles.board}>
-				<HexPuzzleBoard
+				<PuzzleBoard
 					svgRef={boardRef}
-					radius={currentPuzzle.gridSize}
+					shape={currentPuzzle.shape}
+					gridSize={currentPuzzle.gridSize}
 					colors={colors}
 					solved={solved}
 					pieces={currentPuzzle.pieces}
@@ -400,7 +412,11 @@ export default function PuzzlePlay({
 			</div>
 			{children}
 			{drag?.moved && !hidden && (
-				<PieceGraphic piece={drag.piece} drag={drag} />
+				<PieceGraphic
+					shape={currentPuzzle.shape}
+					piece={drag.piece}
+					drag={drag}
+				/>
 			)}
 		</section>
 	)
