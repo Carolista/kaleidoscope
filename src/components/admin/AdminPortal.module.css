@@ -301,6 +301,37 @@
 	--icon-color: var(--control-danger);
 }
 
+.sortableMember {
+	padding: 0.5rem;
+	border: 1px solid var(--admin-border);
+	border-radius: var(--control-radius);
+	background: var(--admin-surface);
+}
+
+.draggingMember {
+	border-color: var(--admin-blue);
+	background: var(--admin-selected);
+}
+
+.dragHandle {
+	touch-action: none;
+	cursor: grab;
+}
+
+.dragHandle:active {
+	cursor: grabbing;
+}
+
+.reorderAnnouncement {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+
 .setCard {
 	display: grid;
 	grid-template-columns: minmax(5rem, 8rem) minmax(0, 1fr);

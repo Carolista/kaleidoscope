@@ -59,6 +59,211 @@ async function open() {
 	)
 }
 describe('draft set workspace', () => {
+	it.each(['mouse', 'touch'])(
+		'drags cards with %s input without requests, and restores the order on cancellation',
+		async pointerType => {
+			setup()
+			await open()
+			const handle = screen.getByRole('button', {
+				name: 'Reorder Puzzle A',
+			})
+			const rowB = screen.getByText('2. Puzzle B').closest('li')!
+			const list = screen.getByText(/Drag the handles/).parentElement!
+			const capture = vi.fn()
+			const release = vi.fn()
+			Object.defineProperty(list, 'setPointerCapture', { value: capture })
+			Object.defineProperty(list, 'releasePointerCapture', {
+				value: release,
+			})
+			const originalHitTest = Object.getOwnPropertyDescriptor(
+				document,
+				'elementFromPoint',
+			)
+			Object.defineProperty(document, 'elementFromPoint', {
+				configurable: true,
+				value: vi.fn(() => rowB),
+			})
+			function pointer(target: Element, type: string) {
+				const event = new MouseEvent(type, {
+					bubbles: true,
+					button: 0,
+					clientX: 10,
+					clientY: 20,
+				})
+				Object.defineProperties(event, {
+					pointerId: { value: 1 },
+					isPrimary: { value: true },
+					pointerType: { value: pointerType },
+				})
+				fireEvent(target, event)
+			}
+			try {
+				pointer(handle, 'pointerdown')
+				expect(capture).toHaveBeenCalledWith(1)
+				expect(handle).toHaveFocus()
+				pointer(list, 'pointermove')
+				expect(screen.getByText('1. Puzzle B')).toBeInTheDocument()
+				pointer(list, 'pointercancel')
+				expect(screen.getByText('1. Puzzle A')).toBeInTheDocument()
+				expect(
+					screen.getByRole('button', { name: 'Save order' }),
+				).toBeDisabled()
+				pointer(handle, 'pointerdown')
+				pointer(list, 'pointermove')
+				pointer(list, 'pointerup')
+				expect(release).toHaveBeenCalledWith(1)
+				expect(screen.getByText('1. Puzzle B')).toBeInTheDocument()
+				expect(
+					screen.getByRole('button', { name: 'Save order' }),
+				).toBeEnabled()
+				expect(mocks.manage).not.toHaveBeenCalled()
+				expect(mocks.load).toHaveBeenCalledOnce()
+			} finally {
+				if (originalHitTest)
+					Object.defineProperty(
+						document,
+						'elementFromPoint',
+						originalHitTest,
+					)
+				else Reflect.deleteProperty(document, 'elementFromPoint')
+			}
+		},
+	)
+
+	it('allows repeated keyboard moves, preserves a failed order save for retry, and clears the dirty guard after success', async () => {
+		const third = {
+			puzzleId: 'c',
+			name: 'Puzzle C',
+			position: 3,
+			preview: null,
+		}
+		mocks.load.mockResolvedValue([
+			{ ...draftSet, members: [...draftSet.members, third] },
+		])
+		setup()
+		await open()
+		const handle = screen.getByRole('button', { name: 'Reorder Puzzle A' })
+		handle.focus()
+		fireEvent.keyDown(handle, { key: 'ArrowDown' })
+		fireEvent.keyDown(handle, { key: 'ArrowDown' })
+		expect(screen.getByText('3. Puzzle A')).toBeInTheDocument()
+		expect(handle).toHaveFocus()
+		expect(mocks.manage).not.toHaveBeenCalled()
+		fireEvent.keyDown(handle, { key: 'Home' })
+		expect(
+			screen.getByRole('button', { name: 'Save order' }),
+		).toBeDisabled()
+		fireEvent.keyDown(handle, { key: 'End' })
+		const unload = new Event('beforeunload', { cancelable: true })
+		window.dispatchEvent(unload)
+		expect(unload.defaultPrevented).toBe(true)
+		mocks.manage.mockRejectedValueOnce(new Error('Order save failed'))
+		fireEvent.click(screen.getByRole('button', { name: 'Save order' }))
+		expect(await screen.findByRole('alert')).toHaveTextContent(
+			'Order save failed',
+		)
+		expect(screen.getByText('3. Puzzle A')).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: 'Save order' })).toBeEnabled()
+		mocks.load.mockResolvedValue([
+			{
+				...draftSet,
+				members: [draftSet.members[1], third, draftSet.members[0]],
+			},
+		])
+		fireEvent.click(screen.getByRole('button', { name: 'Save order' }))
+		await screen.findByText('Puzzle order saved.')
+		expect(mocks.manage).toHaveBeenLastCalledWith(
+			expect.anything(),
+			'set',
+			{
+				kind: 'reorder',
+				puzzleIds: ['b', 'c', 'a'],
+			},
+		)
+		expect(mocks.manage.mock.calls[0]).toEqual(mocks.manage.mock.calls[1])
+		await screen.findByText('3. Puzzle A')
+		const cleanUnload = new Event('beforeunload', { cancelable: true })
+		window.dispatchEvent(cleanUnload)
+		expect(cleanUnload.defaultPrevented).toBe(false)
+	})
+
+	it('discards a staged order without writing and reopens the saved order', async () => {
+		setup()
+		await open()
+		fireEvent.keyDown(
+			screen.getByRole('button', { name: 'Reorder Puzzle A' }),
+			{ key: 'End' },
+		)
+		fireEvent.click(screen.getByRole('button', { name: 'Back to sets' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }))
+		await open()
+		expect(screen.getByText('1. Puzzle A')).toBeInTheDocument()
+		expect(
+			screen.getByRole('button', { name: 'Save order' }),
+		).toBeDisabled()
+		expect(mocks.manage).not.toHaveBeenCalled()
+	})
+
+	it('preserves staged ordering across immediate removal and a separate name save', async () => {
+		const third = {
+			puzzleId: 'c',
+			name: 'Puzzle C',
+			position: 3,
+			preview: null,
+		}
+		mocks.load.mockResolvedValue([
+			{ ...draftSet, members: [...draftSet.members, third] },
+		])
+		setup()
+		await open()
+		fireEvent.change(screen.getByLabelText('Set name'), {
+			target: { value: 'Renamed set' },
+		})
+		fireEvent.keyDown(
+			screen.getByRole('button', { name: 'Reorder Puzzle A' }),
+			{ key: 'End' },
+		)
+		const remaining = [draftSet.members[0], third]
+		mocks.load.mockResolvedValue([{ ...draftSet, members: remaining }])
+		fireEvent.click(
+			screen.getByRole('button', { name: 'Remove Puzzle B from set' }),
+		)
+		await screen.findByText('Puzzle removed from set.')
+		await screen.findByText('1. Puzzle C')
+		expect(screen.getByLabelText('Set name')).toHaveValue('Renamed set')
+		expect(screen.getByRole('button', { name: 'Save order' })).toBeEnabled()
+		expect(mocks.manage).toHaveBeenCalledExactlyOnceWith(
+			expect.anything(),
+			'set',
+			{
+				kind: 'remove',
+				puzzleIds: ['b'],
+			},
+		)
+		mocks.load.mockResolvedValue([
+			{
+				...draftSet,
+				row: { ...draftSet.row, name: 'Renamed set' },
+				members: remaining,
+			},
+		])
+		fireEvent.click(screen.getByRole('button', { name: 'Save name' }))
+		await screen.findByText('Set name saved.')
+		await screen.findByText('1. Puzzle C')
+		expect(screen.getByRole('button', { name: 'Save order' })).toBeEnabled()
+		fireEvent.click(screen.getByRole('button', { name: 'Save order' }))
+		await screen.findByText('Puzzle order saved.')
+		expect(mocks.manage).toHaveBeenLastCalledWith(
+			expect.anything(),
+			'set',
+			{
+				kind: 'reorder',
+				puzzleIds: ['c', 'a'],
+			},
+		)
+		expect(mocks.remove).not.toHaveBeenCalled()
+	})
+
 	it('shows each member design beside its name and keeps thumbnails attached to puzzles after reordering', async () => {
 		const palette = {
 			id: 'cabo',
@@ -114,11 +319,14 @@ describe('draft set workspace', () => {
 				],
 			},
 		])
-		fireEvent.click(
+		fireEvent.keyDown(
 			within(firstRow).getByRole('button', {
-				name: 'Move Puzzle A down',
+				name: 'Reorder Puzzle A',
 			}),
+			{ key: 'ArrowDown' },
 		)
+		expect(mocks.manage).not.toHaveBeenCalled()
+		expect(mocks.load).toHaveBeenCalledOnce()
 		await screen.findByText('1. Puzzle B')
 		expect(
 			screen
@@ -348,21 +556,37 @@ describe('draft set workspace', () => {
 			name: 'Revised',
 		})
 	})
-	it('reorders immediately, prevents duplicates in flight, and removes membership without deleting puzzles', async () => {
+	it('stages order changes, saves once, prevents duplicates in flight, and still removes immediately', async () => {
 		setup()
 		await open()
+		const handle = screen.getByRole('button', { name: 'Reorder Puzzle A' })
+		const saveOrder = screen.getByRole('button', { name: 'Save order' })
+		expect(saveOrder).toBeDisabled()
+		fireEvent.keyDown(handle, { key: 'ArrowUp' })
+		expect(saveOrder).toBeDisabled()
+		fireEvent.keyDown(handle, { key: 'ArrowDown' })
+		expect(screen.getByText('1. Puzzle B')).toBeInTheDocument()
+		expect(mocks.manage).not.toHaveBeenCalled()
+		expect(mocks.load).toHaveBeenCalledOnce()
+		fireEvent.click(screen.getByRole('button', { name: 'Back to sets' }))
 		expect(
-			screen.getByRole('button', { name: 'Move Puzzle A up' }),
-		).toBeDisabled()
+			screen.getByRole('dialog', { name: 'Discard unsaved changes?' }),
+		).toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: 'Keep editing' }))
+		mocks.load.mockResolvedValue([
+			{
+				...draftSet,
+				members: [...draftSet.members].reverse(),
+			},
+		])
 		let finish: (() => void) | undefined
 		mocks.manage.mockReturnValueOnce(
 			new Promise<void>(resolve => {
 				finish = resolve
 			}),
 		)
-		const down = screen.getByRole('button', { name: 'Move Puzzle A down' })
-		fireEvent.click(down)
-		fireEvent.click(down)
+		fireEvent.click(saveOrder)
+		fireEvent.click(saveOrder)
 		expect(mocks.manage).toHaveBeenCalledOnce()
 		expect(mocks.manage).toHaveBeenCalledWith(expect.anything(), 'set', {
 			kind: 'reorder',
@@ -373,6 +597,11 @@ describe('draft set workspace', () => {
 		).toBeDisabled()
 		finish?.()
 		await screen.findByText('Puzzle order saved.')
+		await waitFor(() =>
+			expect(
+				screen.getByRole('button', { name: 'Save order' }),
+			).toBeDisabled(),
+		)
 		const remove = await screen.findByRole('button', {
 			name: 'Remove Puzzle A from set',
 		})
@@ -412,16 +641,18 @@ describe('draft set workspace', () => {
 		fireEvent.click(screen.getByRole('button', { name: 'Back to library' }))
 		expect(back).toHaveBeenCalledOnce()
 	})
-	it('preserves an unsaved name if a membership reload fails', async () => {
+	it('preserves an unsaved name if an order-save reload fails', async () => {
 		setup()
 		await open()
 		fireEvent.change(screen.getByLabelText('Set name'), {
 			target: { value: 'Not saved yet' },
 		})
 		mocks.load.mockRejectedValueOnce(new Error('Reload unavailable'))
-		fireEvent.click(
-			screen.getByRole('button', { name: 'Move Puzzle A down' }),
+		fireEvent.keyDown(
+			screen.getByRole('button', { name: 'Reorder Puzzle A' }),
+			{ key: 'ArrowDown' },
 		)
+		fireEvent.click(screen.getByRole('button', { name: 'Save order' }))
 		expect(await screen.findByRole('alert')).toHaveTextContent(
 			'Reload unavailable',
 		)

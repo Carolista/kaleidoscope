@@ -1,11 +1,8 @@
 import {
-	faArrowDown,
-	faArrowUp,
 	faPenToSquare,
 	faPlusLarge,
 	faRotate,
 	faSquareArrowLeft,
-	faSquareMinus,
 	faTrashCan,
 } from '@fortawesome/pro-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -22,18 +19,13 @@ import type { Database } from '../../types/database'
 import HexPuzzleBoard from '../puzzle/HexPuzzleBoard'
 import AdminIconButton from './AdminIconButton'
 import { Button, ConfirmDialog, FormField, Input, Loading } from '@shared'
-import {
-	AdminFeedback,
-	AdminGallery,
-	AdminMemberList,
-	AdminMemberRow,
-	AdminSectionHeading,
-} from './AdminLayout'
+import { AdminFeedback, AdminGallery, AdminSectionHeading } from './AdminLayout'
 import SetCreationDialog from './SetCreationDialog'
 import useModalState from '../../hooks/useModalState'
 import styles from './AdminPortal.module.css'
 import useUnsavedDraft from './useUnsavedDraft'
 import { useNavigationGuard } from './useNavigationGuard'
+import PuzzleSetMembers from './PuzzleSetMembers'
 
 function errorMessage(cause: unknown) {
 	return cause instanceof Error
@@ -52,6 +44,7 @@ export default function PuzzleSetLibrary({
 	const [selectedId, setSelectedId] = useState<string | null>(null)
 	const [creating, setCreating, creationModal] = useModalState<true>()
 	const [name, setName] = useState('')
+	const [memberIds, setMemberIds] = useState<readonly string[]>([])
 	const addButton = useRef<HTMLButtonElement>(null)
 	const focusAdd = useRef(false)
 	const [loading, setLoading] = useState(true)
@@ -64,7 +57,24 @@ export default function PuzzleSetLibrary({
 	const [deleting, setDeleting, deleteModal] = useModalState<DraftSet>()
 	const [reload, setReload] = useState(0)
 	const selected = sets.find(set => set.row.id === selectedId)
-	const dirty = !!selected && name !== selected.row.name
+	const members = [
+		...memberIds.flatMap(id => {
+			const member = selected?.members.find(
+				value => value.puzzleId === id,
+			)
+			return member ? [member] : []
+		}),
+		...(selected?.members.filter(
+			member => !memberIds.includes(member.puzzleId),
+		) ?? []),
+	]
+	const orderDirty =
+		!!selected &&
+		members.some(
+			(member, index) =>
+				member.puzzleId !== selected.members[index]?.puzzleId,
+		)
+	const dirty = !!selected && (name !== selected.row.name || orderDirty)
 	useUnsavedDraft({ dirty, pending: busy })
 	const { requestNavigation } = useNavigationGuard()
 	useEffect(() => {
@@ -136,6 +146,41 @@ export default function PuzzleSetLibrary({
 			if (action.kind === 'rename') {
 				setName(action.name.trim())
 			}
+			if (action.kind === 'reorder' || action.kind === 'remove') {
+				setSets(previous =>
+					previous.map(set => {
+						if (set.row.id !== id) return set
+						const nextMembers =
+							action.kind === 'remove'
+								? set.members.filter(
+										member =>
+											!action.puzzleIds.includes(
+												member.puzzleId,
+											),
+									)
+								: action.puzzleIds.flatMap(puzzleId => {
+										const member = set.members.find(
+											value =>
+												value.puzzleId === puzzleId,
+										)
+										return member ? [member] : []
+									})
+						return {
+							...set,
+							members: nextMembers.map((member, index) => ({
+								...member,
+								position: index + 1,
+							})),
+							preview: nextMembers[0]?.preview ?? null,
+						}
+					}),
+				)
+				if (action.kind === 'remove') {
+					setMemberIds(previous =>
+						previous.filter(id => !action.puzzleIds.includes(id)),
+					)
+				}
+			}
 			// Keep the renamed baseline current while the catalog reloads.
 			if (action.kind === 'rename') {
 				setSets(previous =>
@@ -166,6 +211,7 @@ export default function PuzzleSetLibrary({
 			if (selectedId) {
 				setSelectedId(null)
 				setName('')
+				setMemberIds([])
 				setError('')
 				setStatus('')
 			} else onBack()
@@ -185,19 +231,6 @@ export default function PuzzleSetLibrary({
 			)
 		}
 	}
-	function move(index: number, direction: -1 | 1) {
-		if (!selected) return
-		const ids = selected.members.map(member => member.puzzleId)
-		const destination = index + direction
-		if (destination < 0 || destination >= ids.length) return
-		;[ids[index], ids[destination]] = [ids[destination], ids[index]]
-		void mutate(
-			selected.row.id,
-			{ kind: 'reorder', puzzleIds: ids },
-			'Puzzle order saved.',
-		)
-	}
-
 	return (
 		<section aria-labelledby="draft-sets-title">
 			<Button
@@ -338,95 +371,46 @@ export default function PuzzleSetLibrary({
 								required.
 							</p>
 							<p>
-								Ordering and removal save immediately. Removing
-								a puzzle does not delete it. Player selection
-								rules and qualifying routes are configured
-								separately.
+								Ordering saves only when you choose Save order.
+								Removal saves immediately without deleting the
+								puzzle. Player selection rules and qualifying
+								routes are configured separately.
 							</p>
 							{!selected.members.length && (
 								<p>This set has no puzzles yet.</p>
 							)}
-							<AdminMemberList>
-								{selected.members.map((member, index) => (
-									<AdminMemberRow
-										key={member.puzzleId}
-										preview={
-											<div
-												className={
-													styles.setMemberThumbnail
-												}
-												aria-hidden="true"
-											>
-												{member.preview ? (
-													<HexPuzzleBoard
-														target
-														radius={
-															member.preview
-																.radius
-														}
-														colors={
-															member.preview
-																.target
-														}
-													/>
-												) : (
-													<span>
-														Preview unavailable
-													</span>
-												)}
-											</div>
-										}
-										actions={
-											<>
-												<AdminIconButton
-													icon={faArrowUp}
-													label={`Move ${member.name} up`}
-													disabled={
-														busy || index === 0
-													}
-													onClick={() =>
-														move(index, -1)
-													}
-												/>
-												<AdminIconButton
-													icon={faArrowDown}
-													label={`Move ${member.name} down`}
-													disabled={
-														busy ||
-														index ===
-															selected.members
-																.length -
-																1
-													}
-													onClick={() =>
-														move(index, 1)
-													}
-												/>
-												<AdminIconButton
-													icon={faSquareMinus}
-													className={styles.minus}
-													label={`Remove ${member.name} from set`}
-													disabled={busy}
-													onClick={() => {
-														void mutate(
-															selected.row.id,
-															{
-																kind: 'remove',
-																puzzleIds: [
-																	member.puzzleId,
-																],
-															},
-															'Puzzle removed from set.',
-														)
-													}}
-												/>
-											</>
-										}
-									>
-										{index + 1}. {member.name}
-									</AdminMemberRow>
-								))}
-							</AdminMemberList>
+							<PuzzleSetMembers
+								members={members}
+								disabled={busy}
+								onReorder={setMemberIds}
+								onRemove={puzzleId => {
+									void mutate(
+										selected.row.id,
+										{
+											kind: 'remove',
+											puzzleIds: [puzzleId],
+										},
+										'Puzzle removed from set.',
+									)
+								}}
+							/>
+							<Button
+								disabled={busy || !orderDirty}
+								onClick={() => {
+									void mutate(
+										selected.row.id,
+										{
+											kind: 'reorder',
+											puzzleIds: members.map(
+												member => member.puzzleId,
+											),
+										},
+										'Puzzle order saved.',
+									)
+								}}
+							>
+								Save order
+							</Button>
 						</>
 					)}
 				</>
@@ -465,6 +449,11 @@ export default function PuzzleSetLibrary({
 									onClick={() => {
 										setSelectedId(set.row.id)
 										setName(set.row.name)
+										setMemberIds(
+											set.members.map(
+												member => member.puzzleId,
+											),
+										)
 										setStatus('')
 									}}
 								/>

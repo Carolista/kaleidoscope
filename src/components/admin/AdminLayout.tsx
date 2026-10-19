@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 import styles from './AdminLayout.module.css'
 
 export function AdminSectionHeading({
@@ -50,13 +50,19 @@ export function AdminMemberRow({
 	preview,
 	children,
 	actions,
+	...props
 }: {
 	readonly preview?: ReactNode
 	readonly children: ReactNode
 	readonly actions: ReactNode
-}) {
+} & Omit<ComponentProps<'li'>, 'children'>) {
 	return (
-		<li className={styles.member}>
+		<li
+			{...props}
+			className={[styles.member, props.className]
+				.filter(Boolean)
+				.join(' ')}
+		>
 			{preview}
 			<span className={styles.memberContent}>{children}</span>
 			<div className={styles.memberActions}>{actions}</div>
