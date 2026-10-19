@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { useRef, useState, type SubmitEvent } from 'react'
+import { useMemo, useRef, useState, type SubmitEvent } from 'react'
 import {
 	renderAuthoredPuzzle,
 	type AuthoredPuzzle,
@@ -22,6 +22,7 @@ import PuzzleDraftForm from './PuzzleDraftForm'
 import { useCatalog, useCatalogInvalidation } from '@/features/admin/catalog'
 import { Button, Loading } from '@/ui/components'
 import { errorMessage } from '@/features/admin/common'
+import { compareSetOrder, memberSetOrderKey } from '@/features/admin/sets'
 
 const fallbackError = 'Unable to prepare the puzzle playtest.'
 
@@ -33,9 +34,20 @@ export default function PuzzleAuthoring({
 	readonly catalogStatus?: 'drafts' | 'assigned'
 }) {
 	const paletteCatalog = useCatalog('palettes', client)
+	const paletteSetCatalog = useCatalog('paletteSets', client)
 	const invalidate = useCatalogInvalidation()
-	const palettes: readonly AuthoringPalette[] = paletteCatalog.data ?? []
-	const loading = paletteCatalog.loading
+	// Order like the palette library: by set and position, then unassigned by name.
+	// Without set data (still loading or failed), palettes stay alphabetical.
+	const palettes: readonly AuthoringPalette[] = useMemo(() => {
+		const sets = paletteSetCatalog.data ?? []
+		return [...(paletteCatalog.data ?? [])].sort((a, b) =>
+			compareSetOrder(
+				memberSetOrderKey(a, sets),
+				memberSetOrderKey(b, sets),
+			),
+		)
+	}, [paletteCatalog.data, paletteSetCatalog.data])
+	const loading = paletteCatalog.loading || paletteSetCatalog.loading
 	const paletteError = paletteCatalog.error
 		? errorMessage(paletteCatalog.error, fallbackError)
 		: ''
@@ -70,6 +82,7 @@ export default function PuzzleAuthoring({
 	function refreshPalettes() {
 		setError('')
 		void paletteCatalog.refresh().catch(() => {})
+		void paletteSetCatalog.refresh().catch(() => {})
 	}
 
 	async function generate() {
@@ -181,7 +194,10 @@ export default function PuzzleAuthoring({
 					}}
 					onRefreshPalettes={refreshPalettes}
 					palettesLoading={loading}
-					palettesRefreshing={paletteCatalog.refreshing}
+					palettesRefreshing={
+						paletteCatalog.refreshing ||
+						paletteSetCatalog.refreshing
+					}
 					palettesError={!!paletteError}
 				/>
 			</>
@@ -213,7 +229,10 @@ export default function PuzzleAuthoring({
 					}}
 					onRefreshPalettes={refreshPalettes}
 					palettesLoading={loading}
-					palettesRefreshing={paletteCatalog.refreshing}
+					palettesRefreshing={
+						paletteCatalog.refreshing ||
+						paletteSetCatalog.refreshing
+					}
 					palettesError={!!paletteError}
 					busy={busy}
 					generation={{

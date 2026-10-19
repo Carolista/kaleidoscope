@@ -42,7 +42,7 @@ import {
 } from '@/ui/components'
 import PaletteDeleteDialog from './PaletteDeleteDialog'
 import { useModalState } from '@/ui/hooks'
-import { compareSetOrder } from '@/features/admin/sets'
+import { compareSetOrder, memberSetOrderKey } from '@/features/admin/sets'
 
 const fallbackError = 'Unable to manage palettes.'
 
@@ -109,23 +109,16 @@ export default function PaletteLibrary({
 	const visiblePalettes =
 		catalogStatus === 'assigned'
 			? [...filteredPalettes].sort((a, b) =>
-					compareSetOrder(setOrderKey(a), setOrderKey(b)),
+					compareSetOrder(
+						memberSetOrderKey(a, sets),
+						memberSetOrderKey(b, sets),
+					),
 				)
 			: filteredPalettes
 	const selection = useCheckedIds(visiblePalettes.map(palette => palette.id))
 	const checked = selection.checked
 	function setOf(id: string) {
 		return sets.find(set => set.members.some(member => member.id === id))
-	}
-	function setOrderKey(palette: CatalogPalette) {
-		const set = setOf(palette.id)
-		return {
-			setName: set?.row.name ?? null,
-			position:
-				set?.members.findIndex(member => member.id === palette.id) ??
-				null,
-			name: palette.name,
-		}
 	}
 	// Only unassigned drafts may be deleted.
 	function deletable(palette: CatalogPalette) {

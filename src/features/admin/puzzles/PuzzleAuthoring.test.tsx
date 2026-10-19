@@ -1,7 +1,7 @@
 import { act, fireEvent, screen, within, waitFor } from '@testing-library/react'
 import { renderWithNavigationGuard as render } from '@/features/admin/testing'
 import { useState } from 'react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getSupabaseClient } from '@/lib/supabase'
 import {
 	PUZZLE_RECIPES,
@@ -30,6 +30,7 @@ const mocks = vi.hoisted(() => ({
 	from: vi.fn(),
 	rpc: vi.fn(),
 	seeds: vi.fn(),
+	paletteSets: vi.fn(),
 }))
 vi.mock('@/lib/supabase/supabaseClient', () => ({
 	getSupabaseClient: () => ({ from: mocks.from, rpc: mocks.rpc }),
@@ -38,7 +39,7 @@ vi.mock('@/features/admin/services/puzzleLibrary', () => ({
 	loadPuzzleDrafts: async () => [],
 }))
 vi.mock('@/features/admin/services/paletteSets', () => ({
-	loadPaletteSets: async () => [],
+	loadPaletteSets: () => mocks.paletteSets(),
 	managePaletteSet: vi.fn(),
 	paletteSetLabels: {
 		undecided: 'Undecided',
@@ -56,6 +57,9 @@ const originalCapture = Object.getOwnPropertyDescriptor(
 	Element.prototype,
 	'setPointerCapture',
 )
+beforeEach(() => {
+	mocks.paletteSets.mockReset().mockResolvedValue([])
+})
 afterEach(() => {
 	vi.restoreAllMocks()
 	if (originalHitTest)
@@ -728,6 +732,47 @@ describe('admin puzzle lab', () => {
 		expect(save).toBeEnabled()
 		fireEvent.change(name, { target: { value: '   ' } })
 		expect(save).toBeDisabled()
+	})
+
+	it('orders palettes by set and position, then unassigned palettes by name, and selects the first', async () => {
+		const named = (id: string, name: string) => ({
+			...palette,
+			id,
+			name,
+			colors: [...palette.colors],
+		})
+		const set = (name: string, ids: string[]) => ({
+			row: { id: name, name },
+			kind: 'core',
+			members: ids.map(id => ({ id, name: id, colors: [] })),
+		})
+		mocks.paletteSets.mockResolvedValue([
+			set('Second set', ['zed', 'alpha']),
+			set('First set', ['beta']),
+		])
+		setup({
+			data: [
+				named('alpha', 'Alpha'),
+				named('beta', 'Beta'),
+				named('loose', 'Loose'),
+				named('zed', 'Zed'),
+			],
+			error: null,
+		})
+		const picker = await screen.findByRole('group', { name: 'Palette' })
+		await waitFor(() =>
+			expect(
+				within(picker)
+					.getAllByRole('button')
+					.filter(button => button.textContent)
+					.map(button => button.textContent),
+			).toEqual(['Beta', 'Zed', 'Alpha', 'Loose']),
+		)
+		expect(
+			within(picker).getByRole('button', {
+				name: 'Select the Beta color palette',
+			}),
+		).toHaveAttribute('aria-pressed', 'true')
 	})
 
 	it('shows palette swatches and applies a different palette to the current design', async () => {

@@ -4,6 +4,24 @@ export interface SetOrderKey {
 	readonly name: string
 }
 
+interface OrderedSet {
+	readonly row: { readonly name: string }
+	readonly members: readonly { readonly id: string }[]
+}
+
+// Locates an item in its set, if any, for compareSetOrder.
+export function memberSetOrderKey(
+	item: { readonly id: string; readonly name: string },
+	sets: readonly OrderedSet[],
+): SetOrderKey {
+	for (const set of sets) {
+		const position = set.members.findIndex(member => member.id === item.id)
+		if (position >= 0)
+			return { setName: set.row.name, position, name: item.name }
+	}
+	return { setName: null, position: null, name: item.name }
+}
+
 // Items in sets sort by set name, then set position; items without a set follow by name.
 export function compareSetOrder(a: SetOrderKey, b: SetOrderKey): number {
 	if (a.setName === null || b.setName === null) {
