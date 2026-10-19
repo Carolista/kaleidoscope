@@ -13,6 +13,11 @@ import {
 	TRIANGLE_GRID_SIZES,
 } from '@/domain/shapes/triangle'
 import {
+	generateHexagramCells,
+	HEXAGRAM_GRID_SIZES,
+	hexagramStarCellCorners,
+} from '@/domain/shapes/hexagram'
+import {
 	DIAMOND_STAR_GRID_SIZES,
 	DIAMOND_STAR_ROTATIONS,
 	diamondCellCorners,
@@ -23,6 +28,7 @@ export const PUZZLE_SHAPE_IDS = [
 	'hexagon',
 	'triangle',
 	'diamondStar',
+	'hexagram',
 ] as const satisfies readonly GridShapeId[]
 
 export type PuzzleShapeId = (typeof PUZZLE_SHAPE_IDS)[number]
@@ -119,20 +125,9 @@ function trianglePixel({ q, r }: AxialCoord, size: number): Point {
 	return { x: size * (q + r / 2), y: size * r * (SQRT3 / 2) }
 }
 
-const triangle: PuzzleShape = {
-	id: 'triangle',
-	gridSizes: TRIANGLE_GRID_SIZES,
-	pieceSizes: { sm: [3, 2], md: [4, 3, 3, 2], lg: [4, 4, 4, 3, 3, 2, 1, 1] },
+// Shared by every shape tiled with equilateral triangles on one lattice.
+const triangleLattice = {
 	rotationStep: 1,
-	cells: gridSize =>
-		generateTriangleCells(gridSize).map(
-			({ row, col, direction, groupId, isClickable }) => ({
-				q: 3 * (col - row) + (direction === 'up' ? -1 : 1),
-				r: 3 * row + (direction === 'up' ? 2 : 1),
-				groupId,
-				isClickable,
-			}),
-		),
 	neighbors: cell => {
 		const sign = isUp(cell) ? 1 : -1
 		return upNeighbors.map(d => ({
@@ -147,6 +142,47 @@ const triangle: PuzzleShape = {
 	corners: (cell, size) =>
 		triangleVertices(cell).map(vertex => trianglePixel(vertex, size)),
 	center: (cell, size) => trianglePixel(cell, size / 3),
+} satisfies Pick<
+	PuzzleShape,
+	'rotationStep' | 'neighbors' | 'anchorFor' | 'corners' | 'center'
+>
+
+const triangle: PuzzleShape = {
+	...triangleLattice,
+	id: 'triangle',
+	gridSizes: TRIANGLE_GRID_SIZES,
+	pieceSizes: { sm: [3, 2], md: [4, 3, 3, 2], lg: [4, 4, 4, 3, 3, 2, 1, 1] },
+	cells: gridSize =>
+		generateTriangleCells(gridSize).map(
+			({ row, col, direction, groupId, isClickable }) => ({
+				q: 3 * (col - row) + (direction === 'up' ? -1 : 1),
+				r: 3 * row + (direction === 'up' ? 2 : 1),
+				groupId,
+				isClickable,
+			}),
+		),
+}
+
+// Hexagram tiles sit on the same lattice, centered on a vertex, so each tile's
+// coordinates come from its centroid (3x centroid = the sum of its corners).
+const hexagram: PuzzleShape = {
+	...triangleLattice,
+	id: 'hexagram',
+	gridSizes: HEXAGRAM_GRID_SIZES,
+	pieceSizes: { sm: [3, 2, 1], md: [4, 3, 3, 2], lg: [4, 4, 4, 3, 2, 2, 1] },
+	cells: gridSize =>
+		generateHexagramCells(gridSize).map(cell => {
+			const corners = hexagramStarCellCorners(cell, { gridSize, size: 1 })
+			const x = corners.reduce((sum, point) => sum + point.x, 0)
+			const r =
+				corners.reduce((sum, point) => sum + point.y, 0) / (SQRT3 / 2)
+			return {
+				q: Math.round(x - r / 2),
+				r: Math.round(r),
+				groupId: cell.groupId,
+				isClickable: cell.isClickable,
+			}
+		}),
 }
 
 // Diamond-star tiles are (row, col) rhombi of one star point; the wedge is the
@@ -196,6 +232,7 @@ export const puzzleShapes: Readonly<Record<PuzzleShapeId, PuzzleShape>> = {
 	hexagon,
 	triangle,
 	diamondStar,
+	hexagram,
 }
 
 export function isPuzzleShapeId(value: unknown): value is PuzzleShapeId {
@@ -210,4 +247,5 @@ export const PUZZLE_SHAPE_LABELS: Readonly<Record<PuzzleShapeId, string>> = {
 	hexagon: catalogLabel('hexagon'),
 	triangle: catalogLabel('triangle'),
 	diamondStar: catalogLabel('diamondStar'),
+	hexagram: catalogLabel('hexagram'),
 }

@@ -16,12 +16,13 @@ import type {
 } from '@/domain/puzzles'
 import styles from './PuzzleBoard.module.css'
 
-// SVG units per tile: a hexagon's circumradius, a triangle's side, or a
-// diamond-star lattice step.
+// SVG units per tile: a hexagon's circumradius, a triangle's side (also used
+// by hexagram), or a diamond-star lattice step.
 const tileSizes: Readonly<Record<PuzzleShapeId, number>> = {
 	hexagon: 16,
 	triangle: 28,
 	diamondStar: 48,
+	hexagram: 28,
 }
 
 function cornersFor(shape: PuzzleShapeId, cell: PlacedCoord) {

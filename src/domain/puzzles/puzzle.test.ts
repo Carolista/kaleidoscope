@@ -10,6 +10,10 @@ import {
 	generateDiamondStarCells,
 } from '@/domain/shapes/diamond-star'
 import {
+	generateHexagramCells,
+	hexagramStarCellCorners,
+} from '@/domain/shapes/hexagram'
+import {
 	anchorAt,
 	coordinateKey,
 	generatePuzzle,
@@ -512,4 +516,98 @@ describe('diamond star puzzles', () => {
 			}).ok,
 		).toBe(true)
 	})
+})
+
+describe('hexagram puzzles', () => {
+	const hexagram = puzzleShapes.hexagram
+	const pointKey = ({ x, y }: { x: number; y: number }) =>
+		`${Math.round(x * 1e6)},${Math.round(y * 1e6)}`
+
+	it('maps every Zen hexagram tile to a unique lattice triangle with matching corners and edge neighbours', () => {
+		for (const gridSize of Object.values(hexagram.gridSizes)) {
+			const cells = hexagram.cells(gridSize)
+			const zen = generateHexagramCells(gridSize)
+			const keys = new Set(cells.map(coordinateKey))
+			expect(keys.size).toBe(zen.length)
+			cells.forEach((cell, index) =>
+				expect(hexagram.corners(cell, 1).map(pointKey).sort()).toEqual(
+					hexagramStarCellCorners(zen[index], { gridSize, size: 1 })
+						.map(pointKey)
+						.sort(),
+				),
+			)
+			for (const a of cells) {
+				const corners = new Set(hexagram.corners(a, 1).map(pointKey))
+				const touching = cells
+					.filter(
+						b =>
+							hexagram
+								.corners(b, 1)
+								.filter(point => corners.has(pointKey(point)))
+								.length === 2,
+					)
+					.map(coordinateKey)
+					.sort()
+				expect(
+					hexagram
+						.neighbors(a)
+						.map(coordinateKey)
+						.filter(key => keys.has(key))
+						.sort(),
+				).toEqual(touching)
+			}
+		}
+		expect(
+			Object.values(hexagram.gridSizes).map(
+				size =>
+					hexagram.cells(size).filter(cell => cell.isClickable)
+						.length,
+			),
+		).toEqual([6, 12, 20])
+	})
+
+	it.each(
+		PUZZLE_RECIPES.flatMap(recipe =>
+			Array.from(
+				{ length: 30 },
+				(_, i) => [recipe.id, `h-${i}`, recipe] as const,
+			),
+		),
+	)(
+		'generates a solvable, connected %s partition for %s',
+		(_, seed, recipe) => {
+			const puzzle = generatePuzzle(seed, palette, recipe, 'hexagram')
+			expect(puzzle).toMatchObject({
+				shape: 'hexagram',
+				gridSize: hexagram.gridSizes[recipe.size],
+			})
+			expect(
+				puzzle.pieces.map(piece => piece.tiles.length).sort(),
+			).toEqual([...hexagram.pieceSizes[recipe.size]].sort())
+			let placements: PuzzlePlacements = {}
+			for (const piece of puzzle.pieces) {
+				const placement = puzzle.solution[piece.id]
+				const cells = pieceCells(piece, placement)
+				const reached = new Set([coordinateKey(cells[0])])
+				for (let pass = 0; pass < cells.length; pass++)
+					for (const cell of cells)
+						if (
+							hexagram
+								.neighbors(cell)
+								.some(n => reached.has(coordinateKey(n)))
+						)
+							reached.add(coordinateKey(cell))
+				expect(reached.size).toBe(cells.length)
+				const result = placePuzzlePiece(
+					puzzle,
+					placements,
+					piece.id,
+					placement,
+				)
+				if (!result.ok) throw new Error(result.reason)
+				placements = result.placements
+			}
+			expect(isPuzzleSolved(puzzle, placements)).toBe(true)
+		},
+	)
 })
