@@ -24,6 +24,12 @@ import {
 	hexagramStarCellCorners,
 } from '@/domain/shapes/hexagram'
 import {
+	generatePinwheelCells,
+	PINWHEEL_GRID_SIZES,
+	PINWHEEL_ROTATIONS,
+	spokeCellCorners,
+} from '@/domain/shapes/pinwheel'
+import {
 	DIAMOND_STAR_GRID_SIZES,
 	DIAMOND_STAR_ROTATIONS,
 	diamondCellCorners,
@@ -36,6 +42,7 @@ export const PUZZLE_SHAPE_IDS = [
 	'diamondStar',
 	'hexagram',
 	'circleRings',
+	'pinwheel',
 ] as const satisfies readonly GridShapeId[]
 
 export type PuzzleShapeId = (typeof PUZZLE_SHAPE_IDS)[number]
@@ -203,11 +210,36 @@ function diamondCorners(cell: PlacedCoord, size: number): Point[] {
 	).map(transform)
 }
 
+// Shared by shapes tiled with (row, col) parallelograms: four edge neighbours,
+// anchored on a tile, and only a half turn keeps tiles on the grid.
+function parallelogramLattice(
+	corners: (cell: PlacedCoord, size: number) => Point[],
+) {
+	return {
+		rotationStep: 3,
+		neighbors: ({ q, r }) => [
+			{ q: q + 1, r },
+			{ q: q - 1, r },
+			{ q, r: r + 1 },
+			{ q, r: r - 1 },
+		],
+		anchorFor: cell => ({ q: cell.q, r: cell.r }),
+		corners,
+		center: (cell, size) => {
+			const [first, , third] = corners(cell, size)
+			return { x: (first.x + third.x) / 2, y: (first.y + third.y) / 2 }
+		},
+	} satisfies Pick<
+		PuzzleShape,
+		'rotationStep' | 'neighbors' | 'anchorFor' | 'corners' | 'center'
+	>
+}
+
 const diamondStar: PuzzleShape = {
+	...parallelogramLattice(diamondCorners),
 	id: 'diamondStar',
 	gridSizes: DIAMOND_STAR_GRID_SIZES,
 	pieceSizes: { sm: [3, 2, 1], md: [4, 3, 2, 1], lg: [4, 4, 3, 2, 1, 1] },
-	rotationStep: 3,
 	cells: gridSize =>
 		generateDiamondStarCells(gridSize).map(
 			({ row, col, transformIndex, groupId, isClickable }) => ({
@@ -218,20 +250,43 @@ const diamondStar: PuzzleShape = {
 				isClickable,
 			}),
 		),
-	neighbors: ({ q, r }) => [
-		{ q: q + 1, r },
-		{ q: q - 1, r },
-		{ q, r: r + 1 },
-		{ q, r: r - 1 },
-	],
-	anchorFor: cell => ({ q: cell.q, r: cell.r }),
-	corners: diamondCorners,
-	center: (cell, size) => {
-		const corners = diamondCorners(cell, size)
-		return {
-			x: (corners[0].x + corners[2].x) / 2,
-			y: (corners[0].y + corners[2].y) / 2,
-		}
+}
+
+// Pinwheel tiles are (row, col) parallelograms of one spoke; the wedge is the
+// whole top spoke. Its two step counts are identified by tiles per spoke.
+function pinwheelSteps(tiles: number) {
+	const steps = Object.values(PINWHEEL_GRID_SIZES).find(
+		({ rowSteps, colSteps }) => rowSteps * colSteps === tiles,
+	)
+	if (!steps) throw new Error('Unsupported pinwheel size.')
+	return steps
+}
+
+const pinwheel: PuzzleShape = {
+	...parallelogramLattice((cell, size) =>
+		spokeCellCorners(
+			{ row: cell.q, col: cell.r },
+			{ rowSteps: 1, colSteps: 1, size },
+		).map(PINWHEEL_ROTATIONS[cell.transform ?? 0]),
+	),
+	id: 'pinwheel',
+	gridSizes: {
+		sm: PINWHEEL_GRID_SIZES.sm.rowSteps * PINWHEEL_GRID_SIZES.sm.colSteps,
+		md: PINWHEEL_GRID_SIZES.md.rowSteps * PINWHEEL_GRID_SIZES.md.colSteps,
+		lg: PINWHEEL_GRID_SIZES.lg.rowSteps * PINWHEEL_GRID_SIZES.lg.colSteps,
+	},
+	pieceSizes: { sm: [2, 1, 1], md: [3, 2, 1], lg: [4, 3, 2] },
+	cells: tiles => {
+		const { rowSteps, colSteps } = pinwheelSteps(tiles)
+		return generatePinwheelCells(rowSteps, colSteps).map(
+			({ row, col, transformIndex, groupId, isClickable }) => ({
+				q: row,
+				r: col,
+				...(transformIndex ? { transform: transformIndex } : {}),
+				groupId,
+				isClickable,
+			}),
+		)
 	},
 }
 
@@ -311,6 +366,7 @@ export const puzzleShapes: Readonly<Record<PuzzleShapeId, PuzzleShape>> = {
 	diamondStar,
 	hexagram,
 	circleRings,
+	pinwheel,
 }
 
 export function isPuzzleShapeId(value: unknown): value is PuzzleShapeId {
@@ -327,4 +383,5 @@ export const PUZZLE_SHAPE_LABELS: Readonly<Record<PuzzleShapeId, string>> = {
 	diamondStar: catalogLabel('diamondStar'),
 	hexagram: catalogLabel('hexagram'),
 	circleRings: catalogLabel('circleRings'),
+	pinwheel: catalogLabel('pinwheel'),
 }

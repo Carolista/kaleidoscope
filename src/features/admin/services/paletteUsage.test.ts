@@ -160,7 +160,7 @@ describe('palette usage', () => {
 			])
 	})
 
-	it('labels daily/unassigned puzzles and supports absent previews for other shapes', async () => {
+	it('labels daily/unassigned puzzles and supports absent previews for unknown shapes', async () => {
 		const { client, pages } = setup()
 		pages.puzzles.mockResolvedValue({
 			data: [
@@ -173,7 +173,7 @@ describe('palette usage', () => {
 				{
 					...puzzle,
 					id: 'other',
-					shape_id: 'pinwheel',
+					shape_id: 'square',
 					collection_puzzles: [],
 				},
 				{

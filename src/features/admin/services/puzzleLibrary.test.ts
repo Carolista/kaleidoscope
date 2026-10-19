@@ -142,7 +142,7 @@ describe('saved puzzle decoding', () => {
 			readAuthoredPuzzle({ ...row, definition }, authoring),
 		).toThrow()
 		expect(() =>
-			readAuthoredPuzzle({ ...row, shape_id: 'pinwheel' }, authoring),
+			readAuthoredPuzzle({ ...row, shape_id: 'square' }, authoring),
 		).toThrow('unsupported authoring')
 	})
 })

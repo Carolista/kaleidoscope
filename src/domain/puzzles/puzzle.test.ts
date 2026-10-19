@@ -19,6 +19,11 @@ import {
 	generateCircleRingsCells,
 } from '@/domain/shapes/circle-rings'
 import {
+	generatePinwheelCells,
+	pinwheelCellCorners,
+	PINWHEEL_GRID_SIZES,
+} from '@/domain/shapes/pinwheel'
+import {
 	anchorAt,
 	coordinateKey,
 	generatePuzzle,
@@ -722,4 +727,126 @@ describe('circle rings puzzles', () => {
 		}
 		expect(isPuzzleSolved(puzzle, placements)).toBe(true)
 	})
+})
+
+describe('pinwheel puzzles', () => {
+	const pinwheel = puzzleShapes.pinwheel
+	const pointKey = ({ x, y }: { x: number; y: number }) =>
+		`${Math.round(x * 1e6)},${Math.round(y * 1e6)}`
+
+	it('matches the Zen spokes, with the whole top spoke as a 4/6/9-tile wedge and edge neighbours', () => {
+		for (const [size, steps] of Object.entries(PINWHEEL_GRID_SIZES)) {
+			const tiles =
+				pinwheel.gridSizes[size as keyof typeof pinwheel.gridSizes]
+			expect(tiles).toBe(steps.rowSteps * steps.colSteps)
+			const cells = pinwheel.cells(tiles)
+			const zen = generatePinwheelCells(steps.rowSteps, steps.colSteps)
+			expect(
+				new Set(
+					cells.map(
+						cell => `${cell.transform ?? 0}:${coordinateKey(cell)}`,
+					),
+				).size,
+			).toBe(8 * tiles)
+			cells.forEach((cell, index) =>
+				expect(pinwheel.corners(cell, 1).map(pointKey)).toEqual(
+					pinwheelCellCorners(zen[index], { ...steps, size: 1 }).map(
+						pointKey,
+					),
+				),
+			)
+			const wedge = cells.filter(cell => cell.isClickable)
+			expect(wedge).toHaveLength(tiles)
+			expect(wedge.every(cell => cell.transform === undefined)).toBe(true)
+			for (const a of wedge) {
+				const corners = new Set(pinwheel.corners(a, 1).map(pointKey))
+				for (const b of wedge) {
+					const shared = pinwheel
+						.corners(b, 1)
+						.filter(point => corners.has(pointKey(point))).length
+					expect(
+						pinwheel
+							.neighbors(a)
+							.some(n => coordinateKey(n) === coordinateKey(b)),
+					).toBe(shared === 2)
+				}
+			}
+		}
+	})
+
+	it('turns tiles 180 degrees about the anchor tile', () => {
+		const anchor = { q: 1, r: 1 }
+		const pivot = pinwheel.center(anchor, 1)
+		for (const offset of [
+			{ q: 1, r: 0 },
+			{ q: 0, r: 1 },
+			{ q: 1, r: -1 },
+		]) {
+			const turned = rotateCoordinate(offset, 3)
+			expect(
+				pinwheel
+					.corners(
+						{ q: anchor.q + turned.q, r: anchor.r + turned.r },
+						1,
+					)
+					.map(pointKey)
+					.sort(),
+			).toEqual(
+				pinwheel
+					.corners(
+						{ q: anchor.q + offset.q, r: anchor.r + offset.r },
+						1,
+					)
+					.map(({ x, y }) => ({
+						x: 2 * pivot.x - x,
+						y: 2 * pivot.y - y,
+					}))
+					.map(pointKey)
+					.sort(),
+			)
+		}
+	})
+
+	it.each(
+		PUZZLE_RECIPES.flatMap(recipe =>
+			Array.from(
+				{ length: 30 },
+				(_, i) => [recipe.id, `p-${i}`, recipe] as const,
+			),
+		),
+	)(
+		'generates a solvable, connected %s partition for %s',
+		(_, seed, recipe) => {
+			const puzzle = generatePuzzle(seed, palette, recipe, 'pinwheel')
+			expect(puzzle.gridSize).toBe(pinwheel.gridSizes[recipe.size])
+			expect(
+				puzzle.pieces.map(piece => piece.tiles.length).sort(),
+			).toEqual([...pinwheel.pieceSizes[recipe.size]].sort())
+			let placements: PuzzlePlacements = {}
+			for (const piece of puzzle.pieces) {
+				const placement = puzzle.solution[piece.id]
+				expect([0, 3]).toContain(placement.rotation ?? 0)
+				const cells = pieceCells(piece, placement)
+				const reached = new Set([coordinateKey(cells[0])])
+				for (let pass = 0; pass < cells.length; pass++)
+					for (const cell of cells)
+						if (
+							pinwheel
+								.neighbors(cell)
+								.some(n => reached.has(coordinateKey(n)))
+						)
+							reached.add(coordinateKey(cell))
+				expect(reached.size).toBe(cells.length)
+				const result = placePuzzlePiece(
+					puzzle,
+					placements,
+					piece.id,
+					placement,
+				)
+				if (!result.ok) throw new Error(result.reason)
+				placements = result.placements
+			}
+			expect(isPuzzleSolved(puzzle, placements)).toBe(true)
+		},
+	)
 })
