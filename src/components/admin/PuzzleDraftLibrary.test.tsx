@@ -952,21 +952,29 @@ describe('draft library', () => {
 		expect(mocks.remove).toHaveBeenCalledTimes(2)
 		expect(screen.queryByRole('article')).not.toBeInTheDocument()
 	})
-	it('disables intended-use changes and deletion for assigned drafts', async () => {
+	it('lets assigned drafts replace their design but not their intended use or deletion', async () => {
 		mocks.load.mockResolvedValue([{ ...draft, assigned: true }])
 		setup()
 		await open()
 		expect(screen.getByLabelText('Intended use')).toBeDisabled()
-		expect(screen.getByLabelText('Recipe')).toHaveAttribute('readonly')
-		expect(
-			screen.queryByRole('button', { name: 'Randomize puzzle' }),
-		).not.toBeInTheDocument()
 		expect(
 			screen.getByRole('button', { name: 'Delete draft' }),
 		).toBeDisabled()
-		expect(
-			screen.getByRole('button', { name: 'Save Changes' }),
-		).toBeEnabled()
+		const randomize = screen.getByRole('button', {
+			name: 'Randomize puzzle',
+		})
+		fireEvent.click(randomize)
+		await waitFor(() => expect(randomize).toBeEnabled())
+		fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }))
+		await screen.findByRole('heading', { name: 'Puzzle drafts' })
+		expect(mocks.replace).toHaveBeenCalledWith(
+			expect.anything(),
+			draft.row.id,
+			draft.row.name,
+			draft.row.usage,
+			expect.anything(),
+		)
+		expect(mocks.edit).not.toHaveBeenCalled()
 	})
 	it('shows load failures explicitly and supports retry', async () => {
 		mocks.load.mockRejectedValueOnce(new Error('Network unavailable'))

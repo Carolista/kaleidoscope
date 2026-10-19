@@ -22,7 +22,6 @@ interface DraftMetadata {
 	readonly locked?: boolean
 	readonly assigned?: boolean
 	readonly submitDisabled?: boolean
-	readonly recipeLabel?: string
 }
 
 interface DraftGeneration {
@@ -55,7 +54,7 @@ export default function PuzzleDraftForm({
 	readonly palettesError?: boolean
 	readonly busy: boolean
 	readonly metadata: DraftMetadata
-	readonly generation?: DraftGeneration
+	readonly generation: DraftGeneration
 	readonly onSubmit: (event: SubmitEvent<HTMLFormElement>) => void
 }) {
 	return (
@@ -129,59 +128,47 @@ export default function PuzzleDraftForm({
 							/>
 						)}
 					</FormField>
-					{generation ? (
-						<div className={styles.recipeControls}>
-							<FormField label="Recipe">
-								{field => (
-									<Select
-										{...field}
-										value={generation.recipeId}
-										disabled={
-											busy ||
-											palettesLoading ||
-											palettesError ||
-											palettes.length === 0
-										}
-										onChange={event =>
-											generation.onRecipeChange(
-												event.target.value,
-											)
-										}
-									>
-										{HEX_PUZZLE_RECIPES.map(recipe => (
-											<option
-												key={recipe.id}
-												value={recipe.id}
-											>
-												{recipe.label}
-											</option>
-										))}
-									</Select>
-								)}
-							</FormField>
-							<AdminIconButton
-								icon={faWandMagicSparkles}
-								label="Randomize puzzle"
-								disabled={
-									busy ||
-									palettesLoading ||
-									palettesError ||
-									palettes.length === 0
-								}
-								onClick={generation.onGenerate}
-							/>
-						</div>
-					) : (
+					<div className={styles.recipeControls}>
 						<FormField label="Recipe">
 							{field => (
-								<Input
+								<Select
 									{...field}
-									value={metadata.recipeLabel ?? ''}
-									readOnly
-								/>
+									value={generation.recipeId}
+									disabled={
+										busy ||
+										palettesLoading ||
+										palettesError ||
+										palettes.length === 0
+									}
+									onChange={event =>
+										generation.onRecipeChange(
+											event.target.value,
+										)
+									}
+								>
+									{HEX_PUZZLE_RECIPES.map(recipe => (
+										<option
+											key={recipe.id}
+											value={recipe.id}
+										>
+											{recipe.label}
+										</option>
+									))}
+								</Select>
 							)}
 						</FormField>
-					)}
+						<AdminIconButton
+							icon={faWandMagicSparkles}
+							label="Randomize puzzle"
+							disabled={
+								busy ||
+								palettesLoading ||
+								palettesError ||
+								palettes.length === 0
+							}
+							onClick={generation.onGenerate}
+						/>
+					</div>
 					<div className={styles.metadataForm}>
 						<FormField label="Intended use">
 							{field => (

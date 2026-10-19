@@ -113,10 +113,6 @@ function DraftEditor({
 		working.current = true
 		setPending('Generating puzzle preview…')
 		try {
-			if (draft.assigned)
-				throw new Error(
-					'Unassign the puzzle before replacing its design.',
-				)
 			const recipe = HEX_PUZZLE_RECIPES.find(
 				value => value.id === recipeId,
 			)
@@ -230,24 +226,19 @@ function DraftEditor({
 				palettesRefreshing={palettesRefreshing}
 				palettesError={palettesError}
 				busy={busy}
-				generation={
-					draft.assigned
-						? undefined
-						: {
-								recipeId,
-								onRecipeChange: setRecipeId,
-								onGenerate: () => {
-									void generate()
-								},
-							}
-				}
+				generation={{
+					recipeId,
+					onRecipeChange: setRecipeId,
+					onGenerate: () => {
+						void generate()
+					},
+				}}
 				metadata={{
 					name,
 					usage,
 					onNameChange: setName,
 					onUsageChange: setUsage,
 					assigned: draft.assigned,
-					recipeLabel: draft.puzzle.recipe.label,
 					submitDisabled: !palette || palettesLoading,
 				}}
 				onSubmit={save}
