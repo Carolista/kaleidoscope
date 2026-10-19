@@ -506,11 +506,12 @@ describe('admin puzzle lab', () => {
 				PUZZLE_RECIPES[0],
 			)
 			expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith(
-				'save_hex_puzzle_draft',
+				'save_puzzle_draft',
 				{
 					p_id: expect.any(String),
 					p_name: 'Sunset',
 					p_usage: usage,
+					p_shape_id: 'hexagon',
 					p_palette_id: palette.id,
 					p_board_size: 'sm',
 					p_rotation_allowed: false,

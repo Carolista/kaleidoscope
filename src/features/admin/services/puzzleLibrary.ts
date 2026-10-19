@@ -95,7 +95,7 @@ export async function replacePuzzleDraft(
 	puzzle: AuthoredHexPuzzle,
 ): Promise<void> {
 	const { data, error } = await client.rpc(
-		'replace_hex_puzzle_draft',
+		'replace_puzzle_draft',
 		puzzleDraftArgs(id, name, usage, puzzle),
 	)
 	if (error) throw new Error(`Unable to replace draft: ${error.message}`)

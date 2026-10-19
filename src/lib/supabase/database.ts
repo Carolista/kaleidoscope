@@ -1017,11 +1017,12 @@ export type Database = {
 				}
 				Returns: string
 			}
-			save_hex_puzzle_draft: {
+			save_puzzle_draft: {
 				Args: {
 					p_id: string
 					p_name: string
 					p_usage: string
+					p_shape_id: string
 					p_palette_id: string
 					p_board_size: string
 					p_rotation_allowed: boolean
@@ -1049,6 +1050,7 @@ export type Database = {
 					p_name?: string
 					p_kind?: string
 					p_puzzle_ids?: string[]
+					p_shape_id?: string
 				}
 				Returns: string
 			}
@@ -1056,11 +1058,12 @@ export type Database = {
 				Args: { p_id: string }
 				Returns: string
 			}
-			replace_hex_puzzle_draft: {
+			replace_puzzle_draft: {
 				Args: {
 					p_id: string
 					p_name: string
 					p_usage: string
+					p_shape_id: string
 					p_palette_id: string
 					p_board_size: string
 					p_rotation_allowed: boolean

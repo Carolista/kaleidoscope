@@ -103,7 +103,7 @@ describe('draft library database requests', () => {
 			original,
 		)
 		expect(rpc).toHaveBeenCalledExactlyOnceWith(
-			'replace_hex_puzzle_draft',
+			'replace_puzzle_draft',
 			puzzleDraftArgs('id', 'Replacement', 'daily', original),
 		)
 		rpc.mockResolvedValue({ data: 'wrong-id', error: null })

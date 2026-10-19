@@ -9,7 +9,7 @@ import type { Database } from '@/lib/supabase'
 
 export type PuzzleUsage = 'collection' | 'daily'
 export type DraftArgs =
-	Database['public']['Functions']['save_hex_puzzle_draft']['Args']
+	Database['public']['Functions']['save_puzzle_draft']['Args']
 
 export function puzzleDraftArgs(
 	id: string,
@@ -21,6 +21,7 @@ export function puzzleDraftArgs(
 		p_id: id,
 		p_name: name.trim(),
 		p_usage: usage,
+		p_shape_id: 'hexagon',
 		p_palette_id: puzzle.paletteId,
 		p_board_size: puzzle.recipe.size,
 		p_rotation_allowed: puzzle.recipe.rotation,
@@ -78,7 +79,7 @@ export async function savePuzzleDraft(
 	client: SupabaseClient<Database>,
 	args: DraftArgs,
 ): Promise<string> {
-	const { data, error } = await client.rpc('save_hex_puzzle_draft', args)
+	const { data, error } = await client.rpc('save_puzzle_draft', args)
 	if (error) throw new Error(`Unable to save the draft: ${error.message}`)
 	if (data !== args.p_id)
 		throw new Error('The draft save did not return the expected puzzle ID.')

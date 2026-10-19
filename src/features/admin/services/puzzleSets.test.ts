@@ -173,7 +173,7 @@ describe('draft set requests', () => {
 	it.each([
 		[
 			{ kind: 'create', name: ' Set ', role: 'paid' },
-			{ p_name: 'Set', p_kind: 'paid' },
+			{ p_name: 'Set', p_kind: 'paid', p_shape_id: 'hexagon' },
 		],
 		[{ kind: 'rename', name: ' Renamed ' }, { p_name: 'Renamed' }],
 		[

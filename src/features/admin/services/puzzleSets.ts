@@ -182,7 +182,9 @@ export async function manageDraftSet(
 		p_id: id,
 		p_action: action.kind,
 		...('name' in action ? { p_name: action.name.trim() } : {}),
-		...(action.kind === 'create' ? { p_kind: action.role } : {}),
+		...(action.kind === 'create'
+			? { p_kind: action.role, p_shape_id: 'hexagon' }
+			: {}),
 		...('puzzleIds' in action
 			? { p_puzzle_ids: [...action.puzzleIds] }
 			: {}),
