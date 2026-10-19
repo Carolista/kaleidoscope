@@ -19,15 +19,16 @@ Status key: ✅ done · 👀 ready for review · 🔜 next · ⬜ not started ·
 **Phase 2A: building the admin portal** (branch `54-create-admin-portal`, issue #54).
 
 Supabase is set up and hosted, the admin can sign in, and the admin can generate,
-save, and organize hexagon puzzles and palettes. Nothing is released to players
+save, and organize hexagon and triangle puzzles and palettes. Nothing is released to players
 yet.
 
 The live app currently has **Zen Mode only**, with every shape and a limited set
 of palettes. Launching Puzzle Mode makes it the primary feature and makes access
 more restrictive (see "Launch impact" below).
 
-**Next up:** the Scheduled and Published catalog views, then the remaining
-admin tools. The codebase reorganization is complete.
+**Next up:** puzzle support for the remaining four shapes, so more sets and
+packs can be authored, then the Scheduled and Published catalog views and the
+remaining admin tools. The codebase reorganization is complete.
 
 ---
 
@@ -109,6 +110,7 @@ Rules:
 - ✅ Admin sign-in, server-checked admin role, generated database types.
 - ✅ Edit scheduled content until its release time, then lock it (migration `010000`).
 - ✅ Hexagon engine with all six recipes (sizes S/M/L, with and without rotation) and an isolated playtest that never writes player progress.
+- ✅ Shape-neutral puzzle engine, board, and authoring RPCs (migration `20261019030000`); Triangle puzzles and sets with the same six recipes.
 - ✅ Puzzle drafts: save, library, edit, delete, bulk palette and bulk delete, replace the design.
 - ✅ Regenerate assigned or scheduled puzzles until they go live (migration `20261019020000`).
 - ✅ Puzzle sets: create (Core/Reward/Paid), add members, drag to reorder, remove, delete.
@@ -119,26 +121,29 @@ Rules:
 
 ## Admin portal: what's left for 2A (suggested order)
 
-1. 🔜 **Scheduled and Published views.** These are placeholders in
+1. 🔜 **Remaining puzzle shapes.** Diamond star, hexagram, circle rings, and
+   pinwheel each need a puzzle shape adapter (cells, neighbours, rotation, piece
+   sizes); the database already accepts any catalog shape.
+2. ⬜ **Scheduled and Published views.** These are placeholders in
    [AdminWorkspace.tsx](./src/features/admin/shell/AdminWorkspace.tsx).
    Scheduled puzzles can already be regenerated in the database but can't be opened in the UI yet.
-2. ⬜ **Publish and schedule (release tools).** Approve content with a release
+3. ⬜ **Publish and schedule (release tools).** Approve content with a release
    date, reschedule or cancel before release, and show missing dependencies.
    Live content stays locked.
-3. ⬜ **Starter offerings.** Choose starter palettes and palette sets.
+4. ⬜ **Starter offerings.** Choose starter palettes and palette sets.
    Hexagon is already the only starter shape.
-4. ⬜ **Qualifying routes inside sets.** Define which puzzles in a 24-puzzle set
+5. ⬜ **Qualifying routes inside sets.** Define which puzzles in a 24-puzzle set
    make up each route, such as an easier route and a harder route.
-5. ⬜ **Core sequence.** The linear order of core sets, and which milestones unlock new shapes.
-6. ⬜ **Rewards.** Palettes, palette sets, or reward puzzle sets, tied to any route or to a specific harder route.
-7. ⬜ **Shapes section.** Catalog settings only. New shape geometry still needs app code.
-8. ⬜ **Exceptional palette correction** for live palettes, keeping the revision and audit history.
-9. ⬜ **End-to-end admin check** in the hosted project.
+6. ⬜ **Core sequence.** The linear order of core sets, and which milestones unlock new shapes.
+7. ⬜ **Rewards.** Palettes, palette sets, or reward puzzle sets, tied to any route or to a specific harder route.
+8. ⬜ **Shapes section.** Catalog settings only. New shape geometry still needs app code.
+9. ⬜ **Exceptional palette correction** for live palettes, keeping the revision and audit history.
+10. ⬜ **End-to-end admin check** in the hosted project.
 
 Moved to 2B: daily puzzle scheduling (part of B4) and pricing and merchandising
 screens (part of B2).
 
-Not planned: a manual target or piece editor, other shapes' puzzle recipes, and multiple admins.
+Not planned: a manual target or piece editor and multiple admins.
 
 **Content work (yours, alongside the tools):** finish the paid palette sets,
 then choose palette sets for rewards and the starter. Author 24-puzzle sets for
@@ -210,8 +215,8 @@ the core sequence and rewards.
 - **Terminology:** free **puzzle sets** versus paid **puzzle packs**. Difficulty
   labels are Easy, Moderate, Hard, and Challenging (stored as `super_hard`).
 - **Sizes:** puzzle sets have **24 puzzles**. Palette sets have **6 palettes**.
-- **Six hexagon recipes:** Easy = S; Moderate = M, or S + rotation; Hard = L, or M + rotation; Challenging = L + rotation.
-  The admin picks the exact recipe.
+- **Six recipes for every puzzle shape:** Easy = S; Moderate = M, or S + rotation; Hard = L, or M + rotation; Challenging = L + rotation.
+  The admin picks the shape and exact recipe.
 - **Guests:** Hexagon Zen, the initial set, and locally earned palettes (plus daily puzzles once 2B adds them).
   Anything beyond the initial set, and the second shape, requires an earned unlock AND an account.
 - **No levels or XP.** Show completed sets and the specific unlock requirements instead.

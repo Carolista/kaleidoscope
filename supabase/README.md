@@ -21,7 +21,7 @@ payment integration, or player progress/sync operations are included.
    a server-side SPA rewrite on GitHub Pages.
 5. Sign in with the Auth email/password used to bootstrap your admin assignment.
    The page verifies the current account against the RLS-protected `admin_account`
-   table before showing the hexagon puzzle lab. A normal account receives an
+   table before showing the puzzle lab. A normal account receives an
    explicit access-denied message.
 
 Use only the publishable key. Vite embeds `VITE_` variables in browser assets;
@@ -35,21 +35,26 @@ and refreshed/replaced identities are rechecked. Auth storage is separate from
 the design save. Sign-out affects this device, not all other sessions. Browser
 storage holds a session token: sign out on shared devices.
 
-### Admin hexagon puzzle lab
+### Admin puzzle lab
 
 After sign-in, choose a palette from the visual Supabase swatch picker (including
-drafts), choose an exact recipe, and press **Randomize puzzle** as often as you
-like. Selecting another palette also recolors the current playtest without
+drafts), choose a shape (Hexagon or Triangle) and an exact recipe, and press
+**Randomize puzzle** as often as you like. A puzzle's shape is fixed once saved. Selecting another palette also recolors the current playtest without
 changing its seed, layout, or placements.
 
 | Difficulty | Board | Rotation |
 | --- | --- | --- |
-| Easy | Small (6 wedge tiles) | No |
-| Moderate | Medium (9 wedge tiles) | No |
-| Moderate | Small (6 wedge tiles) | Yes |
-| Hard | Large (16 wedge tiles) | No |
-| Hard | Medium (9 wedge tiles) | Yes |
-| Challenging | Large (16 wedge tiles) | Yes |
+| Easy | Small | No |
+| Moderate | Medium | No |
+| Moderate | Small | Yes |
+| Hard | Large | No |
+| Hard | Medium | Yes |
+| Challenging | Large | Yes |
+
+| Shape | Small | Medium | Large | Rotation step |
+| --- | --- | --- | --- | --- |
+| Hexagon | 6 wedge tiles | 9 | 16 | 60° |
+| Triangle | 5 wedge tiles | 12 | 22 | 60° (flips each tile up/down) |
 
 Seeds are generated automatically using browser cryptographic randomness and are
 not displayed or entered manually.
@@ -99,7 +104,7 @@ randomization with an error rather than silently ignoring saved puzzles.
 
 Saved drafts survive reload/sign-out, but unsaved previews and playtest placements
 do not. The admin workspace opens in the **Puzzle drafts** library, showing
-unpublished hexagon drafts with target thumbnails, recipe/use labels, and
+unpublished hexagon and triangle drafts with target thumbnails, shape/recipe/use labels, and
 assignment status. Filter by Set/pack or Daily; refresh to pick up changes from
 another tab. **New puzzle** opens the creation workspace; choosing the **Drafts** tab
 returns to browsing (with the usual unsaved-changes prompt).
@@ -126,9 +131,9 @@ including content that was assigned or scheduled after the library loaded.
 
 Scheduled/live puzzles are excluded from this draft library and cannot be edited
 or deleted through its RPCs. Draft set assembly is available under **Puzzles > Sets**:
-create a named hexagon set with a Core progression, Reward, or Paid role, then use
+create a named set with a Core progression, Reward, or Paid role and a shape, then use
 **Puzzles > Puzzles** gallery selection and **Assign to set** to append unassigned
-Set/pack drafts.
+Set/pack drafts of that shape.
 No puzzle count is enforced; 12, 18, or other counts remain possible. Cards show
 the assigned set name with its Core, Reward, or Pack type (unassigned puzzles keep
 Set/pack, and daily puzzles keep Daily). In the set workspace, rename the set,
@@ -534,6 +539,39 @@ scheduled replacement, and the scheduled-edit case in
 expected to fail. The hosted migration and assertions have been confirmed
 successful by the owner.
 
+## Apply shape-neutral puzzle authoring
+
+After the pre-release puzzle editing migration:
+
+1. Run
+   [20261019030000_shape_neutral_puzzle_authoring.sql](./migrations/20261019030000_shape_neutral_puzzle_authoring.sql)
+   once in SQL Editor as `postgres`. Do not rerun earlier migrations.
+2. Run [shape_neutral_puzzle_authoring.sql](./tests/shape_neutral_puzzle_authoring.sql)
+   as `postgres`, without an automatic RLS wrapper. Expect **23 PASS results**;
+   fixtures (including their own draft palette) roll back.
+3. Regenerate the database types, then deploy the app. The previously deployed
+   admin cannot save or replace puzzles between steps 1 and 3.
+
+`save_hex_puzzle_draft` and `replace_hex_puzzle_draft` are replaced by
+`save_puzzle_draft` and `replace_puzzle_draft`, which take `p_shape_id`.
+`manage_draft_set` gains `p_shape_id`, required on create and rejected for other
+actions. Any shape in the `shapes` table is accepted, so later puzzle shapes need
+no migration; the app decides which shapes it can author. Replacement rejects a
+shape change, and set assembly still requires members to match the set's shape.
+Generator versions are `hexagon-v2` and `triangle-v1`.
+
+The earlier suites that call the removed function names
+([save_puzzle_draft.sql](./tests/save_puzzle_draft.sql),
+[replace_puzzle_draft.sql](./tests/replace_puzzle_draft.sql),
+[manage_puzzle_drafts.sql](./tests/manage_puzzle_drafts.sql),
+[bulk_puzzle_drafts.sql](./tests/bulk_puzzle_drafts.sql),
+[assemble_puzzle_sets.sql](./tests/assemble_puzzle_sets.sql),
+[delete_draft_set.sql](./tests/delete_draft_set.sql), and
+[edit_prerelease_puzzles.sql](./tests/edit_prerelease_puzzles.sql)) are superseded
+after this migration. Before release, they were also run against it with local
+wrappers for the old names and kept their original pass counts. The hosted
+migration and assertions have been confirmed successful by the owner.
+
 ## Bootstrap the one admin
 
 An ordinary app user cannot make themselves an admin. There is no public
@@ -653,7 +691,9 @@ identity and do not accept an arbitrary user ID.
   are constrained. Seeds and known solutions live in admin-only `puzzle_authoring`.
 - **Definitions:** the initial format uses `geometry`, a `target` map from cell key
   to color slot, and `pieces` containing unique IDs and `tiles` with integer
-  `q`/`r` offsets and `color_slot`. This prepares hexagon authoring; it is **not**
+  `q`/`r` offsets and `color_slot`. Hexagon definitions use `geometry.radius` and
+  axial cell coordinates; triangle definitions use `geometry.size` and 3x-scaled
+  axial centroid coordinates. This format is **not**
   a conversion of the current version-1 POC. Structural checks are not a solver,
   geometry validator, difficulty certification, or uniqueness guarantee.
 - **Collections:** `kind` distinguishes `core`, `reward`, and `paid`. Membership

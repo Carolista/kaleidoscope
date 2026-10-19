@@ -21,8 +21,8 @@ React state survives mode switches but not reloads; it never persists over Zen
 designs. See [README.md](./README.md#puzzle-mode-prototype) for scope.
 
 The separate `#/admin` portal uses Supabase password Auth, generated database
-types, and a database-backed singleton admin check. Its temporary hexagon lab
-supports all six size/rotation recipes, visual Supabase palettes (including
+types, and a database-backed singleton admin check. Its puzzle lab authors
+hexagon and triangle puzzles with all six size/rotation recipes, visual Supabase palettes (including
 drafts), and one-click randomization. Version-2 definitions use ordered palette
 slots, with private seed/generator/solution data kept separate. Playtests are
 memory-only, while named Set/pack or Daily drafts save atomically to Supabase.
@@ -30,7 +30,8 @@ No player progress writes or Zen autosaves occur.
 See [Supabase instructions](./supabase/README.md) for current scope.
 
 The shared New/Edit form uses two columns from 640px: palette refresh/picker on the
-left; name, recipe/wand randomizer, and intended-use/save rows on the right.
+left; name, shape, recipe/wand randomizer, and intended-use/save rows on the right.
+Shape, like recipe, applies at the next randomization; Edit shows it but fixed.
 Narrower screens stack the columns. New-puzzle fields are visible before generation;
 saving requires a named preview. The preview omits repeated palette labels and the
 seed. Save/load status sits below the form content so it never shifts the layout.
@@ -92,9 +93,12 @@ swatch selection and Apply; card/bulk deletion confirms count and names.
 Admin-only RPCs apply batches atomically under the catalog lock, rechecking release
 and references. Assigned drafts cannot switch use or delete; scheduled/live rows
 are excluded. Saved seed exclusions derive from surviving authoring records.
-Puzzles > Sets creates/renames Core, Reward, or Paid hexagon draft sets with flexible
-member counts. Gallery **Assign to set** appends unassigned Set/pack drafts;
-membership is exclusive. Assigned cards show the set name and Core/Reward/Pack.
+Puzzles > Sets creates/renames Core, Reward, or Paid draft sets with flexible
+member counts; each set's shape is chosen at creation and fixed. Gallery
+**Assign to set** appends unassigned Set/pack drafts of one shape to a set of
+that shape; mixed-shape selections cannot be assigned. Membership is exclusive.
+Puzzle and set cards show the shape; assigned cards also show the set name and
+Core/Reward/Pack.
 New puzzle sets and palette sets use the shared set-creation form in a modal over
 their lists. Success closes the modal, refreshes the list, and focuses Add for
 another creation; it does not enter the new set's editor. Failed saves retain
@@ -142,7 +146,8 @@ The initial migration already seeded all 19 original palettes as database drafts
 Zen still uses its local catalog unchanged. Palette distribution and release
 tools remain deferred.
 
-In rotation-enabled playtests, click/tap a tray piece to rotate 60 degrees;
+In rotation-enabled playtests, click/tap a tray piece to rotate 60 degrees
+(triangle tiles flip between pointing up and down);
 dragging moves it without rotating. Double-click/double-tap a board piece or drag
 it back to return it to the tray, preserving orientation. Keyboard: Enter/Space
 rotates/selects in tray, board activation places, Delete/Backspace on an occupied
@@ -384,10 +389,10 @@ Test files and `src/test/` are exempt so tests can reach internals and mock exac
 | [ui/theme/](./src/ui/theme/) | `PlayerThemeContext` (dark mode, active palette, toggle) and `useDuotoneIconTint` |
 | [ui/hooks/](./src/ui/hooks/) | `useModalState`, `useIsTouchDevice` |
 | [ui/navigation/](./src/ui/navigation/) | App-wide unsaved-work navigation guard |
-| [ui/puzzle/](./src/ui/puzzle/) | Shared `PuzzlePlay` (target, tray, board, pointer/keyboard interaction) and `HexPuzzleBoard` |
+| [ui/puzzle/](./src/ui/puzzle/) | Shared `PuzzlePlay` (target, tray, board, pointer/keyboard interaction) and shape-neutral `PuzzleBoard` |
 | [domain/shapes/](./src/domain/shapes/) | React-free shape catalog, sizes, registry, and one folder per shape (grid, layout, types) |
 | [domain/geometry/](./src/domain/geometry/) | `Point`, shared geometry math, symmetry engine, cell grouping, SVG points |
-| [domain/puzzles/](./src/domain/puzzles/) | Pure seeded puzzle generation, authoring, stored-definition readers, placement validation, and completion |
+| [domain/puzzles/](./src/domain/puzzles/) | Pure seeded puzzle generation, authoring, stored-definition readers, placement validation, and completion; per-shape adapters in `puzzleShapes.ts` |
 | [domain/palettes/](./src/domain/palettes/) | Local palette catalog, palette type, color math, light/dark theme colors |
 | [lib/supabase/](./src/lib/supabase/) | Supabase browser client and generated database types |
 | [test/](./src/test/) | Vitest setup and shared render/interaction helpers |

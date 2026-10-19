@@ -118,7 +118,7 @@ remaining recommendations do not supersede the decisions below.
 
 ## Admin authoring lab
 
-The admin lab supports six exact hexagon recipes: small without rotation (easy),
+The admin lab supports six exact recipes for every puzzle shape: small without rotation (easy),
 small with rotation or medium without (moderate), medium with rotation or large
 without (hard), and large with rotation (challenging). Labels do not certify human
 difficulty or uniqueness. Save complete version-2 palette-slot definitions, with
@@ -201,6 +201,31 @@ all puzzles/private solutions. Reject release and progression/route/reward/grant
 dependencies instead of silently cascading meaningful configuration away.
 Keep mutations atomic under caller RLS, explicit admin checks, READ COMMITTED
 isolation, and the catalog lock. Starter/route/core/reward/release tools follow.
+
+### Puzzle shapes
+
+Puzzle Mode was always meant to offer the Zen shapes, so the engine, board, and
+authoring RPCs are shape-neutral. Each shape supplies one adapter in
+[puzzleShapes.ts](./src/domain/puzzles/puzzleShapes.ts): grid sizes, piece sizes,
+cells, edge neighbours, piece anchor, tile corners, and center. The database
+accepts any catalog shape, so a new puzzle shape needs app code, not a migration.
+Hexagon generation is unchanged (verified byte-identical across all recipes), and
+its definitions keep `geometry.radius` and `hexagon-v2`.
+
+- **Triangle coordinates:** a tile is 3x its centroid in axial coordinates of the
+  triangle lattice's vertices. Pieces anchor on a vertex, so the hexagon's 60-degree
+  axial rotation applies unchanged and swaps up/down tiles. A piece dropped with
+  tiles facing the wrong way simply fails the wedge check. Definitions store
+  `geometry.size` with generator `triangle-v1`.
+- **Triangle rotation is 60 degrees (6 orientations),** like hexagon. Up and down
+  tiles are 60 degrees apart, so pieces must turn in 60-degree steps to reach both;
+  120 degrees would keep every tile's direction, and 30 degrees fits no lattice spot.
+- **Triangle pieces allow four tiles:** S [3, 2], M [4, 3, 3, 2], L
+  [4, 4, 4, 3, 3, 2, 1, 1] for 5/12/22-tile wedges. Three connected triangles are
+  always a straight strip, so four-tile pieces add more varied shapes.
+- **Shape is chosen at creation and fixed.** Puzzles pick it in the New form; sets
+  pick it in the set-creation dialog. Assign to set offers only sets of the
+  selected drafts' shape, matching the one-shape-per-set rule.
 
 ### Admin information hierarchy and catalog cache
 

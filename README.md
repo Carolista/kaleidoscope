@@ -73,13 +73,14 @@ in [supabase/README.md](./supabase/README.md). Admin sign-in is available at
 `#/admin` after local configuration; the player prototype below remains local
 and unchanged.
 
-The admin **Hexagon puzzle lab** supports all six size/rotation recipes, a visual
+The admin **puzzle lab** authors Hexagon and Triangle puzzles with all six size/rotation recipes, a visual
 Supabase palette picker, and one-click randomization. Previously previewed seeds
-are skipped per recipe during the lab session; seeds are not displayed.
+are skipped per shape and recipe during the lab session; seeds are not displayed.
+A puzzle's shape is chosen before randomizing and fixed once saved.
 Saved puzzles supply persistent exclusions across palettes and intended uses.
 Palette changes recolor the same design without resetting placements.
 At wider widths, the shared New/Edit form has a palette picker on the left and
-name, recipe/wand randomizer, and intended-use/save controls stacked on the right.
+name, shape, recipe/wand randomizer, and intended-use/save controls stacked on the right.
 All fields appear before generation; saving requires a named preview. Narrow
 screens stack the columns. The compact header groups account, sign-out, and theme
 controls, with favicon navigation back to the player app. Admin defaults to dark
@@ -120,10 +121,11 @@ confirms count and names. Bulk operations are all-or-nothing, with database
 release/reference checks. Only unassigned drafts can be deleted, and assigned
 drafts cannot switch intended use.
 
-**Puzzles > Sets** creates named Core, Reward, or Paid hexagon draft sets with no
-fixed puzzle count. Select unassigned Set/pack drafts in the puzzle gallery and
-use **Assign to set** to append them atomically. Assigned cards show their set
-name and Core/Reward/Pack type.
+**Puzzles > Sets** creates named Core, Reward, or Paid draft sets with no
+fixed puzzle count; each set has one shape, chosen at creation. Select unassigned
+Set/pack drafts of one shape in the puzzle gallery and use **Assign to set** to
+append them atomically to a set of that shape. Cards show each puzzle's or set's
+shape; assigned cards also show their set name and Core/Reward/Pack type.
 
 Draft-set cards use two equal columns above 640px and one below, with a thumbnail
 on the left, details at the top right, and edit/delete controls at the bottom right. The set editor
@@ -171,11 +173,11 @@ full-width playable board. Visible instructions and piece labels are omitted;
 controls retain accessible names and placement feedback is announced to screen
 readers.
 
-[`generateHexPuzzle(seed, palette)`](./src/domain/puzzles/hexPuzzle.ts) produces a
+[`generatePuzzle(seed, palette, recipe, shape)`](./src/domain/puzzles/puzzle.ts) produces a
 serializable, deterministic puzzle definition with the target, fixed-orientation
-colored piece offsets, and a known solution. The current version uses the small
-hexagon and connected pieces of one, two, and three tiles; the UI passes the Cabo
-palette. Future set/pack authoring can call this pure generator with explicit
+colored piece offsets, and a known solution. Player Puzzle Mode uses its defaults:
+the small hexagon with connected pieces of one, two, and three tiles; the UI passes
+the Cabo palette. Future set/pack authoring can call this pure generator with explicit
 seeds and store the generated definitions. Save the complete versioned
 definition, not just a seed, so a future generator change cannot alter a
 published puzzle. The admin lab wraps the expanded generator with a version-2
