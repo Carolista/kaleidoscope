@@ -9,29 +9,32 @@ import {
 	rotateCoordinate,
 } from '@/domain/puzzles'
 import type {
+	PlacedCoord,
 	PuzzlePiece,
 	PuzzlePlacements,
 	PuzzleShapeId,
 } from '@/domain/puzzles'
 import styles from './PuzzleBoard.module.css'
 
-// SVG units per tile edge: a hexagon's circumradius, or a triangle's side.
+// SVG units per tile: a hexagon's circumradius, a triangle's side, or a
+// diamond-star lattice step.
 const tileSizes: Readonly<Record<PuzzleShapeId, number>> = {
 	hexagon: 16,
 	triangle: 28,
+	diamondStar: 48,
 }
 
-function cornersFor(shape: PuzzleShapeId, cell: AxialCoord) {
+function cornersFor(shape: PuzzleShapeId, cell: PlacedCoord) {
 	return puzzleShapes[shape].corners(cell, tileSizes[shape])
 }
 
-function polygonPoints(shape: PuzzleShapeId, cell: AxialCoord): string {
+function polygonPoints(shape: PuzzleShapeId, cell: PlacedCoord): string {
 	return pointsToSvgAttr(cornersFor(shape, cell))
 }
 
 function viewBoxFor(
 	shape: PuzzleShapeId,
-	cells: readonly AxialCoord[],
+	cells: readonly PlacedCoord[],
 ): string {
 	const { minX, minY, maxX, maxY } = polygonBoundingBox(
 		cells.map(cell => cornersFor(shape, cell)),
@@ -88,7 +91,10 @@ export function PieceGraphic({
 	// Reserve the largest rotated bounds so tray slots and tile scale stay fixed.
 	const side = Math.ceil(
 		Math.max(
-			...Array.from({ length: 6 }, (_, rotation) => {
+			...Array.from(
+				{ length: 6 / puzzleShapes[shape].rotationStep },
+				(_, turn) => turn * puzzleShapes[shape].rotationStep,
+			).map(rotation => {
 				const bounds = viewBoxFor(
 					shape,
 					piece.tiles.map(tile => rotateCoordinate(tile, rotation)),
@@ -209,7 +215,7 @@ export default function PuzzleBoard({
 					: undefined
 				return (
 					<polygon
-						key={coordinateKey(cell)}
+						key={`${cell.transform ?? 0}:${coordinateKey(cell)}`}
 						points={polygonPoints(shape, cell)}
 						fill={fill ?? 'var(--base)'}
 						className={

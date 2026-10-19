@@ -107,6 +107,21 @@ describe('saved puzzle decoding', () => {
 			readAuthoredPuzzle({ ...row, definition }, authoring),
 		).toThrow('slot')
 	})
+	it('rejects diamond-star solutions that are not half turns', () => {
+		const { row, authoring } = fixture(
+			PUZZLE_RECIPES.find(recipe => recipe.rotation)!,
+			'diamondStar',
+		)
+		expect(readAuthoredPuzzle(row, authoring).generatorVersion).toBe(
+			'diamondStar-v1',
+		)
+		const solution = JSON.parse(JSON.stringify(authoring.known_solution))
+		const [id] = Object.keys(solution)
+		solution[id].rotation = 1
+		expect(() =>
+			readAuthoredPuzzle(row, { ...authoring, known_solution: solution }),
+		).toThrow('rotation')
+	})
 	it('rejects triangle data stored with hexagon geometry, sizes or generator', () => {
 		const { row, authoring } = fixture(PUZZLE_RECIPES[0], 'triangle')
 		expect(row.definition).toMatchObject({ geometry: { size: 4 } })
@@ -279,10 +294,7 @@ describe('draft library database requests', () => {
 			true,
 		)
 		expect(query.is).toHaveBeenCalledWith('published_at', null)
-		expect(query.in).toHaveBeenCalledWith('shape_id', [
-			'hexagon',
-			'triangle',
-		])
+		expect(query.in).toHaveBeenCalledWith('shape_id', [...PUZZLE_SHAPE_IDS])
 		expect(range.mock.calls).toEqual([
 			[0, 999],
 			[1000, 1999],

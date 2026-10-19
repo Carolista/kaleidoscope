@@ -207,7 +207,10 @@ export function generatePuzzle(
 	const pieces = shuffle(groups, random).map((group, index) => {
 		const id = `piece-${index + 1}`
 		const anchor = shape.anchorFor(group[0])
-		const rotation = recipe.rotation ? Math.floor(random() * 6) : 0
+		const step = shape.rotationStep
+		const rotation = recipe.rotation
+			? step * Math.floor(random() * (6 / step))
+			: 0
 		solution[id] = {
 			q: anchor.q,
 			r: anchor.r,
@@ -291,6 +294,8 @@ export function placePuzzlePiece(
 		!Number.isInteger(anchor.q) ||
 		!Number.isInteger(anchor.r) ||
 		!Number.isInteger(anchor.rotation ?? 0) ||
+		(anchor.rotation ?? 0) % puzzleShapes[puzzle.shape].rotationStep !==
+			0 ||
 		(!puzzle.rotationAllowed && (anchor.rotation ?? 0) !== 0)
 	) {
 		return {

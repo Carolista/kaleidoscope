@@ -12,15 +12,28 @@ import {
 	generateTriangleCells,
 	TRIANGLE_GRID_SIZES,
 } from '@/domain/shapes/triangle'
+import {
+	DIAMOND_STAR_GRID_SIZES,
+	DIAMOND_STAR_ROTATIONS,
+	diamondCellCorners,
+	generateDiamondStarCells,
+} from '@/domain/shapes/diamond-star'
 
 export const PUZZLE_SHAPE_IDS = [
 	'hexagon',
 	'triangle',
+	'diamondStar',
 ] as const satisfies readonly GridShapeId[]
 
 export type PuzzleShapeId = (typeof PUZZLE_SHAPE_IDS)[number]
 
-export interface PuzzleCell extends AxialCoord {
+// Board-only position (e.g. which star point) for shapes whose mirrored copies
+// reuse the wedge's coordinates. Wedge cells and piece tiles omit it.
+export interface PlacedCoord extends AxialCoord {
+	readonly transform?: number
+}
+
+export interface PuzzleCell extends PlacedCoord {
 	readonly groupId: string
 	readonly isClickable: boolean
 }
@@ -29,12 +42,14 @@ export interface PuzzleShape {
 	readonly id: PuzzleShapeId
 	readonly gridSizes: Readonly<Record<GridSize, number>>
 	readonly pieceSizes: Readonly<Record<GridSize, readonly number[]>>
+	// Smallest piece rotation that keeps tiles on the grid, in 60-degree steps.
+	readonly rotationStep: 1 | 3
 	readonly cells: (gridSize: number) => PuzzleCell[]
 	readonly neighbors: (cell: AxialCoord) => AxialCoord[]
 	// Lattice point that piece tiles are offset from, so 60-degree rotations
 	// of those offsets land on other cells.
 	readonly anchorFor: (cell: AxialCoord) => AxialCoord
-	readonly corners: (cell: AxialCoord, size: number) => Point[]
+	readonly corners: (cell: PlacedCoord, size: number) => Point[]
 	readonly center: (cell: AxialCoord, size: number) => Point
 }
 
@@ -51,6 +66,7 @@ const hexagon: PuzzleShape = {
 	id: 'hexagon',
 	gridSizes: HEXAGON_GRID_RADII,
 	pieceSizes: { sm: [3, 2, 1], md: [3, 3, 2, 1], lg: [3, 3, 3, 3, 2, 1, 1] },
+	rotationStep: 1,
 	cells: radius => generateHexagonCells(radius),
 	neighbors: cell =>
 		hexDirections.map(d => ({ q: cell.q + d.q, r: cell.r + d.r })),
@@ -107,6 +123,7 @@ const triangle: PuzzleShape = {
 	id: 'triangle',
 	gridSizes: TRIANGLE_GRID_SIZES,
 	pieceSizes: { sm: [3, 2], md: [4, 3, 3, 2], lg: [4, 4, 4, 3, 3, 2, 1, 1] },
+	rotationStep: 1,
 	cells: gridSize =>
 		generateTriangleCells(gridSize).map(
 			({ row, col, direction, groupId, isClickable }) => ({
@@ -132,9 +149,53 @@ const triangle: PuzzleShape = {
 	center: (cell, size) => trianglePixel(cell, size / 3),
 }
 
+// Diamond-star tiles are (row, col) rhombi of one star point; the wedge is the
+// point's right half. Rhombi only realign after a half turn, so a 180-degree
+// rotation (three 60-degree axial steps, i.e. (q, r) -> (-q, -r)) is the only one.
+function diamondCorners(cell: PlacedCoord, size: number): Point[] {
+	const transform = DIAMOND_STAR_ROTATIONS[cell.transform ?? 0]
+	return diamondCellCorners(
+		{ row: cell.q, col: cell.r },
+		{ gridSize: 1, size },
+	).map(transform)
+}
+
+const diamondStar: PuzzleShape = {
+	id: 'diamondStar',
+	gridSizes: DIAMOND_STAR_GRID_SIZES,
+	pieceSizes: { sm: [3, 2, 1], md: [4, 3, 2, 1], lg: [4, 4, 3, 2, 1, 1] },
+	rotationStep: 3,
+	cells: gridSize =>
+		generateDiamondStarCells(gridSize).map(
+			({ row, col, transformIndex, groupId, isClickable }) => ({
+				q: row,
+				r: col,
+				...(transformIndex ? { transform: transformIndex } : {}),
+				groupId,
+				isClickable,
+			}),
+		),
+	neighbors: ({ q, r }) => [
+		{ q: q + 1, r },
+		{ q: q - 1, r },
+		{ q, r: r + 1 },
+		{ q, r: r - 1 },
+	],
+	anchorFor: cell => ({ q: cell.q, r: cell.r }),
+	corners: diamondCorners,
+	center: (cell, size) => {
+		const corners = diamondCorners(cell, size)
+		return {
+			x: (corners[0].x + corners[2].x) / 2,
+			y: (corners[0].y + corners[2].y) / 2,
+		}
+	},
+}
+
 export const puzzleShapes: Readonly<Record<PuzzleShapeId, PuzzleShape>> = {
 	hexagon,
 	triangle,
+	diamondStar,
 }
 
 export function isPuzzleShapeId(value: unknown): value is PuzzleShapeId {
@@ -148,4 +209,5 @@ function catalogLabel(shape: PuzzleShapeId): string {
 export const PUZZLE_SHAPE_LABELS: Readonly<Record<PuzzleShapeId, string>> = {
 	hexagon: catalogLabel('hexagon'),
 	triangle: catalogLabel('triangle'),
+	diamondStar: catalogLabel('diamondStar'),
 }

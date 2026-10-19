@@ -125,6 +125,7 @@ export function readAuthoredPuzzle(
 		if (
 			rotation < 0 ||
 			rotation > 5 ||
+			rotation % puzzleShapes[shape].rotationStep !== 0 ||
 			(!recipe.rotation && rotation !== 0)
 		)
 			throw new Error('Invalid saved puzzle rotation.')

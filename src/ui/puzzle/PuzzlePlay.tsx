@@ -10,6 +10,7 @@ import {
 	placePuzzlePiece,
 	type PuzzlePiece,
 	type PuzzlePlacements,
+	puzzleShapes,
 	rotateCoordinate,
 } from '@/domain/puzzles'
 import type { AxialCoord } from '@/domain/shapes/hexagon'
@@ -73,6 +74,8 @@ export default function PuzzlePlay({
 			rotateCoordinate(tile, rotations[piece.id] ?? 0),
 		),
 	}))
+	const { rotationStep } = puzzleShapes[currentPuzzle.shape]
+	const rotationDegrees = rotationStep * 60
 	const colors = getPuzzleColors(currentPuzzle, placements)
 	const solved = isPuzzleSolved(currentPuzzle, placements)
 
@@ -278,10 +281,10 @@ export default function PuzzlePlay({
 		if (currentPuzzle.rotationAllowed) {
 			setRotations(previous => ({
 				...previous,
-				[id]: ((previous[id] ?? 0) + 1) % 6,
+				[id]: ((previous[id] ?? 0) + rotationStep) % 6,
 			}))
 			setMessage(
-				'Piece rotated 60 degrees. Drag it onto the board, or use keyboard placement.',
+				`Piece rotated ${rotationDegrees} degrees. Drag it onto the board, or use keyboard placement.`,
 			)
 		}
 	}
@@ -350,7 +353,7 @@ export default function PuzzlePlay({
 							aria-pressed={selectedId === piece.id}
 							aria-description={
 								currentPuzzle.rotationAllowed
-									? 'Click or tap to rotate 60 degrees; drag to move. Keyboard: Enter or Space rotates, then activate a board tile to place.'
+									? `Click or tap to rotate ${rotationDegrees} degrees; drag to move. Keyboard: Enter or Space rotates, then activate a board tile to place.`
 									: undefined
 							}
 							disabled={Boolean(placements[piece.id])}

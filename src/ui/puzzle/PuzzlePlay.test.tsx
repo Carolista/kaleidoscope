@@ -244,4 +244,68 @@ describe('PuzzlePlay', () => {
 				)
 		})
 	})
+
+	describe('diamond star puzzles', () => {
+		const diamond = generatePuzzle(
+			'diamond-play',
+			palettes[1],
+			PUZZLE_RECIPES.find(value => value.id === 'moderate-small')!,
+			'diamondStar',
+		)
+
+		it('renders rhombus tiles and rotates tray pieces 180 degrees through two orientations', async () => {
+			const user = userEvent.setup()
+			renderPlay(diamond)
+			const board = screen.getByRole('group', { name: 'Puzzle board' })
+			expect(board.querySelectorAll('polygon')).toHaveLength(6 * 9)
+			for (const polygon of board.querySelectorAll('polygon'))
+				expect(polygon.getAttribute('points')!.split(' ')).toHaveLength(
+					4,
+				)
+			expect(
+				document.querySelectorAll('[data-puzzle-cell]'),
+			).toHaveLength(6)
+			const index = diamond.pieces.findIndex(
+				piece => piece.tiles.length > 1,
+			)
+			const button = pieceButton(index)
+			expect(button).toHaveAccessibleDescription(/rotate 180 degrees/)
+			const points = () =>
+				[...button.querySelectorAll('polygon')].map(tile =>
+					tile.getAttribute('points'),
+				)
+			const original = points()
+			await user.click(button)
+			expect(points()).not.toEqual(original)
+			expect(screen.getByRole('status')).toHaveTextContent(
+				'Piece rotated 180 degrees.',
+			)
+			await user.click(button)
+			expect(points()).toEqual(original)
+		})
+
+		it('solves with keyboard rotation and placement', async () => {
+			const user = userEvent.setup()
+			renderPlay(diamond)
+			expect(
+				Object.values(diamond.solution).some(
+					value => value.rotation === 3,
+				),
+			).toBe(true)
+			for (const [index, piece] of diamond.pieces.entries()) {
+				pieceButton(index).focus()
+				const turns = (diamond.solution[piece.id].rotation ?? 0) / 3
+				for (let i = 0; i < (turns || 2); i++)
+					await user.keyboard('{Enter}')
+				tileAt(
+					coordinateKey(
+						pieceCells(piece, diamond.solution[piece.id])[0],
+					),
+				).focus()
+				await user.keyboard('{Enter}')
+				expect(pieceButton(index)).toHaveAccessibleName(/on board/)
+			}
+			expect(screen.getByRole('status')).toHaveTextContent('Solved.')
+		})
+	})
 })

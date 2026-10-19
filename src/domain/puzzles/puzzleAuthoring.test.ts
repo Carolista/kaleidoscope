@@ -10,6 +10,7 @@ import {
 	type PuzzlePlacements,
 } from './puzzle'
 import { generateAuthoredPuzzle, renderAuthoredPuzzle } from './puzzleAuthoring'
+import { PUZZLE_SHAPE_IDS, puzzleShapes } from './puzzleShapes'
 
 const palette = {
 	id: 'test',
@@ -201,29 +202,31 @@ it('rotates axial coordinates exactly and rejects invalid placement rotations', 
 	).toBe(false)
 })
 
-describe.each(PUZZLE_RECIPES)('triangle $label authoring', recipe => {
-	it.each(Array.from({ length: 10 }, (_, i) => `triangle-${i}`))(
+describe.each(
+	PUZZLE_SHAPE_IDS.filter(shape => shape !== 'hexagon').flatMap(shape =>
+		PUZZLE_RECIPES.map(recipe => ({ shape, recipe, label: recipe.label })),
+	),
+)('$shape $label authoring', ({ shape, recipe }) => {
+	const gridSize = puzzleShapes[shape].gridSizes[recipe.size]
+	it.each(Array.from({ length: 10 }, (_, i) => `${shape}-${i}`))(
 		'stores size geometry and palette slots that render solvable for %s',
 		seed => {
 			const authored = generateAuthoredPuzzle(
 				seed,
 				palette.id,
 				recipe,
-				'triangle',
+				shape,
 			)
 			expect(authored).toMatchObject({
-				shape: 'triangle',
-				generatorVersion: 'triangle-v1',
-				definition: {
-					version: 2,
-					geometry: { size: { sm: 4, md: 7, lg: 10 }[recipe.size] },
-				},
+				shape,
+				generatorVersion: `${shape}-v1`,
+				definition: { version: 2, geometry: { size: gridSize } },
 			})
 			expect(JSON.parse(JSON.stringify(authored))).toEqual(authored)
 			const puzzle = renderAuthoredPuzzle(authored, palette)
 			expect(puzzle).toMatchObject({
-				shape: 'triangle',
-				gridSize: { sm: 4, md: 7, lg: 10 }[recipe.size],
+				shape,
+				gridSize,
 				rotationAllowed: recipe.rotation,
 			})
 			for (const [key, slot] of Object.entries(

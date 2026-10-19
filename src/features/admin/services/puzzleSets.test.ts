@@ -8,6 +8,7 @@ import {
 	type SetAction,
 } from './puzzleSets'
 import {
+	PUZZLE_SHAPE_IDS,
 	generateAuthoredPuzzle,
 	renderAuthoredPuzzle,
 	PUZZLE_RECIPES,
@@ -271,10 +272,7 @@ describe('draft set requests', () => {
 		const sets = await loadDraftSets(client({ from }))
 		expect(sets).toHaveLength(1001)
 		expect(query.is).toHaveBeenCalledWith('published_at', null)
-		expect(query.in).toHaveBeenCalledWith('shape_id', [
-			'hexagon',
-			'triangle',
-		])
+		expect(query.in).toHaveBeenCalledWith('shape_id', [...PUZZLE_SHAPE_IDS])
 		expect(setsRange.mock.calls).toEqual([
 			[0, 999],
 			[1000, 1999],

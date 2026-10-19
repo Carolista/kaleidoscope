@@ -6,6 +6,10 @@ import {
 	triangleCorners,
 } from '@/domain/shapes/triangle'
 import {
+	diamondStarCellCorners,
+	generateDiamondStarCells,
+} from '@/domain/shapes/diamond-star'
+import {
 	anchorAt,
 	coordinateKey,
 	generatePuzzle,
@@ -352,5 +356,160 @@ describe('triangle puzzles', () => {
 			rotation: rotation + 1,
 		}
 		expect(placePuzzlePiece(puzzle, {}, piece.id, flipped).ok).toBe(false)
+	})
+})
+
+describe('diamond star puzzles', () => {
+	const diamond = puzzleShapes.diamondStar
+	const pointKey = ({ x, y }: { x: number; y: number }) =>
+		`${Math.round(x * 1e6)},${Math.round(y * 1e6)}`
+	const sharedCorners = (a: AxialCoordLike, b: AxialCoordLike) => {
+		const corners = new Set(diamond.corners(a, 1).map(pointKey))
+		return diamond
+			.corners(b, 1)
+			.filter(point => corners.has(pointKey(point))).length
+	}
+	type AxialCoordLike = { q: number; r: number; transform?: number }
+
+	it('matches the Zen star tiles, with the wedge in the top point and edge neighbours', () => {
+		for (const gridSize of Object.values(diamond.gridSizes)) {
+			const cells = diamond.cells(gridSize)
+			const zen = generateDiamondStarCells(gridSize)
+			expect(
+				new Set(
+					cells.map(
+						cell => `${cell.transform ?? 0}:${coordinateKey(cell)}`,
+					),
+				).size,
+			).toBe(6 * gridSize ** 2)
+			cells.forEach((cell, index) =>
+				expect(diamond.corners(cell, 1).map(pointKey)).toEqual(
+					diamondStarCellCorners(zen[index], {
+						gridSize: 1,
+						size: 1,
+					}).map(pointKey),
+				),
+			)
+			const wedge = cells.filter(cell => cell.isClickable)
+			expect(wedge.every(cell => cell.transform === undefined)).toBe(true)
+			for (const a of wedge)
+				for (const b of wedge) {
+					const isNeighbor = diamond
+						.neighbors(a)
+						.some(n => coordinateKey(n) === coordinateKey(b))
+					expect(isNeighbor).toBe(sharedCorners(a, b) === 2)
+				}
+		}
+		expect(
+			Object.values(diamond.gridSizes).map(
+				size =>
+					diamond.cells(size).filter(cell => cell.isClickable).length,
+			),
+		).toEqual([6, 10, 15])
+	})
+
+	it('turns tiles 180 degrees about the anchor tile', () => {
+		const anchor = { q: 2, r: 1 }
+		const pivot = diamond.center(anchor, 1)
+		for (const offset of [
+			{ q: 1, r: 0 },
+			{ q: 0, r: 1 },
+			{ q: 2, r: -1 },
+		]) {
+			const turned = rotateCoordinate(offset, 3)
+			expect(
+				diamond
+					.corners(
+						{ q: anchor.q + turned.q, r: anchor.r + turned.r },
+						1,
+					)
+					.map(pointKey)
+					.sort(),
+			).toEqual(
+				diamond
+					.corners(
+						{ q: anchor.q + offset.q, r: anchor.r + offset.r },
+						1,
+					)
+					.map(({ x, y }) => ({
+						x: 2 * pivot.x - x,
+						y: 2 * pivot.y - y,
+					}))
+					.map(pointKey)
+					.sort(),
+			)
+		}
+	})
+
+	it.each(
+		PUZZLE_RECIPES.flatMap(recipe =>
+			Array.from(
+				{ length: 30 },
+				(_, i) => [recipe.id, `d-${i}`, recipe] as const,
+			),
+		),
+	)(
+		'generates a solvable, connected %s partition for %s',
+		(_, seed, recipe) => {
+			const puzzle = generatePuzzle(seed, palette, recipe, 'diamondStar')
+			expect(puzzle).toMatchObject({
+				shape: 'diamondStar',
+				gridSize: diamond.gridSizes[recipe.size],
+			})
+			expect(
+				puzzle.pieces.map(piece => piece.tiles.length).sort(),
+			).toEqual([...diamond.pieceSizes[recipe.size]].sort())
+			let placements: PuzzlePlacements = {}
+			for (const piece of puzzle.pieces) {
+				const placement = puzzle.solution[piece.id]
+				expect([0, 3]).toContain(placement.rotation ?? 0)
+				const cells = pieceCells(piece, placement)
+				const reached = new Set([coordinateKey(cells[0])])
+				for (let pass = 0; pass < cells.length; pass++)
+					for (const cell of cells)
+						if (
+							diamond
+								.neighbors(cell)
+								.some(n => reached.has(coordinateKey(n)))
+						)
+							reached.add(coordinateKey(cell))
+				expect(reached.size).toBe(cells.length)
+				const result = placePuzzlePiece(
+					puzzle,
+					placements,
+					piece.id,
+					placement,
+				)
+				if (!result.ok) throw new Error(result.reason)
+				placements = result.placements
+			}
+			expect(isPuzzleSolved(puzzle, placements)).toBe(true)
+		},
+	)
+
+	it('rejects rotations other than half turns', () => {
+		const puzzle = generatePuzzle(
+			'half-turns',
+			palette,
+			PUZZLE_RECIPES.find(recipe => recipe.id === 'hard-medium')!,
+			'diamondStar',
+		)
+		const piece = puzzle.pieces.find(piece => piece.tiles.length === 1)!
+		const cell = Object.keys(puzzle.target)[0].split(',').map(Number)
+		for (const rotation of [1, 2, 4, 5])
+			expect(
+				placePuzzlePiece(puzzle, {}, piece.id, {
+					q: cell[0],
+					r: cell[1],
+					rotation,
+				}),
+			).toMatchObject({ ok: false })
+		expect(
+			placePuzzlePiece(puzzle, {}, piece.id, {
+				q: cell[0],
+				r: cell[1],
+				rotation: 3,
+			}).ok,
+		).toBe(true)
 	})
 })

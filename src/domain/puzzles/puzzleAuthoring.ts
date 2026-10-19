@@ -23,6 +23,7 @@ const slotColors = [
 export const PUZZLE_GENERATOR_VERSIONS = {
 	hexagon: 'hexagon-v2',
 	triangle: 'triangle-v1',
+	diamondStar: 'diamondStar-v1',
 } as const satisfies Record<PuzzleShapeId, string>
 
 // Hexagon definitions predate other shapes and keep their `radius` key.

@@ -5,6 +5,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getSupabaseClient } from '@/lib/supabase'
 import {
 	PUZZLE_RECIPES,
+	PUZZLE_SHAPE_IDS,
+	PUZZLE_SHAPE_LABELS,
 	coordinateKey,
 	rotateCoordinate,
 	generateAuthoredPuzzle,
@@ -539,7 +541,7 @@ describe('admin puzzle lab', () => {
 			within(shape)
 				.getAllByRole('option')
 				.map(option => option.textContent),
-		).toEqual(['Hexagon', 'Triangle'])
+		).toEqual(PUZZLE_SHAPE_IDS.map(id => PUZZLE_SHAPE_LABELS[id]))
 		fireEvent.change(shape, { target: { value: 'triangle' } })
 		expect(
 			screen.queryByRole('img', { name: 'Target design' }),
