@@ -39,7 +39,7 @@ import {
 	type SchemeSet,
 } from '../../services/schemeSets'
 import SchemeSetLibrary from './SchemeSetLibrary'
-import { Button, Input, Select } from '@shared'
+import { Button, Input, Loading, Select } from '@shared'
 
 function errorMessage(cause: unknown): string {
 	return cause instanceof Error ? cause.message : 'Unable to manage palettes.'
@@ -163,7 +163,8 @@ function SchemeEditor({
 	const [name, setName] = useState(initial?.name ?? '')
 	const [colors, setColors] = useState<readonly string[]>(startingColors)
 	const [error, setError] = useState('')
-	const [busy, setBusy] = useState(false)
+	const [pending, setPending] = useState<string | null>(null)
+	const busy = pending !== null
 	const working = useRef(false)
 	const createRequest = useRef<{ id: string; content: string } | null>(null)
 	const [confirmDelete, setConfirmDelete] = useState(deleting)
@@ -219,7 +220,7 @@ function SchemeEditor({
 			return
 		}
 		working.current = true
-		setBusy(true)
+		setPending('Saving palette…')
 		setError('')
 		try {
 			const scheme = { name: name.trim(), colors: validColors }
@@ -244,13 +245,13 @@ function SchemeEditor({
 			setError(errorMessage(cause))
 		} finally {
 			working.current = false
-			setBusy(false)
+			setPending(null)
 		}
 	}
 	async function remove() {
 		if (working.current || !initial || !canDelete) return
 		working.current = true
-		setBusy(true)
+		setPending('Deleting palette…')
 		setError('')
 		try {
 			await manageColorScheme(client, {
@@ -262,7 +263,7 @@ function SchemeEditor({
 			setError(errorMessage(cause))
 		} finally {
 			working.current = false
-			setBusy(false)
+			setPending(null)
 		}
 	}
 	return (
@@ -296,6 +297,7 @@ function SchemeEditor({
 				</p>
 			)}
 			{error && <p role="alert">{error}</p>}
+			{pending && <Loading label={pending} />}
 			<div className={styles.editor}>
 				<form
 					onSubmit={save}
@@ -390,7 +392,7 @@ function SchemeEditor({
 								(!!initial && !dirty)
 							}
 						>
-							{busy ? 'Saving…' : 'Save palette'}
+							Save palette
 						</Button>
 					)}
 				</form>
@@ -412,7 +414,13 @@ function SchemeEditor({
 						/>
 					</div>
 					{usageLoading && (
-						<p role="status">Loading palette usage…</p>
+						<Loading
+							label={
+								usageReload > 0
+									? 'Refreshing palette usage…'
+									: 'Loading palette usage…'
+							}
+						/>
 					)}
 					{usageError && (
 						<p role="alert">
@@ -569,6 +577,7 @@ export default function SchemeLibrary({
 				client={client}
 				sets={sets}
 				loading={loading}
+				refreshing={reload > 0}
 				catalogError={error}
 				onBack={() => {
 					setShowSets(false)
@@ -710,7 +719,16 @@ export default function SchemeLibrary({
 				)}
 			</div>
 			{status && <p role="status">{status}</p>}
-			{loading && <p role="status">Loading palettes…</p>}
+			{busy && <Loading label="Assigning palettes to set…" />}
+			{loading && (
+				<Loading
+					label={
+						reload > 0
+							? 'Refreshing palettes…'
+							: 'Loading palettes…'
+					}
+				/>
+			)}
 			{error && <p role="alert">{error}</p>}
 			{!loading &&
 				!error &&

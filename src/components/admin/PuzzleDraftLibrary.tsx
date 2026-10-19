@@ -37,7 +37,7 @@ import paletteStyles from '../controls/color-schemes/SchemePicker.module.css'
 import styles from './AdminPortal.module.css'
 import Checkbox from '../shared/Checkbox'
 import AdminIconButton from './AdminIconButton'
-import { Button, Select } from '@shared'
+import { Button, Loading, Select } from '@shared'
 import PuzzleDraftForm from './PuzzleDraftForm'
 import PuzzleSetLibrary from './PuzzleSetLibrary'
 import {
@@ -62,6 +62,8 @@ function DraftEditor({
 	onDirtyChange,
 	onRefreshPalettes,
 	palettesLoading,
+	palettesRefreshing,
+	palettesError,
 }: {
 	readonly client: SupabaseClient<Database>
 	readonly draft: LibraryDraft
@@ -71,13 +73,16 @@ function DraftEditor({
 	readonly onDirtyChange?: (dirty: boolean) => void
 	readonly onRefreshPalettes?: () => void
 	readonly palettesLoading?: boolean
+	readonly palettesRefreshing?: boolean
+	readonly palettesError?: boolean
 }) {
 	const [name, setName] = useState(draft.row.name)
 	const [paletteId, setPaletteId] = useState(draft.row.palette_id)
 	const [usage, setUsage] = useState<PuzzleUsage>(
 		draft.row.usage === 'daily' ? 'daily' : 'collection',
 	)
-	const [busy, setBusy] = useState(false)
+	const [pending, setPending] = useState<string | null>(null)
+	const busy = pending !== null
 	const working = useRef(false)
 	const [error, setError] = useState('')
 	const [confirmDelete, setConfirmDelete] = useState(false)
@@ -104,7 +109,7 @@ function DraftEditor({
 		if (working.current) return
 		setError('')
 		working.current = true
-		setBusy(true)
+		setPending('Generating puzzle preview…')
 		try {
 			if (draft.assigned)
 				throw new Error(
@@ -129,7 +134,7 @@ function DraftEditor({
 			setError(message(cause))
 		} finally {
 			working.current = false
-			setBusy(false)
+			setPending(null)
 		}
 	}
 
@@ -142,7 +147,7 @@ function DraftEditor({
 			return
 		}
 		working.current = true
-		setBusy(true)
+		setPending('Saving puzzle draft…')
 		try {
 			const updatedPuzzle = { ...puzzle, paletteId }
 			if (replacement) {
@@ -187,14 +192,14 @@ function DraftEditor({
 			setError(message(cause))
 		} finally {
 			working.current = false
-			setBusy(false)
+			setPending(null)
 		}
 	}
 
 	async function remove() {
 		if (working.current) return
 		working.current = true
-		setBusy(true)
+		setPending('Deleting puzzle draft…')
 		setError('')
 		try {
 			await deletePuzzleDraft(client, draft.row.id)
@@ -203,7 +208,7 @@ function DraftEditor({
 			setError(message(cause))
 		} finally {
 			working.current = false
-			setBusy(false)
+			setPending(null)
 		}
 	}
 
@@ -227,6 +232,7 @@ function DraftEditor({
 				{draft.assigned ? 'Assigned' : 'Unassigned'}
 			</p>
 			{error && <p role="alert">{error}</p>}
+			{pending && <Loading label={pending} />}
 			<PuzzleDraftForm
 				mode="edit"
 				palettes={palettes}
@@ -234,6 +240,8 @@ function DraftEditor({
 				onPaletteChange={setPaletteId}
 				onRefreshPalettes={onRefreshPalettes}
 				palettesLoading={palettesLoading}
+				palettesRefreshing={palettesRefreshing}
+				palettesError={palettesError}
 				busy={busy}
 				generation={
 					draft.assigned
@@ -284,12 +292,12 @@ function DraftEditor({
 						)}
 					/>
 				</div>
-			) : (
+			) : !palettesLoading && !palettesError ? (
 				<p role="alert">
 					This draft's palette is unavailable. Choose another palette
 					or refresh palettes.
 				</p>
-			)}
+			) : null}
 			{confirmDelete ? (
 				<div role="group" aria-label="Confirm draft deletion">
 					<p>
@@ -335,6 +343,8 @@ export default function PuzzleDraftLibrary({
 	onDirtyChange,
 	onRefreshPalettes,
 	palettesLoading,
+	palettesRefreshing,
+	palettesError,
 }: {
 	readonly client: SupabaseClient<Database>
 	readonly palettes: readonly AuthoringPalette[]
@@ -344,6 +354,8 @@ export default function PuzzleDraftLibrary({
 	readonly onDirtyChange?: (dirty: boolean) => void
 	readonly onRefreshPalettes?: () => void
 	readonly palettesLoading?: boolean
+	readonly palettesRefreshing?: boolean
+	readonly palettesError?: boolean
 }) {
 	const [drafts, setDrafts] = useState<readonly LibraryDraft[]>([])
 	const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -449,7 +461,9 @@ export default function PuzzleDraftLibrary({
 		if (!action || bulkWorking.current) return
 		if (
 			action.kind === 'palette' &&
-			!palettes.some(palette => palette.id === bulkPaletteId)
+			(palettesLoading ||
+				palettesError ||
+				!palettes.some(palette => palette.id === bulkPaletteId))
 		) {
 			setError('Choose a palette before applying changes.')
 			return
@@ -526,6 +540,8 @@ export default function PuzzleDraftLibrary({
 					onDirtyChange={onDirtyChange}
 					onRefreshPalettes={onRefreshPalettes}
 					palettesLoading={palettesLoading}
+					palettesRefreshing={palettesRefreshing}
+					palettesError={palettesError}
 					onChanged={(status, updated) => {
 						setStatus(status)
 						setDrafts(previous =>
@@ -608,8 +624,34 @@ export default function PuzzleDraftLibrary({
 			</div>
 			{error && <p role="alert">{error}</p>}
 			{status && <p role="status">{status}</p>}
+			{palettesLoading && (
+				<Loading
+					label={
+						palettesRefreshing
+							? 'Refreshing palettes…'
+							: 'Loading Supabase palettes...'
+					}
+				/>
+			)}
+			{bulkBusy && (
+				<Loading
+					label={
+						action?.kind === 'delete'
+							? 'Deleting puzzle drafts…'
+							: action?.kind === 'set'
+								? 'Assigning puzzles to set…'
+								: 'Updating puzzle palettes…'
+					}
+				/>
+			)}
 			{loading ? (
-				<p role="status">Loading puzzle drafts...</p>
+				<Loading
+					label={
+						reload > 0 || revision > 0
+							? 'Refreshing puzzle drafts…'
+							: 'Loading puzzle drafts...'
+					}
+				/>
 			) : loadFailed ? null : (
 				<>
 					<div className={styles.selectionRow}>
@@ -747,7 +789,7 @@ export default function PuzzleDraftLibrary({
 							</ul>
 							{action.kind === 'set' &&
 								(setsLoading ? (
-									<p role="status">Loading draft sets...</p>
+									<Loading label="Loading draft sets..." />
 								) : (
 									<>
 										<label htmlFor="bulk-set">
@@ -788,7 +830,11 @@ export default function PuzzleDraftLibrary({
 							{action.kind === 'palette' && (
 								<fieldset
 									className={styles.palettePicker}
-									disabled={bulkBusy}
+									disabled={
+										bulkBusy ||
+										palettesLoading ||
+										palettesError
+									}
 								>
 									<legend>Bulk palette</legend>
 									<ul className={paletteStyles.list}>
@@ -843,7 +889,9 @@ export default function PuzzleDraftLibrary({
 								disabled={
 									bulkBusy ||
 									(action.kind === 'palette' &&
-										!bulkPaletteId) ||
+										(!bulkPaletteId ||
+											palettesLoading ||
+											palettesError)) ||
 									(action.kind === 'set' &&
 										(setsLoading || !bulkSetId))
 								}

@@ -1,4 +1,5 @@
 import {
+	act,
 	fireEvent,
 	render,
 	screen,
@@ -126,6 +127,47 @@ async function open() {
 	return screen.getByRole('article', { name: 'Edit Saved art' })
 }
 describe('draft library', () => {
+	it('distinguishes initial and empty-library refresh reads and clears pending feedback on failure', async () => {
+		let finish!: (drafts: readonly LibraryDraft[]) => void
+		mocks.load.mockReturnValueOnce(
+			new Promise(resolve => {
+				finish = resolve
+			}),
+		)
+		setup()
+		expect(screen.getByRole('status')).toHaveTextContent(
+			'Loading puzzle drafts...',
+		)
+		expect(screen.getByRole('status').querySelector('img')).toHaveAttribute(
+			'aria-hidden',
+			'true',
+		)
+		await act(async () => {
+			finish([])
+		})
+		expect(screen.queryByRole('status')).not.toBeInTheDocument()
+		let fail!: (cause: Error) => void
+		mocks.load.mockReturnValueOnce(
+			new Promise((_resolve, reject) => {
+				fail = reject
+			}),
+		)
+		fireEvent.click(screen.getByRole('button', { name: 'Refresh drafts' }))
+		expect(screen.getByRole('status')).toHaveTextContent(
+			'Refreshing puzzle drafts…',
+		)
+		await act(async () => {
+			fail(new Error('Drafts offline'))
+		})
+		expect(screen.queryByRole('status')).not.toBeInTheDocument()
+		expect(screen.getByRole('alert')).toHaveTextContent('Drafts offline')
+		expect(
+			screen.queryByText('No drafts match this view.'),
+		).not.toBeInTheDocument()
+		expect(
+			screen.getByRole('button', { name: 'Refresh drafts' }),
+		).toBeEnabled()
+	})
 	it.each([
 		['core', 'Core'],
 		['reward', 'Reward'],
@@ -585,6 +627,13 @@ describe('draft library', () => {
 		fireEvent.click(apply)
 		fireEvent.click(apply)
 		expect(mocks.bulk).toHaveBeenCalledTimes(2)
+		expect(screen.getByRole('status')).toHaveTextContent(
+			'Updating puzzle palettes…',
+		)
+		expect(screen.getByRole('status').querySelector('img')).toHaveAttribute(
+			'aria-hidden',
+			'true',
+		)
 		expect(
 			screen.getByRole('button', { name: 'Edit draft Saved art' }),
 		).toBeDisabled()

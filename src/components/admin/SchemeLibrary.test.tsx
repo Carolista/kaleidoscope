@@ -1,4 +1,5 @@
 import {
+	act,
 	fireEvent,
 	render,
 	screen,
@@ -627,12 +628,16 @@ describe('palette management', () => {
 		fireEvent.click(
 			await screen.findByRole('button', { name: 'Delete Cabo' }),
 		)
+		expect(screen.getByRole('status')).toHaveTextContent(
+			'Loading palette usage…',
+		)
 		expect(await screen.findByRole('alert')).toHaveTextContent(
 			'Deletion is disabled',
 		)
 		expect(
 			screen.getByRole('button', { name: 'Delete palette' }),
 		).toBeDisabled()
+		expect(screen.queryByRole('status')).not.toBeInTheDocument()
 		fireEvent.click(
 			screen.getByRole('button', { name: 'Refresh palette usage' }),
 		)
@@ -701,6 +706,11 @@ describe('palette management', () => {
 		fireEvent.submit(form)
 		fireEvent.submit(form)
 		expect(mocks.manage).toHaveBeenCalledOnce()
+		expect(screen.getByRole('status')).toHaveTextContent('Saving palette…')
+		expect(screen.getByRole('status').querySelector('img')).toHaveAttribute(
+			'aria-hidden',
+			'true',
+		)
 		expect(
 			screen.getByRole('button', { name: 'Back to palettes' }),
 		).toBeDisabled()
@@ -710,5 +720,55 @@ describe('palette management', () => {
 				screen.getByRole('heading', { name: 'Palettes' }),
 			).toBeInTheDocument(),
 		)
+		const success = screen.getByText('Saved "Updated" as a draft palette.')
+		expect(success).toHaveAttribute('role', 'status')
+		expect(success.querySelector('img')).toBeNull()
+	})
+
+	it('uses one shared catalog status for initial and empty-catalog refresh reads, then clears it on failure', async () => {
+		let finish!: (schemes: readonly CatalogScheme[]) => void
+		mocks.load.mockReturnValueOnce(
+			new Promise(resolve => {
+				finish = resolve
+			}),
+		)
+		setup()
+		expect(screen.getByRole('status')).toHaveTextContent(
+			'Loading palettes…',
+		)
+		expect(screen.getByRole('status').querySelector('img')).toHaveAttribute(
+			'aria-hidden',
+			'true',
+		)
+		expect(
+			screen.getByRole('button', { name: 'New palette' }),
+		).toBeDisabled()
+		await act(async () => {
+			finish([])
+		})
+		expect(
+			screen.getByText('No palettes yet. Create a draft to get started.'),
+		).toBeInTheDocument()
+		let fail!: (cause: Error) => void
+		mocks.load.mockReturnValueOnce(
+			new Promise((_resolve, reject) => {
+				fail = reject
+			}),
+		)
+		fireEvent.click(
+			screen.getByRole('button', { name: 'Refresh palette catalog' }),
+		)
+		expect(screen.getByRole('status')).toHaveTextContent(
+			'Refreshing palettes…',
+		)
+		expect(
+			screen.queryByRole('button', { name: 'Edit Cabo' }),
+		).not.toBeInTheDocument()
+		await act(async () => {
+			fail(new Error('Catalog offline'))
+		})
+		expect(screen.queryByRole('status')).not.toBeInTheDocument()
+		expect(screen.getByRole('alert')).toHaveTextContent('Catalog offline')
+		expect(screen.queryByText(/No palettes yet/)).not.toBeInTheDocument()
 	})
 })

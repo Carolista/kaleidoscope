@@ -1,0 +1,105 @@
+import { act, fireEvent, render, screen } from '@testing-library/react'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { Database } from '../../types/database'
+import type { SchemeSet } from '../../services/schemeSets'
+import { manageSchemeSet } from '../../services/schemeSets'
+import SchemeSetLibrary from './SchemeSetLibrary'
+
+vi.mock('../../services/schemeSets', async importOriginal => ({
+	...(await importOriginal<typeof import('../../services/schemeSets')>()),
+	manageSchemeSet: vi.fn(),
+}))
+
+const client = {} as SupabaseClient<Database>
+const set: SchemeSet = {
+	row: {
+		id: 'set',
+		name: 'Warm colors',
+		kind: 'undecided',
+		published_at: null,
+		release_at: null,
+	},
+	kind: 'undecided',
+	members: [],
+}
+
+afterEach(() => vi.resetAllMocks())
+
+describe('palette set loading feedback', () => {
+	it('keeps cached sets visible but unavailable while refreshing, and shows retry after failure', () => {
+		const props = {
+			client,
+			sets: [set],
+			loading: true,
+			refreshing: true,
+			catalogError: '',
+			onBack: vi.fn(),
+			onChanged: vi.fn(),
+		}
+		const { rerender } = render(<SchemeSetLibrary {...props} />)
+		const status = screen.getByRole('status')
+		expect(status).toHaveTextContent('Refreshing palette sets…')
+		expect(status.querySelector('img')).toHaveAttribute(
+			'aria-hidden',
+			'true',
+		)
+		expect(screen.getByText('Warm colors')).toBeInTheDocument()
+		expect(
+			screen.getByRole('button', { name: 'Edit set Warm colors' }),
+		).toBeDisabled()
+		rerender(
+			<SchemeSetLibrary
+				{...props}
+				loading={false}
+				catalogError="Offline"
+			/>,
+		)
+		expect(screen.queryByRole('status')).not.toBeInTheDocument()
+		expect(screen.getByRole('alert')).toHaveTextContent('Offline')
+		expect(
+			screen.getByRole('button', { name: 'Edit set Warm colors' }),
+		).toBeDisabled()
+		fireEvent.click(
+			screen.getByRole('button', { name: 'Retry loading sets' }),
+		)
+		expect(props.onChanged).toHaveBeenCalledOnce()
+	})
+
+	it('keeps a failed creation retryable and ends pending feedback', async () => {
+		let fail!: (cause: Error) => void
+		vi.mocked(manageSchemeSet).mockReturnValueOnce(
+			new Promise((_resolve, reject) => {
+				fail = reject
+			}),
+		)
+		render(
+			<SchemeSetLibrary
+				client={client}
+				sets={[]}
+				loading={false}
+				catalogError=""
+				onBack={vi.fn()}
+				onChanged={vi.fn()}
+			/>,
+		)
+		fireEvent.click(screen.getByRole('button', { name: 'New palette set' }))
+		fireEvent.change(screen.getByLabelText('Set name'), {
+			target: { value: 'New colors' },
+		})
+		fireEvent.submit(
+			screen.getByRole('form', { name: 'Palette set details' }),
+		)
+		expect(screen.getByRole('status')).toHaveTextContent(
+			'Creating palette set…',
+		)
+		expect(screen.getByRole('button', { name: 'Save set' })).toBeDisabled()
+		await act(async () => {
+			fail(new Error('Write failed'))
+		})
+		expect(screen.queryByRole('status')).not.toBeInTheDocument()
+		expect(screen.getByRole('alert')).toHaveTextContent('Write failed')
+		expect(screen.getByLabelText('Set name')).toHaveValue('New colors')
+		expect(screen.getByRole('button', { name: 'Save set' })).toBeEnabled()
+	})
+})

@@ -368,10 +368,16 @@ removing a reveal-animation class when the logo lands would truncate the fade.
 Skip the entrance for reduced motion or missing Web Animations API support.
 
 **Loading star:** share the favicon rendering and named CSS animation modes in
-`LogoStar`, with a small `Spinner` wrapper for loading placement. Keep wordmark
-alignment in `Header` so loading indicators do not inherit optical offsets.
-The Save Image modal pairs the decorative, pulsing star with its existing live
-status text; reduced motion disables the animation without hiding that status.
+`LogoStar`; `Spinner` stays decorative. Feature callers use provider-independent
+`Loading` with a required label and one live status, not hand-built spinner/text
+pairs. Use compact placement for admin reads/writes and section placement for
+image generation and lazy admin entry. Import entry styling eagerly so pending
+feedback is readable before the admin chunk loads. Label initial reads, refreshes,
+and mutations distinctly, including refreshes of empty catalogs. Keep retries,
+disabled-action guards, and existing previews; failures end pending feedback and
+show errors rather than empty success. Success/gameplay announcements remain plain
+status text. Keep wordmark alignment in `Header` so loading indicators do not
+inherit optical offsets. Reduced motion disables animation without hiding labels.
 
 Render individually imported Font Awesome definitions through `FontAwesomeIcon`,
 replacing the earlier Kit-script approach. Import core CSS once and disable

@@ -14,7 +14,7 @@ import styles from './AdminPortal.module.css'
 import PuzzleAuthoring from './PuzzleAuthoring'
 import { confirmDiscardDraft } from './useUnsavedDraft'
 import AdminIconButton from './AdminIconButton'
-import { Button, Input } from '@shared'
+import { Button, Input, Loading } from '@shared'
 import {
 	faRightFromBracket,
 	faSun,
@@ -80,7 +80,8 @@ function AdminSession({
 	const [loading, setLoading] = useState(true)
 	const [role, setRole] = useState<RoleCheck | null>(null)
 	const [error, setError] = useState('')
-	const [busy, setBusy] = useState(false)
+	const [pending, setPending] = useState<string | null>(null)
+	const busy = pending !== null
 	const [retry, setRetry] = useState(0)
 	const [dirty, setDirty] = useState(false)
 	useEffect(() => {
@@ -163,7 +164,7 @@ function AdminSession({
 		event.preventDefault()
 		const form = event.currentTarget
 		const values = new FormData(form)
-		setBusy(true)
+		setPending('Signing in…')
 		setError('')
 		try {
 			const { error } = await client.auth.signInWithPassword({
@@ -179,13 +180,13 @@ function AdminSession({
 					: 'Unable to sign in. Please try again.',
 			)
 		} finally {
-			setBusy(false)
+			setPending(null)
 		}
 	}
 
 	async function signOut() {
 		if (dirty && !confirmDiscardDraft()) return
-		setBusy(true)
+		setPending('Signing out…')
 		setError('')
 		try {
 			const { error } = await client.auth.signOut({ scope: 'local' })
@@ -201,7 +202,7 @@ function AdminSession({
 					: 'Unable to sign out. Please try again.',
 			)
 		} finally {
-			setBusy(false)
+			setPending(null)
 		}
 	}
 
@@ -230,8 +231,9 @@ function AdminSession({
 				)}
 			</AdminHeader>
 			{error && <p role="alert">{error}</p>}
+			{pending && <Loading label={pending} />}
 			{loading ? (
-				<p role="status">Restoring session…</p>
+				<Loading label="Restoring session…" />
 			) : !session ? (
 				<form onSubmit={signIn} className={styles.form}>
 					<label htmlFor="admin-email">Email</label>
@@ -253,7 +255,7 @@ function AdminSession({
 						disabled={busy}
 					/>
 					<Button type="submit" disabled={busy}>
-						{busy ? 'Signing in…' : 'Sign in'}
+						Sign in
 					</Button>
 					<p>
 						Use your existing admin account. Player registration is
@@ -263,7 +265,7 @@ function AdminSession({
 			) : (
 				<>
 					{!checkedRole ? (
-						<p role="status">Checking admin access…</p>
+						<Loading label="Checking admin access…" />
 					) : checkedRole.status === 'allowed' ? (
 						<>
 							<PuzzleAuthoring

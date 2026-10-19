@@ -1,6 +1,8 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import App from './App'
 import { AppStateProvider } from './state/AppContext'
+import Loading from './components/shared/Loading'
+import styles from './AppEntry.module.css'
 
 const AdminPortal = lazy(() => import('./components/admin/AdminPortal'))
 
@@ -25,7 +27,15 @@ export default function AppEntry() {
 		return () => window.removeEventListener('hashchange', update)
 	}, [admin, adminDirty])
 	return admin ? (
-		<Suspense fallback={<p role="status">Loading admin sign-in…</p>}>
+		<Suspense
+			fallback={
+				<Loading
+					label="Loading admin sign-in…"
+					variant="section"
+					className={styles.adminLoading}
+				/>
+			}
+		>
 			<AdminPortal onDirtyChange={setAdminDirty} />
 		</Suspense>
 	) : (

@@ -90,6 +90,52 @@ beforeEach(() => {
 })
 
 describe('AdminPortal', () => {
+	it('shows shared pending feedback during session restoration and failed sign-in', async () => {
+		let finishSession!: (value: {
+			data: { session: null }
+			error: null
+		}) => void
+		mocks.getSession.mockReturnValue(
+			new Promise(resolve => {
+				finishSession = resolve
+			}),
+		)
+		render(<AdminPortal />)
+		const restoring = screen.getByRole('status')
+		expect(restoring).toHaveTextContent('Restoring session…')
+		expect(restoring.querySelector('img')).toHaveAttribute(
+			'aria-hidden',
+			'true',
+		)
+		await act(async () => {
+			finishSession({ data: { session: null }, error: null })
+		})
+		expect(screen.queryByRole('status')).not.toBeInTheDocument()
+		let failSignIn!: (cause: Error) => void
+		mocks.signInWithPassword.mockReturnValue(
+			new Promise((_resolve, reject) => {
+				failSignIn = reject
+			}),
+		)
+		fireEvent.change(screen.getByLabelText('Email'), {
+			target: { value: 'admin@example.com' },
+		})
+		fireEvent.change(screen.getByLabelText('Password'), {
+			target: { value: 'test-only' },
+		})
+		fireEvent.submit(
+			screen.getByRole('button', { name: 'Sign in' }).closest('form')!,
+		)
+		expect(screen.getByRole('status')).toHaveTextContent('Signing in…')
+		expect(screen.getByRole('button', { name: 'Sign in' })).toBeDisabled()
+		await act(async () => {
+			failSignIn(new Error('Offline'))
+		})
+		expect(screen.getByRole('alert')).toHaveTextContent('Offline')
+		expect(screen.queryByRole('status')).not.toBeInTheDocument()
+		expect(screen.getByRole('button', { name: 'Sign in' })).toBeEnabled()
+	})
+
 	it('guards sign-out with unsaved palette edits and keeps the sandbox stable on theme changes', async () => {
 		mocks.getSession.mockResolvedValue({
 			data: { session: session() },
@@ -363,6 +409,10 @@ describe('AdminPortal', () => {
 		).not.toBeInTheDocument()
 		expect(screen.getByRole('status')).toHaveTextContent(
 			'Checking admin access',
+		)
+		expect(screen.getByRole('status').querySelector('img')).toHaveAttribute(
+			'aria-hidden',
+			'true',
 		)
 	})
 

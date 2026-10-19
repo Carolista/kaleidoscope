@@ -10,7 +10,7 @@ import {
 	faTrashCan,
 } from '@fortawesome/pro-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Button, Input, Select } from '@shared'
+import { Button, Input, Loading, Select } from '@shared'
 import type { Database } from '../../types/database'
 import {
 	manageSchemeSet,
@@ -28,6 +28,7 @@ export default function SchemeSetLibrary({
 	client,
 	sets,
 	loading,
+	refreshing = false,
 	catalogError,
 	onBack,
 	onChanged,
@@ -36,6 +37,7 @@ export default function SchemeSetLibrary({
 	readonly client: SupabaseClient<Database>
 	readonly sets: readonly SchemeSet[]
 	readonly loading: boolean
+	readonly refreshing?: boolean
 	readonly catalogError: string
 	readonly onBack: () => void
 	readonly onChanged: () => void
@@ -193,7 +195,26 @@ export default function SchemeSetLibrary({
 				</p>
 			)}
 			{status && <p role="status">{status}</p>}
-			{loading && <p role="status">Refreshing palette sets…</p>}
+			{busy && (
+				<Loading
+					label={
+						deleting
+							? 'Deleting palette set…'
+							: editing?.id
+								? 'Saving palette set…'
+								: 'Creating palette set…'
+					}
+				/>
+			)}
+			{loading && (
+				<Loading
+					label={
+						refreshing
+							? 'Refreshing palette sets…'
+							: 'Loading palette sets…'
+					}
+				/>
+			)}
 			{!editing && !loading && !catalogError && sets.length === 0 && (
 				<p>No palette sets yet. Create a set to organize palettes.</p>
 			)}

@@ -8,7 +8,7 @@ import {
 	getIncludeGridLines,
 	saveIncludeGridLines,
 } from '../../services/imageExportPreferences'
-import { Button, Checkbox, Modal, ModalHeader, Spinner } from '@shared'
+import { Button, Checkbox, Loading, Modal, ModalHeader } from '@shared'
 import styles from './SaveImageModal.module.css'
 
 export interface SaveImageModalProps {
@@ -67,10 +67,7 @@ function SaveImageModal({ open, svgRef, onClose }: SaveImageModalProps) {
 				style={{ aspectRatio: previewAspectRatio }}
 			>
 				{exportState.status === 'generating' && (
-					<div className={styles.generating} role="status">
-						<Spinner />
-						<p>Generating image…</p>
-					</div>
+					<Loading label="Generating image…" variant="section" />
 				)}
 				{exportState.status === 'error' && (
 					<p role="alert">

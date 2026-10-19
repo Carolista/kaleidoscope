@@ -23,7 +23,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import PuzzleDraftForm from './PuzzleDraftForm'
 import { loadColorSchemes } from '../../services/colorSchemes'
 import SchemeLibrary from './SchemeLibrary'
-import { Button } from '@shared'
+import { Button, Loading } from '@shared'
 
 function messageFor(cause: unknown): string {
 	return cause instanceof Error
@@ -41,11 +41,13 @@ export default function PuzzleAuthoring({
 	const [palettes, setPalettes] = useState<readonly AuthoringPalette[]>([])
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState('')
+	const [paletteError, setPaletteError] = useState('')
 	const [reload, setReload] = useState(0)
 	const [libraryRevision, setLibraryRevision] = useState(0)
 	const [creating, setCreating] = useState(false)
 	const [managingSchemes, setManagingSchemes] = useState(false)
-	const [busy, setBusy] = useState(false)
+	const [pending, setPending] = useState<string | null>(null)
+	const busy = pending !== null
 	const working = useRef(false)
 	const [draftName, setDraftName] = useState('')
 	const [usage, setUsage] = useState<PuzzleUsage>('collection')
@@ -77,8 +79,7 @@ export default function PuzzleAuthoring({
 				if (active) setPalettes(next)
 			} catch (cause) {
 				if (active) {
-					setPalettes([])
-					setError(messageFor(cause))
+					setPaletteError(messageFor(cause))
 				}
 			} finally {
 				if (active) setLoading(false)
@@ -90,10 +91,17 @@ export default function PuzzleAuthoring({
 		}
 	}, [client, reload])
 
+	function refreshPalettes() {
+		setLoading(true)
+		setError('')
+		setPaletteError('')
+		setReload(value => value + 1)
+	}
+
 	async function generate() {
 		if (working.current) return
 		working.current = true
-		setBusy(true)
+		setPending('Generating puzzle preview…')
 		setError('')
 		const recipe = HEX_PUZZLE_RECIPES.find(value => value.id === recipeId)
 		const palette =
@@ -122,7 +130,7 @@ export default function PuzzleAuthoring({
 			setError(messageFor(cause))
 		} finally {
 			working.current = false
-			setBusy(false)
+			setPending(null)
 		}
 	}
 
@@ -135,7 +143,7 @@ export default function PuzzleAuthoring({
 			return
 		}
 		working.current = true
-		setBusy(true)
+		setPending('Saving puzzle draft…')
 		try {
 			const previous = pendingSave.current
 			const args = puzzleDraftArgs(
@@ -160,7 +168,7 @@ export default function PuzzleAuthoring({
 			setError(messageFor(cause))
 		} finally {
 			working.current = false
-			setBusy(false)
+			setPending(null)
 		}
 	}
 
@@ -178,6 +186,7 @@ export default function PuzzleAuthoring({
 					setManagingSchemes(false)
 					setLoading(true)
 					setError('')
+					setPaletteError('')
 					setReload(value => value + 1)
 					setLibraryRevision(value => value + 1)
 				}}
@@ -188,7 +197,14 @@ export default function PuzzleAuthoring({
 		return (
 			<>
 				{error && <p role="alert">{error}</p>}
-				{loading && <p role="status">Loading Supabase palettes...</p>}
+				{paletteError && (
+					<p role="alert">
+						{paletteError}{' '}
+						<Button onClick={refreshPalettes}>
+							Retry loading palettes
+						</Button>
+					</p>
+				)}
 				<PuzzleDraftLibrary
 					client={client}
 					palettes={palettes}
@@ -205,12 +221,10 @@ export default function PuzzleAuthoring({
 						setCreating(true)
 					}}
 					onDirtyChange={onDirtyChange}
-					onRefreshPalettes={() => {
-						setLoading(true)
-						setError('')
-						setReload(value => value + 1)
-					}}
+					onRefreshPalettes={refreshPalettes}
 					palettesLoading={loading}
+					palettesRefreshing={reload > 0}
+					palettesError={!!paletteError}
 				/>
 			</>
 		)
@@ -239,6 +253,8 @@ export default function PuzzleAuthoring({
 					unpublished drafts.
 				</p>
 				{error && <p role="alert">{error}</p>}
+				{paletteError && <p role="alert">{paletteError}</p>}
+				{pending && <Loading label={pending} />}
 				<PuzzleDraftForm
 					mode="create"
 					palettes={palettes}
@@ -257,12 +273,10 @@ export default function PuzzleAuthoring({
 								: previous,
 						)
 					}}
-					onRefreshPalettes={() => {
-						setLoading(true)
-						setError('')
-						setReload(value => value + 1)
-					}}
+					onRefreshPalettes={refreshPalettes}
 					palettesLoading={loading}
+					palettesRefreshing={reload > 0}
+					palettesError={!!paletteError}
 					busy={busy}
 					generation={{
 						recipeId,
@@ -301,7 +315,7 @@ export default function PuzzleAuthoring({
 						/>
 					</div>
 				)}
-				{generated && !palette && !loading && (
+				{generated && !palette && !loading && !paletteError && (
 					<p role="alert">
 						The playtest palette is unavailable. Refresh palettes or
 						generate a new playtest.

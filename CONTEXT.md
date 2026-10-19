@@ -188,9 +188,13 @@ nonvisual status region rather than visible instruction/status blocks.
 
 `LogoStar` lives in `components/shared` with `arrive` (default) and `pulse`
 animation modes; wordmark sizing and optical spacing stay in `Header`.
-The shared `Spinner` uses the pulse mode above the Save Image modal's
-"Generating image…" status. It alternates a half-turn and scale from 0.05 to 1
-over 1.2 seconds per direction. Reduced-motion users see a static star.
+Use shared `Loading` for pending feedback: a required readable label and one
+live status compose the decorative `Spinner`. Compact is the default for admin
+reads/writes; section is used for Save Image generation and lazy admin entry.
+It works without player state; entry styles load before the admin chunk.
+Success messages and gameplay announcements remain plain status text.
+The star alternates a half-turn and scale from 0.05 to 1 over 1.2 seconds per
+direction. Reduced-motion users see a static star with the same readable label.
 
 [public/logo-black.svg](./public/logo-black.svg) and
 [public/logo-white.svg](./public/logo-white.svg) are transparent, standalone

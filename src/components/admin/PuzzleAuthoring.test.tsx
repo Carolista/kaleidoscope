@@ -1,4 +1,5 @@
 import {
+	act,
 	fireEvent,
 	render,
 	screen,
@@ -125,6 +126,83 @@ async function randomize() {
 }
 
 describe('admin puzzle lab', () => {
+	it('announces palette loading once in the editor and offers retry after failure without claiming an empty catalog', async () => {
+		const { order } = setup({
+			data: [],
+			error: { message: 'Catalog offline' },
+		})
+		expect(screen.getAllByRole('status')).toHaveLength(1)
+		expect(screen.getByRole('status')).toHaveTextContent(
+			'Loading Supabase palettes...',
+		)
+		await screen.findByRole('alert')
+		expect(screen.queryByRole('status')).not.toBeInTheDocument()
+		expect(
+			screen.queryByText(/No palettes available/),
+		).not.toBeInTheDocument()
+		expect(
+			screen.getByRole('button', { name: 'Randomize puzzle' }),
+		).toBeDisabled()
+		order.mockResolvedValueOnce({ data: [palette], error: null })
+		fireEvent.click(
+			screen.getByRole('button', { name: 'Refresh palettes' }),
+		)
+		await screen.findByRole('button', {
+			name: 'Select the Test palette color palette',
+		})
+		expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+		let finish!: (value: { data: readonly unknown[]; error: null }) => void
+		mocks.seeds.mockReturnValueOnce(
+			new Promise(resolve => {
+				finish = resolve
+			}),
+		)
+		fireEvent.click(
+			screen.getByRole('button', { name: 'Randomize puzzle' }),
+		)
+		expect(screen.getByRole('status')).toHaveTextContent(
+			'Generating puzzle preview…',
+		)
+		expect(
+			screen.getByRole('button', { name: 'Randomize puzzle' }),
+		).toBeDisabled()
+		await act(async () => {
+			finish({ data: [], error: null })
+		})
+		expect(
+			screen.queryByText('Generating puzzle preview…'),
+		).not.toBeInTheDocument()
+		expect(screen.getByRole('status')).toHaveTextContent(
+			'Choose a piece to get started.',
+		)
+		expect(screen.getByRole('status').querySelector('img')).toBeNull()
+		fireEvent.change(screen.getByLabelText('Puzzle name'), {
+			target: { value: 'Keep this preview' },
+		})
+		const preview = screen.getByRole('img', {
+			name: 'Target design',
+		}).innerHTML
+		order.mockResolvedValueOnce({
+			data: [],
+			error: { message: 'Refresh offline' },
+		})
+		fireEvent.click(
+			screen.getByRole('button', { name: 'Refresh palettes' }),
+		)
+		await screen.findByRole('alert')
+		expect(
+			screen.getByRole('img', { name: 'Target design' }).innerHTML,
+		).toBe(preview)
+		expect(
+			screen.getByRole('button', { name: 'Randomize puzzle' }),
+		).toBeDisabled()
+		expect(
+			screen.getByRole('button', { name: 'Save Draft' }),
+		).toBeDisabled()
+		expect(screen.getByRole('status')).toHaveTextContent(
+			'Choose a piece to get started.',
+		)
+	})
 	it('opens palette management from the library and refreshes authoring swatches after a palette save', async () => {
 		const row = {
 			...palette,

@@ -22,7 +22,7 @@ import {
 import type { Database } from '../../types/database'
 import HexPuzzleBoard from '../puzzle/HexPuzzleBoard'
 import AdminIconButton from './AdminIconButton'
-import { Button, Input, Select } from '@shared'
+import { Button, Input, Loading, Select } from '@shared'
 import styles from './AdminPortal.module.css'
 import useUnsavedDraft, { confirmDiscardDraft } from './useUnsavedDraft'
 
@@ -47,7 +47,8 @@ export default function PuzzleSetLibrary({
 	const [name, setName] = useState('')
 	const [kind, setKind] = useState<SetKind>('core')
 	const [loading, setLoading] = useState(true)
-	const [busy, setBusy] = useState(false)
+	const [pending, setPending] = useState<string | null>(null)
+	const busy = pending !== null
 	const working = useRef(false)
 	const createId = useRef<string | null>(null)
 	const [error, setError] = useState('')
@@ -85,7 +86,7 @@ export default function PuzzleSetLibrary({
 	async function removeSet() {
 		if (!deleting || working.current) return
 		working.current = true
-		setBusy(true)
+		setPending('Deleting puzzle set…')
 		setError('')
 		setStatus('')
 		try {
@@ -103,13 +104,17 @@ export default function PuzzleSetLibrary({
 			setError(errorMessage(cause))
 		} finally {
 			working.current = false
-			setBusy(false)
+			setPending(null)
 		}
 	}
 	async function mutate(id: string, action: SetAction, success: string) {
 		if (working.current) return
 		working.current = true
-		setBusy(true)
+		setPending(
+			action.kind === 'create'
+				? 'Creating puzzle set…'
+				: 'Saving puzzle set…',
+		)
 		setError('')
 		setStatus('')
 		try {
@@ -145,7 +150,7 @@ export default function PuzzleSetLibrary({
 			setError(errorMessage(cause))
 		} finally {
 			working.current = false
-			setBusy(false)
+			setPending(null)
 		}
 	}
 	function back() {
@@ -242,6 +247,7 @@ export default function PuzzleSetLibrary({
 			</div>
 			{error && <p role="alert">{error}</p>}
 			{status && <p role="status">{status}</p>}
+			{pending && <Loading label={pending} />}
 			{deleting && (
 				<div
 					role="group"
@@ -272,7 +278,13 @@ export default function PuzzleSetLibrary({
 				</div>
 			)}
 			{loading ? (
-				<p role="status">Loading draft sets...</p>
+				<Loading
+					label={
+						reload > 0
+							? 'Refreshing draft sets…'
+							: 'Loading draft sets...'
+					}
+				/>
 			) : creating || selected ? (
 				<>
 					<form

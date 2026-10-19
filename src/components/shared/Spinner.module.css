@@ -1,5 +1,6 @@
 .spinner {
 	display: block;
-	width: 4rem;
-	height: 4rem;
+	width: var(--spinner-size, 4rem);
+	height: var(--spinner-size, 4rem);
+	flex: none;
 }

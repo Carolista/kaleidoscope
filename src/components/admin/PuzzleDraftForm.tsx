@@ -5,7 +5,7 @@ import { HEX_PUZZLE_RECIPES } from '../../puzzles/hexPuzzle'
 import type { PuzzleUsage } from '../../services/puzzleDrafts'
 import paletteStyles from '../controls/color-schemes/SchemePicker.module.css'
 import AdminIconButton from './AdminIconButton'
-import { Button, Input, Select } from '@shared'
+import { Button, Input, Loading, Select } from '@shared'
 import styles from './AdminPortal.module.css'
 
 interface DraftMetadata {
@@ -32,6 +32,8 @@ export default function PuzzleDraftForm({
 	onPaletteChange,
 	onRefreshPalettes,
 	palettesLoading = false,
+	palettesRefreshing = false,
+	palettesError = false,
 	busy,
 	metadata,
 	generation,
@@ -43,6 +45,8 @@ export default function PuzzleDraftForm({
 	readonly onPaletteChange: (id: string) => void
 	readonly onRefreshPalettes?: () => void
 	readonly palettesLoading?: boolean
+	readonly palettesRefreshing?: boolean
+	readonly palettesError?: boolean
 	readonly busy: boolean
 	readonly metadata: DraftMetadata
 	readonly generation?: DraftGeneration
@@ -62,7 +66,7 @@ export default function PuzzleDraftForm({
 					<fieldset
 						className={styles.palettePicker}
 						aria-label="Palette"
-						disabled={busy || palettesLoading}
+						disabled={busy || palettesLoading || palettesError}
 					>
 						<legend className={styles.paletteHeading}>
 							Palette
@@ -76,7 +80,18 @@ export default function PuzzleDraftForm({
 							)}
 						</legend>
 						{palettesLoading ? (
-							<p role="status">Loading Supabase palettes...</p>
+							<Loading
+								label={
+									palettesRefreshing
+										? 'Refreshing palettes…'
+										: 'Loading Supabase palettes...'
+								}
+							/>
+						) : palettesError ? (
+							<p>
+								Refresh palettes to try loading the catalog
+								again.
+							</p>
 						) : palettes.length === 0 ? (
 							<p>
 								No palettes available. Add a palette to the
@@ -147,6 +162,7 @@ export default function PuzzleDraftForm({
 									disabled={
 										busy ||
 										palettesLoading ||
+										palettesError ||
 										palettes.length === 0
 									}
 									onChange={event =>
@@ -171,6 +187,7 @@ export default function PuzzleDraftForm({
 								disabled={
 									busy ||
 									palettesLoading ||
+									palettesError ||
 									palettes.length === 0
 								}
 								onClick={generation.onGenerate}
@@ -213,6 +230,8 @@ export default function PuzzleDraftForm({
 							type="submit"
 							disabled={
 								busy ||
+								palettesLoading ||
+								palettesError ||
 								metadata.locked ||
 								metadata.submitDisabled ||
 								!metadata.name.trim()

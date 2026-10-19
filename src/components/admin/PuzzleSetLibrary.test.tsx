@@ -259,6 +259,13 @@ describe('draft set workspace', () => {
 		fireEvent.click(confirm)
 		fireEvent.click(confirm)
 		expect(mocks.remove).toHaveBeenCalledOnce()
+		expect(screen.getByRole('status')).toHaveTextContent(
+			'Deleting puzzle set…',
+		)
+		expect(screen.getByRole('status').querySelector('img')).toHaveAttribute(
+			'aria-hidden',
+			'true',
+		)
 		expect(
 			screen.getByRole('button', { name: 'Back to library' }),
 		).toBeDisabled()
