@@ -104,11 +104,12 @@ saved name clears.
 Unsaved work is guarded when leaving the workspace; choose the **Drafts** tab
 to return to the gallery. The playtest Restart sits beside the pieces.
 
-Unassigned drafts can preview replacement designs with the recipe/wand controls.
+Drafts can preview replacement designs with the recipe/wand controls, even when
+assigned or scheduled, until they go live.
 Save Changes atomically replaces the public design and private solution under the
 same puzzle ID, then returns to the library. Leaving without saving keeps the
-original; errors preserve the pending replacement for retry. Assigned drafts retain
-metadata editing but cannot replace their design.
+original; errors preserve the pending replacement for retry. Assigned drafts keep
+their set/daily assignment but cannot change intended use.
 
 Non-clickable cards center the thumbnail and details above a bottom row with the
 selection checkbox and small blue Edit/red Delete icons; selected cards are
@@ -140,8 +141,9 @@ palettes using five ordered hex fields/color pickers, or use a card's **Duplicat
 icon to start an unnamed palette with those colors. The medium hexagon sandbox
 offers **Randomize** with an equal chance for each palette slot and no neutral
 color. Editing colors recolors the current pattern without regenerating it.
-Usage includes linked puzzle previews and distribution references; only unused
-drafts can be deleted, with confirmation. Scheduled/live palettes are read-only
+The editor's blue **Save** sits beside the name. Usage lists linked puzzle previews
+and distribution references; only unused drafts can be deleted, from the library,
+with confirmation. Scheduled/live palettes are read-only
 but can be duplicated. Saving a palette refreshes the colors used by puzzle
 authoring and set previews. Zen's local palettes and randomizer remain unchanged.
 

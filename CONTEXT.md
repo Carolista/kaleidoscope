@@ -69,12 +69,14 @@ with an explanation, never offered as a way to cancel a request already sent.
 Retry navigation after the operation finishes. Sign-out keeps the editor mounted
 and inert while pending; failure restores editing without losing values/previews.
 
-Unassigned drafts can randomize replacement previews and change recipe locally.
+Drafts, including assigned and scheduled ones, can randomize replacement previews
+and change recipe locally until release.
 Saving atomically replaces public design/recipe and private provenance/solution
 under the existing ID, then returns to the library. Discard keeps the original;
 failed reads/saves preserve the preview. Changing the recipe alone does not generate.
-Assigned drafts retain metadata editing but cannot replace designs. The replacement
-RPC rechecks existence, shape, release and references under the catalog lock.
+Assigned drafts keep set/daily membership on replacement but cannot change intended
+use or be deleted. Only live puzzles are frozen. The replacement RPC rechecks
+existence, shape, release and references under the catalog lock.
 Hosted replacement functionality has been confirmed by the user.
 
 Gallery cards ([AdminItemCard](./src/components/admin/AdminLayout.tsx)) are not
@@ -123,10 +125,11 @@ invalid input blocks saving/preview until corrected without losing the pattern.
 Only unpublished palette drafts can be edited/deleted here. Scheduled/live
 palettes are read-only but can be duplicated. Save returns to the palette library;
 saves also refresh the shared catalog used by puzzle authoring and set previews.
-Usage shows linked stored-design thumbnails, set/daily context, starter/reward/pack references, and grant/correction
-counts without private solutions or account identities. Library trash opens a
-named deletion modal directly over the catalog, not the editor. The same dialog
-serves the editor, whose independent usage section remains available.
+The editor's blue Save sits beside the palette name; deletion happens only from
+the library. Usage loads once and lists only real references (linked stored-design
+thumbnails, sets, starters, rewards, grants, corrections), or "Not used anywhere."
+No private solutions or account identities are shown. Library trash opens a named
+deletion modal directly over the catalog.
 Deletion requires verified usage and no blocking references; draft-only set
 membership is removed on deletion. Failed usage reads offer retry and block
 deletion. The database rechecks under the catalog lock.

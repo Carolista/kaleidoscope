@@ -139,14 +139,15 @@ not the saved preview. Preserve a revised next-puzzle name on generation; clear 
 only when exactly unchanged from the last successful save. Warn when discarding
 a revised next-puzzle name.
 
-Editing opens stored definitions rather than regenerating from seed. Unassigned
-drafts can preview replacements, including recipe changes, without deleting their
+Editing opens stored definitions rather than regenerating from seed. Any puzzle
+that is not yet live (unassigned, assigned, or scheduled) can preview replacements, including recipe changes, without deleting their
 identity. Save Changes atomically updates public design/recipe and private
 provenance/solution under the same ID and returns to the library. Discard keeps the
 original; failed saves retain the preview for retry. Recipe selection alone never
 changes the current design. Palette changes preserve placements; randomization
-resets them. Assigned drafts must be unassigned before replacement, while existing
-metadata editing remains available. Recheck all blockers under the catalog lock.
+resets them. Replacement keeps set/daily assignments and release schedules; only
+live puzzles are frozen, and assigned puzzles still cannot change intended use or be
+deleted. Recheck all blockers under the catalog lock.
 Creation and editing share saved-seed exclusion/generation logic; edit preview
 history also excludes the original seed. Guard unsaved work when leaving.
 
@@ -214,7 +215,8 @@ available. Exceptional published-color correction and release controls remain
 separate future work. Recheck draft state and every dependency under the catalog
 lock using invoker RLS/admin authorization; compare loaded name, ordered colors,
 and revision so name-only concurrent edits are also detected. Preserve inputs on
-errors/conflicts rather than silently overwriting changes.
+errors/conflicts rather than silently overwriting changes. Delete palettes from the
+library rather than the editor, keeping Save away from the color pickers.
 Bulk palette deletion mirrors puzzle drafts: offer it only when every selected
 palette is an unassigned draft, and apply it as one all-or-nothing RPC. Unlike
 single deletion, it rejects palette-set members rather than detaching them.

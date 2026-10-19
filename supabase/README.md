@@ -511,6 +511,29 @@ draft deletion, set membership is never removed silently. It returns the deleted
 IDs, which the client verifies. The hosted migration and assertions have been
 confirmed successful by the owner.
 
+## Apply pre-release puzzle editing
+
+After the bulk palette deletion migration:
+
+1. Run
+   [20261019020000_edit_prerelease_puzzles.sql](./migrations/20261019020000_edit_prerelease_puzzles.sql)
+   once in SQL Editor as `postgres`. Do not rerun earlier migrations.
+2. Run [edit_prerelease_puzzles.sql](./tests/edit_prerelease_puzzles.sql) as
+   `postgres`, without an automatic RLS wrapper. Expect **13 PASS results**;
+   fixtures roll back.
+
+`replace_hex_puzzle_draft` and `edit_puzzle_draft` now reject only live puzzles
+(published with `release_at` passed), so assigned and scheduled puzzles can be
+renamed, repaletted, and regenerated until release. Set membership, daily
+assignments, and release schedules are preserved; assigned puzzles still cannot
+change intended use, and deletion remains limited to unassigned drafts. Deferred
+release-dependency checks still apply. After this migration, the older
+[replace_puzzle_draft.sql](./tests/replace_puzzle_draft.sql) cases for assigned and
+scheduled replacement, and the scheduled-edit case in
+[manage_puzzle_drafts.sql](./tests/manage_puzzle_drafts.sql), are superseded and
+expected to fail. The hosted migration and assertions have been confirmed
+successful by the owner.
+
 ## Bootstrap the one admin
 
 An ordinary app user cannot make themselves an admin. There is no public
