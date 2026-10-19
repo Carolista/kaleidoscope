@@ -1,7 +1,7 @@
 import { createRef } from 'react'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { screen } from '@testing-library/react'
-import { renderWithProvider } from '@test/renderWithProvider'
+import { renderWithProvider } from '@/test/renderWithProvider'
 import CircleRingsGrid from './CircleRingsGrid'
 import DiamondStarGrid from './DiamondStarGrid'
 import HexagonGrid from './HexagonGrid'

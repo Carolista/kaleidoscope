@@ -1,8 +1,8 @@
 import { faRotate, faWandMagicSparkles } from '@fortawesome/pro-solid-svg-icons'
 import type { SubmitEvent } from 'react'
-import type { AuthoringPalette } from '../../puzzles/hexAuthoring'
-import { HEX_PUZZLE_RECIPES } from '../../puzzles/hexPuzzle'
-import type { PuzzleUsage } from '../../services/puzzleDrafts'
+import type { AuthoringPalette } from '@/puzzles/hexAuthoring'
+import { HEX_PUZZLE_RECIPES } from '@/puzzles/hexPuzzle'
+import type { PuzzleUsage } from '@/services/puzzleDrafts'
 import AdminIconButton from './AdminIconButton'
 import {
 	Button,
@@ -11,7 +11,7 @@ import {
 	Loading,
 	PaletteChoices,
 	Select,
-} from '@shared'
+} from '@/components/shared'
 import styles from './AdminPortal.module.css'
 
 interface DraftMetadata {

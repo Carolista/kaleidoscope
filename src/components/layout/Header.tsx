@@ -2,7 +2,7 @@ import type { Ref } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPaintbrush, faPuzzlePiece } from '@fortawesome/pro-solid-svg-icons'
 import styles from './Header.module.css'
-import { LogoStar } from '@shared'
+import { LogoStar } from '@/components/shared'
 
 interface HeaderProps {
 	readonly titleRef?: Ref<HTMLHeadingElement>

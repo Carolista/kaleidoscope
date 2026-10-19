@@ -3,9 +3,6 @@ import react from '@vitejs/plugin-react'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 
-const fromSrc = (path: string) =>
-	fileURLToPath(new URL(`./src/${path}`, import.meta.url))
-
 // https://vite.dev/config/
 export default defineConfig(({ command }) => ({
 	plugins: [react()],
@@ -16,21 +13,7 @@ export default defineConfig(({ command }) => ({
 	base: command === 'build' ? '/kaleidoscope/' : '/',
 	resolve: {
 		// Keep in sync with `paths` in tsconfig.app.json.
-		alias: {
-			'@controls': fromSrc('components/controls'),
-			'@color-schemes': fromSrc('components/controls/color-schemes'),
-			'@shapes': fromSrc('components/controls/shapes'),
-			'@grid': fromSrc('components/grid'),
-			'@shared': fromSrc('components/shared'),
-			'@data': fromSrc('data'),
-			'@geometry': fromSrc('shape-geometry'),
-			'@hooks': fromSrc('hooks'),
-			'@services': fromSrc('services'),
-			'@state': fromSrc('state'),
-			'@test': fromSrc('test'),
-			'@appTypes': fromSrc('types'),
-			'@utils': fromSrc('utils'),
-		},
+		alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
 	},
 	test: {
 		environment: 'jsdom',

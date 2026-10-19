@@ -68,7 +68,10 @@ remaining recommendations do not supersede the decisions below.
   Call sites retain their own placement and text sizing.
 - Use **scheme** in code and **palette** in UI; reserve **theme** for dark/light mode.
   This replaces the ambiguous `ColorThemeButton`/`ColorThemeModal` names.
-  Folder aliases and geometry export names were not broadly renamed.
+  Geometry export names were not broadly renamed.
+- Use one `@/` path alias instead of per-folder aliases. Per-folder aliases had
+  to be kept in sync in two configs and never covered every folder, which left
+  a mix of alias and `../../` imports.
 
 ## Puzzle Mode prototype
 

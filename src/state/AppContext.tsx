@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useReducer } from 'react'
 import type { ReactNode } from 'react'
-import type { ColorScheme } from '../types/colorScheme'
-import type { GridShapeId } from '../types/gridShape'
-import type { GridSize } from '../types/gridSize'
+import type { ColorScheme } from '@/types/colorScheme'
+import type { GridShapeId } from '@/types/gridShape'
+import type { GridSize } from '@/types/gridSize'
 import { createInitialHistoryState, historyReducer } from './historyReducer'
 import {
 	loadInitialAppState,
 	savePersistedState,
-} from '../services/storageService'
+} from '@/services/storageService'
 import { AppStateContext } from './appStateContext'
 
 export function AppStateProvider({

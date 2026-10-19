@@ -1,6 +1,6 @@
 import { fireEvent, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { renderWithNavigationGuard as render } from '@test/renderWithNavigationGuard'
+import { renderWithNavigationGuard as render } from '@/test/renderWithNavigationGuard'
 import useUnsavedDraft from './useUnsavedDraft'
 import { useNavigationGuard } from './useNavigationGuard'
 

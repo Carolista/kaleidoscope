@@ -1,6 +1,6 @@
 import type { ComponentProps, ReactNode, SubmitEvent } from 'react'
 import { faXmark } from '@fortawesome/pro-solid-svg-icons'
-import { Button, Checkbox, FormField, Input } from '@shared'
+import { Button, Checkbox, FormField, Input } from '@/components/shared'
 import AdminIconButton from './AdminIconButton'
 import styles from './AdminLayout.module.css'
 

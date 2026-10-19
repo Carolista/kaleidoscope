@@ -1,4 +1,4 @@
-import type { Json, Tables } from '../types/database'
+import type { Json, Tables } from '@/types/database'
 import { HEX_PUZZLE_RECIPES, type PuzzlePlacement } from './hexPuzzle'
 import type { AuthoredHexPuzzle, HexPuzzleDefinition } from './hexAuthoring'
 

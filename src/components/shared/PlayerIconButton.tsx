@@ -1,4 +1,4 @@
-import { useDuotoneIconTint } from '@hooks/useDuotoneIconTint'
+import { useDuotoneIconTint } from '@/hooks/useDuotoneIconTint'
 import IconButton from './IconButton'
 import type { IconButtonProps } from './IconButton'
 

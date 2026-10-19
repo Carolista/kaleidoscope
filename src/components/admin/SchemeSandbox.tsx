@@ -1,10 +1,7 @@
 import { useState } from 'react'
-import type { ColorScheme } from '../../types/colorScheme'
-import {
-	getGroupIds,
-	HEXAGON_GRID_RADII,
-} from '../../shape-geometry/hexagonGrid'
-import HexPuzzleBoard from '../puzzle/HexPuzzleBoard'
+import type { ColorScheme } from '@/types/colorScheme'
+import { getGroupIds, HEXAGON_GRID_RADII } from '@/shape-geometry/hexagonGrid'
+import HexPuzzleBoard from '@/components/puzzle/HexPuzzleBoard'
 import { faWandMagicSparkles } from '@fortawesome/pro-solid-svg-icons'
 import AdminIconButton from './AdminIconButton'
 import styles from './SchemeLibrary.module.css'

@@ -1,14 +1,14 @@
-import type { AppState } from '../types/appState'
-import type { GridShapeId } from '../types/gridShape'
-import { colorSchemes } from '../data/colorSchemes'
-import { isGridShapeId } from '../data/gridShapes'
+import type { AppState } from '@/types/appState'
+import type { GridShapeId } from '@/types/gridShape'
+import { colorSchemes } from '@/data/colorSchemes'
+import { isGridShapeId } from '@/data/gridShapes'
 import {
 	availableGridSizes,
 	defaultGridSizes,
 	isGridSize,
 	legacyGridSizes,
-} from '../data/gridSizes'
-import { createInitialAppState } from '../state/appReducer'
+} from '@/data/gridSizes'
+import { createInitialAppState } from '@/state/appReducer'
 
 const STORAGE_KEY = 'kaleidoscope:design'
 

@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Database } from '../types/database'
-import { HEX_PUZZLE_RECIPES } from '../puzzles/hexPuzzle'
-import { generateAuthoredHexPuzzle } from '../puzzles/hexAuthoring'
+import type { Database } from '@/types/database'
+import { HEX_PUZZLE_RECIPES } from '@/puzzles/hexPuzzle'
+import { generateAuthoredHexPuzzle } from '@/puzzles/hexAuthoring'
 import {
 	loadSavedPuzzleSeeds,
 	puzzleDraftArgs,

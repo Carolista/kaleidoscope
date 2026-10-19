@@ -1,6 +1,6 @@
-import { colorSchemes } from '@data/colorSchemes'
-import { useAppState } from '@state/useAppState'
-import PaletteChoices from '@shared/PaletteChoices'
+import { colorSchemes } from '@/data/colorSchemes'
+import { useAppState } from '@/state/useAppState'
+import PaletteChoices from '@/components/shared/PaletteChoices'
 
 const choices = colorSchemes.map(scheme => ({ ...scheme, id: scheme.name }))
 

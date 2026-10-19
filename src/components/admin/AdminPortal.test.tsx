@@ -22,15 +22,15 @@ const mocks = vi.hoisted(() => ({
 }))
 
 let authCallback: (event: AuthChangeEvent, session: Session | null) => void
-vi.mock('../../services/puzzleLibrary', () => ({
+vi.mock('@/services/puzzleLibrary', () => ({
 	loadPuzzleDrafts: async () => [],
 }))
-vi.mock('../../services/puzzleSets', () => ({
+vi.mock('@/services/puzzleSets', () => ({
 	loadDraftSets: async () => [],
 	manageDraftSet: vi.fn(),
 	deleteDraftSet: vi.fn(),
 }))
-vi.mock('../../services/schemeSets', () => ({
+vi.mock('@/services/schemeSets', () => ({
 	loadSchemeSets: async () => [],
 	manageSchemeSet: vi.fn(),
 	schemeSetLabels: {
@@ -40,7 +40,7 @@ vi.mock('../../services/schemeSets', () => ({
 		paid: 'Pack',
 	},
 }))
-vi.mock('../../services/supabaseClient', () => ({
+vi.mock('@/services/supabaseClient', () => ({
 	getSupabaseClient: () => mocks.getClient(),
 }))
 

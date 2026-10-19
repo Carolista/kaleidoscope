@@ -18,9 +18,9 @@ import {
 } from '@fortawesome/pro-solid-svg-icons'
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { useDuotoneIconTint } from '@hooks/useDuotoneIconTint'
-import { useIsTouchDevice } from '@hooks/useIsTouchDevice'
-import { Modal, ModalHeader } from '@shared'
+import { useDuotoneIconTint } from '@/hooks/useDuotoneIconTint'
+import { useIsTouchDevice } from '@/hooks/useIsTouchDevice'
+import { Modal, ModalHeader } from '@/components/shared'
 import styles from './ControlsModal.module.css'
 
 export interface ControlsModalProps {

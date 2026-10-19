@@ -1,12 +1,12 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { renderWithNavigationGuard as render } from '@test/renderWithNavigationGuard'
+import { renderWithNavigationGuard as render } from '@/test/renderWithNavigationGuard'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Database } from '../../types/database'
-import type { CatalogScheme } from '../../services/colorSchemes'
-import type { SchemeUsage } from '../../services/schemeUsage'
+import type { Database } from '@/types/database'
+import type { CatalogScheme } from '@/services/colorSchemes'
+import type { SchemeUsage } from '@/services/schemeUsage'
 import SchemeLibrary from './SchemeLibrary'
-import type { SchemeSet } from '../../services/schemeSets'
+import type { SchemeSet } from '@/services/schemeSets'
 import { useState } from 'react'
 import { useNavigationGuard } from './useNavigationGuard'
 
@@ -18,19 +18,19 @@ const mocks = vi.hoisted(() => ({
 	manageSet: vi.fn(),
 	bulkDelete: vi.fn(),
 }))
-vi.mock('../../services/schemeSets', async importOriginal => ({
-	...(await importOriginal<typeof import('../../services/schemeSets')>()),
+vi.mock('@/services/schemeSets', async importOriginal => ({
+	...(await importOriginal<typeof import('@/services/schemeSets')>()),
 	loadSchemeSets: (...args: unknown[]) => mocks.sets(...args),
 	manageSchemeSet: (...args: unknown[]) => mocks.manageSet(...args),
 }))
-vi.mock('../../services/colorSchemes', async importOriginal => ({
-	...(await importOriginal<typeof import('../../services/colorSchemes')>()),
+vi.mock('@/services/colorSchemes', async importOriginal => ({
+	...(await importOriginal<typeof import('@/services/colorSchemes')>()),
 	loadColorSchemes: (...args: unknown[]) => mocks.load(...args),
 	manageColorScheme: (...args: unknown[]) => mocks.manage(...args),
 	bulkDeleteColorSchemes: (...args: unknown[]) => mocks.bulkDelete(...args),
 }))
-vi.mock('../../services/schemeUsage', async importOriginal => ({
-	...(await importOriginal<typeof import('../../services/schemeUsage')>()),
+vi.mock('@/services/schemeUsage', async importOriginal => ({
+	...(await importOriginal<typeof import('@/services/schemeUsage')>()),
 	loadSchemeUsage: (...args: unknown[]) => mocks.usage(...args),
 }))
 const client = {} as SupabaseClient<Database>

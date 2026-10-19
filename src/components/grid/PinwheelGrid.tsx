@@ -5,12 +5,12 @@ import {
 	PINWHEEL_ROW_STEPS,
 	computeGridAspectRatio,
 	generatePinwheelCells,
-} from '@geometry/pinwheelGrid'
+} from '@/shape-geometry/pinwheelGrid'
 import {
 	pinwheelBoundingBox,
 	pinwheelCellCorners,
-} from '@geometry/pinwheelLayout'
-import type { PinwheelLayout } from '@geometry/pinwheelLayout'
+} from '@/shape-geometry/pinwheelLayout'
+import type { PinwheelLayout } from '@/shape-geometry/pinwheelLayout'
 import GridView from './GridView'
 import type { GridCell } from './GridView'
 

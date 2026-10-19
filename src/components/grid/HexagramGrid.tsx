@@ -4,12 +4,12 @@ import {
 	HEXAGRAM_GRID_SIZE,
 	computeGridAspectRatio,
 	generateHexagramCells,
-} from '@geometry/hexagramGrid'
+} from '@/shape-geometry/hexagramGrid'
 import {
 	hexagramBoundingBox,
 	hexagramStarCellCorners,
-} from '@geometry/hexagramLayout'
-import type { HexagramLayout } from '@geometry/hexagramLayout'
+} from '@/shape-geometry/hexagramLayout'
+import type { HexagramLayout } from '@/shape-geometry/hexagramLayout'
 import GridView from './GridView'
 import type { GridCell } from './GridView'
 

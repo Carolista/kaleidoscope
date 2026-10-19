@@ -1,8 +1,8 @@
 import { useCallback, useLayoutEffect, useRef } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
-import { supportedGridShapes } from '@data/gridShapes'
-import { availableGridSizes } from '@data/gridSizes'
-import { computeAspectRatioForShape } from '@utils/gridShapeRegistry'
+import { supportedGridShapes } from '@/data/gridShapes'
+import { availableGridSizes } from '@/data/gridSizes'
+import { computeAspectRatioForShape } from '@/utils/gridShapeRegistry'
 import styles from './GridTransition.module.css'
 
 // Tuning knobs for the swap. The outgoing grid gathers itself into the

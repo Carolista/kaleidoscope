@@ -1,4 +1,4 @@
-import type { ColorScheme } from '../types/colorScheme'
+import type { ColorScheme } from '@/types/colorScheme'
 
 // Hex values for palettes copied, rather efficiently, from https://coolors.co/palettes/trending
 // Ported from the original app's scripts.js.

@@ -1,9 +1,9 @@
-import type { Point } from '../types/geometry'
-import type { HexagramCell } from '../types/hexagram'
-import type { GridSize } from '../types/gridSize'
-import { averagePoint } from '@utils/geometryMath'
-import { groupCells } from '@utils/groupCells'
-import { assignSymmetryGroups } from '@utils/symmetry'
+import type { Point } from '@/types/geometry'
+import type { HexagramCell } from '@/types/hexagram'
+import type { GridSize } from '@/types/gridSize'
+import { averagePoint } from '@/utils/geometryMath'
+import { groupCells } from '@/utils/groupCells'
+import { assignSymmetryGroups } from '@/utils/symmetry'
 import {
 	HEXAGRAM_ROTATIONS,
 	hexagramBoundingBox,

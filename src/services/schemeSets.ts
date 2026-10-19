@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Database, Tables } from '../types/database'
+import type { Database, Tables } from '@/types/database'
 import { readColorScheme } from './colorSchemes'
 
 export type SchemeSetKind = 'undecided' | 'core' | 'reward' | 'paid'

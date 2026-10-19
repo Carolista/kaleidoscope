@@ -1,43 +1,46 @@
 import { useMemo } from 'react'
 import type { CSSProperties } from 'react'
-import type { GridShapeId } from '@appTypes/gridShape'
-import { generateHexagonCells } from '@geometry/hexagonGrid'
+import type { GridShapeId } from '@/types/gridShape'
+import { generateHexagonCells } from '@/shape-geometry/hexagonGrid'
 import {
 	axialToPixel,
 	boundingBox,
 	hexagonCorners,
-} from '@geometry/hexagonLayout'
-import type { HexagonLayout } from '@geometry/hexagonLayout'
-import { pointsToSvgAttr } from '@utils/svgPoints'
-import { generateTriangleCells } from '@geometry/triangleGrid'
-import { triangleCorners, trianglesBoundingBox } from '@geometry/triangleLayout'
-import type { TriangleLayout } from '@geometry/triangleLayout'
-import { generateDiamondStarCells } from '@geometry/diamondStarGrid'
+} from '@/shape-geometry/hexagonLayout'
+import type { HexagonLayout } from '@/shape-geometry/hexagonLayout'
+import { pointsToSvgAttr } from '@/utils/svgPoints'
+import { generateTriangleCells } from '@/shape-geometry/triangleGrid'
+import {
+	triangleCorners,
+	trianglesBoundingBox,
+} from '@/shape-geometry/triangleLayout'
+import type { TriangleLayout } from '@/shape-geometry/triangleLayout'
+import { generateDiamondStarCells } from '@/shape-geometry/diamondStarGrid'
 import {
 	diamondStarBoundingBox,
 	diamondStarCellCorners,
-} from '@geometry/diamondStarLayout'
-import type { DiamondStarLayout } from '@geometry/diamondStarLayout'
-import { generateHexagramCells } from '@geometry/hexagramGrid'
+} from '@/shape-geometry/diamondStarLayout'
+import type { DiamondStarLayout } from '@/shape-geometry/diamondStarLayout'
+import { generateHexagramCells } from '@/shape-geometry/hexagramGrid'
 import {
 	hexagramBoundingBox,
 	hexagramStarCellCorners,
-} from '@geometry/hexagramLayout'
-import type { HexagramLayout } from '@geometry/hexagramLayout'
-import { generateCircleRingsCells } from '@geometry/circleRingsGrid'
+} from '@/shape-geometry/hexagramLayout'
+import type { HexagramLayout } from '@/shape-geometry/hexagramLayout'
+import { generateCircleRingsCells } from '@/shape-geometry/circleRingsGrid'
 import {
 	circleRingsBoundingBox,
 	circleRingsCellCenter,
 	circleRingsCellRadius,
-} from '@geometry/circleRingsLayout'
-import type { CircleRingsLayout } from '@geometry/circleRingsLayout'
-import { generatePinwheelCells } from '@geometry/pinwheelGrid'
+} from '@/shape-geometry/circleRingsLayout'
+import type { CircleRingsLayout } from '@/shape-geometry/circleRingsLayout'
+import { generatePinwheelCells } from '@/shape-geometry/pinwheelGrid'
 import {
 	pinwheelBoundingBox,
 	pinwheelCellCorners,
-} from '@geometry/pinwheelLayout'
-import type { PinwheelLayout } from '@geometry/pinwheelLayout'
-import type { Point } from '@appTypes/geometry'
+} from '@/shape-geometry/pinwheelLayout'
+import type { PinwheelLayout } from '@/shape-geometry/pinwheelLayout'
+import type { Point } from '@/types/geometry'
 import styles from './GridShapeIcon.module.css'
 
 export interface GridShapeIconProps {

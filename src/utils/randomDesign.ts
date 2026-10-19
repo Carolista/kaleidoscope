@@ -1,4 +1,4 @@
-import type { ColorScheme } from '../types/colorScheme'
+import type { ColorScheme } from '@/types/colorScheme'
 
 // Relative weights for picking a random paint color: scheme colors
 // dominate so a randomized design still reads as a coherent kaleidoscope

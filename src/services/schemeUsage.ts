@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Database } from '../types/database'
-import { readHexPuzzleTarget } from '../puzzles/readAuthoredHexPuzzle'
+import type { Database } from '@/types/database'
+import { readHexPuzzleTarget } from '@/puzzles/readAuthoredHexPuzzle'
 
 export interface SchemeUsage {
 	readonly puzzles: readonly {

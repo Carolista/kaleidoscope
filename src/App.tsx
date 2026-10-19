@@ -1,7 +1,10 @@
 import type { ComponentType, CSSProperties, Ref } from 'react'
 import { useLayoutEffect, useRef, useState } from 'react'
 import styles from './App.module.css'
-import { ColorOptions, ColorSchemeButton } from '@color-schemes'
+import {
+	ColorOptions,
+	ColorSchemeButton,
+} from '@/components/controls/color-schemes'
 import {
 	ControlsInfoButton,
 	DarkModeToggle,
@@ -10,8 +13,8 @@ import {
 	ResetDesignButton,
 	SaveImageButton,
 	UndoRedoButtons,
-} from '@controls'
-import { GridShapeButton } from '@shapes'
+} from '@/components/controls'
+import { GridShapeButton } from '@/components/controls/shapes'
 import {
 	CircleRingsGrid,
 	DiamondStarGrid,
@@ -19,7 +22,7 @@ import {
 	HexagramGrid,
 	PinwheelGrid,
 	TriangleGrid,
-} from '@grid'
+} from '@/components/grid'
 import GridTransition from './components/grid/GridTransition'
 import Footer from './components/layout/Footer'
 import Header from './components/layout/Header'
@@ -30,12 +33,12 @@ import { hasPersistedDesign } from './services/storageService'
 import { getThemeColors } from './state/theme'
 import { useAppState } from './state/useAppState'
 import type { GridShapeId } from './types/gridShape'
-import { HEXAGON_GRID_RADII } from '@geometry/hexagonGrid'
-import { TRIANGLE_GRID_SIZES } from '@geometry/triangleGrid'
-import { DIAMOND_STAR_GRID_SIZES } from '@geometry/diamondStarGrid'
-import { HEXAGRAM_GRID_SIZES } from '@geometry/hexagramGrid'
-import { CIRCLE_RINGS_GRID_SIZES } from '@geometry/circleRingsGrid'
-import { PINWHEEL_GRID_SIZES } from '@geometry/pinwheelGrid'
+import { HEXAGON_GRID_RADII } from '@/shape-geometry/hexagonGrid'
+import { TRIANGLE_GRID_SIZES } from '@/shape-geometry/triangleGrid'
+import { DIAMOND_STAR_GRID_SIZES } from '@/shape-geometry/diamondStarGrid'
+import { HEXAGRAM_GRID_SIZES } from '@/shape-geometry/hexagramGrid'
+import { CIRCLE_RINGS_GRID_SIZES } from '@/shape-geometry/circleRingsGrid'
+import { PINWHEEL_GRID_SIZES } from '@/shape-geometry/pinwheelGrid'
 
 const gridComponents = {
 	hexagon: HexagonGrid,

@@ -1,14 +1,14 @@
 import { act, fireEvent, screen, within } from '@testing-library/react'
-import { renderWithNavigationGuard as render } from '@test/renderWithNavigationGuard'
+import { renderWithNavigationGuard as render } from '@/test/renderWithNavigationGuard'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Database } from '../../types/database'
-import type { CatalogScheme } from '../../services/colorSchemes'
-import type { LibraryDraft } from '../../services/puzzleLibrary'
-import type { DraftSet } from '../../services/puzzleSets'
-import { generateAuthoredHexPuzzle } from '../../puzzles/hexAuthoring'
-import { HEX_PUZZLE_RECIPES } from '../../puzzles/hexPuzzle'
-import { puzzleDraftArgs } from '../../services/puzzleDrafts'
+import type { Database } from '@/types/database'
+import type { CatalogScheme } from '@/services/colorSchemes'
+import type { LibraryDraft } from '@/services/puzzleLibrary'
+import type { DraftSet } from '@/services/puzzleSets'
+import { generateAuthoredHexPuzzle } from '@/puzzles/hexAuthoring'
+import { HEX_PUZZLE_RECIPES } from '@/puzzles/hexPuzzle'
+import { puzzleDraftArgs } from '@/services/puzzleDrafts'
 import AdminWorkspace from './AdminWorkspace'
 
 const mocks = vi.hoisted(() => ({
@@ -18,21 +18,21 @@ const mocks = vi.hoisted(() => ({
 	paletteSets: vi.fn(),
 	manageSet: vi.fn(),
 }))
-vi.mock('../../services/puzzleLibrary', async importOriginal => ({
-	...(await importOriginal<typeof import('../../services/puzzleLibrary')>()),
+vi.mock('@/services/puzzleLibrary', async importOriginal => ({
+	...(await importOriginal<typeof import('@/services/puzzleLibrary')>()),
 	loadPuzzleDrafts: (...args: unknown[]) => mocks.puzzles(...args),
 }))
-vi.mock('../../services/puzzleSets', async importOriginal => ({
-	...(await importOriginal<typeof import('../../services/puzzleSets')>()),
+vi.mock('@/services/puzzleSets', async importOriginal => ({
+	...(await importOriginal<typeof import('@/services/puzzleSets')>()),
 	loadDraftSets: (...args: unknown[]) => mocks.puzzleSets(...args),
 	manageDraftSet: (...args: unknown[]) => mocks.manageSet(...args),
 }))
-vi.mock('../../services/colorSchemes', async importOriginal => ({
-	...(await importOriginal<typeof import('../../services/colorSchemes')>()),
+vi.mock('@/services/colorSchemes', async importOriginal => ({
+	...(await importOriginal<typeof import('@/services/colorSchemes')>()),
 	loadColorSchemes: (...args: unknown[]) => mocks.palettes(...args),
 }))
-vi.mock('../../services/schemeSets', async importOriginal => ({
-	...(await importOriginal<typeof import('../../services/schemeSets')>()),
+vi.mock('@/services/schemeSets', async importOriginal => ({
+	...(await importOriginal<typeof import('@/services/schemeSets')>()),
 	loadSchemeSets: (...args: unknown[]) => mocks.paletteSets(...args),
 }))
 

@@ -1,9 +1,9 @@
-import { TriangleGrid } from '@grid'
-import { Button } from '@shared'
-import { useAppState } from '@state/useAppState'
+import { TriangleGrid } from '@/components/grid'
+import { Button } from '@/components/shared'
+import { useAppState } from '@/state/useAppState'
 import { useState } from 'react'
-import { TRIANGLE_GRID_SIZES } from '@geometry/triangleGrid'
-import ColorSwatches from '../controls/color-schemes/ColorSwatches'
+import { TRIANGLE_GRID_SIZES } from '@/shape-geometry/triangleGrid'
+import ColorSwatches from '@/components/controls/color-schemes/ColorSwatches'
 import styles from './IntroSequence.module.css'
 
 // The intro demonstrates the smallest selectable triangle size (5 groups).

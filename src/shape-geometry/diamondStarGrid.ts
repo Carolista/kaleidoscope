@@ -1,9 +1,9 @@
-import type { Point } from '../types/geometry'
-import type { DiamondStarCell } from '../types/diamondStar'
-import type { GridSize } from '../types/gridSize'
-import { averagePoint } from '@utils/geometryMath'
-import { groupCells } from '@utils/groupCells'
-import { assignSymmetryGroups } from '@utils/symmetry'
+import type { Point } from '@/types/geometry'
+import type { DiamondStarCell } from '@/types/diamondStar'
+import type { GridSize } from '@/types/gridSize'
+import { averagePoint } from '@/utils/geometryMath'
+import { groupCells } from '@/utils/groupCells'
+import { assignSymmetryGroups } from '@/utils/symmetry'
 import {
 	DIAMOND_STAR_ROTATIONS,
 	HALF_ANGLE_DEGREES,

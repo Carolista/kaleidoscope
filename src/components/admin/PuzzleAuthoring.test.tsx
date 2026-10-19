@@ -1,22 +1,22 @@
 import { act, fireEvent, screen, within, waitFor } from '@testing-library/react'
-import { renderWithNavigationGuard as render } from '@test/renderWithNavigationGuard'
+import { renderWithNavigationGuard as render } from '@/test/renderWithNavigationGuard'
 import { useState } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { getSupabaseClient } from '../../services/supabaseClient'
+import { getSupabaseClient } from '@/services/supabaseClient'
 import {
 	HEX_PUZZLE_RECIPES,
 	coordinateKey,
 	rotateCoordinate,
-} from '../../puzzles/hexPuzzle'
+} from '@/puzzles/hexPuzzle'
 import {
 	generateAuthoredHexPuzzle,
 	renderAuthoredHexPuzzle,
-} from '../../puzzles/hexAuthoring'
+} from '@/puzzles/hexAuthoring'
 import PuzzleAuthoring from './PuzzleAuthoring'
 import AdminWorkspace from './AdminWorkspace'
 import { useNavigationGuard } from './useNavigationGuard'
 import styles from './AdminPortal.module.css'
-import fieldStyles from '../shared/FormField.module.css'
+import fieldStyles from '@/components/shared/FormField.module.css'
 
 const seed = '00000001000000010000000100000001'
 
@@ -30,13 +30,13 @@ const mocks = vi.hoisted(() => ({
 	rpc: vi.fn(),
 	seeds: vi.fn(),
 }))
-vi.mock('../../services/supabaseClient', () => ({
+vi.mock('@/services/supabaseClient', () => ({
 	getSupabaseClient: () => ({ from: mocks.from, rpc: mocks.rpc }),
 }))
-vi.mock('../../services/puzzleLibrary', () => ({
+vi.mock('@/services/puzzleLibrary', () => ({
 	loadPuzzleDrafts: async () => [],
 }))
-vi.mock('../../services/schemeSets', () => ({
+vi.mock('@/services/schemeSets', () => ({
 	loadSchemeSets: async () => [],
 	manageSchemeSet: vi.fn(),
 	schemeSetLabels: {

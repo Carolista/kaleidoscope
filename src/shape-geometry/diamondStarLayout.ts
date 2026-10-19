@@ -1,6 +1,6 @@
-import type { Point } from '../types/geometry'
-import type { DiamondStarCell } from '../types/diamondStar'
-import { rotate } from '@utils/symmetry'
+import type { Point } from '@/types/geometry'
+import type { DiamondStarCell } from '@/types/diamondStar'
+import { rotate } from '@/utils/symmetry'
 
 export interface DiamondStarLayout {
 	// Number of lattice rows/columns subdividing one diamond point, from
@@ -121,4 +121,4 @@ export function diamondStarCellCorners(
 	return raw.map(transform)
 }
 
-export { polygonBoundingBox as diamondStarBoundingBox } from '@utils/geometryMath'
+export { polygonBoundingBox as diamondStarBoundingBox } from '@/utils/geometryMath'

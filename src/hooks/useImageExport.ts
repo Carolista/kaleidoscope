@@ -3,7 +3,7 @@ import type { RefObject } from 'react'
 import {
 	buildExportFilename,
 	exportSvgAsPngBlob,
-} from '../services/imageExportService'
+} from '@/services/imageExportService'
 
 export type ExportState =
 	| { readonly status: 'generating' }

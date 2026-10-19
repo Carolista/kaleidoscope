@@ -1,16 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { Button, ConfirmDialog, Loading } from '@shared'
-import type { Database } from '../../types/database'
-import {
-	manageColorScheme,
-	type CatalogScheme,
-} from '../../services/colorSchemes'
+import { Button, ConfirmDialog, Loading } from '@/components/shared'
+import type { Database } from '@/types/database'
+import { manageColorScheme, type CatalogScheme } from '@/services/colorSchemes'
 import {
 	loadSchemeUsage,
 	schemeIsUsed,
 	type SchemeUsage,
-} from '../../services/schemeUsage'
+} from '@/services/schemeUsage'
 import useUnsavedDraft from './useUnsavedDraft'
 import PaletteUsageDetails from './PaletteUsageDetails'
 

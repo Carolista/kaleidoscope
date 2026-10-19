@@ -9,7 +9,7 @@ are now historical; update this file instead.
 - **Database setup, migrations, and SQL tests:** [supabase/README.md](./supabase/README.md)
 - **Original phase descriptions:** [BACKLOG.md](./BACKLOG.md)
 
-Status key: ✅ done · 🔜 next · ⬜ not started · ❓ needs a decision
+Status key: ✅ done · 👀 ready for review · 🔜 next · ⬜ not started · ❓ needs a decision
 
 
 ---
@@ -26,8 +26,8 @@ The live app currently has **Zen Mode only**, with every shape and a limited set
 of palettes. Launching Puzzle Mode makes it the primary feature and makes access
 more restrictive (see "Launch impact" below).
 
-**Next up:** the Scheduled and Published catalog views, then the remaining
-admin tools.
+**Next up:** the codebase reorganization below, then the Scheduled and
+Published catalog views and the remaining admin tools.
 
 ---
 
@@ -58,6 +58,49 @@ and Zen Mode with limited access. Moving past the first shape requires an accoun
 
 **2B ends** with the daily puzzles feature. The admin groundwork for daily
 puzzles already in the schema stays parked until then.
+
+---
+
+## Codebase reorganization (in progress)
+
+Move from layer folders (`components/`, `services/`, `hooks/`, `utils/`) to
+features plus shared layers, before 2A player work adds accounts and progression.
+Each step changes no behavior, keeps tests green, and is reviewed and committed
+separately.
+
+Target layout:
+
+```
+src/
+  app/        entry, routing, navigation guard, global CSS
+  features/   zen/, puzzle/, admin/{shell,sets,puzzles,puzzle-sets,palettes,palette-sets}/
+              (later account/, store/, daily/)
+  domain/     React-free: shapes/<shape>/ + registry, puzzles/, palettes/
+  ui/         shared components and hooks, grid rendering, shared puzzle board
+  lib/        Supabase client and generated types, math helpers
+```
+
+Rules:
+
+- One `@/` alias for `src/`. Barrel `index.ts` for each feature, area, and shared folder.
+- Every component gets its own colocated CSS Module. No shared stylesheet across
+  unrelated components.
+- "Palette" everywhere in code, not "scheme". Persisted localStorage keys and
+  database names stay unchanged.
+- Features never import other features. `ui`, `domain`, and `lib` never import
+  features. `domain` has no React. Enforced by ESLint.
+
+| #   | Step                                                                    | Status |
+| --- | ----------------------------------------------------------------------- | ------ |
+| R1  | One `@/` alias; convert all imports                                     | 👀 review |
+| R2  | Fix wrong-way dependencies and import cycles                            | ⬜     |
+| R3  | Shapes domain: one folder per shape plus a registry                     | ⬜     |
+| R4  | Puzzle engine to `domain/`; shared board/tray split from player shell   | ⬜     |
+| R5  | Admin into `features/admin/*` with its services and colocated CSS       | ⬜     |
+| R6  | Zen into `features/zen`; `app/`, `ui/`, `lib/` settled; barrels         | ⬜     |
+| R7  | Rename "scheme" to "palette" across code                                | ⬜     |
+| R8  | Split large files, share duplicated helpers                             | ⬜     |
+| R9  | ESLint boundary rules; update CONTEXT architecture                      | ⬜     |
 
 ---
 

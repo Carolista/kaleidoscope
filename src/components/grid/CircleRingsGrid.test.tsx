@@ -1,18 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { useIsTouchDevice } from '@hooks/useIsTouchDevice'
-import { buildExportClone } from '@services/imageExportService'
-import { AppStateProvider } from '@state/AppContext'
+import { useIsTouchDevice } from '@/hooks/useIsTouchDevice'
+import { buildExportClone } from '@/services/imageExportService'
+import { AppStateProvider } from '@/state/AppContext'
 import {
 	CIRCLE_RINGS_GRID_SIZES,
 	computeGridAspectRatio,
 	getGroupIds,
-} from '@geometry/circleRingsGrid'
+} from '@/shape-geometry/circleRingsGrid'
 import styles from './Cell.module.css'
 import CircleRingsGrid from './CircleRingsGrid'
 
-vi.mock('@hooks/useIsTouchDevice')
+vi.mock('@/hooks/useIsTouchDevice')
 
 beforeEach(() => {
 	vi.mocked(useIsTouchDevice).mockReturnValue(false)

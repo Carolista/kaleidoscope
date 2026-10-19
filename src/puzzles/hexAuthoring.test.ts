@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { generateHexagonCells } from '@geometry/hexagonGrid'
+import { generateHexagonCells } from '@/shape-geometry/hexagonGrid'
 import {
 	HEX_PUZZLE_RECIPES,
 	coordinateKey,

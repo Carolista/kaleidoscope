@@ -1,5 +1,5 @@
 import { useId } from 'react'
-import { Modal, ModalHeader } from '@shared'
+import { Modal, ModalHeader } from '@/components/shared'
 import SchemePicker from './SchemePicker'
 import styles from './ColorSchemeModal.module.css'
 

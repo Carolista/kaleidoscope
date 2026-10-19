@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
-import { colorSchemes } from '../data/colorSchemes'
-import { defaultGridSizes } from '../data/gridSizes'
-import type { AppState } from '../types/appState'
+import { colorSchemes } from '@/data/colorSchemes'
+import { defaultGridSizes } from '@/data/gridSizes'
+import type { AppState } from '@/types/appState'
 import type { AppAction } from './appReducer'
-import { getGroupIdsForShape } from '../utils/gridShapeRegistry'
+import { getGroupIdsForShape } from '@/utils/gridShapeRegistry'
 import { createInitialHistoryState, historyReducer } from './historyReducer'
 
 function baseState(overrides: Partial<AppState> = {}): AppState {

@@ -1,7 +1,10 @@
-import type { ColorScheme } from '@appTypes/colorScheme'
-import type { GridSize } from '@appTypes/gridSize'
-import type { AxialCoord } from '@appTypes/hexagon'
-import { generateHexagonCells, HEXAGON_GRID_RADII } from '@geometry/hexagonGrid'
+import type { ColorScheme } from '@/types/colorScheme'
+import type { GridSize } from '@/types/gridSize'
+import type { AxialCoord } from '@/types/hexagon'
+import {
+	generateHexagonCells,
+	HEXAGON_GRID_RADII,
+} from '@/shape-geometry/hexagonGrid'
 
 export interface PuzzleTile extends AxialCoord {
 	readonly color: string

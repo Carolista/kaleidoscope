@@ -2,12 +2,12 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import type { RefObject } from 'react'
 import { useImageExport } from './useImageExport'
-import * as imageExportService from '../services/imageExportService'
+import * as imageExportService from '@/services/imageExportService'
 
-vi.mock('../services/imageExportService', async () => {
+vi.mock('@/services/imageExportService', async () => {
 	const actual = await vi.importActual<
-		typeof import('../services/imageExportService')
-	>('../services/imageExportService')
+		typeof import('@/services/imageExportService')
+	>('@/services/imageExportService')
 	return {
 		...actual,
 		exportSvgAsPngBlob: vi.fn(),

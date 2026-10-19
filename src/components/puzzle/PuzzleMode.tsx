@@ -1,15 +1,20 @@
-import type { AxialCoord } from '@appTypes/hexagon'
-import { DarkModeToggle } from '@controls'
-import { colorSchemes } from '@data/colorSchemes'
+import type { AxialCoord } from '@/types/hexagon'
+import { DarkModeToggle } from '@/components/controls'
+import { colorSchemes } from '@/data/colorSchemes'
 import { faRotate } from '@fortawesome/sharp-duotone-solid-svg-icons'
-import { Button, IconButton, PlayerIconButton, Modal } from '@shared'
+import {
+	Button,
+	IconButton,
+	PlayerIconButton,
+	Modal,
+} from '@/components/shared'
 import type { PointerEvent } from 'react'
 import { useId, useRef, useState } from 'react'
 import type {
 	HexPuzzle,
 	PuzzlePiece,
 	PuzzlePlacements,
-} from '../../puzzles/hexPuzzle'
+} from '@/puzzles/hexPuzzle'
 import {
 	coordinateKey,
 	generateHexPuzzle,
@@ -18,10 +23,10 @@ import {
 	pieceCells,
 	placePuzzlePiece,
 	rotateCoordinate,
-} from '../../puzzles/hexPuzzle'
+} from '@/puzzles/hexPuzzle'
 import HexPuzzleBoard, { PieceGraphic } from './HexPuzzleBoard'
 import styles from './PuzzleMode.module.css'
-import { createPuzzleSeed } from '../../puzzles/puzzleSeed'
+import { createPuzzleSeed } from '@/puzzles/puzzleSeed'
 
 interface DragState {
 	readonly piece: PuzzlePiece

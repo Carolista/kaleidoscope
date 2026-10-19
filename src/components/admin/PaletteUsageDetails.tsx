@@ -1,6 +1,6 @@
-import type { ColorScheme } from '../../types/colorScheme'
-import { schemeIsUsed, type SchemeUsage } from '../../services/schemeUsage'
-import HexPuzzleBoard from '../puzzle/HexPuzzleBoard'
+import type { ColorScheme } from '@/types/colorScheme'
+import { schemeIsUsed, type SchemeUsage } from '@/services/schemeUsage'
+import HexPuzzleBoard from '@/components/puzzle/HexPuzzleBoard'
 import styles from './SchemeLibrary.module.css'
 
 export default function PaletteUsageDetails({

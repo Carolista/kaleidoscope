@@ -1,8 +1,8 @@
 import { createContext } from 'react'
-import type { AppState } from '../types/appState'
-import type { ColorScheme } from '../types/colorScheme'
-import type { GridShapeId } from '../types/gridShape'
-import type { GridSize } from '../types/gridSize'
+import type { AppState } from '@/types/appState'
+import type { ColorScheme } from '@/types/colorScheme'
+import type { GridShapeId } from '@/types/gridShape'
+import type { GridSize } from '@/types/gridSize'
 
 export interface AppStateContextValue {
 	readonly state: AppState

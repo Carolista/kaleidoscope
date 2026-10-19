@@ -1,5 +1,5 @@
-import { useAppState } from '@state/useAppState'
-import { getThemeColors } from '@state/theme'
+import { useAppState } from '@/state/useAppState'
+import { getThemeColors } from '@/state/theme'
 import ColorSwatches from './ColorSwatches'
 
 // The 7 colors the user can currently paint with: the active scheme's 5

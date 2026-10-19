@@ -8,9 +8,9 @@ import {
 	type ReactNode,
 } from 'react'
 import type { Session, SupabaseClient } from '@supabase/supabase-js'
-import type { Database } from '../../types/database'
-import { getSupabaseClient } from '../../services/supabaseClient'
-import { getThemeColors } from '../../state/theme'
+import type { Database } from '@/types/database'
+import { getSupabaseClient } from '@/services/supabaseClient'
+import { getThemeColors } from '@/state/theme'
 import styles from './AdminPortal.module.css'
 import AdminWorkspace from './AdminWorkspace'
 import useUnsavedDraft from './useUnsavedDraft'
@@ -20,7 +20,7 @@ import {
 } from './NavigationGuard'
 import { useNavigationGuard } from './useNavigationGuard'
 import AdminIconButton from './AdminIconButton'
-import { Button, FormField, Input, Loading } from '@shared'
+import { Button, FormField, Input, Loading } from '@/components/shared'
 import {
 	faRightFromBracket,
 	faSun,

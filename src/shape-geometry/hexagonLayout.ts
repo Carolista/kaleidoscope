@@ -1,5 +1,5 @@
-import type { AxialCoord } from '../types/hexagon'
-import type { Point } from '../types/geometry'
+import type { AxialCoord } from '@/types/hexagon'
+import type { Point } from '@/types/geometry'
 
 export type HexagonOrientation = 'flat' | 'pointy'
 

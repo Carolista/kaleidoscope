@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { describe, expect, it, vi } from 'vitest'
-import type { Database } from '../types/database'
+import type { Database } from '@/types/database'
 import {
 	loadDraftSets,
 	manageDraftSet,
@@ -10,8 +10,8 @@ import {
 import {
 	generateAuthoredHexPuzzle,
 	renderAuthoredHexPuzzle,
-} from '../puzzles/hexAuthoring'
-import { HEX_PUZZLE_RECIPES } from '../puzzles/hexPuzzle'
+} from '@/puzzles/hexAuthoring'
+import { HEX_PUZZLE_RECIPES } from '@/puzzles/hexPuzzle'
 import { puzzleDraftArgs } from './puzzleDrafts'
 
 function client(value: object) {

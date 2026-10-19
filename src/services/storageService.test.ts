@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { colorSchemes } from '../data/colorSchemes'
-import { supportedGridShapes } from '../data/gridShapes'
-import { defaultGridSizes } from '../data/gridSizes'
-import { legacyGridSizes } from '../data/gridSizes'
-import type { AppState } from '../types/appState'
-import { appReducer } from '../state/appReducer'
+import { colorSchemes } from '@/data/colorSchemes'
+import { supportedGridShapes } from '@/data/gridShapes'
+import { defaultGridSizes } from '@/data/gridSizes'
+import { legacyGridSizes } from '@/data/gridSizes'
+import type { AppState } from '@/types/appState'
+import { appReducer } from '@/state/appReducer'
 import {
 	loadInitialAppState,
 	savePersistedState,

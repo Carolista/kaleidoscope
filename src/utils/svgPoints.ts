@@ -1,4 +1,4 @@
-import type { Point } from '../types/geometry'
+import type { Point } from '@/types/geometry'
 
 // A generic SVG helper, shared by every shape's rendering code (and the
 // shape-picker's preview icons) — formats a cell's corner points as the

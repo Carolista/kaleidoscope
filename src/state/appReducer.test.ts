@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { colorSchemes } from '../data/colorSchemes'
-import { defaultGridSizes } from '../data/gridSizes'
-import { supportedGridShapes } from '../data/gridShapes'
-import { getGroupIdsForShape } from '../utils/gridShapeRegistry'
+import { colorSchemes } from '@/data/colorSchemes'
+import { defaultGridSizes } from '@/data/gridSizes'
+import { supportedGridShapes } from '@/data/gridShapes'
+import { getGroupIdsForShape } from '@/utils/gridShapeRegistry'
 import { appReducer, createInitialAppState } from './appReducer'
-import type { AppState } from '../types/appState'
+import type { AppState } from '@/types/appState'
 
 describe('createInitialAppState', () => {
 	it('uses the first scheme and defaults current color to its first color', () => {

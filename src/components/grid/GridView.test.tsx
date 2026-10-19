@@ -2,18 +2,18 @@ import { createRef } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { colorSchemes } from '@data/colorSchemes'
-import { defaultGridSizes } from '@data/gridSizes'
-import { useIsTouchDevice } from '@hooks/useIsTouchDevice'
-import { savePersistedState } from '@services/storageService'
-import { useAppState } from '@state/useAppState'
-import { renderWithProvider } from '@test/renderWithProvider'
+import { colorSchemes } from '@/data/colorSchemes'
+import { defaultGridSizes } from '@/data/gridSizes'
+import { useIsTouchDevice } from '@/hooks/useIsTouchDevice'
+import { savePersistedState } from '@/services/storageService'
+import { useAppState } from '@/state/useAppState'
+import { renderWithProvider } from '@/test/renderWithProvider'
 import cellStyles from './Cell.module.css'
 import polygonStyles from './PolygonCell.module.css'
 import GridView from './GridView'
 import type { GridCell } from './GridView'
 
-vi.mock('@hooks/useIsTouchDevice')
+vi.mock('@/hooks/useIsTouchDevice')
 const mockUseIsTouchDevice = vi.mocked(useIsTouchDevice)
 const paintColor = colorSchemes[0].colors[0]
 

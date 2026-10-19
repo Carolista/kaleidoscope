@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { AppStateProvider } from '@state/AppContext'
-import { useAppState } from '@state/useAppState'
-import { gridShapes } from '@data/gridShapes'
-import { gridSizeOptions } from '@data/gridSizes'
+import { AppStateProvider } from '@/state/AppContext'
+import { useAppState } from '@/state/useAppState'
+import { gridShapes } from '@/data/gridShapes'
+import { gridSizeOptions } from '@/data/gridSizes'
 import GridShapePicker from './GridShapePicker'
 
 function Harness({ onSelected }: { onSelected?: () => void }) {

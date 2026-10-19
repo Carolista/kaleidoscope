@@ -2,10 +2,10 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import {
 	generateAuthoredHexPuzzle,
 	type AuthoredHexPuzzle,
-} from '../puzzles/hexAuthoring'
-import type { HexPuzzleRecipe } from '../puzzles/hexPuzzle'
-import { createUnusedPuzzleSeed } from '../puzzles/puzzleSeed'
-import type { Database } from '../types/database'
+} from '@/puzzles/hexAuthoring'
+import type { HexPuzzleRecipe } from '@/puzzles/hexPuzzle'
+import { createUnusedPuzzleSeed } from '@/puzzles/puzzleSeed'
+import type { Database } from '@/types/database'
 
 export type PuzzleUsage = 'collection' | 'daily'
 export type DraftArgs =

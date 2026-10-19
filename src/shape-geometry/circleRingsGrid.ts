@@ -1,8 +1,8 @@
-import type { Point } from '../types/geometry'
-import type { CircleRingsCell } from '../types/circleRings'
-import type { GridSize } from '../types/gridSize'
-import { groupCells } from '@utils/groupCells'
-import { assignSymmetryGroups } from '@utils/symmetry'
+import type { Point } from '@/types/geometry'
+import type { CircleRingsCell } from '@/types/circleRings'
+import type { GridSize } from '@/types/gridSize'
+import { groupCells } from '@/utils/groupCells'
+import { assignSymmetryGroups } from '@/utils/symmetry'
 import {
 	circleCountForRing,
 	circleRingsBoundingBox,

@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { colorSchemes } from '@data/colorSchemes'
-import { renderWithProvider } from '@test/renderWithProvider'
+import { colorSchemes } from '@/data/colorSchemes'
+import { renderWithProvider } from '@/test/renderWithProvider'
 import IntroSequence from './IntroSequence'
 
 const FIRST_SCHEME_COLORS = colorSchemes[0].colors

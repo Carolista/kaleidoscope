@@ -1,5 +1,5 @@
 import { act, fireEvent, screen, within } from '@testing-library/react'
-import { renderWithNavigationGuard as render } from '@test/renderWithNavigationGuard'
+import { renderWithNavigationGuard as render } from '@/test/renderWithNavigationGuard'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import SetCreationDialog from './SetCreationDialog'

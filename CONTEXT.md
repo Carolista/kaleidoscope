@@ -262,8 +262,9 @@ changes should be applied to all four SVG assets.
 - CSS Modules for component styles; plain CSS for global rules. No Tailwind or CSS-in-JS.
 - **Scheme** in code/file names; **palette** in user-facing text.
   **Theme** refers to dark/light mode, not palettes.
-- Keep persisted shape IDs stable. Keep aliases aligned between
-  [Vite](./vite.config.ts) and [TypeScript](./tsconfig.app.json).
+- Keep persisted shape IDs stable. Import across folders with the single `@/`
+  alias for `src/` (kept aligned in [Vite](./vite.config.ts) and
+  [TypeScript](./tsconfig.app.json)); use `./` only within the same folder.
 - Import individual Font Awesome definitions and render `FontAwesomeIcon` SVGs.
   [main.tsx](./src/main.tsx) imports core CSS and disables automatic CSS injection.
   No Kit script or Kit dependency.
@@ -353,7 +354,7 @@ follow-up work.
 | [components/controls/](./src/components/controls/) | Toolbar, pickers, and modal content |
 | [components/intro/](./src/components/intro/) | First-visit learn-by-doing sequence |
 | [components/shared/](./src/components/shared/) | Buttons, palette-aware `Checkbox`, native `Modal`, `ModalHeader`, `ConfirmDialog` |
-| [shape-geometry/](./src/shape-geometry/) | Shape-specific generation and layout (`@geometry`) |
+| [shape-geometry/](./src/shape-geometry/) | Shape-specific generation and layout |
 | [utils/](./src/utils/) | Shared math, symmetry, randomization, and geometry dispatch |
 | [state/](./src/state/) | App reducer, history wrapper, and Context |
 | [services/](./src/services/) | Persistence, confirmation/export preferences, PNG export |

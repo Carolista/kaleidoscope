@@ -1,7 +1,7 @@
 import { faSquareCheck } from '@fortawesome/sharp-duotone-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useEffect, useRef } from 'react'
-import { useDuotoneIconTint } from '@hooks/useDuotoneIconTint'
+import { useDuotoneIconTint } from '@/hooks/useDuotoneIconTint'
 import styles from './Checkbox.module.css'
 
 export interface CheckboxProps {

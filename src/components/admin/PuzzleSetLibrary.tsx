@@ -11,11 +11,11 @@ import {
 	manageDraftSet,
 	type DraftSet,
 	type SetAction,
-} from '../../services/puzzleSets'
-import type { Database } from '../../types/database'
-import HexPuzzleBoard from '../puzzle/HexPuzzleBoard'
+} from '@/services/puzzleSets'
+import type { Database } from '@/types/database'
+import HexPuzzleBoard from '@/components/puzzle/HexPuzzleBoard'
 import AdminIconButton from './AdminIconButton'
-import { ConfirmDialog, Loading } from '@shared'
+import { ConfirmDialog, Loading } from '@/components/shared'
 import {
 	AdminFeedback,
 	AdminGallery,
@@ -25,7 +25,7 @@ import {
 	AdminTag,
 } from './AdminLayout'
 import SetCreationDialog from './SetCreationDialog'
-import useModalState from '../../hooks/useModalState'
+import useModalState from '@/hooks/useModalState'
 import styles from './AdminPortal.module.css'
 import useUnsavedDraft from './useUnsavedDraft'
 import SortableSetMembers from './SortableSetMembers'

@@ -4,13 +4,13 @@ import {
 	computeGridAspectRatio,
 	HEXAGON_GRID_RADIUS,
 	generateHexagonCells,
-} from '@geometry/hexagonGrid'
+} from '@/shape-geometry/hexagonGrid'
 import {
 	axialToPixel,
 	boundingBox,
 	hexagonCorners,
-} from '@geometry/hexagonLayout'
-import type { HexagonLayout } from '@geometry/hexagonLayout'
+} from '@/shape-geometry/hexagonLayout'
+import type { HexagonLayout } from '@/shape-geometry/hexagonLayout'
 import GridView from './GridView'
 import type { GridCell } from './GridView'
 

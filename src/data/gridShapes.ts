@@ -1,4 +1,4 @@
-import type { GridShapeId } from '../types/gridShape'
+import type { GridShapeId } from '@/types/gridShape'
 
 // Supported shapes remain loadable even when hidden from the picker.
 export const supportedGridShapes = [

@@ -1,4 +1,4 @@
-import type { Point } from '../types/geometry'
+import type { Point } from '@/types/geometry'
 
 export type { Point }
 

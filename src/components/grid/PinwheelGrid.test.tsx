@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { AppStateProvider } from '@state/AppContext'
+import { AppStateProvider } from '@/state/AppContext'
 import {
 	PINWHEEL_GRID_SIZES,
 	computeGridAspectRatio,
 	getGroupIds,
-} from '@geometry/pinwheelGrid'
+} from '@/shape-geometry/pinwheelGrid'
 import PinwheelGrid from './PinwheelGrid'
 
 describe('PinwheelGrid', () => {

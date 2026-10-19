@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { faPalette } from '@fortawesome/sharp-duotone-solid-svg-icons'
-import { PlayerIconButton as IconButton } from '@shared'
+import { PlayerIconButton as IconButton } from '@/components/shared'
 import ColorSchemeModal from './ColorSchemeModal'
 
 function ColorSchemeButton() {

@@ -1,8 +1,8 @@
-import { gridShapes } from '@data/gridShapes'
-import { availableGridSizes, gridSizeOptions } from '@data/gridSizes'
-import { useAppState } from '@state/useAppState'
-import type { GridShapeId } from '@appTypes/gridShape'
-import type { GridSize } from '@appTypes/gridSize'
+import { gridShapes } from '@/data/gridShapes'
+import { availableGridSizes, gridSizeOptions } from '@/data/gridSizes'
+import { useAppState } from '@/state/useAppState'
+import type { GridShapeId } from '@/types/gridShape'
+import type { GridSize } from '@/types/gridSize'
 import GridShapeIcon from './GridShapeIcon'
 import styles from './GridShapePicker.module.css'
 

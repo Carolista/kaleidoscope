@@ -1,6 +1,6 @@
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core'
-import { useAppState } from '@state/useAppState'
-import { withLightness } from '@utils/colorMath'
+import { useAppState } from '@/state/useAppState'
+import { withLightness } from '@/utils/colorMath'
 
 // Lightness the active palette's color is normalized to for a duotone
 // icon's secondary (background/fill) layer, rendered fully opaque rather

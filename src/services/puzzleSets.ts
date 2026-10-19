@@ -1,8 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Database, Tables } from '../types/database'
-import type { HexPuzzle } from '../puzzles/hexPuzzle'
-import { readAuthoredHexPuzzle } from '../puzzles/readAuthoredHexPuzzle'
-import { renderAuthoredHexPuzzle } from '../puzzles/hexAuthoring'
+import type { Database, Tables } from '@/types/database'
+import type { HexPuzzle } from '@/puzzles/hexPuzzle'
+import { readAuthoredHexPuzzle } from '@/puzzles/readAuthoredHexPuzzle'
+import { renderAuthoredHexPuzzle } from '@/puzzles/hexAuthoring'
 import { readColorScheme } from './colorSchemes'
 
 export type SetKind = 'core' | 'reward' | 'paid'

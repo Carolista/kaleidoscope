@@ -1,19 +1,19 @@
 import { useMemo } from 'react'
 import type { PointerEvent, Ref } from 'react'
-import { generateHexagonCells } from '@geometry/hexagonGrid'
+import { generateHexagonCells } from '@/shape-geometry/hexagonGrid'
 import {
 	axialToPixel,
 	boundingBox,
 	hexagonCorners,
-} from '@geometry/hexagonLayout'
-import type { AxialCoord } from '@appTypes/hexagon'
-import { pointsToSvgAttr } from '@utils/svgPoints'
+} from '@/shape-geometry/hexagonLayout'
+import type { AxialCoord } from '@/types/hexagon'
+import { pointsToSvgAttr } from '@/utils/svgPoints'
 import {
 	coordinateKey,
 	pieceCells,
 	rotateCoordinate,
-} from '../../puzzles/hexPuzzle'
-import type { PuzzlePiece, PuzzlePlacements } from '../../puzzles/hexPuzzle'
+} from '@/puzzles/hexPuzzle'
+import type { PuzzlePiece, PuzzlePlacements } from '@/puzzles/hexPuzzle'
 import styles from './PuzzleMode.module.css'
 
 const layout = { orientation: 'flat', size: 16 } as const

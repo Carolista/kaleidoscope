@@ -1,6 +1,6 @@
-import type { Point } from '../types/geometry'
-import type { PinwheelCell } from '../types/pinwheel'
-import { rotate } from '@utils/symmetry'
+import type { Point } from '@/types/geometry'
+import type { PinwheelCell } from '@/types/pinwheel'
+import { rotate } from '@/utils/symmetry'
 
 export interface PinwheelLayout {
 	// Number of lattice steps from the center to the spoke's `sideRight`
@@ -162,4 +162,4 @@ export function pinwheelCellCorners(
 	return raw.map(transform)
 }
 
-export { polygonBoundingBox as pinwheelBoundingBox } from '@utils/geometryMath'
+export { polygonBoundingBox as pinwheelBoundingBox } from '@/utils/geometryMath'

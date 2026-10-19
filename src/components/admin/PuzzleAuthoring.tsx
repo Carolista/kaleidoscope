@@ -4,23 +4,23 @@ import {
 	renderAuthoredHexPuzzle,
 	type AuthoredHexPuzzle,
 	type AuthoringPalette,
-} from '../../puzzles/hexAuthoring'
-import { HEX_PUZZLE_RECIPES } from '../../puzzles/hexPuzzle'
-import type { Database } from '../../types/database'
+} from '@/puzzles/hexAuthoring'
+import { HEX_PUZZLE_RECIPES } from '@/puzzles/hexPuzzle'
+import type { Database } from '@/types/database'
 import {
 	generateDraftPreview,
 	puzzleDraftArgs,
 	savePuzzleDraft,
 	type DraftArgs,
 	type PuzzleUsage,
-} from '../../services/puzzleDrafts'
-import PuzzleMode from '../puzzle/PuzzleMode'
+} from '@/services/puzzleDrafts'
+import PuzzleMode from '@/components/puzzle/PuzzleMode'
 import styles from './AdminPortal.module.css'
 import PuzzleDraftLibrary from './PuzzleDraftLibrary'
 import useUnsavedDraft from './useUnsavedDraft'
 import PuzzleDraftForm from './PuzzleDraftForm'
 import { useCatalog, useCatalogInvalidation } from './useAdminCatalog'
-import { Button, Loading } from '@shared'
+import { Button, Loading } from '@/components/shared'
 
 function messageFor(cause: unknown): string {
 	return cause instanceof Error

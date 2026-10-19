@@ -1,31 +1,31 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { renderWithNavigationGuard as render } from '@test/renderWithNavigationGuard'
+import { renderWithNavigationGuard as render } from '@/test/renderWithNavigationGuard'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { getSupabaseClient } from '../../services/supabaseClient'
-import type { DraftSet } from '../../services/puzzleSets'
+import { getSupabaseClient } from '@/services/supabaseClient'
+import type { DraftSet } from '@/services/puzzleSets'
 import PuzzleSetLibrary from './PuzzleSetLibrary'
 import {
 	generateAuthoredHexPuzzle,
 	renderAuthoredHexPuzzle,
-} from '../../puzzles/hexAuthoring'
-import { HEX_PUZZLE_RECIPES } from '../../puzzles/hexPuzzle'
+} from '@/puzzles/hexAuthoring'
+import { HEX_PUZZLE_RECIPES } from '@/puzzles/hexPuzzle'
 import styles from './AdminPortal.module.css'
 import layoutStyles from './AdminLayout.module.css'
 import { useState } from 'react'
 import { useNavigationGuard } from './useNavigationGuard'
-import iconStyles from '../shared/IconButton.module.css'
+import iconStyles from '@/components/shared/IconButton.module.css'
 
 const mocks = vi.hoisted(() => ({
 	load: vi.fn(),
 	manage: vi.fn(),
 	remove: vi.fn(),
 }))
-vi.mock('../../services/puzzleSets', () => ({
+vi.mock('@/services/puzzleSets', () => ({
 	loadDraftSets: (...args: unknown[]) => mocks.load(...args),
 	manageDraftSet: (...args: unknown[]) => mocks.manage(...args),
 	deleteDraftSet: (...args: unknown[]) => mocks.remove(...args),
 }))
-vi.mock('../../services/supabaseClient', () => ({
+vi.mock('@/services/supabaseClient', () => ({
 	getSupabaseClient: () => ({}),
 }))
 const draftSet: DraftSet = {

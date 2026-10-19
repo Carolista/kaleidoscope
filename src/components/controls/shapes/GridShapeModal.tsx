@@ -1,5 +1,5 @@
 import { useId } from 'react'
-import { Modal, ModalHeader } from '@shared'
+import { Modal, ModalHeader } from '@/components/shared'
 import GridShapePicker from './GridShapePicker'
 import styles from './GridShapeModal.module.css'
 

@@ -1,14 +1,20 @@
 import type { RefObject } from 'react'
 import { useId, useMemo, useState } from 'react'
-import { useAppState } from '@state/useAppState'
-import { getThemeColors } from '@state/theme'
-import { useImageExport } from '@hooks/useImageExport'
-import { computeAspectRatioForShape } from '@utils/gridShapeRegistry'
+import { useAppState } from '@/state/useAppState'
+import { getThemeColors } from '@/state/theme'
+import { useImageExport } from '@/hooks/useImageExport'
+import { computeAspectRatioForShape } from '@/utils/gridShapeRegistry'
 import {
 	getIncludeGridLines,
 	saveIncludeGridLines,
-} from '../../services/imageExportPreferences'
-import { Button, Checkbox, Loading, Modal, ModalHeader } from '@shared'
+} from '@/services/imageExportPreferences'
+import {
+	Button,
+	Checkbox,
+	Loading,
+	Modal,
+	ModalHeader,
+} from '@/components/shared'
 import styles from './SaveImageModal.module.css'
 
 export interface SaveImageModalProps {

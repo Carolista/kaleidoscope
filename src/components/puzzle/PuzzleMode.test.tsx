@@ -1,15 +1,15 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { renderWithProvider } from '@test/renderWithProvider'
-import { colorSchemes } from '@data/colorSchemes'
-import { generateHexagonCells } from '@geometry/hexagonGrid'
+import { renderWithProvider } from '@/test/renderWithProvider'
+import { colorSchemes } from '@/data/colorSchemes'
+import { generateHexagonCells } from '@/shape-geometry/hexagonGrid'
 import {
 	coordinateKey,
 	generateHexPuzzle,
 	HEX_PUZZLE_RECIPES,
 	pieceCells,
-} from '../../puzzles/hexPuzzle'
+} from '@/puzzles/hexPuzzle'
 import PuzzleMode from './PuzzleMode'
 import styles from './PuzzleMode.module.css'
 

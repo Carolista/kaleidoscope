@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { ColorScheme } from '../types/colorScheme'
+import type { ColorScheme } from '@/types/colorScheme'
 import {
 	generateRandomShapeGroupColors,
 	pickRandomPaintColor,

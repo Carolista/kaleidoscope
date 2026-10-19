@@ -9,15 +9,15 @@ import {
 	faTrashCan,
 	faLayerGroup,
 } from '@fortawesome/pro-solid-svg-icons'
-import type { Database } from '../../types/database'
-import type { ColorScheme } from '../../types/colorScheme'
+import type { Database } from '@/types/database'
+import type { ColorScheme } from '@/types/colorScheme'
 import {
 	bulkDeleteColorSchemes,
 	manageColorScheme,
 	readColorScheme,
 	type CatalogScheme,
-} from '../../services/colorSchemes'
-import { loadSchemeUsage, type SchemeUsage } from '../../services/schemeUsage'
+} from '@/services/colorSchemes'
+import { loadSchemeUsage, type SchemeUsage } from '@/services/schemeUsage'
 import PaletteUsageDetails from './PaletteUsageDetails'
 import AdminIconButton from './AdminIconButton'
 import SchemeSandbox from './SchemeSandbox'
@@ -28,7 +28,7 @@ import {
 	manageSchemeSet,
 	schemeSetLabels,
 	type SchemeSet,
-} from '../../services/schemeSets'
+} from '@/services/schemeSets'
 import SchemeSetLibrary from './SchemeSetLibrary'
 import { useCatalog, useCatalogInvalidation } from './useAdminCatalog'
 import {
@@ -39,7 +39,7 @@ import {
 	Loading,
 	PaletteStrip,
 	Select,
-} from '@shared'
+} from '@/components/shared'
 import {
 	AdminFeedback,
 	AdminGallery,
@@ -49,7 +49,7 @@ import {
 } from './AdminLayout'
 import useCheckedIds from './useCheckedIds'
 import PaletteDeleteDialog from './PaletteDeleteDialog'
-import useModalState from '../../hooks/useModalState'
+import useModalState from '@/hooks/useModalState'
 import { compareSetOrder } from './setOrder'
 
 function errorMessage(cause: unknown): string {

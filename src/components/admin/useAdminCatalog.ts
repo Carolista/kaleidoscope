@@ -1,10 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createContext, useContext, useEffect } from 'react'
-import { loadColorSchemes } from '../../services/colorSchemes'
-import { loadPuzzleDrafts } from '../../services/puzzleLibrary'
-import { loadDraftSets } from '../../services/puzzleSets'
-import { loadSchemeSets } from '../../services/schemeSets'
-import type { Database } from '../../types/database'
+import { loadColorSchemes } from '@/services/colorSchemes'
+import { loadPuzzleDrafts } from '@/services/puzzleLibrary'
+import { loadDraftSets } from '@/services/puzzleSets'
+import { loadSchemeSets } from '@/services/schemeSets'
+import type { Database } from '@/types/database'
 
 export type Client = SupabaseClient<Database>
 

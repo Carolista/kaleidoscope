@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { StrictMode } from 'react'
 import Modal, { MODAL_ENTER_MS, MODAL_EXIT_MS } from './Modal'
 import styles from './Modal.module.css'
-import { renderWithProvider } from '@test/renderWithProvider'
+import { renderWithProvider } from '@/test/renderWithProvider'
 
 describe('Modal', () => {
 	it('focuses a requested field after opening the native dialog', () => {

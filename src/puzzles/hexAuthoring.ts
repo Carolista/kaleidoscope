@@ -1,4 +1,4 @@
-import type { ColorScheme } from '@appTypes/colorScheme'
+import type { ColorScheme } from '@/types/colorScheme'
 import {
 	generateHexPuzzle,
 	type HexPuzzle,

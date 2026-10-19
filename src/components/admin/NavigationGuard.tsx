@@ -5,8 +5,8 @@ import {
 	useRef,
 	type ReactNode,
 } from 'react'
-import { ConfirmDialog } from '@shared'
-import useModalState from '../../hooks/useModalState'
+import { ConfirmDialog } from '@/components/shared'
+import useModalState from '@/hooks/useModalState'
 import {
 	NavigationGuardContext as Context,
 	useNavigationGuard,

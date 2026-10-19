@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { useImageExport } from '@hooks/useImageExport'
-import { renderWithProvider } from '@test/renderWithProvider'
+import { useImageExport } from '@/hooks/useImageExport'
+import { renderWithProvider } from '@/test/renderWithProvider'
 import SaveImageModal from './SaveImageModal'
 
-vi.mock('@hooks/useImageExport')
+vi.mock('@/hooks/useImageExport')
 const mockUseImageExport = vi.mocked(useImageExport)
 
 describe('SaveImageModal', () => {

@@ -1,4 +1,4 @@
-import type { supportedGridShapes } from '../data/gridShapes'
+import type { supportedGridShapes } from '@/data/gridShapes'
 
 // Identifies one of the kaleidoscope's supported grid shapes. Each shape
 // has its own cell-generation/symmetry module (hexagonGrid.ts,

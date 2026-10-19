@@ -4,9 +4,12 @@ import {
 	computeGridAspectRatio,
 	TRIANGLE_GRID_SIZE,
 	generateTriangleCells,
-} from '@geometry/triangleGrid'
-import { triangleCorners, trianglesBoundingBox } from '@geometry/triangleLayout'
-import type { TriangleLayout } from '@geometry/triangleLayout'
+} from '@/shape-geometry/triangleGrid'
+import {
+	triangleCorners,
+	trianglesBoundingBox,
+} from '@/shape-geometry/triangleLayout'
+import type { TriangleLayout } from '@/shape-geometry/triangleLayout'
 import GridView from './GridView'
 import type { GridCell, GridInteraction } from './GridView'
 

@@ -2,35 +2,35 @@ import {
 	computeGridAspectRatio as computeCircleRingsAspectRatio,
 	getGroupIds as getCircleRingsGroupIds,
 	CIRCLE_RINGS_GRID_SIZES,
-} from '@geometry/circleRingsGrid'
+} from '@/shape-geometry/circleRingsGrid'
 import {
 	computeGridAspectRatio as computeDiamondStarAspectRatio,
 	getGroupIds as getDiamondStarGroupIds,
 	DIAMOND_STAR_GRID_SIZES,
-} from '@geometry/diamondStarGrid'
+} from '@/shape-geometry/diamondStarGrid'
 import {
 	computeGridAspectRatio as computeHexagonAspectRatio,
 	getGroupIds as getHexagonGroupIds,
 	HEXAGON_GRID_RADII,
-} from '@geometry/hexagonGrid'
+} from '@/shape-geometry/hexagonGrid'
 import {
 	computeGridAspectRatio as computeHexagramAspectRatio,
 	getGroupIds as getHexagramGroupIds,
 	HEXAGRAM_GRID_SIZES,
-} from '@geometry/hexagramGrid'
+} from '@/shape-geometry/hexagramGrid'
 import {
 	computeGridAspectRatio as computePinwheelAspectRatio,
 	getGroupIds as getPinwheelGroupIds,
 	PINWHEEL_GRID_SIZES,
-} from '@geometry/pinwheelGrid'
+} from '@/shape-geometry/pinwheelGrid'
 import {
 	computeGridAspectRatio as computeTriangleAspectRatio,
 	getGroupIds as getTriangleGroupIds,
 	TRIANGLE_GRID_SIZES,
-} from '@geometry/triangleGrid'
-import { defaultGridSizes } from '../data/gridSizes'
-import type { GridShapeId } from '../types/gridShape'
-import type { GridSize } from '../types/gridSize'
+} from '@/shape-geometry/triangleGrid'
+import { defaultGridSizes } from '@/data/gridSizes'
+import type { GridShapeId } from '@/types/gridShape'
+import type { GridSize } from '@/types/gridSize'
 
 function assertNever(shape: never): never {
 	throw new Error(`Unsupported grid shape: ${shape}`)

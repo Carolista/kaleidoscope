@@ -1,5 +1,5 @@
-import type { Point } from '../types/geometry'
-import type { CircleRingsCell } from '../types/circleRings'
+import type { Point } from '@/types/geometry'
+import type { CircleRingsCell } from '@/types/circleRings'
 
 export interface CircleRingsLayout {
 	// Number of rings surrounding the center dot.

@@ -1,15 +1,15 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { renderWithNavigationGuard as render } from '@test/renderWithNavigationGuard'
+import { renderWithNavigationGuard as render } from '@/test/renderWithNavigationGuard'
 import { useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { generateAuthoredHexPuzzle } from '../../puzzles/hexAuthoring'
-import { HEX_PUZZLE_RECIPES } from '../../puzzles/hexPuzzle'
-import { puzzleDraftArgs } from '../../services/puzzleDrafts'
-import type { LibraryDraft } from '../../services/puzzleLibrary'
-import { getSupabaseClient } from '../../services/supabaseClient'
+import { generateAuthoredHexPuzzle } from '@/puzzles/hexAuthoring'
+import { HEX_PUZZLE_RECIPES } from '@/puzzles/hexPuzzle'
+import { puzzleDraftArgs } from '@/services/puzzleDrafts'
+import type { LibraryDraft } from '@/services/puzzleLibrary'
+import { getSupabaseClient } from '@/services/supabaseClient'
 import styles from './AdminPortal.module.css'
 import layoutStyles from './AdminLayout.module.css'
-import iconStyles from '../shared/IconButton.module.css'
+import iconStyles from '@/components/shared/IconButton.module.css'
 import PuzzleDraftLibrary from './PuzzleDraftLibrary'
 import { useNavigationGuard } from './useNavigationGuard'
 
@@ -23,19 +23,19 @@ const mocks = vi.hoisted(() => ({
 	loadSets: vi.fn(),
 	manageSet: vi.fn(),
 }))
-vi.mock('../../services/puzzleSets', () => ({
+vi.mock('@/services/puzzleSets', () => ({
 	loadDraftSets: (...args: unknown[]) => mocks.loadSets(...args),
 	manageDraftSet: (...args: unknown[]) => mocks.manageSet(...args),
 	deleteDraftSet: vi.fn(),
 }))
-vi.mock('../../services/puzzleLibrary', () => ({
+vi.mock('@/services/puzzleLibrary', () => ({
 	loadPuzzleDrafts: (...args: unknown[]) => mocks.load(...args),
 	editPuzzleDraft: (...args: unknown[]) => mocks.edit(...args),
 	deletePuzzleDraft: (...args: unknown[]) => mocks.remove(...args),
 	bulkPuzzleDrafts: (...args: unknown[]) => mocks.bulk(...args),
 	replacePuzzleDraft: (...args: unknown[]) => mocks.replace(...args),
 }))
-vi.mock('../../services/supabaseClient', () => ({
+vi.mock('@/services/supabaseClient', () => ({
 	getSupabaseClient: () => ({
 		from: () => {
 			const query = {

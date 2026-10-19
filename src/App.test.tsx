@@ -8,7 +8,7 @@ import headerStyles from './components/layout/Header.module.css'
 import { useIsTouchDevice } from './hooks/useIsTouchDevice'
 import { supportedGridShapes } from './data/gridShapes'
 import { defaultGridSizes } from './data/gridSizes'
-import { PINWHEEL_GRID_SIZES } from '@geometry/pinwheelGrid'
+import { PINWHEEL_GRID_SIZES } from '@/shape-geometry/pinwheelGrid'
 import { colorSchemes } from './data/colorSchemes'
 import { savePersistedState } from './services/storageService'
 

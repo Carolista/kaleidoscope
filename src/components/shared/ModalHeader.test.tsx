@@ -1,16 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { useImageExport } from '@hooks/useImageExport'
-import { renderWithProvider } from '@test/renderWithProvider'
-import ControlsModal from '../controls/ControlsModal'
-import SaveImageModal from '../controls/SaveImageModal'
-import ColorSchemeModal from '../controls/color-schemes/ColorSchemeModal'
-import GridShapeModal from '../controls/shapes/GridShapeModal'
+import { useImageExport } from '@/hooks/useImageExport'
+import { renderWithProvider } from '@/test/renderWithProvider'
+import ControlsModal from '@/components/controls/ControlsModal'
+import SaveImageModal from '@/components/controls/SaveImageModal'
+import ColorSchemeModal from '@/components/controls/color-schemes/ColorSchemeModal'
+import GridShapeModal from '@/components/controls/shapes/GridShapeModal'
 import Modal from './Modal'
 import ModalHeader from './ModalHeader'
 
-vi.mock('@hooks/useImageExport')
+vi.mock('@/hooks/useImageExport')
 
 const modals = [
 	{

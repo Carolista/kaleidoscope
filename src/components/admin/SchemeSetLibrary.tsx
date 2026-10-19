@@ -13,7 +13,7 @@ import {
 	Loading,
 	PaletteStrip,
 	Select,
-} from '@shared'
+} from '@/components/shared'
 import {
 	AdminFeedback,
 	AdminGallery,
@@ -23,15 +23,15 @@ import {
 } from './AdminLayout'
 import SortableSetMembers from './SortableSetMembers'
 import SetCreationDialog from './SetCreationDialog'
-import useModalState from '../../hooks/useModalState'
-import type { Database } from '../../types/database'
+import useModalState from '@/hooks/useModalState'
+import type { Database } from '@/types/database'
 import {
 	manageSchemeSet,
 	schemeSetLabels,
 	type SchemeSet,
 	type SchemeSetAction,
 	type SchemeSetKind,
-} from '../../services/schemeSets'
+} from '@/services/schemeSets'
 import AdminIconButton from './AdminIconButton'
 import useUnsavedDraft from './useUnsavedDraft'
 import useStagedOrder from './useStagedOrder'

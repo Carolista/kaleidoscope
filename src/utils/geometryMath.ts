@@ -1,4 +1,4 @@
-import type { Point } from '../types/geometry'
+import type { Point } from '@/types/geometry'
 
 // A vertex average, not an area-weighted centroid for arbitrary polygons.
 export function averagePoint(points: readonly Point[]): Point {

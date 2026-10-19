@@ -1,7 +1,7 @@
 import { faEye, faEyeSlash } from '@fortawesome/sharp-duotone-solid-svg-icons'
-import { useAppState } from '@state/useAppState'
-import { useIsTouchDevice } from '@hooks/useIsTouchDevice'
-import { PlayerIconButton as IconButton } from '@shared'
+import { useAppState } from '@/state/useAppState'
+import { useIsTouchDevice } from '@/hooks/useIsTouchDevice'
+import { PlayerIconButton as IconButton } from '@/components/shared'
 
 // Touch devices have no hover, so there's no way to discover the editable
 // wedge the way mouse users can (see HexagonGrid's hover-driven dimming). This

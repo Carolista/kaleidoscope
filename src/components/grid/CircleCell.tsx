@@ -1,6 +1,6 @@
 import type { CSSProperties, KeyboardEvent } from 'react'
-import type { Point } from '@appTypes/geometry'
-import { getHoverFill } from '@utils/colorMath'
+import type { Point } from '@/types/geometry'
+import { getHoverFill } from '@/utils/colorMath'
 import styles from './Cell.module.css'
 
 // The circle-rings counterpart of PolygonCell: a single clickable (or

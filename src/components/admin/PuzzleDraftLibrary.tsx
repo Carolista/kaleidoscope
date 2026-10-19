@@ -8,30 +8,36 @@ import {
 	faPalette,
 	faLayerGroup,
 } from '@fortawesome/pro-solid-svg-icons'
-import type { Database } from '../../types/database'
+import type { Database } from '@/types/database'
 import {
 	renderAuthoredHexPuzzle,
 	type AuthoredHexPuzzle,
 	type AuthoringPalette,
-} from '../../puzzles/hexAuthoring'
+} from '@/puzzles/hexAuthoring'
 import {
 	deletePuzzleDraft,
 	editPuzzleDraft,
 	bulkPuzzleDrafts,
 	replacePuzzleDraft,
 	type LibraryDraft,
-} from '../../services/puzzleLibrary'
+} from '@/services/puzzleLibrary'
 import {
 	generateDraftPreview,
 	puzzleDraftArgs,
 	type PuzzleUsage,
-} from '../../services/puzzleDrafts'
-import { HEX_PUZZLE_RECIPES } from '../../puzzles/hexPuzzle'
-import HexPuzzleBoard from '../puzzle/HexPuzzleBoard'
-import PuzzleMode from '../puzzle/PuzzleMode'
+} from '@/services/puzzleDrafts'
+import { HEX_PUZZLE_RECIPES } from '@/puzzles/hexPuzzle'
+import HexPuzzleBoard from '@/components/puzzle/HexPuzzleBoard'
+import PuzzleMode from '@/components/puzzle/PuzzleMode'
 import styles from './AdminPortal.module.css'
 import AdminIconButton from './AdminIconButton'
-import { Button, ConfirmDialog, Loading, PaletteChoices, Select } from '@shared'
+import {
+	Button,
+	ConfirmDialog,
+	Loading,
+	PaletteChoices,
+	Select,
+} from '@/components/shared'
 import {
 	AdminFeedback,
 	AdminGallery,
@@ -42,9 +48,9 @@ import {
 import useCheckedIds from './useCheckedIds'
 import { useCatalog, useCatalogInvalidation } from './useAdminCatalog'
 import PuzzleDraftForm from './PuzzleDraftForm'
-import { manageDraftSet, type DraftSet } from '../../services/puzzleSets'
+import { manageDraftSet, type DraftSet } from '@/services/puzzleSets'
 import useUnsavedDraft from './useUnsavedDraft'
-import useModalState from '../../hooks/useModalState'
+import useModalState from '@/hooks/useModalState'
 import { compareSetOrder } from './setOrder'
 
 function setOrderKey(draft: LibraryDraft) {

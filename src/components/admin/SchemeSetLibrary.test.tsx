@@ -1,16 +1,16 @@
 import { act, fireEvent, screen } from '@testing-library/react'
-import { renderWithNavigationGuard as render } from '@test/renderWithNavigationGuard'
+import { renderWithNavigationGuard as render } from '@/test/renderWithNavigationGuard'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { Database } from '../../types/database'
-import type { SchemeSet } from '../../services/schemeSets'
-import { manageSchemeSet } from '../../services/schemeSets'
+import type { Database } from '@/types/database'
+import type { SchemeSet } from '@/services/schemeSets'
+import { manageSchemeSet } from '@/services/schemeSets'
 import SchemeSetLibrary from './SchemeSetLibrary'
 import { useState } from 'react'
 import { useNavigationGuard } from './useNavigationGuard'
 
-vi.mock('../../services/schemeSets', async importOriginal => ({
-	...(await importOriginal<typeof import('../../services/schemeSets')>()),
+vi.mock('@/services/schemeSets', async importOriginal => ({
+	...(await importOriginal<typeof import('@/services/schemeSets')>()),
 	manageSchemeSet: vi.fn(),
 }))
 

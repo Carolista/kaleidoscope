@@ -1,6 +1,6 @@
-import type { AppState, PaintMap } from '../types/appState'
+import type { AppState, PaintMap } from '@/types/appState'
 import type { AppAction } from './appReducer'
-import { supportedGridShapes } from '../data/gridShapes'
+import { supportedGridShapes } from '@/data/gridShapes'
 import { appReducer } from './appReducer'
 import { getThemeColors } from './theme'
 

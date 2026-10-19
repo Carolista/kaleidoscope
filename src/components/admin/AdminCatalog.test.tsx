@@ -2,8 +2,8 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Database } from '../../types/database'
-import type { SchemeSet } from '../../services/schemeSets'
+import type { Database } from '@/types/database'
+import type { SchemeSet } from '@/services/schemeSets'
 import { AdminCatalogProvider } from './AdminCatalog'
 import { useCatalog, useCatalogInvalidation } from './useAdminCatalog'
 
@@ -11,12 +11,12 @@ const mocks = vi.hoisted(() => ({
 	paletteSets: vi.fn(),
 	puzzleSets: vi.fn(),
 }))
-vi.mock('../../services/schemeSets', async importOriginal => ({
-	...(await importOriginal<typeof import('../../services/schemeSets')>()),
+vi.mock('@/services/schemeSets', async importOriginal => ({
+	...(await importOriginal<typeof import('@/services/schemeSets')>()),
 	loadSchemeSets: (...args: unknown[]) => mocks.paletteSets(...args),
 }))
-vi.mock('../../services/puzzleSets', async importOriginal => ({
-	...(await importOriginal<typeof import('../../services/puzzleSets')>()),
+vi.mock('@/services/puzzleSets', async importOriginal => ({
+	...(await importOriginal<typeof import('@/services/puzzleSets')>()),
 	loadDraftSets: (...args: unknown[]) => mocks.puzzleSets(...args),
 }))
 

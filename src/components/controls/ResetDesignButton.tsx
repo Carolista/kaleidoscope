@@ -1,8 +1,11 @@
 import { useState } from 'react'
 import { faRotate } from '@fortawesome/sharp-duotone-solid-svg-icons'
-import { isConfirmDialogDismissed } from '@services/confirmDialogPreferences'
-import { useAppState } from '@state/useAppState'
-import { ConfirmDialog, PlayerIconButton as IconButton } from '@shared'
+import { isConfirmDialogDismissed } from '@/services/confirmDialogPreferences'
+import { useAppState } from '@/state/useAppState'
+import {
+	ConfirmDialog,
+	PlayerIconButton as IconButton,
+} from '@/components/shared'
 
 const DONT_SHOW_AGAIN_KEY = 'reset-design'
 
