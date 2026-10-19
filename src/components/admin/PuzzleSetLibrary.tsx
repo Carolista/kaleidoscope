@@ -13,7 +13,7 @@ import {
 	type SetAction,
 } from '@/services/puzzleSets'
 import type { Database } from '@/types/database'
-import HexPuzzleBoard from '@/components/puzzle/HexPuzzleBoard'
+import { HexPuzzleBoard } from '@/ui/puzzle'
 import AdminIconButton from './AdminIconButton'
 import { ConfirmDialog, Loading } from '@/components/shared'
 import {

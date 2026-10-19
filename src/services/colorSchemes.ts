@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { ColorScheme } from '@/types/colorScheme'
 import type { Database, Tables } from '@/types/database'
-import type { AuthoringPalette } from '@/puzzles/hexAuthoring'
+import type { AuthoringPalette } from '@/domain/puzzles'
 
 export type CatalogScheme = Omit<Tables<'palettes'>, 'colors'> & ColorScheme
 

@@ -4,8 +4,8 @@ import {
 	renderAuthoredHexPuzzle,
 	type AuthoredHexPuzzle,
 	type AuthoringPalette,
-} from '@/puzzles/hexAuthoring'
-import { HEX_PUZZLE_RECIPES } from '@/puzzles/hexPuzzle'
+	HEX_PUZZLE_RECIPES,
+} from '@/domain/puzzles'
 import type { Database } from '@/types/database'
 import {
 	generateDraftPreview,
@@ -14,7 +14,7 @@ import {
 	type DraftArgs,
 	type PuzzleUsage,
 } from '@/services/puzzleDrafts'
-import PuzzleMode from '@/components/puzzle/PuzzleMode'
+import PuzzlePlaytest from './PuzzlePlaytest'
 import styles from './AdminPortal.module.css'
 import PuzzleDraftLibrary from './PuzzleDraftLibrary'
 import { useUnsavedDraft } from '@/ui/navigation'
@@ -236,9 +236,9 @@ export default function PuzzleAuthoring({
 				{generated && palette && (
 					<div className={styles.playtest}>
 						{saveMessage && <p role="status">{saveMessage}</p>}
-						<PuzzleMode
+						<PuzzlePlaytest
 							key={generated.run}
-							previewPuzzle={renderAuthoredHexPuzzle(
+							puzzle={renderAuthoredHexPuzzle(
 								generated.puzzle,
 								palette,
 							)}

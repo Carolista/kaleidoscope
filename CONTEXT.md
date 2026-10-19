@@ -362,8 +362,9 @@ follow-up work.
 | [state/](./src/state/) | App reducer, history wrapper, and Context |
 | [services/](./src/services/) | Design persistence, export preferences, PNG export, Supabase admin data |
 | [hooks/](./src/hooks/) | React lifecycle and interaction logic |
-| [puzzles/](./src/puzzles/) | Pure seeded puzzle generation, placement validation, and completion |
-| [components/puzzle/](./src/components/puzzle/) | Puzzle target, board, tray, and pointer/keyboard interaction |
+| [domain/puzzles/](./src/domain/puzzles/) | Pure seeded puzzle generation, authoring, stored-definition readers, placement validation, and completion |
+| [ui/puzzle/](./src/ui/puzzle/) | Shared `PuzzlePlay` (target, tray, board, pointer/keyboard interaction) and `HexPuzzleBoard` |
+| [features/puzzle/](./src/features/puzzle/) | Player Puzzle Mode: seeded puzzles, Restart/Next, congratulations |
 | [data/](./src/data/) | Local palette catalog |
 | [types/](./src/types/) | Domain types, imported from individual modules |
 

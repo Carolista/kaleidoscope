@@ -171,7 +171,7 @@ full-width playable board. Visible instructions and piece labels are omitted;
 controls retain accessible names and placement feedback is announced to screen
 readers.
 
-[`generateHexPuzzle(seed, scheme)`](./src/puzzles/hexPuzzle.ts) produces a
+[`generateHexPuzzle(seed, scheme)`](./src/domain/puzzles/hexPuzzle.ts) produces a
 serializable, deterministic puzzle definition with the target, fixed-orientation
 colored piece offsets, and a known solution. The current version uses the small
 hexagon and connected pieces of one, two, and three tiles; the UI passes the Cabo

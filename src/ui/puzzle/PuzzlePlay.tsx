@@ -1,32 +1,19 @@
-import type { AxialCoord } from '@/domain/shapes/hexagon'
-import { DarkModeToggle } from '@/components/controls'
-import { colorSchemes } from '@/data/colorSchemes'
-import { faRotate } from '@fortawesome/sharp-duotone-solid-svg-icons'
-import {
-	Button,
-	IconButton,
-	PlayerIconButton,
-	Modal,
-} from '@/components/shared'
-import type { PointerEvent } from 'react'
-import { useId, useRef, useState } from 'react'
-import type {
-	HexPuzzle,
-	PuzzlePiece,
-	PuzzlePlacements,
-} from '@/puzzles/hexPuzzle'
+import type { PointerEvent, ReactNode, Ref } from 'react'
+import { useImperativeHandle, useRef, useState } from 'react'
 import {
 	coordinateKey,
-	generateHexPuzzle,
 	getPuzzleColors,
+	type HexPuzzle,
 	isPuzzleSolved,
 	pieceCells,
 	placePuzzlePiece,
+	type PuzzlePiece,
+	type PuzzlePlacements,
 	rotateCoordinate,
-} from '@/puzzles/hexPuzzle'
+} from '@/domain/puzzles'
+import type { AxialCoord } from '@/domain/shapes/hexagon'
 import HexPuzzleBoard, { PieceGraphic } from './HexPuzzleBoard'
-import styles from './PuzzleMode.module.css'
-import { createPuzzleSeed } from '@/puzzles/puzzleSeed'
+import styles from './PuzzlePlay.module.css'
 
 interface DragState {
 	readonly piece: PuzzlePiece
@@ -42,30 +29,35 @@ interface DragState {
 	readonly moved: boolean
 }
 
-export default function PuzzleMode({
+export interface PuzzlePlayHandle {
+	// Clears placements, rotations, and selection for the current puzzle.
+	readonly reset: () => void
+}
+
+export default function PuzzlePlay({
+	ref,
+	puzzle: currentPuzzle,
 	hidden = false,
-	initialSeed,
-	previewPuzzle,
+	solvedMessage,
+	onSolve,
+	trayAction,
+	children,
 }: {
+	readonly ref?: Ref<PuzzlePlayHandle>
+	readonly puzzle: HexPuzzle
 	readonly hidden?: boolean
-	readonly initialSeed?: string
-	readonly previewPuzzle?: HexPuzzle
+	readonly solvedMessage: string
+	readonly onSolve?: () => void
+	// Rendered beside the tray, e.g. an admin Restart.
+	readonly trayAction?: ReactNode
+	// Rendered below the board, e.g. player actions and dialogs.
+	readonly children?: ReactNode
 }) {
-	const [puzzle, setPuzzle] = useState(
-		() =>
-			previewPuzzle ??
-			generateHexPuzzle(
-				initialSeed ?? createPuzzleSeed(),
-				colorSchemes[1],
-			),
-	)
 	const [placements, setPlacements] = useState<PuzzlePlacements>({})
 	const [selectedId, setSelectedId] = useState<string | null>(null)
 	const [rotations, setRotations] = useState<
 		Readonly<Record<string, number>>
 	>({})
-	const [showCongrats, setShowCongrats] = useState(false)
-	const congratsTitleId = useId()
 	const [message, setMessage] = useState('Choose a piece to get started.')
 	const [drag, setDrag] = useState<DragState | null>(null)
 	const dragRef = useRef<DragState | null>(null)
@@ -74,7 +66,6 @@ export default function PuzzleMode({
 	const lastTouchTapRef = useRef<{ pieceId: string; time: number } | null>(
 		null,
 	)
-	const currentPuzzle = previewPuzzle ?? puzzle
 	const displayPieces = currentPuzzle.pieces.map(piece => ({
 		...piece,
 		tiles: piece.tiles.map(tile =>
@@ -111,9 +102,7 @@ export default function PuzzleMode({
 		}
 		setPlacements(result.placements)
 		setSelectedId(null)
-		setShowCongrats(
-			!previewPuzzle && isPuzzleSolved(currentPuzzle, result.placements),
-		)
+		if (isPuzzleSolved(currentPuzzle, result.placements)) onSolve?.()
 		setMessage(
 			Object.keys(result.placements).length ===
 				currentPuzzle.pieces.length &&
@@ -290,11 +279,7 @@ export default function PuzzleMode({
 		}
 	}
 
-	function reset(newPuzzle: boolean) {
-		setShowCongrats(false)
-		if (newPuzzle) {
-			setPuzzle(generateHexPuzzle(createPuzzleSeed(), colorSchemes[1]))
-		}
+	function reset() {
 		setPlacements({})
 		setRotations({})
 		setSelectedId(null)
@@ -305,10 +290,12 @@ export default function PuzzleMode({
 		setMessage('Choose a piece to get started.')
 	}
 
+	useImperativeHandle(ref, () => ({ reset }))
+
 	return (
 		<section
 			hidden={hidden}
-			className={`${styles.puzzle}${previewPuzzle ? ` ${styles.preview}` : ''}`}
+			className={`${styles.puzzle}${trayAction ? ` ${styles.withTrayAction}` : ''}`}
 			aria-label="Puzzle Mode"
 			onPointerDownCapture={() => {
 				suppressClickRef.current = false
@@ -380,14 +367,7 @@ export default function PuzzleMode({
 						</button>
 					))}
 				</div>
-				{previewPuzzle && (
-					<IconButton
-						size="sm"
-						icon={faRotate}
-						label="Restart"
-						onClick={() => reset(false)}
-					/>
-				)}
+				{trayAction}
 			</div>
 			<div className={styles.board}>
 				<HexPuzzleBoard
@@ -416,37 +396,9 @@ export default function PuzzleMode({
 			</div>
 
 			<div role="status" className="visually-hidden">
-				{solved
-					? previewPuzzle
-						? 'Playtest solved! No player progress recorded.'
-						: 'Puzzle solved! Your design matches the target.'
-					: message}
+				{solved ? solvedMessage : message}
 			</div>
-			{!previewPuzzle && (
-				<div className={styles.actions}>
-					<DarkModeToggle />
-					{solved && (
-						<Button onClick={() => reset(true)}>Next puzzle</Button>
-					)}
-					<PlayerIconButton
-						icon={faRotate}
-						label="Restart"
-						onClick={() => reset(false)}
-					/>
-				</div>
-			)}
-			{!previewPuzzle && (
-				<Modal
-					open={showCongrats && !hidden}
-					onClose={() => setShowCongrats(false)}
-					labelledBy={congratsTitleId}
-					size="sm"
-					closeLabel="Close congratulations"
-					header={<h2 id={congratsTitleId}>Congrats!</h2>}
-				>
-					<Button onClick={() => reset(true)}>Next Puzzle</Button>
-				</Modal>
-			)}
+			{children}
 			{drag?.moved && !hidden && (
 				<PieceGraphic piece={drag.piece} drag={drag} />
 			)}

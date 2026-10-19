@@ -7,11 +7,9 @@ import {
 	HEX_PUZZLE_RECIPES,
 	coordinateKey,
 	rotateCoordinate,
-} from '@/puzzles/hexPuzzle'
-import {
 	generateAuthoredHexPuzzle,
 	renderAuthoredHexPuzzle,
-} from '@/puzzles/hexAuthoring'
+} from '@/domain/puzzles'
 import PuzzleAuthoring from './PuzzleAuthoring'
 import AdminWorkspace from './AdminWorkspace'
 import { useNavigationGuard } from '@/ui/navigation'

@@ -8,13 +8,9 @@ import {
 } from '@/domain/shapes/hexagon'
 import type { AxialCoord } from '@/domain/shapes/hexagon'
 import { pointsToSvgAttr } from '@/domain/geometry'
-import {
-	coordinateKey,
-	pieceCells,
-	rotateCoordinate,
-} from '@/puzzles/hexPuzzle'
-import type { PuzzlePiece, PuzzlePlacements } from '@/puzzles/hexPuzzle'
-import styles from './PuzzleMode.module.css'
+import { coordinateKey, pieceCells, rotateCoordinate } from '@/domain/puzzles'
+import type { PuzzlePiece, PuzzlePlacements } from '@/domain/puzzles'
+import styles from './HexPuzzleBoard.module.css'
 
 const layout = { orientation: 'flat', size: 16 } as const
 

@@ -7,8 +7,8 @@ import PuzzleSetLibrary from './PuzzleSetLibrary'
 import {
 	generateAuthoredHexPuzzle,
 	renderAuthoredHexPuzzle,
-} from '@/puzzles/hexAuthoring'
-import { HEX_PUZZLE_RECIPES } from '@/puzzles/hexPuzzle'
+	HEX_PUZZLE_RECIPES,
+} from '@/domain/puzzles'
 import styles from './AdminPortal.module.css'
 import layoutStyles from './AdminLayout.module.css'
 import { useState } from 'react'

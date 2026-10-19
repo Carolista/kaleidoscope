@@ -87,6 +87,10 @@ remaining recommendations do not supersede the decisions below.
   definitions rather than seeds alone; generator changes must not rewrite
   published puzzles. Generation guarantees a solution, not a unique solution
   or certified difficulty.
+- Player Puzzle Mode and admin playtests share one `PuzzlePlay` surface. Callers
+  add their own controls as slots (`trayAction`, `children`), react to `onSolve`,
+  and restart through a ref handle (`reset()`), so play state stays inside
+  `PuzzlePlay` and neither side needs a preview flag.
 - Accept any non-overlapping placement inside the wedge. Match the completed
   colors to determine success, then remove interaction and piece/wedge outlines.
 - Render the dragged piece at board scale with the grabbed tile centered on the

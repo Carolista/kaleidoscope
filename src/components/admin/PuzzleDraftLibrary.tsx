@@ -13,7 +13,8 @@ import {
 	renderAuthoredHexPuzzle,
 	type AuthoredHexPuzzle,
 	type AuthoringPalette,
-} from '@/puzzles/hexAuthoring'
+	HEX_PUZZLE_RECIPES,
+} from '@/domain/puzzles'
 import {
 	deletePuzzleDraft,
 	editPuzzleDraft,
@@ -26,9 +27,8 @@ import {
 	puzzleDraftArgs,
 	type PuzzleUsage,
 } from '@/services/puzzleDrafts'
-import { HEX_PUZZLE_RECIPES } from '@/puzzles/hexPuzzle'
-import HexPuzzleBoard from '@/components/puzzle/HexPuzzleBoard'
-import PuzzleMode from '@/components/puzzle/PuzzleMode'
+import { HexPuzzleBoard } from '@/ui/puzzle'
+import PuzzlePlaytest from './PuzzlePlaytest'
 import styles from './AdminPortal.module.css'
 import AdminIconButton from './AdminIconButton'
 import {
@@ -260,9 +260,9 @@ function DraftEditor({
 			/>
 			{palette ? (
 				<div className={styles.playtest}>
-					<PuzzleMode
+					<PuzzlePlaytest
 						key={previewRun}
-						previewPuzzle={renderAuthoredHexPuzzle(
+						puzzle={renderAuthoredHexPuzzle(
 							{ ...puzzle, paletteId },
 							palette,
 						)}

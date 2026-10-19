@@ -2,9 +2,9 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import {
 	generateAuthoredHexPuzzle,
 	type AuthoredHexPuzzle,
-} from '@/puzzles/hexAuthoring'
-import type { HexPuzzleRecipe } from '@/puzzles/hexPuzzle'
-import { createUnusedPuzzleSeed } from '@/puzzles/puzzleSeed'
+	createUnusedPuzzleSeed,
+} from '@/domain/puzzles'
+import type { HexPuzzleRecipe } from '@/domain/puzzles'
 import type { Database } from '@/types/database'
 
 export type PuzzleUsage = 'collection' | 'daily'

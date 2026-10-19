@@ -6,10 +6,7 @@ const adminCss = readFileSync(
 	'src/components/admin/AdminPortal.module.css',
 	'utf8',
 )
-const puzzleCss = readFileSync(
-	'src/components/puzzle/PuzzleMode.module.css',
-	'utf8',
-)
+const puzzleCss = readFileSync('src/ui/puzzle/PuzzlePlay.module.css', 'utf8')
 
 it('keeps puzzle pieces independent of opt-in admin control styling', () => {
 	const stylesheet = document.createElement('style')

@@ -1,71 +1,22 @@
-import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProvider } from '@/test/renderWithProvider'
 import { colorSchemes } from '@/data/colorSchemes'
 import { generateHexagonCells } from '@/domain/shapes/hexagon'
-import {
-	coordinateKey,
-	generateHexPuzzle,
-	HEX_PUZZLE_RECIPES,
-	pieceCells,
-} from '@/puzzles/hexPuzzle'
+import { coordinateKey, generateHexPuzzle, pieceCells } from '@/domain/puzzles'
 import PuzzleMode from './PuzzleMode'
-import styles from './PuzzleMode.module.css'
+import styles from '@/ui/puzzle/HexPuzzleBoard.module.css'
+import {
+	dragTo,
+	hitTest,
+	pieceButton,
+	stubPointerHitTesting,
+	tileAt,
+} from '@/test/puzzleInteraction'
 
 const seed = 'ui-puzzle'
 const puzzle = generateHexPuzzle(seed, colorSchemes[1])
-const originalHitTest = Object.getOwnPropertyDescriptor(
-	document,
-	'elementFromPoint',
-)
-const originalCapture = Object.getOwnPropertyDescriptor(
-	Element.prototype,
-	'setPointerCapture',
-)
-const hitTest = vi.fn<(x: number, y: number) => Element | null>()
-
-function tileAt(key: string) {
-	const tile = screen
-		.getByRole('group', { name: 'Puzzle board' })
-		.querySelector<SVGPolygonElement>(`[data-puzzle-cell="${key}"]`)
-	if (!tile) throw new Error(`Missing puzzle tile ${key}`)
-	return tile
-}
-
-function pieceButton(index: number) {
-	return screen.getByRole('button', {
-		name: new RegExp(`^Select piece ${index + 1},`),
-	})
-}
-
-function dragTo(
-	source: Element,
-	destination: Element | null,
-	pointerType = 'mouse',
-) {
-	hitTest.mockReturnValue(destination)
-	fireEvent.pointerDown(source, {
-		pointerId: 1,
-		button: 0,
-		clientX: 10,
-		clientY: 10,
-		pointerType,
-	})
-	fireEvent.pointerMove(source, {
-		pointerId: 1,
-		clientX: 100,
-		clientY: 100,
-		pointerType,
-	})
-	fireEvent.pointerUp(source, {
-		pointerId: 1,
-		clientX: 100,
-		clientY: 100,
-		pointerType,
-	})
-}
-
 function solvePuzzle() {
 	for (const [index, piece] of puzzle.pieces.entries()) {
 		dragTo(
@@ -84,151 +35,6 @@ function targetColors() {
 }
 
 describe('PuzzleMode', () => {
-	it('places the playtest Restart beside the pieces and keeps feedback for screen readers only', () => {
-		const preview = generateHexPuzzle(
-			'preview-layout',
-			colorSchemes[1],
-			HEX_PUZZLE_RECIPES[0],
-		)
-		renderWithProvider(<PuzzleMode previewPuzzle={preview} />)
-		const restart = screen.getByRole('button', { name: 'Restart' })
-		expect(restart.parentElement).toHaveClass(styles.goalAndPieces)
-		expect(
-			screen.getByRole('group', { name: 'Puzzle pieces' }).nextSibling,
-		).toBe(restart)
-		expect(screen.getByRole('status')).toHaveClass('visually-hidden')
-	})
-	it('rotates only tray pieces on click or keyboard activation, keeping square slots stable', async () => {
-		const user = userEvent.setup()
-		const recipe = HEX_PUZZLE_RECIPES.find(
-			value => value.id === 'moderate-small',
-		)!
-		const rotated = generateHexPuzzle(
-			'tray-rotation',
-			colorSchemes[1],
-			recipe,
-		)
-		renderWithProvider(<PuzzleMode previewPuzzle={rotated} />)
-		const index = rotated.pieces.findIndex(piece => piece.tiles.length > 1)
-		const button = pieceButton(index)
-		const svg = button.querySelector('svg')!
-		const points = () =>
-			[...svg.querySelectorAll('polygon')].map(tile =>
-				tile.getAttribute('points'),
-			)
-		const original = points()
-		const size = svg.getAttribute('style')
-		const [, , width, height] = svg
-			.getAttribute('viewBox')!
-			.split(' ')
-			.map(Number)
-		expect(width).toBe(height)
-		await user.click(button)
-		expect(points()).not.toEqual(original)
-		expect(svg).toHaveAttribute('style', size)
-		const afterClick = points()
-		await user.click(
-			tileAt(coordinateKey(rotated.solution[rotated.pieces[index].id])),
-		)
-		expect(button).toHaveAccessibleName(/in tray/)
-		expect(points()).toEqual(afterClick)
-		button.focus()
-		await user.keyboard('{Enter}')
-		expect(points()).not.toEqual(afterClick)
-		await user.keyboard(' ')
-		for (let i = 0; i < 3; i++) {
-			await user.click(button)
-			expect(svg).toHaveAttribute('style', size)
-		}
-		expect(points()).toEqual(original)
-		expect(
-			screen.queryByRole('button', { name: 'Rotate selected piece' }),
-		).not.toBeInTheDocument()
-		expect(
-			screen.queryByRole('button', {
-				name: 'Return selected piece to tray',
-			}),
-		).not.toBeInTheDocument()
-	})
-
-	it.each(['mouse', 'touch'])(
-		'drags a tray piece without rotating it with %s and suppresses the following click',
-		pointerType => {
-			const recipe = HEX_PUZZLE_RECIPES.find(
-				value => value.id === 'moderate-small',
-			)!
-			const rotated = generateHexPuzzle(
-				'tray-drag',
-				colorSchemes[1],
-				recipe,
-			)
-			renderWithProvider(<PuzzleMode previewPuzzle={rotated} />)
-			const index = rotated.pieces.findIndex(
-				piece => piece.tiles.length > 1,
-			)
-			const button = pieceButton(index)
-			const original = button.querySelector('svg')!.innerHTML
-			dragTo(button, null, pointerType)
-			fireEvent.click(button)
-			expect(button.querySelector('svg')!.innerHTML).toEqual(original)
-			expect(button).toHaveAccessibleName(/in tray/)
-		},
-	)
-
-	it.each(['mouse', 'touch'])(
-		'returns a board piece by double-%s activation preserving orientation',
-		async pointerType => {
-			const user = userEvent.setup()
-			const recipe = HEX_PUZZLE_RECIPES.find(
-				value => value.id === 'moderate-small',
-			)!
-			const rotated = generateHexPuzzle(
-				'tray-return',
-				colorSchemes[1],
-				recipe,
-			)
-			renderWithProvider(<PuzzleMode previewPuzzle={rotated} />)
-			const index = rotated.pieces.findIndex(
-				piece => piece.tiles.length > 1,
-			)
-			const piece = rotated.pieces[index]
-			const button = pieceButton(index)
-			for (let i = 0; i < (rotated.solution[piece.id].rotation ?? 0); i++)
-				await user.click(button)
-			const oriented = button.querySelector('svg')!.innerHTML
-			const destination = tileAt(
-				coordinateKey(rotated.solution[piece.id]),
-			)
-			dragTo(button, destination, pointerType)
-			expect(button).toHaveAccessibleName(/on board/)
-			if (pointerType === 'mouse') await user.dblClick(destination)
-			else {
-				for (let tap = 0; tap < 2; tap++) {
-					hitTest.mockReturnValue(destination)
-					fireEvent.pointerDown(destination, {
-						pointerId: 2,
-						pointerType: 'touch',
-						button: 0,
-						clientX: 20,
-						clientY: 20,
-					})
-					fireEvent.pointerUp(destination, {
-						pointerId: 2,
-						pointerType: 'touch',
-						clientX: 20,
-						clientY: 20,
-					})
-					fireEvent.click(destination)
-					if (tap === 0)
-						expect(button).toHaveAccessibleName(/on board/)
-				}
-			}
-			expect(button).toHaveAccessibleName(/in tray/)
-			expect(button.querySelector('svg')!.innerHTML).toEqual(oriented)
-			expect(destination).toHaveAttribute('fill', 'var(--base)')
-		},
-	)
-
 	it.each(['Delete', 'Backspace'])(
 		'returns a focused board piece with %s',
 		key => {
@@ -261,31 +67,8 @@ describe('PuzzleMode', () => {
 		).toHaveLength(6)
 	})
 
-	beforeEach(() => {
-		localStorage.clear()
-		hitTest.mockReset().mockReturnValue(null)
-		Object.defineProperty(document, 'elementFromPoint', {
-			configurable: true,
-			value: hitTest,
-		})
-		Object.defineProperty(Element.prototype, 'setPointerCapture', {
-			configurable: true,
-			value: vi.fn(),
-		})
-	})
-
-	afterAll(() => {
-		if (originalHitTest)
-			Object.defineProperty(document, 'elementFromPoint', originalHitTest)
-		else Reflect.deleteProperty(document, 'elementFromPoint')
-		if (originalCapture)
-			Object.defineProperty(
-				Element.prototype,
-				'setPointerCapture',
-				originalCapture,
-			)
-		else Reflect.deleteProperty(Element.prototype, 'setPointerCapture')
-	})
+	beforeEach(() => localStorage.clear())
+	stubPointerHitTesting()
 
 	it('loads and generates new puzzles without secure-context-only randomUUID', async () => {
 		const user = userEvent.setup()

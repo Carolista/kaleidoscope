@@ -10,8 +10,8 @@ import {
 import {
 	generateAuthoredHexPuzzle,
 	renderAuthoredHexPuzzle,
-} from '@/puzzles/hexAuthoring'
-import { HEX_PUZZLE_RECIPES } from '@/puzzles/hexPuzzle'
+	HEX_PUZZLE_RECIPES,
+} from '@/domain/puzzles'
 import { puzzleDraftArgs } from './puzzleDrafts'
 
 function client(value: object) {

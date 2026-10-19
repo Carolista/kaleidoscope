@@ -1,10 +1,13 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { describe, expect, it, vi } from 'vitest'
 import type { Database, Tables } from '@/types/database'
-import { generateAuthoredHexPuzzle } from '@/puzzles/hexAuthoring'
-import { HEX_PUZZLE_RECIPES, isPuzzleSolved } from '@/puzzles/hexPuzzle'
-import { renderAuthoredHexPuzzle } from '@/puzzles/hexAuthoring'
-import { readAuthoredHexPuzzle } from '@/puzzles/readAuthoredHexPuzzle'
+import {
+	generateAuthoredHexPuzzle,
+	HEX_PUZZLE_RECIPES,
+	isPuzzleSolved,
+	renderAuthoredHexPuzzle,
+	readAuthoredHexPuzzle,
+} from '@/domain/puzzles'
 import { puzzleDraftArgs } from './puzzleDrafts'
 import {
 	deletePuzzleDraft,

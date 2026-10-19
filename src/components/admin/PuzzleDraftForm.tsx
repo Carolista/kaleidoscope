@@ -1,7 +1,7 @@
 import { faRotate, faWandMagicSparkles } from '@fortawesome/pro-solid-svg-icons'
 import type { SubmitEvent } from 'react'
-import type { AuthoringPalette } from '@/puzzles/hexAuthoring'
-import { HEX_PUZZLE_RECIPES } from '@/puzzles/hexPuzzle'
+import type { AuthoringPalette } from '@/domain/puzzles'
+import { HEX_PUZZLE_RECIPES } from '@/domain/puzzles'
 import type { PuzzleUsage } from '@/services/puzzleDrafts'
 import AdminIconButton from './AdminIconButton'
 import {
