@@ -25,7 +25,7 @@ import {
 	schemeIsUsed,
 	type SchemeUsage,
 } from '../../services/schemeUsage'
-import HexPuzzleBoard from '../puzzle/HexPuzzleBoard'
+import PaletteUsageDetails from './PaletteUsageDetails'
 import AdminIconButton from './AdminIconButton'
 import SchemeSandbox from './SchemeSandbox'
 import useUnsavedDraft, { confirmDiscardDraft } from './useUnsavedDraft'
@@ -39,7 +39,9 @@ import {
 	type SchemeSet,
 } from '../../services/schemeSets'
 import SchemeSetLibrary from './SchemeSetLibrary'
-import { Button, Input, Loading, Select } from '@shared'
+import { Button, ConfirmDialog, Input, Loading, Select } from '@shared'
+import PaletteDeleteDialog from './PaletteDeleteDialog'
+import useModalState from '../../hooks/useModalState'
 
 function errorMessage(cause: unknown): string {
 	return cause instanceof Error ? cause.message : 'Unable to manage palettes.'
@@ -62,92 +64,10 @@ function Swatches({ colors }: { readonly colors: readonly string[] }) {
 	)
 }
 
-function UsageDetails({
-	usage,
-	colors,
-}: {
-	readonly usage: SchemeUsage
-	readonly colors: ColorScheme['colors'] | null
-}) {
-	return (
-		<>
-			<p>
-				{usage.starters
-					? 'Included in starter offerings.'
-					: 'Not a starter palette.'}
-			</p>
-			{!schemeIsUsed(usage) && (
-				<p>No saved references blocking deletion.</p>
-			)}
-			{schemeIsUsed(usage) && (
-				<p>This palette is in use and cannot be deleted.</p>
-			)}
-			{usage.packs.length > 0 && (
-				<>
-					<h4>Palette sets</h4>
-					<ul>
-						{usage.packs.map((name, index) => (
-							<li key={index}>{name}</li>
-						))}
-					</ul>
-				</>
-			)}
-			{usage.rewards.length > 0 && (
-				<>
-					<h4>Puzzle rewards</h4>
-					<ul>
-						{usage.rewards.map((name, index) => (
-							<li key={index}>{name}</li>
-						))}
-					</ul>
-				</>
-			)}
-			{usage.grants > 0 && <p>Ownership grants: {usage.grants}</p>}
-			{usage.corrections > 0 && (
-				<p>Correction history records: {usage.corrections}</p>
-			)}
-			{usage.puzzles.length > 0 && (
-				<>
-					<h4>Linked puzzles ({usage.puzzles.length})</h4>
-					<ul className={styles.linkedPuzzles}>
-						{usage.puzzles.map(puzzle => (
-							<li key={puzzle.id}>
-								{puzzle.preview && colors && (
-									<div className={styles.thumbnail}>
-										<HexPuzzleBoard
-											target
-											label={`${puzzle.name} palette preview`}
-											radius={puzzle.preview.radius}
-											colors={Object.fromEntries(
-												Object.entries(
-													puzzle.preview.target,
-												).map(([group, slot]) => [
-													group,
-													colors[slot],
-												]),
-											)}
-										/>
-									</div>
-								)}
-								<span>
-									<strong>{puzzle.name}</strong>
-									<br />
-									{puzzle.context}
-								</span>
-							</li>
-						))}
-					</ul>
-				</>
-			)}
-		</>
-	)
-}
-
 function SchemeEditor({
 	client,
 	initial,
 	startingColors,
-	deleting,
 	onBack,
 	onSaved,
 	onDirtyChange,
@@ -155,7 +75,6 @@ function SchemeEditor({
 	readonly client: SupabaseClient<Database>
 	readonly initial: CatalogScheme | null
 	readonly startingColors: readonly string[]
-	readonly deleting: boolean
 	readonly onBack: () => void
 	readonly onSaved: (message: string) => void
 	readonly onDirtyChange?: (dirty: boolean) => void
@@ -167,7 +86,9 @@ function SchemeEditor({
 	const busy = pending !== null
 	const working = useRef(false)
 	const createRequest = useRef<{ id: string; content: string } | null>(null)
-	const [confirmDelete, setConfirmDelete] = useState(deleting)
+	const [confirmDelete, setConfirmDelete, editorDeleteModal] =
+		useModalState<true>()
+	const [deleteBusy, setDeleteBusy] = useState(false)
 	const [usage, setUsage] = useState<SchemeUsage | null>(null)
 	const [usageError, setUsageError] = useState('')
 	const [usageReload, setUsageReload] = useState(0)
@@ -177,7 +98,7 @@ function SchemeEditor({
 		!readOnly &&
 		(name !== (initial?.name ?? '') ||
 			colors.some((color, index) => color !== startingColors[index]))
-	useUnsavedDraft(dirty || busy, onDirtyChange)
+	useUnsavedDraft(dirty || busy || deleteBusy, onDirtyChange)
 	const validColors =
 		colors.length === 5 &&
 		colors.every(color => /^#[0-9a-f]{6}$/i.test(color))
@@ -241,24 +162,6 @@ function SchemeEditor({
 				})
 			}
 			onSaved(`Saved "${scheme.name}" as a draft palette.`)
-		} catch (cause) {
-			setError(errorMessage(cause))
-		} finally {
-			working.current = false
-			setPending(null)
-		}
-	}
-	async function remove() {
-		if (working.current || !initial || !canDelete) return
-		working.current = true
-		setPending('Deleting palette…')
-		setError('')
-		try {
-			await manageColorScheme(client, {
-				kind: 'delete',
-				previous: initial,
-			})
-			onSaved(`Deleted "${initial.name}".`)
 		} catch (cause) {
 			setError(errorMessage(cause))
 		} finally {
@@ -429,7 +332,10 @@ function SchemeEditor({
 						</p>
 					)}
 					{usage && !usageLoading && !usageError && (
-						<UsageDetails usage={usage} colors={validColors} />
+						<PaletteUsageDetails
+							usage={usage}
+							colors={validColors}
+						/>
 					)}
 					{!readOnly && (
 						<>
@@ -441,36 +347,22 @@ function SchemeEditor({
 							>
 								Delete palette
 							</Button>
-							{confirmDelete && canDelete && (
-								<div
-									className={adminStyles.bulkPanel}
-									role="group"
-									aria-label="Confirm palette deletion"
-								>
-									<p>
-										Delete "{initial.name}" permanently? Any
-										draft set membership will be removed.
-										{dirty
-											? ' Unsaved edits will also be discarded.'
-											: ''}
-									</p>
-									<Button
-										type="button"
-										disabled={busy}
-										onClick={() => {
-											void remove()
-										}}
-									>
-										Confirm delete palette
-									</Button>{' '}
-									<Button
-										type="button"
-										disabled={busy}
-										onClick={() => setConfirmDelete(false)}
-									>
-										Cancel deletion
-									</Button>
-								</div>
+							{confirmDelete && (
+								<PaletteDeleteDialog
+									{...editorDeleteModal}
+									client={client}
+									scheme={initial}
+									dirty={dirty}
+									onDirtyChange={setDeleteBusy}
+									onCancel={() => setConfirmDelete(null)}
+									onDeleted={() =>
+										setConfirmDelete(null, () =>
+											onSaved(
+												`Deleted "${initial.name}".`,
+											),
+										)
+									}
+								/>
 							)}
 						</>
 					)}
@@ -500,12 +392,15 @@ export default function SchemeLibrary({
 	const [checked, setChecked] = useState<ReadonlySet<string>>(new Set())
 	const [targetSet, setTargetSet] = useState('')
 	const [busy, setBusy] = useState(false)
+	const [deleting, setDeleting, deleteModal] = useModalState<CatalogScheme>()
+	const [assigning, setAssigning, assignmentModal] = useModalState<true>()
+	const [actionError, setActionError] = useState('')
+	const [deleteBusy, setDeleteBusy] = useState(false)
 	const working = useRef(false)
 	const [childDirty, setChildDirty] = useState(false)
-	useUnsavedDraft(busy || childDirty, onDirtyChange)
+	useUnsavedDraft(busy || childDirty || deleteBusy, onDirtyChange)
 	const [editing, setEditing] = useState<{
 		scheme: CatalogScheme | null
-		deleting: boolean
 		startingColors?: ColorScheme['colors']
 	} | null>(null)
 	useEffect(() => {
@@ -515,6 +410,14 @@ export default function SchemeLibrary({
 				if (active) {
 					setSchemes(next)
 					setSets(nextSets)
+					setChecked(
+						previous =>
+							new Set(
+								[...previous].filter(id =>
+									next.some(scheme => scheme.id === id),
+								),
+							),
+					)
 					setFilter(previous =>
 						previous === 'all' ||
 						previous === 'ungrouped' ||
@@ -544,28 +447,30 @@ export default function SchemeLibrary({
 			active = false
 		}
 	}, [client, reload])
-	function refresh() {
+	function refresh(preserveSelection = false) {
 		setLoading(true)
 		setError('')
-		setChecked(new Set())
+		if (!preserveSelection) setChecked(new Set())
 		setReload(value => value + 1)
 	}
 	async function assign() {
 		if (working.current || !targetSet || checked.size === 0) return
 		working.current = true
 		setBusy(true)
-		setError('')
+		setActionError('')
 		try {
 			await manageSchemeSet(client, targetSet, {
 				kind: 'assign',
 				paletteIds: [...checked],
 			})
-			setStatus(
-				'Palettes assigned. Previous draft set memberships were replaced.',
-			)
-			refresh()
+			setAssigning(null, () => {
+				setStatus(
+					'Palettes assigned. Previous draft set memberships were replaced.',
+				)
+				refresh()
+			})
 		} catch (cause) {
-			setError(errorMessage(cause))
+			setActionError(errorMessage(cause))
 		} finally {
 			working.current = false
 			setBusy(false)
@@ -603,7 +508,6 @@ export default function SchemeLibrary({
 						'#ffffff',
 					]
 				}
-				deleting={editing.deleting}
 				onDirtyChange={setChildDirty}
 				onBack={() => setEditing(null)}
 				onSaved={message => {
@@ -644,14 +548,14 @@ export default function SchemeLibrary({
 						disabled={busy || loading || !!error}
 						onClick={() => {
 							setStatus('')
-							setEditing({ scheme: null, deleting: false })
+							setEditing({ scheme: null })
 						}}
 					/>
 					<AdminIconButton
 						icon={faRotate}
 						label="Refresh palette catalog"
 						disabled={busy || loading}
-						onClick={refresh}
+						onClick={() => refresh()}
 					/>
 				</div>
 			</div>
@@ -704,7 +608,8 @@ export default function SchemeLibrary({
 						loading || busy || !targetSet || checked.size === 0
 					}
 					onClick={() => {
-						void assign()
+						setActionError('')
+						setAssigning(true)
 					}}
 				>
 					Assign {checked.size} selected
@@ -719,7 +624,45 @@ export default function SchemeLibrary({
 				)}
 			</div>
 			{status && <p role="status">{status}</p>}
-			{busy && <Loading label="Assigning palettes to set…" />}
+			{deleting && (
+				<PaletteDeleteDialog
+					{...deleteModal}
+					client={client}
+					scheme={deleting}
+					onDirtyChange={setDeleteBusy}
+					onCancel={() => setDeleting(null)}
+					onDeleted={() => {
+						setDeleting(null, () => {
+							setStatus(`Deleted "${deleting.name}".`)
+							refresh(true)
+						})
+					}}
+				/>
+			)}
+			{assigning && (
+				<ConfirmDialog
+					{...assignmentModal}
+					title="Assign selected palettes to set"
+					closeLabel="Close palette assignment"
+					message={`Assign ${checked.size} selected palettes to "${sets.find(set => set.row.id === targetSet)?.row.name}"? Previous draft set memberships will be replaced.`}
+					confirmLabel="Assign palettes"
+					pending={busy ? 'Assigning palettes to set…' : null}
+					error={actionError}
+					confirmDisabled={loading || !!error}
+					onConfirm={() => {
+						void assign()
+					}}
+					onCancel={() => setAssigning(null)}
+				>
+					<ul>
+						{schemes
+							.filter(scheme => checked.has(scheme.id))
+							.map(scheme => (
+								<li key={scheme.id}>{scheme.name}</li>
+							))}
+					</ul>
+				</ConfirmDialog>
+			)}
 			{loading && (
 				<Loading
 					label={
@@ -806,7 +749,6 @@ export default function SchemeLibrary({
 												setStatus('')
 												setEditing({
 													scheme: null,
-													deleting: false,
 													startingColors:
 														scheme.colors,
 												})
@@ -825,7 +767,6 @@ export default function SchemeLibrary({
 												setStatus('')
 												setEditing({
 													scheme,
-													deleting: false,
 												})
 											}}
 										/>
@@ -840,10 +781,7 @@ export default function SchemeLibrary({
 											}
 											onClick={() => {
 												setStatus('')
-												setEditing({
-													scheme,
-													deleting: true,
-												})
+												setDeleting(scheme)
 											}}
 										/>
 									</div>

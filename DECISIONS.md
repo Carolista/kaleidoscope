@@ -309,6 +309,24 @@ saved scheme, so random initial selection was removed.
   tradeoff; other icon buttons use 2.5rem.
 - Use native `<dialog>` for modal focus/backdrop/cancel behavior, with parent-controlled
   opening/closing. Custom confirmation UI replaces `window.confirm`.
+- Reuse `ConfirmDialog` for admin action confirmations and rich forms rather
+  than inline panels or another overlay implementation. Keep affected records
+  and consequences explicit; destructive confirmations use the shared red
+  button variant. Pending writes disable every dismissal path and duplicate
+  submission; failures remain open and retryable. Do not offer admin opt-outs.
+- Create both kinds of set over their lists with `SetCreationDialog`, preserving
+  role choices, native required-field validation, and retry-stable IDs. Close,
+  refresh, and focus Add after success, without entering the new editor.
+  Keep existing metadata/member editing in its separate workspace.
+- Palette trash must not navigate to the editor. Share one usage-gated deletion
+  dialog between gallery and editor, retaining the editor's independent usage
+  details. Unverified, used, and released records remain protected by existing
+  service/database checks; presentation changes do not relax those checks.
+- Request initial form focus after native opening, not React mount-time
+  autofocus on a closed dialog. Retain action data with `useModalState` until
+  `onAfterClose`, so conditional admin flows honor exit motion, focus return,
+  and scroll locking. Defer editor removal/refresh when necessary.
+  Synchronous unsaved-navigation guards remain a separate follow-up.
 - Keep modal headers stationary and use one viewport-bounded scrolling body.
   Conditional edge fades and chevrons make hidden content discoverable without
   permanent instructions. Background scroll locking preserves page position;

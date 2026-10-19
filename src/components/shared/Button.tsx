@@ -1,7 +1,7 @@
 import type { ComponentPropsWithRef } from 'react'
 import styles from './Button.module.css'
 
-export type ButtonVariant = 'solid' | 'outline' | 'primary' | 'link'
+export type ButtonVariant = 'solid' | 'outline' | 'primary' | 'link' | 'danger'
 
 export interface ButtonProps extends ComponentPropsWithRef<'button'> {
 	readonly variant?: ButtonVariant

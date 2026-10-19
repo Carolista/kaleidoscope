@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
+import type { ReactNode, RefObject } from 'react'
 import styles from './Modal.module.css'
 import CloseButton from './CloseButton'
 
@@ -27,6 +27,8 @@ export interface ModalProps {
 	readonly header?: ReactNode
 	readonly size?: 'md' | 'sm'
 	readonly closeLabel?: string
+	readonly dismissible?: boolean
+	readonly initialFocusRef?: RefObject<HTMLElement | null>
 	readonly children: ReactNode
 }
 
@@ -90,6 +92,8 @@ function Modal({
 	header,
 	size = 'md',
 	closeLabel = 'Close dialog',
+	dismissible = true,
+	initialFocusRef,
 	children,
 }: ModalProps) {
 	const dialogRef = useRef<HTMLDialogElement>(null)
@@ -117,8 +121,9 @@ function Modal({
 		afterCloseRef.current = onAfterClose
 	}, [onAfterClose])
 
-	useLayoutEffect(
-		() => () => {
+	useLayoutEffect(() => {
+		const dialog = dialogRef.current
+		return () => {
 			if (animationRef.current) {
 				animationRef.current.onfinish = null
 				animationRef.current.cancel()
@@ -126,9 +131,9 @@ function Modal({
 			}
 			unlockRef.current?.()
 			unlockRef.current = undefined
-		},
-		[],
-	)
+			if (dialog?.open) dialog.close()
+		}
+	}, [])
 
 	useLayoutEffect(() => {
 		const dialog = dialogRef.current!
@@ -161,7 +166,10 @@ function Modal({
 		dialog.dataset.closing = String(!open)
 		if (open) {
 			unlockRef.current ??= lockPageScroll()
-			if (!dialog.open) dialog.showModal()
+			if (!dialog.open) {
+				dialog.showModal()
+				initialFocusRef?.current?.focus()
+			}
 		}
 		const reducedMotion = window.matchMedia?.(
 			'(prefers-reduced-motion: reduce)',
@@ -189,7 +197,7 @@ function Modal({
 			if (!open) finishClose()
 			animation.cancel()
 		}
-	}, [open])
+	}, [open, initialFocusRef])
 
 	useLayoutEffect(() => {
 		if (!open) return
@@ -224,11 +232,12 @@ function Modal({
 				// (driven by the parent flipping `open`) stays the single source
 				// of truth for when the dialog actually closes.
 				event.preventDefault()
-				if (open) onClose()
+				if (open && dismissible) onClose()
 			}}
 			onClick={event => {
 				// Native backdrop clicks target the dialog, not its contents.
-				if (open && event.target === dialogRef.current) onClose()
+				if (open && dismissible && event.target === dialogRef.current)
+					onClose()
 			}}
 		>
 			{size === 'sm' && (
@@ -237,6 +246,7 @@ function Modal({
 						label={closeLabel}
 						onClick={onClose}
 						size="sm"
+						disabled={!dismissible}
 					/>
 				</div>
 			)}

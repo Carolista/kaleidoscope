@@ -343,17 +343,6 @@
 	font-size: 0.875rem;
 }
 
-.bulkPanel {
-	padding: 0.75rem;
-	border: 1px solid var(--admin-border);
-	border-radius: 0.375rem;
-}
-
-.bulkPanel > ul {
-	max-height: 10rem;
-	overflow-y: auto;
-}
-
 .thumbnail {
 	display: block;
 	width: 100%;

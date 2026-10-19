@@ -65,6 +65,15 @@
 	color: var(--control-primary, var(--accent, #222));
 }
 
+.danger {
+	background: var(--control-danger, #b42318);
+	color: #fff;
+}
+
+.danger:hover:not(:disabled) {
+	background: color-mix(in srgb, var(--control-danger, #b42318) 85%, #000);
+}
+
 .button:focus-visible {
 	outline: 2px solid var(--control-focus, var(--accent, #222));
 	outline-offset: 3px;

@@ -17,12 +17,13 @@ import {
 	manageDraftSet,
 	type DraftSet,
 	type SetAction,
-	type SetKind,
 } from '../../services/puzzleSets'
 import type { Database } from '../../types/database'
 import HexPuzzleBoard from '../puzzle/HexPuzzleBoard'
 import AdminIconButton from './AdminIconButton'
-import { Button, Input, Loading, Select } from '@shared'
+import { Button, ConfirmDialog, Input, Loading } from '@shared'
+import SetCreationDialog from './SetCreationDialog'
+import useModalState from '../../hooks/useModalState'
 import styles from './AdminPortal.module.css'
 import useUnsavedDraft, { confirmDiscardDraft } from './useUnsavedDraft'
 
@@ -43,23 +44,29 @@ export default function PuzzleSetLibrary({
 }) {
 	const [sets, setSets] = useState<readonly DraftSet[]>([])
 	const [selectedId, setSelectedId] = useState<string | null>(null)
-	const [creating, setCreating] = useState(false)
+	const [creating, setCreating, creationModal] = useModalState<true>()
 	const [name, setName] = useState('')
-	const [kind, setKind] = useState<SetKind>('core')
+	const [creationDirty, setCreationDirty] = useState(false)
+	const addButton = useRef<HTMLButtonElement>(null)
+	const focusAdd = useRef(false)
 	const [loading, setLoading] = useState(true)
 	const [pending, setPending] = useState<string | null>(null)
 	const busy = pending !== null
 	const working = useRef(false)
-	const createId = useRef<string | null>(null)
 	const [error, setError] = useState('')
+	const [deleteError, setDeleteError] = useState('')
 	const [status, setStatus] = useState('')
-	const [deleting, setDeleting] = useState<DraftSet | null>(null)
+	const [deleting, setDeleting, deleteModal] = useModalState<DraftSet>()
 	const [reload, setReload] = useState(0)
 	const selected = sets.find(set => set.row.id === selectedId)
-	const dirty = creating
-		? name.length > 0 || kind !== 'core'
-		: !!selected && name !== selected.row.name
-	useUnsavedDraft(dirty || busy, onDirtyChange)
+	const dirty = !!selected && name !== selected.row.name
+	useUnsavedDraft(dirty || busy || creationDirty, onDirtyChange)
+	useEffect(() => {
+		if (!loading && !creating && focusAdd.current) {
+			addButton.current?.focus()
+			focusAdd.current = false
+		}
+	}, [loading, creating])
 	useEffect(() => {
 		let active = true
 		void loadDraftSets(client, true)
@@ -87,7 +94,7 @@ export default function PuzzleSetLibrary({
 		if (!deleting || working.current) return
 		working.current = true
 		setPending('Deleting puzzle set…')
-		setError('')
+		setDeleteError('')
 		setStatus('')
 		try {
 			await deleteDraftSet(client, deleting.row.id)
@@ -101,7 +108,7 @@ export default function PuzzleSetLibrary({
 			setLoading(true)
 			setReload(value => value + 1)
 		} catch (cause) {
-			setError(errorMessage(cause))
+			setDeleteError(errorMessage(cause))
 		} finally {
 			working.current = false
 			setPending(null)
@@ -120,12 +127,7 @@ export default function PuzzleSetLibrary({
 		try {
 			await manageDraftSet(client, id, action)
 			setStatus(success)
-			if (action.kind === 'create') {
-				setCreating(false)
-				setSelectedId(id)
-				setName(action.name.trim())
-				createId.current = null
-			} else if (action.kind === 'rename') {
+			if (action.kind === 'rename') {
 				setName(action.name.trim())
 			}
 			// Keep the renamed baseline current while the catalog reloads.
@@ -155,8 +157,7 @@ export default function PuzzleSetLibrary({
 	}
 	function back() {
 		if (dirty && !confirmDiscardDraft()) return
-		if (creating || selectedId) {
-			setCreating(false)
+		if (selectedId) {
 			setSelectedId(null)
 			setName('')
 			setError('')
@@ -169,14 +170,7 @@ export default function PuzzleSetLibrary({
 			setError('Enter a set name.')
 			return
 		}
-		if (creating) {
-			createId.current ??= crypto.randomUUID()
-			void mutate(
-				createId.current,
-				{ kind: 'create', name, role: kind },
-				'Draft set created.',
-			)
-		} else if (selected) {
+		if (selected) {
 			void mutate(
 				selected.row.id,
 				{ kind: 'rename', name },
@@ -207,27 +201,21 @@ export default function PuzzleSetLibrary({
 				onClick={back}
 			>
 				<FontAwesomeIcon icon={faSquareArrowLeft} aria-hidden="true" />{' '}
-				{creating || selectedId ? 'Back to sets' : 'Back to library'}
+				{selectedId ? 'Back to sets' : 'Back to library'}
 			</Button>
 			<div className={styles.galleryHeading}>
 				<h2 id="draft-sets-title">
-					{creating
-						? 'New set'
-						: selected
-							? `Set: ${selected.row.name}`
-							: 'Draft sets'}
+					{selected ? `Set: ${selected.row.name}` : 'Draft sets'}
 				</h2>
-				{!creating && !selected && (
+				{!selected && (
 					<div className={styles.galleryControls}>
 						<AdminIconButton
 							icon={faPlusLarge}
 							label="New set"
+							ref={addButton}
 							disabled={busy || loading || !!deleting}
 							onClick={() => {
 								setCreating(true)
-								setName('')
-								setKind('core')
-								createId.current = null
 								setStatus('')
 								setError('')
 							}}
@@ -247,35 +235,59 @@ export default function PuzzleSetLibrary({
 			</div>
 			{error && <p role="alert">{error}</p>}
 			{status && <p role="status">{status}</p>}
-			{pending && <Loading label={pending} />}
+			{pending && !deleting && <Loading label={pending} />}
+			{creating && (
+				<SetCreationDialog
+					{...creationModal}
+					title="New set"
+					formLabel="Create draft set"
+					kindLabel="Set role"
+					kinds={{
+						core: 'Core progression',
+						reward: 'Reward',
+						paid: 'Paid',
+					}}
+					initialKind="core"
+					confirmLabel="Create set"
+					pendingLabel="Creating puzzle set…"
+					onDirtyChange={setCreationDirty}
+					onCancel={() => setCreating(null)}
+					onCreate={async (id, name, kind) => {
+						await manageDraftSet(client, id, {
+							kind: 'create',
+							name,
+							role: kind,
+						})
+						focusAdd.current = true
+						setCreating(null)
+						setStatus('Draft set created.')
+						setLoading(true)
+						setReload(value => value + 1)
+					}}
+				/>
+			)}
 			{deleting && (
-				<div
-					role="group"
-					aria-label="Confirm set deletion"
-					className={styles.bulkPanel}
+				<ConfirmDialog
+					{...deleteModal}
+					title="Confirm set deletion"
+					closeLabel="Close set deletion"
+					destructive
+					message={`Delete "${deleting.row.name}"? Its ${deleting.members.length} puzzles will be unassigned, not deleted.`}
+					confirmLabel="Confirm delete set"
+					cancelLabel="Keep set"
+					pending={pending}
+					error={deleteError}
+					onConfirm={() => {
+						void removeSet()
+					}}
+					onCancel={() => setDeleting(null)}
 				>
-					<p>
-						Delete "{deleting.row.name}"? Its{' '}
-						{deleting.members.length} puzzles will be unassigned,
-						not deleted.
-					</p>
-					<Button
-						type="button"
-						disabled={busy}
-						onClick={() => {
-							void removeSet()
-						}}
-					>
-						Confirm delete set
-					</Button>
-					<Button
-						type="button"
-						disabled={busy}
-						onClick={() => setDeleting(null)}
-					>
-						Keep set
-					</Button>
-				</div>
+					<ul>
+						{deleting.members.map(member => (
+							<li key={member.puzzleId}>{member.name}</li>
+						))}
+					</ul>
+				</ConfirmDialog>
 			)}
 			{loading ? (
 				<Loading
@@ -285,14 +297,12 @@ export default function PuzzleSetLibrary({
 							: 'Loading draft sets...'
 					}
 				/>
-			) : creating || selected ? (
+			) : selected ? (
 				<>
 					<form
 						className={styles.form}
 						onSubmit={save}
-						aria-label={
-							creating ? 'Create draft set' : 'Rename draft set'
-						}
+						aria-label="Rename draft set"
 					>
 						<div className={styles.metadataField}>
 							<label htmlFor="set-name">Set name</label>
@@ -304,38 +314,12 @@ export default function PuzzleSetLibrary({
 								onChange={event => setName(event.target.value)}
 							/>
 						</div>
-						{creating ? (
-							<div className={styles.metadataField}>
-								<label htmlFor="set-kind">Set role</label>
-								<Select
-									id="set-kind"
-									value={kind}
-									disabled={busy}
-									onChange={event => {
-										const value = event.target.value
-										if (
-											value === 'core' ||
-											value === 'reward' ||
-											value === 'paid'
-										)
-											setKind(value)
-									}}
-								>
-									<option value="core">
-										Core progression
-									</option>
-									<option value="reward">Reward</option>
-									<option value="paid">Paid</option>
-								</Select>
-							</div>
-						) : (
-							<p>
-								Role: {selected?.row.kind} · Hexagon ·{' '}
-								{selected?.members.length} puzzles
-							</p>
-						)}
+						<p>
+							Role: {selected?.row.kind} · Hexagon ·{' '}
+							{selected?.members.length} puzzles
+						</p>
 						<Button type="submit" disabled={busy || !name.trim()}>
-							{creating ? 'Create set' : 'Save name'}
+							Save name
 						</Button>
 					</form>
 					{selected && (
@@ -463,7 +447,7 @@ export default function PuzzleSetLibrary({
 									disabled={busy || !!deleting}
 									onClick={() => {
 										setDeleting(set)
-										setError('')
+										setDeleteError('')
 										setStatus('')
 									}}
 								/>

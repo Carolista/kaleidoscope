@@ -1,0 +1,127 @@
+import { useId, useRef, useState, type SubmitEvent } from 'react'
+import { ConfirmDialog, Input, Select } from '@shared'
+import useUnsavedDraft from './useUnsavedDraft'
+import styles from './AdminPortal.module.css'
+
+interface SetCreationDialogProps<Kind extends string> {
+	readonly open: boolean
+	readonly onAfterClose: () => void
+	readonly title: string
+	readonly formLabel: string
+	readonly kindLabel: string
+	readonly kinds: Readonly<Record<Kind, string>>
+	readonly initialKind: NoInfer<Kind>
+	readonly confirmLabel: string
+	readonly pendingLabel: string
+	readonly onCreate: (id: string, name: string, kind: Kind) => Promise<void>
+	readonly onCancel: () => void
+	readonly onDirtyChange: (dirty: boolean) => void
+}
+
+export default function SetCreationDialog<Kind extends string>({
+	open,
+	onAfterClose,
+	title,
+	formLabel,
+	kindLabel,
+	kinds,
+	initialKind,
+	confirmLabel,
+	pendingLabel,
+	onCreate,
+	onCancel,
+	onDirtyChange,
+}: SetCreationDialogProps<Kind>) {
+	const id = useId()
+	const nameInput = useRef<HTMLInputElement>(null)
+	const [name, setName] = useState('')
+	const [kind, setKind] = useState(initialKind)
+	const [busy, setBusy] = useState(false)
+	const [error, setError] = useState('')
+	const working = useRef(false)
+	const request = useRef<{ id: string; content: string } | null>(null)
+	useUnsavedDraft(
+		busy || name.length > 0 || kind !== initialKind,
+		onDirtyChange,
+	)
+
+	async function save(event: SubmitEvent<HTMLFormElement>) {
+		event.preventDefault()
+		if (!open || working.current) return
+		if (!name.trim()) {
+			setError('Enter a set name.')
+			return
+		}
+		const content = JSON.stringify({ name: name.trim(), kind })
+		if (request.current?.content !== content)
+			request.current = { id: crypto.randomUUID(), content }
+		working.current = true
+		setBusy(true)
+		setError('')
+		try {
+			await onCreate(request.current.id, name.trim(), kind)
+		} catch (cause) {
+			setError(
+				cause instanceof Error
+					? cause.message
+					: 'Unable to create the set.',
+			)
+		} finally {
+			working.current = false
+			setBusy(false)
+		}
+	}
+
+	return (
+		<ConfirmDialog
+			open={open}
+			onAfterClose={onAfterClose}
+			title={title}
+			closeLabel="Close set creation"
+			initialFocusRef={nameInput}
+			confirmLabel={confirmLabel}
+			confirmForm={`${id}-form`}
+			onConfirm={() => {}}
+			onCancel={onCancel}
+			confirmDisabled={!name.trim()}
+			pending={busy ? pendingLabel : null}
+			error={error}
+		>
+			<form
+				id={`${id}-form`}
+				aria-label={formLabel}
+				className={styles.form}
+				onSubmit={save}
+			>
+				<label htmlFor={`${id}-name`}>Set name</label>
+				<Input
+					id={`${id}-name`}
+					ref={nameInput}
+					required
+					value={name}
+					disabled={busy || !open}
+					onChange={event => setName(event.target.value)}
+				/>
+				<label htmlFor={`${id}-kind`}>{kindLabel}</label>
+				<Select
+					id={`${id}-kind`}
+					value={kind}
+					disabled={busy || !open}
+					onChange={event => {
+						const value = Object.keys(kinds).find(
+							(value): value is Kind =>
+								value === event.target.value,
+						)
+						if (value !== undefined) setKind(value)
+					}}
+				>
+					{Object.entries<string>(kinds).map(([value, label]) => (
+						<option key={value} value={value}>
+							{label}
+						</option>
+					))}
+				</Select>
+			</form>
+		</ConfirmDialog>
+	)
+}

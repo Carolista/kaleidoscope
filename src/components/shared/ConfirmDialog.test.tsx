@@ -1,13 +1,117 @@
 import { useState } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { isConfirmDialogDismissed } from '@services/confirmDialogPreferences'
 import { renderWithProvider } from '@test/renderWithProvider'
 import ConfirmDialog from './ConfirmDialog'
+import buttonStyles from './Button.module.css'
 
 describe('ConfirmDialog', () => {
 	beforeEach(() => localStorage.clear())
+
+	it.each(['cancel', 'close', 'escape', 'backdrop', 'confirm'] as const)(
+		'blocks %s while a write is pending, then retains errors and permits retry',
+		method => {
+			const onConfirm = vi.fn()
+			const onCancel = vi.fn()
+			const props = {
+				open: true,
+				title: 'Delete record',
+				message: 'Remove this record permanently?',
+				closeLabel: 'Close deletion',
+				destructive: true,
+				onConfirm,
+				onCancel,
+			}
+			const { rerender } = render(
+				<ConfirmDialog {...props} pending="Deleting record…">
+					<ul>
+						<li>Named record</li>
+					</ul>
+				</ConfirmDialog>,
+			)
+			const dialog = screen.getByRole('dialog', { name: 'Delete record' })
+			expect(dialog).toHaveTextContent('Named record')
+			expect(within(dialog).getByRole('status')).toHaveTextContent(
+				'Deleting record…',
+			)
+			expect(
+				within(dialog).getByRole('button', { name: 'Confirm' }),
+			).toHaveClass(buttonStyles.danger)
+			for (const button of within(dialog).getAllByRole('button'))
+				expect(button).toBeDisabled()
+			if (method === 'escape')
+				fireEvent(dialog, new Event('cancel', { cancelable: true }))
+			else if (method === 'backdrop') fireEvent.click(dialog)
+			else
+				fireEvent.click(
+					screen.getByRole('button', {
+						name:
+							method === 'close'
+								? 'Close deletion'
+								: method === 'confirm'
+									? 'Confirm'
+									: 'Cancel',
+					}),
+				)
+			expect(onCancel).not.toHaveBeenCalled()
+			expect(onConfirm).not.toHaveBeenCalled()
+			expect(dialog).toHaveAttribute('open')
+			rerender(
+				<ConfirmDialog {...props} error="Write failed">
+					<ul>
+						<li>Named record</li>
+					</ul>
+				</ConfirmDialog>,
+			)
+			expect(within(dialog).getByRole('alert')).toHaveTextContent(
+				'Write failed',
+			)
+			expect(within(dialog).queryByRole('status')).not.toBeInTheDocument()
+			expect(
+				within(dialog).queryByRole('checkbox'),
+			).not.toBeInTheDocument()
+			fireEvent.click(
+				within(dialog).getByRole('button', { name: 'Confirm' }),
+			)
+			expect(onConfirm).toHaveBeenCalledOnce()
+		},
+	)
+
+	it('uses a native form submit button for form dialogs and honors disabled confirmation', async () => {
+		const onSubmit = vi.fn(event => event.preventDefault())
+		const onConfirm = vi.fn()
+		const props = {
+			open: true,
+			title: 'Create record',
+			confirmForm: 'create-record',
+			onConfirm,
+			onCancel: vi.fn(),
+		}
+		const contents = (
+			<form id="create-record" onSubmit={onSubmit}>
+				<input aria-label="Name" required />
+			</form>
+		)
+		const { rerender } = render(
+			<ConfirmDialog {...props} confirmDisabled>
+				{contents}
+			</ConfirmDialog>,
+		)
+		expect(screen.getByRole('button', { name: 'Confirm' })).toBeDisabled()
+		rerender(<ConfirmDialog {...props}>{contents}</ConfirmDialog>)
+		const button = screen.getByRole('button', { name: 'Confirm' })
+		expect(button).toHaveAttribute('type', 'submit')
+		expect(button).toHaveAttribute('form', 'create-record')
+		const user = userEvent.setup()
+		await user.click(button)
+		expect(onSubmit).not.toHaveBeenCalled()
+		await user.type(screen.getByRole('textbox', { name: 'Name' }), 'Valid')
+		await user.click(button)
+		expect(onSubmit).toHaveBeenCalledOnce()
+		expect(onConfirm).not.toHaveBeenCalled()
+	})
 
 	function renderControlledDialog(preferenceKey?: string) {
 		const onConfirm = vi.fn()

@@ -214,7 +214,7 @@ describe('draft set workspace', () => {
 		expect(mocks.remove).not.toHaveBeenCalled()
 		fireEvent.click(screen.getByRole('button', { name: 'Keep set' }))
 		expect(
-			screen.queryByRole('group', { name: 'Confirm set deletion' }),
+			screen.queryByRole('dialog', { name: 'Confirm set deletion' }),
 		).not.toBeInTheDocument()
 		fireEvent.click(
 			screen.getByRole('button', { name: 'Delete set First set' }),
@@ -229,7 +229,7 @@ describe('draft set workspace', () => {
 			'Remove reward dependencies',
 		)
 		expect(
-			screen.getByRole('group', { name: 'Confirm set deletion' }),
+			screen.getByRole('dialog', { name: 'Confirm set deletion' }),
 		).toBeInTheDocument()
 		mocks.load.mockResolvedValue([])
 		fireEvent.click(
@@ -278,6 +278,12 @@ describe('draft set workspace', () => {
 		setup()
 		await screen.findByRole('button', { name: 'Edit set First set' })
 		fireEvent.click(screen.getByRole('button', { name: 'New set' }))
+		expect(
+			screen.getByRole('dialog', { name: 'New set' }),
+		).toBeInTheDocument()
+		expect(
+			screen.getByRole('button', { name: 'Edit set First set' }),
+		).toBeInTheDocument()
 		fireEvent.change(screen.getByLabelText('Set name'), {
 			target: { value: 'New collection' },
 		})
@@ -304,16 +310,18 @@ describe('draft set workspace', () => {
 			},
 		])
 		fireEvent.click(screen.getByRole('button', { name: 'Create set' }))
-		await screen.findByRole('heading', { name: 'Set: New collection' })
+		await screen.findByRole('button', { name: 'Edit set New collection' })
+		expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+		expect(screen.getByRole('button', { name: 'New set' })).toBeEnabled()
 		expect(mocks.manage.mock.calls[1]).toEqual(mocks.manage.mock.calls[0])
 		expect(mocks.manage).toHaveBeenLastCalledWith(expect.anything(), id, {
 			kind: 'create',
 			name: 'New collection',
 			role: 'paid',
 		})
-		expect(
-			screen.getByText('This set has no puzzles yet.'),
-		).toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: 'New set' }))
+		expect(screen.getByLabelText('Set name')).toHaveValue('')
+		expect(screen.getByLabelText('Set role')).toHaveValue('core')
 	})
 	it('guards unsaved names, renames the set and keeps its role unchanged', async () => {
 		setup()

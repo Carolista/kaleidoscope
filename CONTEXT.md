@@ -61,6 +61,11 @@ are excluded. Saved seed exclusions derive from surviving authoring records.
 Manage sets creates/renames Core, Reward, or Paid hexagon draft sets with flexible
 member counts. Gallery **Assign to set** appends unassigned Set/pack drafts;
 membership is exclusive. Assigned cards show the set name and Core/Reward/Pack.
+New puzzle sets and palette sets use the shared set-creation form in a modal over
+their lists. Success closes the modal, refreshes the list, and focuses Add for
+another creation; it does not enter the new set's editor. Failed saves retain
+the name, role, and error in the modal, with retry-stable IDs. Existing set
+metadata/member editing remains a separate workspace.
 Set cards use two equal columns above 640px, one at/below, with left thumbnails
 and right-aligned actions/details. The editor shows each member's stored-design
 thumbnail in current Supabase palette colors beside reorder and square-minus
@@ -84,8 +89,12 @@ Only unpublished palette drafts can be edited/deleted here. Scheduled/live
 palettes are read-only but can be duplicated. Save returns to the palette library;
 Back to puzzles refreshes authoring colors. Usage shows linked stored-design
 thumbnails, set/daily context, starter/reward/pack references, and grant/correction
-counts without private solutions or account identities. Deletion requires a named
-confirmation and no references; the database rechecks under the catalog lock.
+counts without private solutions or account identities. Library trash opens a
+named deletion modal directly over the catalog, not the editor. The same dialog
+serves the editor, whose independent usage section remains available.
+Deletion requires verified usage and no blocking references; draft-only set
+membership is removed on deletion. Failed usage reads offer retry and block
+deletion. The database rechecks under the catalog lock.
 Writes use loaded name/colors/revision conflict checks and retry-stable IDs.
 Unsaved palette edits use the same admin navigation/sign-out/reload guards.
 The initial migration already seeded all 19 original palettes as database drafts;
@@ -356,6 +365,16 @@ symmetry engine. One representative per group is clickable.
 - Native dialogs provide modal focus behavior. Reset confirmation has a
   persistent opt-out, saved only on confirmation. Board switches are immediate
   and non-destructive, so no shape-change confirmation is needed.
+- Admin palette/puzzle/set deletion, bulk palette changes, and set assignment
+  use the shared rich `ConfirmDialog`, preserving the originating list/editor,
+  affected names/counts, and explicit consequences. Admin confirmations have no
+  opt-out. Errors and pending `Loading` stay in the dialog; writes disable
+  confirm, Cancel, X, Escape, and backdrop dismissal. Cancel makes no write.
+  Shared controls supply the red destructive confirmation variant.
+- `Modal.initialFocusRef` focuses form fields after native opening.
+  `useModalState` retains action content through the shared exit animation and
+  can defer editor navigation/catalog refresh until closing finishes.
+  Existing synchronous unsaved-navigation prompts are separate, pending Part 4.
 - The shape picker uses three scaled versions of each icon (32/48/64px) in
   equal 88px square buttons, without visible shape or size text. Accessible
   names and tooltips identify shape and size as S/M/L. Rows wrap at narrow widths.

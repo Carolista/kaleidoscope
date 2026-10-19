@@ -7,6 +7,23 @@ import styles from './Modal.module.css'
 import { renderWithProvider } from '@test/renderWithProvider'
 
 describe('Modal', () => {
+	it('focuses a requested field after opening the native dialog', () => {
+		const input = { current: null as HTMLInputElement | null }
+		render(
+			<Modal
+				open
+				onClose={vi.fn()}
+				initialFocusRef={input}
+				labelledBy="focus-title"
+			>
+				<h2 id="focus-title">New item</h2>
+				<button type="button">Close</button>
+				<input ref={input} aria-label="Name" />
+			</Modal>,
+		)
+		expect(screen.getByLabelText('Name')).toHaveFocus()
+	})
+
 	it('offers a small variant with a compact labelled corner close control', async () => {
 		const onClose = vi.fn()
 		renderWithProvider(

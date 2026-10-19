@@ -37,7 +37,7 @@ import paletteStyles from '../controls/color-schemes/SchemePicker.module.css'
 import styles from './AdminPortal.module.css'
 import Checkbox from '../shared/Checkbox'
 import AdminIconButton from './AdminIconButton'
-import { Button, Loading, Select } from '@shared'
+import { Button, ConfirmDialog, Loading, Select } from '@shared'
 import PuzzleDraftForm from './PuzzleDraftForm'
 import PuzzleSetLibrary from './PuzzleSetLibrary'
 import {
@@ -46,6 +46,7 @@ import {
 	type DraftSet,
 } from '../../services/puzzleSets'
 import useUnsavedDraft, { confirmDiscardDraft } from './useUnsavedDraft'
+import useModalState from '../../hooks/useModalState'
 
 function message(cause: unknown) {
 	return cause instanceof Error
@@ -85,7 +86,9 @@ function DraftEditor({
 	const busy = pending !== null
 	const working = useRef(false)
 	const [error, setError] = useState('')
-	const [confirmDelete, setConfirmDelete] = useState(false)
+	const [confirmDelete, setConfirmDelete, editorDeleteModal] =
+		useModalState<true>()
+	const [deleteError, setDeleteError] = useState('')
 	const [recipeId, setRecipeId] = useState<string>(draft.puzzle.recipe.id)
 	const [replacement, setReplacement] = useState<AuthoredHexPuzzle | null>(
 		null,
@@ -200,12 +203,14 @@ function DraftEditor({
 		if (working.current) return
 		working.current = true
 		setPending('Deleting puzzle draft…')
-		setError('')
+		setDeleteError('')
 		try {
 			await deletePuzzleDraft(client, draft.row.id)
-			onChanged(`Deleted "${draft.row.name}".`, null)
+			setConfirmDelete(null, () =>
+				onChanged(`Deleted "${draft.row.name}".`, null),
+			)
 		} catch (cause) {
-			setError(message(cause))
+			setDeleteError(message(cause))
 		} finally {
 			working.current = false
 			setPending(null)
@@ -232,7 +237,7 @@ function DraftEditor({
 				{draft.assigned ? 'Assigned' : 'Unassigned'}
 			</p>
 			{error && <p role="alert">{error}</p>}
-			{pending && <Loading label={pending} />}
+			{pending && !confirmDelete && <Loading label={pending} />}
 			<PuzzleDraftForm
 				mode="edit"
 				palettes={palettes}
@@ -298,38 +303,34 @@ function DraftEditor({
 					or refresh palettes.
 				</p>
 			) : null}
-			{confirmDelete ? (
-				<div role="group" aria-label="Confirm draft deletion">
-					<p>
-						Delete "{draft.row.name}" permanently? Its saved design
-						and private solution will be removed.
-					</p>
-					<Button
-						type="button"
-						disabled={busy}
-						onClick={() => {
-							void remove()
-						}}
-					>
-						Confirm delete
-					</Button>
-					<Button
-						type="button"
-						disabled={busy}
-						onClick={() => setConfirmDelete(false)}
-					>
-						Keep draft
-					</Button>
-				</div>
-			) : (
-				<Button
-					type="button"
-					disabled={busy || draft.assigned}
-					onClick={() => setConfirmDelete(true)}
-				>
-					Delete draft
-				</Button>
+			{confirmDelete && (
+				<ConfirmDialog
+					{...editorDeleteModal}
+					title="Confirm draft deletion"
+					closeLabel="Close draft deletion"
+					destructive
+					message={`Delete "${draft.row.name}" permanently? Its saved design and private solution will be removed.${dirty ? ' Unsaved edits will also be discarded.' : ''}`}
+					confirmLabel="Confirm delete"
+					cancelLabel="Keep draft"
+					confirmDisabled={draft.assigned}
+					pending={pending}
+					error={deleteError}
+					onConfirm={() => {
+						void remove()
+					}}
+					onCancel={() => setConfirmDelete(null)}
+				/>
 			)}
+			<Button
+				type="button"
+				disabled={busy || draft.assigned}
+				onClick={() => {
+					setDeleteError('')
+					setConfirmDelete(true)
+				}}
+			>
+				Delete draft
+			</Button>
 		</article>
 	)
 }
@@ -367,21 +368,19 @@ export default function PuzzleDraftLibrary({
 	const [status, setStatus] = useState('')
 	const [showSets, setShowSets] = useState(false)
 	const [checkedIds, setCheckedIds] = useState<ReadonlySet<string>>(new Set())
-	const [action, setAction] = useState<{
+	const [action, setAction, actionModal] = useModalState<{
 		kind: 'delete' | 'palette' | 'set'
 		ids: readonly string[]
-	} | null>(null)
+	}>()
 	const [bulkPaletteId, setBulkPaletteId] = useState('')
 	const [draftSets, setDraftSets] = useState<readonly DraftSet[]>([])
 	const [setsLoading, setSetsLoading] = useState(false)
 	const [bulkSetId, setBulkSetId] = useState('')
 	const [bulkBusy, setBulkBusy] = useState(false)
+	const [actionError, setActionError] = useState('')
+	const [setsRetry, setSetsRetry] = useState(0)
 	const bulkWorking = useRef(false)
-	const actionPanel = useRef<HTMLDivElement>(null)
 	useUnsavedDraft(bulkBusy, onDirtyChange)
-	useEffect(() => {
-		if (action) actionPanel.current?.focus()
-	}, [action])
 	useEffect(() => {
 		if (action?.kind !== 'set') return
 		let active = true
@@ -390,7 +389,7 @@ export default function PuzzleDraftLibrary({
 				if (active) setDraftSets(sets)
 			})
 			.catch((cause: unknown) => {
-				if (active) setError(message(cause))
+				if (active) setActionError(message(cause))
 			})
 			.finally(() => {
 				if (active) setSetsLoading(false)
@@ -398,13 +397,14 @@ export default function PuzzleDraftLibrary({
 		return () => {
 			active = false
 		}
-	}, [action, client])
+	}, [action, client, setsRetry])
 	useEffect(() => {
 		let active = true
 		async function load() {
 			setLoading(true)
 			setLoadFailed(false)
 			setError('')
+			setActionError('')
 			try {
 				const next = await loadPuzzleDrafts(client)
 				if (active) {
@@ -437,7 +437,7 @@ export default function PuzzleDraftLibrary({
 		return () => {
 			active = false
 		}
-	}, [client, revision, reload])
+	}, [client, revision, reload, setAction])
 	const selected = drafts.find(value => value.row.id === selectedId)
 	const visible = drafts.filter(
 		value => filter === 'all' || value.row.usage === filter,
@@ -450,6 +450,7 @@ export default function PuzzleDraftLibrary({
 		ids: readonly string[],
 	) {
 		setError('')
+		setActionError('')
 		setStatus('')
 		setBulkPaletteId('')
 		setBulkSetId('')
@@ -465,19 +466,19 @@ export default function PuzzleDraftLibrary({
 				palettesError ||
 				!palettes.some(palette => palette.id === bulkPaletteId))
 		) {
-			setError('Choose a palette before applying changes.')
+			setActionError('Choose a palette before applying changes.')
 			return
 		}
 		if (
 			action.kind === 'set' &&
 			!draftSets.some(set => set.row.id === bulkSetId)
 		) {
-			setError('Choose a draft set before assigning puzzles.')
+			setActionError('Choose a draft set before assigning puzzles.')
 			return
 		}
 		bulkWorking.current = true
 		setBulkBusy(true)
-		setError('')
+		setActionError('')
 		try {
 			if (action.kind === 'set') {
 				await manageDraftSet(client, bulkSetId, {
@@ -492,18 +493,19 @@ export default function PuzzleDraftLibrary({
 						? { kind: 'delete' }
 						: { kind: 'palette', paletteId: bulkPaletteId },
 				)
-			setStatus(
-				action.kind === 'set'
-					? `Assigned ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'} to set.`
-					: action.kind === 'delete'
-						? `Deleted ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'}.`
-						: `Updated the palette for ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'}.`,
-			)
-			setCheckedIds(new Set())
-			setAction(null)
-			setReload(value => value + 1)
+			setAction(null, () => {
+				setStatus(
+					action.kind === 'set'
+						? `Assigned ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'} to set.`
+						: action.kind === 'delete'
+							? `Deleted ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'}.`
+							: `Updated the palette for ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'}.`,
+				)
+				setCheckedIds(new Set())
+				setReload(value => value + 1)
+			})
 		} catch (cause) {
-			setError(message(cause))
+			setActionError(message(cause))
 		} finally {
 			bulkWorking.current = false
 			setBulkBusy(false)
@@ -633,17 +635,6 @@ export default function PuzzleDraftLibrary({
 					}
 				/>
 			)}
-			{bulkBusy && (
-				<Loading
-					label={
-						action?.kind === 'delete'
-							? 'Deleting puzzle drafts…'
-							: action?.kind === 'set'
-								? 'Assigning puzzles to set…'
-								: 'Updating puzzle palettes…'
-					}
-				/>
-			)}
 			{loading ? (
 				<Loading
 					label={
@@ -756,18 +747,46 @@ export default function PuzzleDraftLibrary({
 						</p>
 					)}
 					{action && (
-						<div
-							role="group"
-							ref={actionPanel}
-							tabIndex={-1}
-							aria-label={
+						<ConfirmDialog
+							{...actionModal}
+							title={
 								action.kind === 'set'
 									? 'Assign selected puzzles to set'
 									: action.kind === 'delete'
 										? 'Confirm gallery deletion'
 										: 'Change selected palettes'
 							}
-							className={styles.bulkPanel}
+							closeLabel="Close puzzle action"
+							destructive={action.kind === 'delete'}
+							confirmLabel={
+								action.kind === 'set'
+									? 'Assign puzzles'
+									: action.kind === 'delete'
+										? 'Confirm delete'
+										: 'Apply palette'
+							}
+							pending={
+								bulkBusy
+									? action.kind === 'delete'
+										? 'Deleting puzzle drafts…'
+										: action.kind === 'set'
+											? 'Assigning puzzles to set…'
+											: 'Updating puzzle palettes…'
+									: null
+							}
+							error={actionError}
+							confirmDisabled={
+								(action.kind === 'palette' &&
+									(!bulkPaletteId ||
+										palettesLoading ||
+										palettesError)) ||
+								(action.kind === 'set' &&
+									(setsLoading || !bulkSetId))
+							}
+							onConfirm={() => {
+								void applyAction()
+							}}
+							onCancel={() => setAction(null)}
 						>
 							<p>
 								{action.kind === 'set'
@@ -818,7 +837,7 @@ export default function PuzzleDraftLibrary({
 												</option>
 											))}
 										</Select>
-										{!draftSets.length && !error && (
+										{!draftSets.length && !actionError && (
 											<p>
 												Create a draft set using Manage
 												sets, then select puzzles to
@@ -884,35 +903,21 @@ export default function PuzzleDraftLibrary({
 									</ul>
 								</fieldset>
 							)}
-							<Button
-								type="button"
-								disabled={
-									bulkBusy ||
-									(action.kind === 'palette' &&
-										(!bulkPaletteId ||
-											palettesLoading ||
-											palettesError)) ||
-									(action.kind === 'set' &&
-										(setsLoading || !bulkSetId))
-								}
-								onClick={() => {
-									void applyAction()
-								}}
-							>
-								{action.kind === 'set'
-									? 'Assign puzzles'
-									: action.kind === 'delete'
-										? 'Confirm delete'
-										: 'Apply palette'}
-							</Button>
-							<Button
-								type="button"
-								disabled={bulkBusy}
-								onClick={() => setAction(null)}
-							>
-								Cancel
-							</Button>
-						</div>
+							{action.kind === 'set' && actionError && (
+								<Button
+									disabled={setsLoading || bulkBusy}
+									onClick={() => {
+										setSetsLoading(true)
+										setActionError('')
+										setDraftSets([])
+										setBulkSetId('')
+										setSetsRetry(value => value + 1)
+									}}
+								>
+									Retry loading sets
+								</Button>
+							)}
+						</ConfirmDialog>
 					)}
 					{!visible.length && <p>No drafts match this view.</p>}
 					<ul className={styles.draftList}>

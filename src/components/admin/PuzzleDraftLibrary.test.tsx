@@ -546,7 +546,7 @@ describe('draft library', () => {
 			screen.getByRole('checkbox', { name: 'Select all shown' }),
 		)
 		fireEvent.click(screen.getByRole('button', { name: 'Delete selected' }))
-		const confirmation = screen.getByRole('group', {
+		const confirmation = screen.getByRole('dialog', {
 			name: 'Confirm gallery deletion',
 		})
 		expect(confirmation).toHaveTextContent('Daily art')
@@ -578,12 +578,12 @@ describe('draft library', () => {
 		)
 		expect(screen.queryByRole('article')).not.toBeInTheDocument()
 		expect(
-			screen.getByRole('group', { name: 'Confirm gallery deletion' }),
+			screen.getByRole('dialog', { name: 'Confirm gallery deletion' }),
 		).toHaveTextContent('Saved art')
 		expect(mocks.bulk).not.toHaveBeenCalled()
 		fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
 		expect(
-			screen.queryByRole('group', { name: 'Confirm gallery deletion' }),
+			screen.queryByRole('dialog', { name: 'Confirm gallery deletion' }),
 		).not.toBeInTheDocument()
 		expect(mocks.bulk).not.toHaveBeenCalled()
 	})

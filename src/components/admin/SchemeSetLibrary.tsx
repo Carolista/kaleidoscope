@@ -1,4 +1,4 @@
-import { useRef, useState, type SubmitEvent } from 'react'
+import { useEffect, useRef, useState, type SubmitEvent } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import {
 	faArrowDown,
@@ -10,7 +10,9 @@ import {
 	faTrashCan,
 } from '@fortawesome/pro-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Button, Input, Loading, Select } from '@shared'
+import { Button, ConfirmDialog, Input, Loading, Select } from '@shared'
+import SetCreationDialog from './SetCreationDialog'
+import useModalState from '../../hooks/useModalState'
 import type { Database } from '../../types/database'
 import {
 	manageSchemeSet,
@@ -44,18 +46,22 @@ export default function SchemeSetLibrary({
 	readonly onDirtyChange?: (dirty: boolean) => void
 }) {
 	const [editing, setEditing] = useState<{
-		id: string | null
+		id: string
 		name: string
 		kind: SchemeSetKind
 	} | null>(null)
 	const [name, setName] = useState('')
+	const [creating, setCreating, creationModal] = useModalState<true>()
+	const [creationDirty, setCreationDirty] = useState(false)
+	const addButton = useRef<HTMLButtonElement>(null)
+	const focusAdd = useRef(false)
 	const [kind, setKind] = useState<SchemeSetKind>('undecided')
 	const [error, setError] = useState('')
+	const [deleteError, setDeleteError] = useState('')
 	const [status, setStatus] = useState('')
 	const [busy, setBusy] = useState(false)
-	const [deleting, setDeleting] = useState<SchemeSet | null>(null)
+	const [deleting, setDeleting, deleteModal] = useModalState<SchemeSet>()
 	const working = useRef(false)
-	const pendingCreate = useRef<{ id: string; content: string } | null>(null)
 	const selected = sets.find(set => set.row.id === editing?.id)
 	const readOnly = !!selected?.row.published_at || !!selected?.row.release_at
 	const unavailable = busy || loading || !!catalogError
@@ -63,7 +69,13 @@ export default function SchemeSetLibrary({
 		!!editing &&
 		!readOnly &&
 		(name !== editing.name || kind !== editing.kind)
-	useUnsavedDraft(dirty || busy, onDirtyChange)
+	useUnsavedDraft(dirty || busy || creationDirty, onDirtyChange)
+	useEffect(() => {
+		if (!loading && !creating && focusAdd.current) {
+			addButton.current?.focus()
+			focusAdd.current = false
+		}
+	}, [loading, creating])
 	function back() {
 		if (busy || (dirty && !confirmDiscardDraft())) return
 		if (editing) {
@@ -80,11 +92,12 @@ export default function SchemeSetLibrary({
 		if (working.current || loading || catalogError) return
 		working.current = true
 		setBusy(true)
-		setError('')
+		if (action.kind === 'delete') setDeleteError('')
+		else setError('')
 		setStatus('')
 		try {
 			await manageSchemeSet(client, id, action)
-			if (action.kind === 'create' || action.kind === 'update') {
+			if (action.kind === 'update') {
 				setEditing({ id, name: action.name.trim(), kind: action.role })
 				setName(action.name.trim())
 			}
@@ -95,7 +108,8 @@ export default function SchemeSetLibrary({
 			setStatus(message)
 			onChanged()
 		} catch (cause) {
-			setError(
+			const report = action.kind === 'delete' ? setDeleteError : setError
+			report(
 				cause instanceof Error
 					? cause.message
 					: 'Unable to manage palette sets.',
@@ -108,21 +122,11 @@ export default function SchemeSetLibrary({
 	function save(event: SubmitEvent<HTMLFormElement>) {
 		event.preventDefault()
 		if (!editing || !name.trim() || readOnly) return
-		if (!editing.id) {
-			const content = JSON.stringify({ name: name.trim(), kind })
-			if (pendingCreate.current?.content !== content)
-				pendingCreate.current = { id: crypto.randomUUID(), content }
-			void mutate(
-				pendingCreate.current.id,
-				{ kind: 'create', name, role: kind },
-				'Palette set created.',
-			)
-		} else
-			void mutate(
-				editing.id,
-				{ kind: 'update', name, role: kind },
-				'Set details saved.',
-			)
+		void mutate(
+			editing.id,
+			{ kind: 'update', name, role: kind },
+			'Set details saved.',
+		)
 	}
 	function move(index: number, direction: -1 | 1) {
 		if (!selected) return
@@ -150,26 +154,16 @@ export default function SchemeSetLibrary({
 			</Button>
 			<div className={adminStyles.galleryHeading}>
 				<h2 id="scheme-sets-title">
-					{editing
-						? editing.id
-							? `Palette set: ${editing.name}`
-							: 'New palette set'
-						: 'Palette sets'}
+					{editing ? `Palette set: ${editing.name}` : 'Palette sets'}
 				</h2>
 				{!editing && (
 					<AdminIconButton
 						icon={faPlusLarge}
 						label="New palette set"
+						ref={addButton}
 						disabled={unavailable || !!deleting}
 						onClick={() => {
-							pendingCreate.current = null
-							setEditing({
-								id: null,
-								name: '',
-								kind: 'undecided',
-							})
-							setName('')
-							setKind('undecided')
+							setCreating(true)
 							setError('')
 							setStatus('')
 						}}
@@ -195,7 +189,7 @@ export default function SchemeSetLibrary({
 				</p>
 			)}
 			{status && <p role="status">{status}</p>}
-			{busy && (
+			{busy && !deleting && (
 				<Loading
 					label={
 						deleting
@@ -217,6 +211,31 @@ export default function SchemeSetLibrary({
 			)}
 			{!editing && !loading && !catalogError && sets.length === 0 && (
 				<p>No palette sets yet. Create a set to organize palettes.</p>
+			)}
+			{creating && (
+				<SetCreationDialog
+					{...creationModal}
+					title="New palette set"
+					formLabel="Palette set details"
+					kindLabel="Set label"
+					kinds={schemeSetLabels}
+					initialKind="undecided"
+					confirmLabel="Save set"
+					pendingLabel="Creating palette set…"
+					onDirtyChange={setCreationDirty}
+					onCancel={() => setCreating(null)}
+					onCreate={async (id, name, kind) => {
+						await manageSchemeSet(client, id, {
+							kind: 'create',
+							name,
+							role: kind,
+						})
+						focusAdd.current = true
+						setCreating(null)
+						setStatus('Palette set created.')
+						onChanged()
+					}}
+				/>
 			)}
 			{editing ? (
 				<>
@@ -260,11 +279,7 @@ export default function SchemeSetLibrary({
 						{!readOnly && (
 							<Button
 								type="submit"
-								disabled={
-									unavailable ||
-									!name.trim() ||
-									(!!editing.id && !dirty)
-								}
+								disabled={unavailable || !name.trim() || !dirty}
 							>
 								Save set
 							</Button>
@@ -410,7 +425,10 @@ export default function SchemeSetLibrary({
 										!!set.row.published_at ||
 										!!set.row.release_at
 									}
-									onClick={() => setDeleting(set)}
+									onClick={() => {
+										setDeleteError('')
+										setDeleting(set)
+									}}
 								/>
 							</div>
 						</li>
@@ -418,36 +436,32 @@ export default function SchemeSetLibrary({
 				</ul>
 			)}
 			{deleting && (
-				<div
-					role="group"
-					aria-label="Confirm palette set deletion"
-					className={adminStyles.bulkPanel}
+				<ConfirmDialog
+					{...deleteModal}
+					title="Confirm palette set deletion"
+					closeLabel="Close palette set deletion"
+					destructive
+					message={`Delete "${deleting.row.name}"? Its ${deleting.members.length} palettes will remain in the library, ungrouped.`}
+					confirmLabel="Confirm delete set"
+					cancelLabel="Cancel deletion"
+					confirmDisabled={loading || !!catalogError}
+					pending={busy ? 'Deleting palette set…' : null}
+					error={deleteError}
+					onConfirm={() => {
+						void mutate(
+							deleting.row.id,
+							{ kind: 'delete' },
+							'Set deleted. Its palettes remain in the library.',
+						)
+					}}
+					onCancel={() => setDeleting(null)}
 				>
-					<p>
-						Delete "{deleting.row.name}"? Its palettes will remain
-						in the library, ungrouped.
-					</p>
-					<Button
-						type="button"
-						disabled={unavailable}
-						onClick={() => {
-							void mutate(
-								deleting.row.id,
-								{ kind: 'delete' },
-								'Set deleted. Its palettes remain in the library.',
-							)
-						}}
-					>
-						Confirm delete set
-					</Button>{' '}
-					<Button
-						type="button"
-						disabled={busy}
-						onClick={() => setDeleting(null)}
-					>
-						Cancel deletion
-					</Button>
-				</div>
+					<ul>
+						{deleting.members.map(member => (
+							<li key={member.id}>{member.name}</li>
+						))}
+					</ul>
+				</ConfirmDialog>
 			)}
 		</section>
 	)
