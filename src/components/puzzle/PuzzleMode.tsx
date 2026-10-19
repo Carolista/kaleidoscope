@@ -404,7 +404,7 @@ export default function PuzzleMode({
 
 			<div
 				role="status"
-				className={previewPuzzle ? undefined : styles.visuallyHidden}
+				className={previewPuzzle ? undefined : 'visually-hidden'}
 			>
 				{solved
 					? previewPuzzle

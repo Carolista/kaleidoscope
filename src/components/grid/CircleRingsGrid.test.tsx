@@ -9,7 +9,7 @@ import {
 	computeGridAspectRatio,
 	getGroupIds,
 } from '@geometry/circleRingsGrid'
-import styles from './CircleCell.module.css'
+import styles from './Cell.module.css'
 import CircleRingsGrid from './CircleRingsGrid'
 
 vi.mock('@hooks/useIsTouchDevice')

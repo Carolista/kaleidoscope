@@ -4,7 +4,7 @@ Settled choices and their rationale, grouped by topic. Superseded experiments
 are omitted unless they explain a constraint worth preserving. For current
 implementation and working agreements, see [CONTEXT.md](./CONTEXT.md).
 
-For verified UI inconsistencies and proposed improvements, see
+For the UI audit, implementation status, and reuse inventory, see
 [UI_AUDIT.md](./UI_AUDIT.md). Its progress section identifies implemented work;
 remaining recommendations do not supersede the decisions below.
 
@@ -53,6 +53,15 @@ remaining recommendations do not supersede the decisions below.
   picker styles. Gallery framing owns common card borders/padding; local card
   classes own content layout and selection. Preserve square puzzle cards and
   responsive two-column landscape set cards rather than flattening them.
+- Global `.visually-hidden` owns clipped accessible text; retain visible admin
+  playtest feedback. Painting cells share exact grout/hover/focus/dimming rules
+  through `Cell.module.css`, with polygon-only joins local. Keep painting,
+  puzzle-board, and tray-piece interactions separate rather than sharing rules
+  merely because they all render SVG.
+- Native mode/shape/color choices, interactive SVG cells, puzzle pieces, and the
+  checkbox's hidden native input are intentional specialized controls. They do
+  not need command-button styling. Retain compact admin icon sizing; this is
+  not a touch-target redesign or an accessibility certification.
 - Reuse the palette-aware custom `Checkbox` for confirmation preferences and
   export options. Keep its native input for labelling and keyboard interaction;
   the decorative checkmark uses the same duotone tint as other app icons.

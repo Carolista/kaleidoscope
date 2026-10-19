@@ -2,7 +2,8 @@ import type { CSSProperties, KeyboardEvent } from 'react'
 import type { Point } from '@appTypes/geometry'
 import { pointsToSvgAttr } from '@utils/svgPoints'
 import { getHoverFill } from '@utils/colorMath'
-import styles from './PolygonCell.module.css'
+import styles from './Cell.module.css'
+import polygonStyles from './PolygonCell.module.css'
 
 // A single clickable (or purely decorative/mirrored) cell in any
 // polygon-based grid shape — hexagon, triangle, or future shapes built
@@ -38,6 +39,7 @@ function PolygonCell({
 }: PolygonCellProps) {
 	const className = [
 		styles.cell,
+		polygonStyles.cell,
 		isClickable && styles.clickable,
 		dimmed && styles.dimmed,
 	]

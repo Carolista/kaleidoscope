@@ -72,7 +72,7 @@ function GridView({
 
 	return (
 		<>
-			<p id={instructionsId} className={styles.visuallyHidden}>
+			<p id={instructionsId} className="visually-hidden">
 				{instructions}
 			</p>
 			<svg
@@ -143,11 +143,7 @@ function GridView({
 					)
 				})}
 			</svg>
-			<p
-				role="status"
-				aria-live="polite"
-				className={styles.visuallyHidden}
-			>
+			<p role="status" aria-live="polite" className="visually-hidden">
 				{announcement}
 			</p>
 		</>

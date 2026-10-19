@@ -320,7 +320,7 @@ describe('PuzzleMode', () => {
 		const tray = screen.getByRole('group', { name: 'Puzzle pieces' })
 		expect(tray).toHaveTextContent('')
 		expect(tray.querySelectorAll('span, small')).toHaveLength(0)
-		expect(screen.getByRole('status')).toHaveClass(styles.visuallyHidden)
+		expect(screen.getByRole('status')).toHaveClass('visually-hidden')
 		const actions = screen.getByRole('button', {
 			name: 'Restart',
 		}).parentElement!

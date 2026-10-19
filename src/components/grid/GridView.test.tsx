@@ -8,7 +8,7 @@ import { useIsTouchDevice } from '@hooks/useIsTouchDevice'
 import { savePersistedState } from '@services/storageService'
 import { useAppState } from '@state/useAppState'
 import { renderWithProvider } from '@test/renderWithProvider'
-import circleStyles from './CircleCell.module.css'
+import cellStyles from './Cell.module.css'
 import polygonStyles from './PolygonCell.module.css'
 import GridView from './GridView'
 import type { GridCell } from './GridView'
@@ -57,7 +57,6 @@ describe.each(['polygon', 'circle'] as const)(
 						],
 					},
 		)
-		const cellStyles = kind === 'circle' ? circleStyles : polygonStyles
 		const props = {
 			cells,
 			viewBox: '0 0 20 20',
@@ -75,7 +74,13 @@ describe.each(['polygon', 'circle'] as const)(
 			expect(svgRef.current).toBe(svg)
 			expect(svg).toHaveAttribute('viewBox', props.viewBox)
 			expect(svg).toHaveAccessibleDescription(props.instructions)
+			expect(screen.getByText(props.instructions)).toHaveClass(
+				'visually-hidden',
+			)
+			expect(screen.getByRole('status')).toHaveClass('visually-hidden')
 			const rendered = container.querySelectorAll(kind)
+			for (const cell of rendered)
+				expect(cell).toHaveClass(cellStyles.cell)
 			expect(rendered).toHaveLength(3)
 			expect(rendered[0]).toHaveAttribute('aria-hidden', 'true')
 			expect(rendered[0]).not.toHaveAttribute('tabindex')
@@ -83,10 +88,12 @@ describe.each(['polygon', 'circle'] as const)(
 			expect(rendered[1]).toHaveAccessibleName('Paint tile 1 of 2')
 			expect(rendered[2]).toHaveAccessibleName('Paint tile 2 of 2')
 			if (kind === 'circle') {
+				expect(rendered[1]).not.toHaveClass(polygonStyles.cell)
 				expect(rendered[1]).toHaveAttribute('cx', '10')
 				expect(rendered[1]).toHaveAttribute('cy', '10')
 				expect(rendered[1]).toHaveAttribute('r', '5')
 			} else {
+				expect(rendered[1]).toHaveClass(polygonStyles.cell)
 				expect(rendered[1]).toHaveAttribute('points', '0,0 20,0 10,20')
 			}
 		})

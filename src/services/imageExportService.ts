@@ -84,8 +84,8 @@ function forceFullOpacity(clonedSvg: SVGSVGElement) {
 	}
 }
 
-// The grid's "grout" lines are a CSS stroke from PolygonCell.module.css/
-// CircleCell.module.css, which isn't available once the SVG is
+// The grid's "grout" lines are a CSS stroke from Cell.module.css,
+// which isn't available once the SVG is
 // serialized on its own — so bake the live computed stroke style into
 // every cloned cell as plain attributes instead of relying on a
 // stylesheet that won't travel with it.

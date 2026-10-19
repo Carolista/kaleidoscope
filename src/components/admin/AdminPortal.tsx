@@ -20,7 +20,7 @@ import {
 } from './NavigationGuard'
 import { useNavigationGuard } from './useNavigationGuard'
 import AdminIconButton from './AdminIconButton'
-import { Button, Input, Loading } from '@shared'
+import { Button, FormField, Input, Loading } from '@shared'
 import {
 	faRightFromBracket,
 	faSun,
@@ -242,24 +242,30 @@ function AdminSession({
 				<Loading label="Restoring session…" />
 			) : !session ? (
 				<form onSubmit={signIn} className={styles.form}>
-					<label htmlFor="admin-email">Email</label>
-					<Input
-						id="admin-email"
-						name="email"
-						type="email"
-						autoComplete="username"
-						required
-						disabled={busy}
-					/>
-					<label htmlFor="admin-password">Password</label>
-					<Input
-						id="admin-password"
-						name="password"
-						type="password"
-						autoComplete="current-password"
-						required
-						disabled={busy}
-					/>
+					<FormField id="admin-email" label="Email">
+						{field => (
+							<Input
+								{...field}
+								name="email"
+								type="email"
+								autoComplete="username"
+								required
+								disabled={busy}
+							/>
+						)}
+					</FormField>
+					<FormField id="admin-password" label="Password">
+						{field => (
+							<Input
+								{...field}
+								name="password"
+								type="password"
+								autoComplete="current-password"
+								required
+								disabled={busy}
+							/>
+						)}
+					</FormField>
 					<Button type="submit" disabled={busy}>
 						Sign in
 					</Button>

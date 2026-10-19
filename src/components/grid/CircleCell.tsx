@@ -1,7 +1,7 @@
 import type { CSSProperties, KeyboardEvent } from 'react'
 import type { Point } from '@appTypes/geometry'
 import { getHoverFill } from '@utils/colorMath'
-import styles from './CircleCell.module.css'
+import styles from './Cell.module.css'
 
 // The circle-rings counterpart of PolygonCell: a single clickable (or
 // purely decorative/mirrored) circle. Operates only on a raw center

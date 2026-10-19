@@ -24,12 +24,10 @@ function clientFrom(value: object) {
 }
 function setup() {
 	const sets = vi.fn().mockResolvedValue({ data: [row], error: null })
-	const members = vi
-		.fn()
-		.mockResolvedValue({
-			data: [{ palette_id: 'art', position: 1, palettes: palette }],
-			error: null,
-		})
+	const members = vi.fn().mockResolvedValue({
+		data: [{ palette_id: 'art', position: 1, palettes: palette }],
+		error: null,
+	})
 	const selects = vi.fn()
 	const orders = vi.fn()
 	const filters = vi.fn()
@@ -176,12 +174,10 @@ describe('palette set operations', () => {
 	)
 
 	it('reports server failures and mismatched write confirmations', async () => {
-		const rpc = vi
-			.fn()
-			.mockResolvedValue({
-				data: null,
-				error: { message: 'Cannot move published membership' },
-			})
+		const rpc = vi.fn().mockResolvedValue({
+			data: null,
+			error: { message: 'Cannot move published membership' },
+		})
 		const client = clientFrom({ rpc })
 		await expect(
 			manageSchemeSet(client, row.id, {

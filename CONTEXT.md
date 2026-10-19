@@ -3,7 +3,7 @@
 Current behavior, architecture, and working standards. For rationale, see
 [DECISIONS.md](./DECISIONS.md).
 
-For the UI consistency/reuse audit and proposed housekeeping conventions, see
+For the UI consistency/reuse audit, implementation status, and reuse index, see
 [UI_AUDIT.md](./UI_AUDIT.md). Its progress section distinguishes implemented
 foundations from remaining recommendations.
 
@@ -269,7 +269,7 @@ changes should be applied to all four SVG assets.
   own control behavior, with inherited `--control-*`, `--button-*`, and
   `--icon-glyph-size` overrides scoped to admin. Admin retains Urbanist text,
   compact controls, and blue/red actions; do not restore blanket page button rules.
-  `Button` variants are `solid`, `outline`, `primary`, and `link`.
+  `Button` variants are `solid`, `outline`, `primary`, `danger`, and `link`.
   Palette-choice sizing and selected/hover colors similarly inherit scoped
   `--palette-choice-*` tokens; admin must not import the player picker's CSS.
 - Shared `Checkbox` keeps a native, labelled input beneath a custom box, with
@@ -279,6 +279,36 @@ changes should be applied to all four SVG assets.
 - CSS Module class names are camelCase so they can be read as `styles.itemTitle`
   rather than `styles['item-title']`. Custom properties, element ids, and data
   attributes stay kebab-case.
+- Use global `.visually-hidden` from [index.css](./src/index.css) for accessible
+  instructions/live announcements that should not occupy visual layout.
+  Do not replace it with `display: none`, `hidden`, or `aria-hidden`.
+  Admin playtest status deliberately remains visible.
+- Polygon and circle painting cells share grout, transitions, dimming, hover,
+  and focus rules in [Cell.module.css](./src/components/grid/Cell.module.css).
+  Polygon-only joins stay local. Puzzle board/piece interaction is different;
+  do not merge it with painting-cell styles.
+
+### UI reuse quick reference
+
+| Need | Use / precedent |
+| --- | --- |
+| Ordinary command / submit | [Button](./src/components/shared/Button.tsx); explicit `type="submit"` for forms |
+| Labelled native field | [FormField](./src/components/shared/FormField.tsx) with [Input/Select](./src/components/shared/FormControl.tsx), including admin sign-in |
+| Player / admin icon action | [PlayerIconButton](./src/components/shared/PlayerIconButton.tsx) / [AdminIconButton](./src/components/admin/AdminIconButton.tsx); generic renderer is [IconButton](./src/components/shared/IconButton.tsx) |
+| Edit / delete / new / refresh | Admin icon action with `faPenToSquare` / `faTrashCan` / `faPlusLarge` / `faRotate`; item-specific label and title |
+| Reorder / unassign | `faArrowUp` / `faArrowDown` / `faSquareMinus`; unassign preserves the member |
+| Pending feedback | [Loading](./src/components/shared/Loading.tsx); readable request-specific label, not a success spinner |
+| Confirmation / rich action form | [ConfirmDialog](./src/components/shared/ConfirmDialog.tsx) on [Modal](./src/components/shared/Modal.tsx); errors/pending stay inside |
+| Simple set creation | [SetCreationDialog](./src/components/admin/SetCreationDialog.tsx); close/refresh/focus Add on success |
+| Retain action content during exit | [useModalState](./src/hooks/useModalState.ts); defer destructive view changes until after close |
+| Guard edited/pending navigation | [useUnsavedDraft](./src/components/admin/useUnsavedDraft.ts) with [useNavigationGuard](./src/components/admin/useNavigationGuard.ts); first destination wins |
+| Decorative palette / palette selection | [PaletteStrip](./src/components/shared/PaletteStrip.tsx) / [PaletteChoices](./src/components/shared/PaletteChoices.tsx); not painting buttons |
+| Section / gallery / ordered members | [AdminLayout](./src/components/admin/AdminLayout.tsx); retain domain card layouts and local async ownership |
+
+Native mode/shape/color choice buttons, painting SVG cells, puzzle pieces, and
+the transparent native checkbox input are intentional specialized controls,
+not missed command-button migrations. File organization and admin navigation
+hierarchy remain separate follow-up work.
 
 ## Architecture
 
