@@ -53,8 +53,8 @@ remaining recommendations do not supersede the decisions below.
   picker styles. Gallery framing owns common card borders/padding; local card
   classes own content layout and selection. Preserve square puzzle cards and
   responsive two-column landscape set cards rather than flattening them.
-- Global `.visually-hidden` owns clipped accessible text; retain visible admin
-  playtest feedback. Painting cells share exact grout/hover/focus/dimming rules
+- Global `.visually-hidden` owns clipped accessible text, including admin
+  playtest feedback; keep admin screens free of instructional prose. Painting cells share exact grout/hover/focus/dimming rules
   through `Cell.module.css`, with polygon-only joins local. Keep painting,
   puzzle-board, and tray-piece interactions separate rather than sharing rules
   merely because they all render SVG.
@@ -161,11 +161,11 @@ allowed.
 Draft sets have a Core, Reward, or Paid role chosen at creation, not an Undecided
 state. Do not enforce a fixed count while 12 versus 18 remains undecided.
 Membership is exclusive; append eligible unassigned Set/pack drafts in selection
-order. Rename explicitly and save removal immediately, but stage member ordering
-locally: drag (or keyboard-move) freely, then commit the whole order with **Save
-order** in one RPC. Per-move writes forced a round trip before each next move.
+order. Save removal immediately, but stage renames and member ordering locally: drag
+(or keyboard-move) freely, then commit name and order with the set's single
+**Save**, the whole order in one RPC. Per-move writes forced a round trip before each next move.
 Staged order counts as unsaved work for navigation guards. Palette sets share
-the same staged ordering component and Save order flow.
+the same set card, editor, and staged ordering components.
 Keep existing selection mode separate from catalog ordering; do not imply that
 reordering enforces a player's completion sequence.
 
@@ -215,6 +215,9 @@ separate future work. Recheck draft state and every dependency under the catalog
 lock using invoker RLS/admin authorization; compare loaded name, ordered colors,
 and revision so name-only concurrent edits are also detected. Preserve inputs on
 errors/conflicts rather than silently overwriting changes.
+Bulk palette deletion mirrors puzzle drafts: offer it only when every selected
+palette is an unassigned draft, and apply it as one all-or-nothing RPC. Unlike
+single deletion, it rejects palette-set members rather than detaching them.
 
 Use five numbered color slots with hex text and native color inputs, arranged in
 three equal-width columns. Preview in one medium hexagon with Randomize, without
@@ -384,7 +387,8 @@ saved scheme, so random initial selection was removed.
   not independent synchronous `window.confirm` callers. Register local dirty
   state and pending operations separately in a shared provider; do not propagate
   aggregate dirty booleans through the admin tree.
-  Editor/set Back, Home, hash/history navigation, and sign-out share the guard.
+  Section/view tabs (which replace editor Back links), Home, hash/history
+  navigation, and sign-out share the guard.
   The current workspace stays mounted until the modal exit completes.
 - **First destination wins:** while a navigation decision is open or closing,
   ignore later attempts rather than replacing callbacks or opening more discard

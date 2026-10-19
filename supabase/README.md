@@ -69,8 +69,8 @@ Double-click/double-tap an occupied board piece, or drag it back to the tray, to
 return it without losing orientation. Keyboard users activate a tray piece with
 Enter/Space to rotate/select, then activate a wedge tile to place; Delete/Backspace
 on an occupied board tile returns its piece. There are no rotation/return buttons.
-Invalid placements leave the board unchanged and show a message. **Restart**
-clears only the playtest. Square tray containers keep all six orientations at
+Invalid placements leave the board unchanged; playtest feedback is announced to
+screen readers only. **Restart** (beside the pieces) clears only the playtest. Square tray containers keep all six orientations at
 the same tile scale without changing size; selection has one subtle border.
 The first-rotation player-set tutorial is planned for later.
 
@@ -101,12 +101,13 @@ Saved drafts survive reload/sign-out, but unsaved previews and playtest placemen
 do not. The admin workspace opens in the **Puzzle drafts** library, showing
 unpublished hexagon drafts with target thumbnails, recipe/use labels, and
 assignment status. Filter by Set/pack or Daily; refresh to pick up changes from
-another tab. **New puzzle** opens the creation workspace; **Back to library**
-returns to browsing.
+another tab. **New puzzle** opens the creation workspace; choosing the **Drafts** tab
+returns to browsing (with the usual unsaved-changes prompt).
 
-Cards are not navigation links. Their square, icon-only controls provide the
-shared custom selection checkbox, a blue classic Edit icon, and a red classic
-Delete icon. Use **Edit** to playtest the stored definition (not a regenerated seed).
+Cards are not navigation links. Each shows a centered thumbnail and details,
+with a bottom row holding the custom selection checkbox at left and square
+icon-only actions at right: a blue classic Edit icon and, only for unassigned
+drafts, a red classic Delete icon. Selected cards are highlighted blue. Use **Edit** to playtest the stored definition (not a regenerated seed).
 Edit its name, visual palette selection, or intended use and press **Save Changes**.
 For an unassigned draft, the recipe selector and wand **Randomize puzzle** button
 can preview a replacement without deleting the puzzle. Name, palette, and intended
@@ -134,13 +135,12 @@ Set/pack, and daily puzzles keep Daily). In the set workspace, rename the set,
 drag members into a new order, or remove them without deleting their saved designs.
 Each member shows its saved target thumbnail beside its name and drag handle
 (keyboard: Up/Down/Home/End on a focused handle); the square-minus icon removes it
-from the set only. **Save order** writes the staged order in one request; removal
-saves immediately. A changed name requires **Save name**; unsaved names and staged
-order are guarded on exit.
+from the set only. One blue **Save** beside the name writes the name and staged order together;
+removal saves immediately. Unsaved names and staged order are guarded on exit.
 The set role is chosen at creation and is not reclassified by this tool.
 Draft sets use landscape cards: the first ordered member's saved-design thumbnail
-spans the left column, with square Edit/Delete icons at the top right and name,
-Core/Reward/Pack type and member count aligned bottom right. Empty sets show a placeholder. Thumbnails
+spans the left column, with name, Core/Reward/Pack type and member count aligned
+top right and square Edit/Delete icons at the bottom right. Empty sets show a placeholder. Thumbnails
 resolve current Supabase palette colors without regenerating designs.
 The large **New set** plus opens creation. Deleting a set requires confirmation
 and unassigns its puzzles without deleting their designs or private solutions.
@@ -149,9 +149,10 @@ scheduling, and publishing tools follow separately.
 No player attempts, completions, reward grants, guest imports,
 or Zen autosaves are written.
 
-Select card checkboxes for **Change palette** or **Delete selected**. **Select all
-shown** affects the current filter only, with a mixed state for partial selection;
-changing the filter or explicitly refreshing clears selection. Bulk palette changes
+Select card checkboxes for **Change palette** or **Delete selected** (shown only
+when every selected draft is unassigned). **Show set** narrows the gallery to one
+set's members. **Select all** affects the current filters only, with a mixed state for partial selection;
+changing a filter or explicitly refreshing clears selection. Bulk palette changes
 use visual swatches and an explicit **Apply palette** action. Card and bulk deletion
 require a confirmation listing the count and names. Assigned drafts cannot be
 deleted, but can receive a palette change while unpublished. Apply the bulk-action
@@ -195,13 +196,17 @@ the initial migration. Zen still uses its local array and is unchanged.
 - **Delete** requires confirmation naming the palette and no saved references.
   Failure to load usage disables deletion; write-time database checks remain
   authoritative if the view becomes stale.
+- **Delete selected** appears in the selection bar only when every checked palette
+  is an unassigned draft (in no palette set and unreferenced). It confirms the
+  names and deletes them in one all-or-nothing request; apply the
+  [bulk palette deletion migration](#apply-bulk-palette-deletion) first.
 - Scheduled/live palettes are read-only here, but can be duplicated. Publishing,
   release scheduling, exceptional published color corrections, starter selection,
   pack organization, and reward mapping are separate later tools.
 
 Save returns to the palette library and refreshes it, along with the cached
 catalog used by puzzle authoring selectors and set previews; saved puzzle
-definitions, seeds, and solutions do not change. Unsaved edits are guarded on Back, sign-out, route exit, and reload.
+definitions, seeds, and solutions do not change. Unsaved edits are guarded on tab changes, sign-out, route exit, and reload.
 Failed writes preserve inputs; a conflict requires refreshing/reviewing the
 catalog rather than silently replacing newer data.
 
@@ -428,7 +433,7 @@ After the design-replacement migration:
    without an automatic RLS wrapper. Expect **36 PASS results**; fixtures roll back.
 3. Open **Puzzles > Sets**, create a set, switch to **Puzzles > Puzzles**, select
    unassigned Set/pack drafts, and use **Assign to set**. Open the set to check
-   membership, drag to reorder and **Save order**, rename, and remove a puzzle. Confirm removal leaves the puzzle in the
+   membership, rename and drag to reorder, then **Save**, and remove a puzzle. Confirm removal leaves the puzzle in the
    gallery and restores its unassigned edit/replacement/deletion controls.
 
 The `manage_draft_set` RPC creates/renames draft hexagon sets or atomically appends,
@@ -485,6 +490,26 @@ nonempty IDs and either `palette` (requiring a palette ID) or `delete`. Definiti
 recipes, intended uses, and private provenance are unchanged by palette updates.
 Deletion cascades to private authoring, as with individual draft deletion. No
 player permissions are added.
+
+## Apply bulk palette deletion
+
+After the palette draft management migration:
+
+1. Run
+   [20261019010000_bulk_delete_palette_drafts.sql](./migrations/20261019010000_bulk_delete_palette_drafts.sql)
+   once in SQL Editor as `postgres`. Do not rerun earlier migrations.
+2. Run [bulk_delete_palette_drafts.sql](./tests/bulk_delete_palette_drafts.sql) as
+   `postgres`, without an automatic RLS wrapper. Expect **14 PASS results**;
+   fixtures roll back.
+
+`bulk_delete_palette_drafts(p_ids)` uses caller RLS, an explicit admin check,
+READ COMMITTED isolation, and the shared catalog lock. It accepts distinct,
+nonempty IDs and locks rows in ID order. Missing palettes, scheduled/live
+palettes, palette-set membership, or references from puzzles, starters, reward
+mappings, grants, or correction history reject the whole batch. Unlike single
+draft deletion, set membership is never removed silently. It returns the deleted
+IDs, which the client verifies. The hosted migration and assertions have been
+confirmed successful by the owner.
 
 ## Bootstrap the one admin
 

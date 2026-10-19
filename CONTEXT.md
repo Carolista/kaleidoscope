@@ -59,8 +59,8 @@ with name/palette/recipe choices available for the next generation without chang
 the saved preview. A revised name carries forward; an exactly unchanged saved name
 clears on successful randomization. Leaving with a revised name warns too.
 Leaving unsaved work warns before discarding.
-Application-owned navigation uses one shared admin discard modal: editor/set Back,
-Home, hash/history navigation, and sign-out keep the current view mounted until
+Application-owned navigation uses one shared admin discard modal: section/view tabs
+(which also exit editors), Home, hash/history navigation, and sign-out keep the current view mounted until
 the decision. Keep editing (including X/Escape/backdrop) preserves data and URL;
 Discard changes executes the first requested destination once after the dialog
 closes. Further attempts are ignored until that decision finishes.
@@ -77,9 +77,12 @@ Assigned drafts retain metadata editing but cannot replace designs. The replacem
 RPC rechecks existence, shape, release and references under the catalog lock.
 Hosted replacement functionality has been confirmed by the user.
 
-Gallery cards are not links: small square controls provide the custom checkbox,
-blue classic Edit icon, and red classic Delete icon. Select all shown supports a
-mixed state; filters/explicit refresh clear selection. Bulk palette changes require
+Gallery cards ([AdminItemCard](./src/components/admin/AdminLayout.tsx)) are not
+links: a centered thumbnail and details sit above a bottom row with the custom
+checkbox at left and square blue Edit/red Delete icons at right; selected cards
+are highlighted blue. Delete appears only for unassigned drafts, and bulk Delete
+only when every checked draft qualifies. Select all supports a mixed state; the
+use and set filters and explicit refresh clear selection. Bulk palette changes require
 swatch selection and Apply; card/bulk deletion confirms count and names.
 Admin-only RPCs apply batches atomically under the catalog lock, rechecking release
 and references. Assigned drafts cannot switch use or delete; scheduled/live rows
@@ -92,13 +95,13 @@ their lists. Success closes the modal, refreshes the list, and focuses Add for
 another creation; it does not enter the new set's editor. Failed saves retain
 the name, role, and error in the modal, with retry-stable IDs. Existing set
 metadata/member editing remains a separate workspace.
-Set cards use two equal columns above 640px, one at/below, with left thumbnails
-and right-aligned actions/details. The editor shows each member's stored-design
+Set cards use two equal columns above 640px, one at/below, with left thumbnails,
+details top right, and actions bottom right. The editor shows each member's stored-design
 thumbnail in current Supabase palette colors beside a grip handle and square-minus
 removal control. Pointer drag (or Up/Down/Home/End on a focused handle; Escape
-cancels a drag) stages a local order; **Save order** writes it in one request,
-and staged order is guarded like other unsaved edits. Removal saves immediately;
-names require Save name. Palette sets share the same staged drag ordering.
+cancels a drag) stages a local order. One blue **Save** beside the name writes
+name and order together, and staged order is guarded like other unsaved edits.
+Removal saves immediately. Keyboard instructions are visually hidden. Palette sets share the same staged drag ordering.
 Confirmed set deletion unassigns members but preserves puzzles/private solutions.
 Admin/invoker-RLS RPCs recheck release/reference state under the catalog lock;
 scheduled/live sets, prepared members, and dependent progression/routes/rewards,
@@ -106,8 +109,10 @@ qualifications or grants block deletion. Membership reads paginate.
 Publishing, starter, route/core progression, and reward tools remain deferred.
 
 **Palettes** opens palette sets by default; its Palettes view is a database-backed
-catalog with swatches, release state, selection/**Assign to set**,
-and Duplicate/Edit/Delete controls. New palettes have blank names; Duplicate
+catalog sharing the puzzle card layout, selection bar, and blue selected state,
+with swatches, release state, **Assign to set**, and Duplicate/Edit/Delete.
+Bulk delete appears only when every checked palette is an unassigned draft;
+the batch RPC rejects set members, references, and scheduled/live palettes. New palettes have blank names; Duplicate
 starts with the chosen palette's five ordered colors and creates a new ID on save.
 The editor pairs hex text and native color inputs in three equal-width columns.
 Its medium hexagon sandbox randomizes only palette slots, each with a 20% chance;
@@ -303,7 +308,7 @@ changes should be applied to all four SVG assets.
 - Use global `.visually-hidden` from [index.css](./src/index.css) for accessible
   instructions/live announcements that should not occupy visual layout.
   Do not replace it with `display: none`, `hidden`, or `aria-hidden`.
-  Admin playtest status deliberately remains visible.
+  Admin playtest status is also visually hidden; the board shows the solved state.
 - Polygon and circle painting cells share grout, transitions, dimming, hover,
   and focus rules in [Cell.module.css](./src/components/grid/Cell.module.css).
   Polygon-only joins stay local. Puzzle board/piece interaction is different;
@@ -317,7 +322,7 @@ changes should be applied to all four SVG assets.
 | Labelled native field | [FormField](./src/components/shared/FormField.tsx) with [Input/Select](./src/components/shared/FormControl.tsx), including admin sign-in |
 | Player / admin icon action | [PlayerIconButton](./src/components/shared/PlayerIconButton.tsx) / [AdminIconButton](./src/components/admin/AdminIconButton.tsx); generic renderer is [IconButton](./src/components/shared/IconButton.tsx) |
 | Edit / delete / new / refresh | Admin icon action with `faPenToSquare` / `faTrashCan` / `faPlusLarge` / `faRotate`; item-specific label and title |
-| Reorder / unassign | Staged `faGripVertical` drag handle + Save order ([SortableSetMembers](./src/components/admin/SortableSetMembers.tsx)), shared by puzzle and palette sets; `faSquareMinus` unassign preserves the member |
+| Reorder / unassign | Staged `faGripVertical` drag handle + the set's single Save ([SortableSetMembers](./src/components/admin/SortableSetMembers.tsx)), shared by puzzle and palette sets; `faSquareMinus` unassign preserves the member |
 | Admin catalog data | [useCatalog](./src/components/admin/useAdminCatalog.ts) / `useCatalogInvalidation`; update locally after writes, invalidate other affected catalogs |
 | Section / view tabs | [AdminNavigation](./src/components/admin/AdminNavigation.tsx); wrap changes in `requestNavigation` |
 | Pending feedback | [Loading](./src/components/shared/Loading.tsx); readable request-specific label, not a success spinner |

@@ -101,7 +101,8 @@ drafts atomically; reopening uses the stored definition rather than regeneration
 After saving, name/palette/recipe choices apply to the next generation without
 changing the saved puzzle. A revised name survives randomization; an unchanged
 saved name clears.
-Unsaved work is guarded when leaving the workspace.
+Unsaved work is guarded when leaving the workspace; choose the **Drafts** tab
+to return to the gallery. The playtest Restart sits beside the pieces.
 
 Unassigned drafts can preview replacement designs with the recipe/wand controls.
 Save Changes atomically replaces the public design and private solution under the
@@ -109,11 +110,13 @@ same puzzle ID, then returns to the library. Leaving without saving keeps the
 original; errors preserve the pending replacement for retry. Assigned drafts retain
 metadata editing but cannot replace their design.
 
-Non-clickable cards have custom selection checkboxes and small blue Edit/red Delete
-icons. Select all shown or individual drafts to change palettes or delete in bulk.
-Palette changes require Apply; deletion confirms count and names. Bulk operations
-are all-or-nothing, with database release/reference checks. Assigned drafts cannot
-be deleted or switch intended use.
+Non-clickable cards center the thumbnail and details above a bottom row with the
+selection checkbox and small blue Edit/red Delete icons; selected cards are
+highlighted. Filter by use or by set, then select all or individual drafts to
+change palettes or delete in bulk. Palette changes require Apply; deletion
+confirms count and names. Bulk operations are all-or-nothing, with database
+release/reference checks. Only unassigned drafts can be deleted, and assigned
+drafts cannot switch intended use.
 
 **Puzzles > Sets** creates named Core, Reward, or Paid hexagon draft sets with no
 fixed puzzle count. Select unassigned Set/pack drafts in the puzzle gallery and
@@ -121,18 +124,18 @@ use **Assign to set** to append them atomically. Assigned cards show their set
 name and Core/Reward/Pack type.
 
 Draft-set cards use two equal columns above 640px and one below, with a thumbnail
-on the left and edit/delete controls and details on the right. The set editor
+on the left, details at the top right, and edit/delete controls at the bottom right. The set editor
 shows every member's saved-design thumbnail beside its name, a drag handle,
 and square-minus removal button. Drag members (or use arrow/Home/End keys on a
-focused handle) into any order, then choose **Save order** to save it at once.
-Removal saves immediately; name edits
-use **Save name**. Removing a member or confirming set deletion preserves the
+focused handle) into any order, then choose the blue **Save** beside the name to
+save the name and order at once. Removal saves immediately. Removing a member or confirming set deletion preserves the
 puzzles and their private solutions. Scheduled/live content and dependent
 progression/routes/rewards remain protected by database checks.
 
 **Palettes** opens palette sets, and its **Palettes** view holds the Supabase
-palette library. Palette set members reorder with the same drag handles and
-**Save order** as puzzle sets. Create or edit draft
+palette library. Palette sets share the puzzle set cards and editor. Palette
+cards match puzzle cards; select palettes to assign them to a set or, when all
+are unassigned drafts, delete them in one confirmed batch. Create or edit draft
 palettes using five ordered hex fields/color pickers, or use a card's **Duplicate**
 icon to start an unnamed palette with those colors. The medium hexagon sandbox
 offers **Randomize** with an equal chance for each palette slot and no neutral
