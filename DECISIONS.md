@@ -13,12 +13,17 @@ remaining recommendations do not supersede the decisions below.
 - Rebuilt the 2020 DOM app in React/Vite/TypeScript rather than extending its
   hand-authored markup. Preserve the legacy app as-is for reference.
 - Use computed SVG geometry, CSS Modules/plain CSS, and reducer + Context state.
-  An external state library is unnecessary. Layer folders suited one coloring app;
-  with admin and Puzzle Mode added, the code is moving to feature folders (see
-  [ROADMAP.md](./ROADMAP.md)).
-- Keep shape math in `domain/shapes` (one folder per shape plus a keyed registry),
-  shared geometry in `domain/geometry`, non-React services in `services`, and
-  React lifecycle logic in hooks. `domain/` never imports React.
+  An external state library is unnecessary.
+- Organize by feature once the app grew past one coloring tool: `app` composes
+  `features` (zen, puzzle, admin), which use shared `ui`, React-free `domain`,
+  and `lib`. Layer folders (`components/`, `services/`, `hooks/`) scattered each
+  feature's code and let shared code depend on Zen state.
+- Enforce the structure with small local ESLint rules rather than a plugin
+  dependency: they resolve imports against real paths, so they can tell a folder
+  barrel (`@/domain/shapes/hexagon`) from a file (`@/domain/palettes/catalog`),
+  which glob-based `no-restricted-imports` patterns cannot.
+- Keep shape math in `domain/shapes` (one folder per shape plus a keyed registry)
+  and shared geometry in `domain/geometry`. `domain/` never imports React.
 - Share actual repeated behavior: `GridView` for grid interactions,
   `ModalHeader` for modal chrome, and narrow geometry helpers. Keep per-shape
   generation, unusual bounds, modal widths, and content layouts local.

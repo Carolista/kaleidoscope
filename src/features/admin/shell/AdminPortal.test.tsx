@@ -9,6 +9,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js'
 import AdminPortal from './AdminPortal'
+import { clickWhenEnabled } from '@/features/admin/testing'
 
 const mocks = vi.hoisted(() => ({
 	getSession: vi.fn(),
@@ -138,9 +139,7 @@ describe('AdminPortal', () => {
 			)
 			render(<AdminPortal />)
 			await openPaletteCatalog()
-			fireEvent.click(
-				await screen.findByRole('button', { name: 'New palette' }),
-			)
+			await clickWhenEnabled('New palette')
 			fireEvent.change(screen.getByLabelText('Palette name'), {
 				target: { value: 'Keep my palette' },
 			})
@@ -245,9 +244,7 @@ describe('AdminPortal', () => {
 		})
 		render(<AdminPortal />)
 		await openPaletteCatalog()
-		fireEvent.click(
-			await screen.findByRole('button', { name: 'New palette' }),
-		)
+		await clickWhenEnabled('New palette')
 		fireEvent.change(screen.getByLabelText('Palette name'), {
 			target: { value: 'Unsaved palette' },
 		})
@@ -357,10 +354,14 @@ describe('AdminPortal', () => {
 		fireEvent.click(
 			await screen.findByRole('button', { name: 'New puzzle' }),
 		)
-		fireEvent.click(
-			await screen.findByRole('button', { name: 'Randomize puzzle' }),
-		)
-		await screen.findByLabelText('Puzzle name')
+		const randomize = await screen.findByRole('button', {
+			name: 'Randomize puzzle',
+		})
+		// Randomize is disabled until palettes load, and the draft only counts as
+		// unsaved once its preview exists.
+		await waitFor(() => expect(randomize).toBeEnabled())
+		fireEvent.click(randomize)
+		await screen.findByRole('group', { name: 'Puzzle pieces' })
 		fireEvent.click(
 			screen.getByRole('button', { name: 'Sign out on this device' }),
 		)

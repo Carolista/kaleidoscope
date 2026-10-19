@@ -1,5 +1,8 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { renderWithNavigationGuard as render } from '@/features/admin/testing'
+import {
+	renderWithNavigationGuard as render,
+	clickWhenEnabled,
+} from '@/features/admin/testing'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Database } from '@/lib/supabase'
@@ -380,7 +383,7 @@ describe('palette management', () => {
 	it('creates Undecided sets over the list with retry-stable IDs and returns to Add, leaving editing separate', async () => {
 		const { isProtected } = setup()
 		await openSets()
-		fireEvent.click(screen.getByRole('button', { name: 'New palette set' }))
+		await clickWhenEnabled('New palette set')
 		expect(screen.getByLabelText('Set label')).toHaveValue('undecided')
 		fireEvent.change(screen.getByLabelText('Set name'), {
 			target: { value: 'New colors' },
@@ -419,7 +422,7 @@ describe('palette management', () => {
 		expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 		expect(mocks.manageSet.mock.calls[1]).toEqual(args)
 		await waitFor(() => expect(isProtected()).toBe(false))
-		fireEvent.click(screen.getByRole('button', { name: 'New palette set' }))
+		await clickWhenEnabled('New palette set')
 		expect(screen.getByLabelText('Set name')).toHaveValue('')
 		expect(screen.getByLabelText('Set label')).toHaveValue('undecided')
 		fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
@@ -667,9 +670,7 @@ describe('palette management', () => {
 
 	it('creates a palette with a retry-stable ID and reloads after a successful save', async () => {
 		const { isProtected } = setup()
-		fireEvent.click(
-			await screen.findByRole('button', { name: 'New palette' }),
-		)
+		await clickWhenEnabled('New palette')
 		expect(
 			screen.getByRole('img', { name: 'Palette sandbox design' }),
 		).toBeInTheDocument()

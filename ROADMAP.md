@@ -26,8 +26,8 @@ The live app currently has **Zen Mode only**, with every shape and a limited set
 of palettes. Launching Puzzle Mode makes it the primary feature and makes access
 more restrictive (see "Launch impact" below).
 
-**Next up:** the codebase reorganization below, then the Scheduled and
-Published catalog views and the remaining admin tools.
+**Next up:** the Scheduled and Published catalog views, then the remaining
+admin tools. The codebase reorganization is complete.
 
 ---
 
@@ -61,7 +61,7 @@ puzzles already in the schema stays parked until then.
 
 ---
 
-## Codebase reorganization (in progress)
+## Codebase reorganization (done)
 
 Move from layer folders (`components/`, `services/`, `hooks/`, `utils/`) to
 features plus shared layers, before 2A player work adds accounts and progression.
@@ -99,8 +99,8 @@ Rules:
 | R5  | Admin into `features/admin/*` with its services and colocated CSS       | ✅     |
 | R6  | Zen into `features/zen`; `app/`, `ui/`, `lib/` settled; barrels         | ✅     |
 | R7  | Rename "scheme" to "palette" and `AppState` to `ZenState` across code  | ✅     |
-| R8  | Split large files, share duplicated helpers                             | 👀 review |
-| R9  | ESLint boundary rules; update CONTEXT architecture                      | ⬜     |
+| R8  | Split large files, share duplicated helpers                             | ✅     |
+| R9  | ESLint boundary rules; update CONTEXT architecture                      | ✅     |
 
 ---
 
@@ -120,7 +120,7 @@ Rules:
 ## Admin portal: what's left for 2A (suggested order)
 
 1. 🔜 **Scheduled and Published views.** These are placeholders in
-   [AdminWorkspace.tsx](./src/components/admin/AdminWorkspace.tsx).
+   [AdminWorkspace.tsx](./src/features/admin/shell/AdminWorkspace.tsx).
    Scheduled puzzles can already be regenerated in the database but can't be opened in the UI yet.
 2. ⬜ **Publish and schedule (release tools).** Approve content with a release
    date, reschedule or cancel before release, and show missing dependencies.

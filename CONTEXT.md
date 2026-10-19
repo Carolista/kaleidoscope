@@ -362,6 +362,18 @@ not missed command-button migrations.
 point downward: `app` → `features` → `ui` → `domain`/`lib`. Features never import
 each other, and `domain` never imports React.
 
+`npm run lint` enforces this with the local rules in
+[eslint-rules/architecture.js](./eslint-rules/architecture.js) (tested alongside it):
+
+- `architecture/layers`: the dependency direction above.
+- `architecture/no-react-in-domain`: no React or stylesheets in `domain/`.
+- `architecture/use-barrels`: import a folder's `index.ts`, not a file inside it,
+  unless the importer is inside that folder.
+- `architecture/colocated-styles`: CSS Modules only from the importer's own folder;
+  no `../` imports.
+
+Test files and `src/test/` are exempt so tests can reach internals and mock exact files.
+
 | Location | Responsibility |
 | --- | --- |
 | [app/](./src/app/) | `AppEntry` (player/admin routing, navigation guard), `PlayerApp` (page, entrance animation, header, mode switch, footer), `useAdminRoute`, [layout/](./src/app/layout/) (Header, Footer), global [index.css](./src/app/index.css) |
@@ -561,6 +573,13 @@ and stubs page scrolling and `ResizeObserver` for jsdom.
 Clear or seed storage and use deterministic state/randomness where needed.
 jsdom does not verify real layout, native focus trapping, or PNG rasterization.
 Browser checks are ad hoc; there is no maintained browser suite or coverage threshold.
+
+Admin catalogs load asynchronously, and many actions render disabled until they
+finish; a click on a disabled button is silently ignored. Wait for a button to be
+enabled before clicking it (admin [clickWhenEnabled](./src/features/admin/testing/clickWhenEnabled.ts)),
+and wait for the resulting state (for example the generated playtest) rather than
+for fields that render before it. To check a test for this kind of race, temporarily
+delay its mocked catalog read by ~50 ms; it should still pass.
 
 [CI](./.github/workflows/ci-deploy.yml) runs lint, format checks, tests, and build
 on pushes to `main` and PRs targeting `main`; successful pushes deploy to Pages.

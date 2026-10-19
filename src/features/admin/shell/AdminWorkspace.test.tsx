@@ -1,5 +1,8 @@
 import { act, fireEvent, screen, within } from '@testing-library/react'
-import { renderWithNavigationGuard as render } from '@/features/admin/testing'
+import {
+	renderWithNavigationGuard as render,
+	clickWhenEnabled,
+} from '@/features/admin/testing'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase'
@@ -333,9 +336,7 @@ describe('admin workspace navigation', () => {
 		render(<AdminWorkspace client={client} />)
 		choose('Admin sections', 'Palettes')
 		choose('Palettes views', 'Palettes')
-		fireEvent.click(
-			await screen.findByRole('button', { name: 'New palette' }),
-		)
+		await clickWhenEnabled('New palette')
 		fireEvent.change(screen.getByLabelText('Palette name'), {
 			target: { value: 'Keep my colors' },
 		})

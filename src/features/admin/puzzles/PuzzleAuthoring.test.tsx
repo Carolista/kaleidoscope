@@ -141,7 +141,11 @@ function setup(
 
 async function randomize() {
 	const button = screen.getByRole('button', { name: 'Randomize puzzle' })
+	// Randomize stays disabled until the palette catalog loads; a click before
+	// then is ignored and no preview is generated.
+	await waitFor(() => expect(button).toBeEnabled())
 	fireEvent.click(button)
+	expect(button).toBeDisabled()
 	await waitFor(() => expect(button).toBeEnabled())
 }
 
