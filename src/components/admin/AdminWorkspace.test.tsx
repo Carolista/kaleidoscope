@@ -362,4 +362,42 @@ describe('admin workspace navigation', () => {
 		).not.toBeInTheDocument()
 		await act(async () => finish())
 	})
+	it('reuses cached catalogs across navigation and refetches only on request', async () => {
+		render(<AdminWorkspace client={client} />)
+		await screen.findByRole('button', {
+			name: 'Edit set Design collection',
+		})
+		choose('Puzzles views', 'Puzzles')
+		await screen.findByRole('button', {
+			name: 'Edit draft Unassigned design',
+		})
+		choose('Puzzles status', 'Assigned')
+		choose('Puzzles status', 'Drafts')
+		choose('Puzzles views', 'Sets')
+		expect(
+			screen.getByRole('button', { name: 'Edit set Design collection' }),
+		).toBeInTheDocument()
+		choose('Admin sections', 'Palettes')
+		await screen.findByRole('button', {
+			name: 'Edit set Color collection',
+		})
+		choose('Palettes views', 'Palettes')
+		expect(
+			screen.getByRole('button', { name: 'Edit Unassigned colors' }),
+		).toBeInTheDocument()
+		choose('Admin sections', 'Puzzles')
+		expect(
+			screen.getByRole('button', { name: 'Edit set Design collection' }),
+		).toBeInTheDocument()
+		expect(mocks.puzzleSets).toHaveBeenCalledOnce()
+		expect(mocks.puzzles).toHaveBeenCalledOnce()
+		expect(mocks.palettes).toHaveBeenCalledOnce()
+		expect(mocks.paletteSets).toHaveBeenCalledOnce()
+		fireEvent.click(screen.getByRole('button', { name: 'Refresh sets' }))
+		await screen.findByRole('button', {
+			name: 'Edit set Design collection',
+		})
+		expect(mocks.puzzleSets).toHaveBeenCalledTimes(2)
+		expect(mocks.puzzles).toHaveBeenCalledOnce()
+	})
 })

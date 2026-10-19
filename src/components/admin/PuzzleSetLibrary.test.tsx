@@ -641,21 +641,20 @@ describe('draft set workspace', () => {
 		fireEvent.click(screen.getByRole('button', { name: 'Back to library' }))
 		expect(back).toHaveBeenCalledOnce()
 	})
-	it('preserves an unsaved name if an order-save reload fails', async () => {
+	it('saves order without reloading the catalog and preserves an unsaved name', async () => {
 		setup()
 		await open()
 		fireEvent.change(screen.getByLabelText('Set name'), {
 			target: { value: 'Not saved yet' },
 		})
-		mocks.load.mockRejectedValueOnce(new Error('Reload unavailable'))
 		fireEvent.keyDown(
 			screen.getByRole('button', { name: 'Reorder Puzzle A' }),
 			{ key: 'ArrowDown' },
 		)
 		fireEvent.click(screen.getByRole('button', { name: 'Save order' }))
-		expect(await screen.findByRole('alert')).toHaveTextContent(
-			'Reload unavailable',
-		)
+		await screen.findByText('Puzzle order saved.')
+		expect(screen.getByText('1. Puzzle B')).toBeInTheDocument()
+		expect(mocks.load).toHaveBeenCalledOnce()
 		expect(screen.getByLabelText('Set name')).toHaveValue('Not saved yet')
 		fireEvent.click(screen.getByRole('button', { name: 'Back to sets' }))
 		expect(

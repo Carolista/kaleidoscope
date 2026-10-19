@@ -1,5 +1,6 @@
 import { render, type RenderOptions } from '@testing-library/react'
 import type { ReactElement, ReactNode } from 'react'
+import { AdminCatalogProvider } from '../components/admin/AdminCatalog'
 import {
 	NavigationGuardDialog,
 	NavigationGuardProvider,
@@ -13,7 +14,7 @@ export function renderWithNavigationGuard(
 		...options,
 		wrapper: ({ children }: { children: ReactNode }) => (
 			<NavigationGuardProvider>
-				{children}
+				<AdminCatalogProvider>{children}</AdminCatalogProvider>
 				<NavigationGuardDialog />
 			</NavigationGuardProvider>
 		),

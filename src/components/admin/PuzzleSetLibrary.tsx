@@ -10,7 +10,6 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { useEffect, useRef, useState, type SubmitEvent } from 'react'
 import {
 	deleteDraftSet,
-	loadDraftSets,
 	manageDraftSet,
 	type DraftSet,
 	type SetAction,
@@ -26,6 +25,7 @@ import styles from './AdminPortal.module.css'
 import useUnsavedDraft from './useUnsavedDraft'
 import { useNavigationGuard } from './useNavigationGuard'
 import PuzzleSetMembers from './PuzzleSetMembers'
+import { useCatalog, useCatalogInvalidation } from './useAdminCatalog'
 
 function errorMessage(cause: unknown) {
 	return cause instanceof Error
@@ -40,14 +40,16 @@ export default function PuzzleSetLibrary({
 	readonly client: SupabaseClient<Database>
 	readonly onBack?: () => void
 }) {
-	const [sets, setSets] = useState<readonly DraftSet[]>([])
+	const catalog = useCatalog('puzzleSets', client)
+	const invalidate = useCatalogInvalidation()
+	const sets: readonly DraftSet[] = catalog.data ?? []
+	const loading = catalog.loading
 	const [selectedId, setSelectedId] = useState<string | null>(null)
 	const [creating, setCreating, creationModal] = useModalState<true>()
 	const [name, setName] = useState('')
 	const [memberIds, setMemberIds] = useState<readonly string[]>([])
 	const addButton = useRef<HTMLButtonElement>(null)
 	const focusAdd = useRef(false)
-	const [loading, setLoading] = useState(true)
 	const [pending, setPending] = useState<string | null>(null)
 	const busy = pending !== null
 	const working = useRef(false)
@@ -55,7 +57,6 @@ export default function PuzzleSetLibrary({
 	const [deleteError, setDeleteError] = useState('')
 	const [status, setStatus] = useState('')
 	const [deleting, setDeleting, deleteModal] = useModalState<DraftSet>()
-	const [reload, setReload] = useState(0)
 	const selected = sets.find(set => set.row.id === selectedId)
 	const members = [
 		...memberIds.flatMap(id => {
@@ -83,29 +84,6 @@ export default function PuzzleSetLibrary({
 			focusAdd.current = false
 		}
 	}, [loading, creating])
-	useEffect(() => {
-		let active = true
-		void loadDraftSets(client, true)
-			.then(next => {
-				if (!active) return
-				setSets(next)
-				setSelectedId(previous =>
-					next.some(set => set.row.id === previous) ? previous : null,
-				)
-			})
-			.catch((cause: unknown) => {
-				if (active) {
-					setError(errorMessage(cause))
-				}
-			})
-			.finally(() => {
-				if (active) setLoading(false)
-			})
-		return () => {
-			active = false
-		}
-	}, [client, reload])
-
 	async function removeSet() {
 		if (!deleting || working.current) return
 		working.current = true
@@ -117,12 +95,11 @@ export default function PuzzleSetLibrary({
 			setStatus(
 				`Deleted "${deleting.row.name}". Its puzzles remain in the library.`,
 			)
-			setSets(previous =>
+			catalog.update(previous =>
 				previous.filter(set => set.row.id !== deleting.row.id),
 			)
+			invalidate('puzzleDrafts')
 			setDeleting(null)
-			setLoading(true)
-			setReload(value => value + 1)
 		} catch (cause) {
 			setDeleteError(errorMessage(cause))
 		} finally {
@@ -147,7 +124,7 @@ export default function PuzzleSetLibrary({
 				setName(action.name.trim())
 			}
 			if (action.kind === 'reorder' || action.kind === 'remove') {
-				setSets(previous =>
+				catalog.update(previous =>
 					previous.map(set => {
 						if (set.row.id !== id) return set
 						const nextMembers =
@@ -181,9 +158,8 @@ export default function PuzzleSetLibrary({
 					)
 				}
 			}
-			// Keep the renamed baseline current while the catalog reloads.
 			if (action.kind === 'rename') {
-				setSets(previous =>
+				catalog.update(previous =>
 					previous.map(set =>
 						set.row.id === id
 							? {
@@ -197,8 +173,9 @@ export default function PuzzleSetLibrary({
 					),
 				)
 			}
-			setLoading(true)
-			setReload(value => value + 1)
+			// Set names and membership appear in the puzzle catalog.
+			if (action.kind === 'rename' || action.kind === 'remove')
+				invalidate('puzzleDrafts')
 		} catch (cause) {
 			setError(errorMessage(cause))
 		} finally {
@@ -208,7 +185,7 @@ export default function PuzzleSetLibrary({
 	}
 	function back() {
 		requestNavigation(() => {
-			if (selectedId) {
+			if (selected) {
 				setSelectedId(null)
 				setName('')
 				setMemberIds([])
@@ -233,7 +210,7 @@ export default function PuzzleSetLibrary({
 	}
 	return (
 		<section aria-labelledby="draft-sets-title">
-			{(selectedId || onBack) && (
+			{(selected || onBack) && (
 				<Button
 					variant="link"
 					type="button"
@@ -245,7 +222,7 @@ export default function PuzzleSetLibrary({
 						icon={faSquareArrowLeft}
 						aria-hidden="true"
 					/>{' '}
-					{selectedId ? 'Back to sets' : 'Back to library'}
+					{selected ? 'Back to sets' : 'Back to library'}
 				</Button>
 			)}
 			<AdminSectionHeading
@@ -270,15 +247,19 @@ export default function PuzzleSetLibrary({
 							label="Refresh sets"
 							disabled={busy || loading || !!deleting}
 							onClick={() => {
-								setLoading(true)
 								setError('')
-								setReload(value => value + 1)
+								void catalog.refresh().catch(() => {})
 							}}
 						/>
 					</>
 				)}
 			</AdminSectionHeading>
-			<AdminFeedback error={error} status={status} />
+			<AdminFeedback
+				error={
+					error || (catalog.error ? errorMessage(catalog.error) : '')
+				}
+				status={status}
+			/>
 			{pending && !deleting && <Loading label={pending} />}
 			{creating && (
 				<SetCreationDialog
@@ -304,8 +285,7 @@ export default function PuzzleSetLibrary({
 						focusAdd.current = true
 						setCreating(null)
 						setStatus('Draft set created.')
-						setLoading(true)
-						setReload(value => value + 1)
+						void catalog.refresh().catch(() => {})
 					}}
 				/>
 			)}
@@ -335,7 +315,7 @@ export default function PuzzleSetLibrary({
 			{loading ? (
 				<Loading
 					label={
-						reload > 0
+						catalog.refreshing
 							? 'Refreshing draft sets…'
 							: 'Loading draft sets...'
 					}
@@ -420,7 +400,7 @@ export default function PuzzleSetLibrary({
 					)}
 				</>
 			) : !sets.length ? (
-				!error && <p>No draft sets yet.</p>
+				!error && !catalog.error && <p>No draft sets yet.</p>
 			) : (
 				<AdminGallery layout="sets">
 					{sets.map(set => (

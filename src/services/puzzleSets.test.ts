@@ -90,15 +90,20 @@ describe('draft set requests', () => {
 			},
 			palettes: palette,
 		}
-		const previewResult = vi.fn().mockResolvedValue({ data, error: null })
+		const previewResult = vi.fn().mockResolvedValue({
+			data: [data, { ...data, id: 'second' }],
+			error: null,
+		})
 		const membersResult = vi.fn().mockResolvedValue({
 			data: [
 				{
+					collection_id: 'set',
 					puzzle_id: 'first',
 					position: 1,
 					puzzles: { name: 'First puzzle' },
 				},
 				{
+					collection_id: 'set',
 					puzzle_id: 'second',
 					position: 2,
 					puzzles: { name: 'Second puzzle' },
@@ -106,16 +111,14 @@ describe('draft set requests', () => {
 			],
 			error: null,
 		})
-		const previewQuery = {
-			eq: vi.fn().mockReturnThis(),
-			single: previewResult,
-		}
+		const previewQuery = { in: vi.fn(() => previewResult()) }
 		const from = vi.fn((table: string) => ({
 			select: () =>
 				table === 'puzzles'
 					? previewQuery
 					: {
 							eq: vi.fn().mockReturnThis(),
+							in: vi.fn().mockReturnThis(),
 							is: vi.fn().mockReturnThis(),
 							order: vi.fn().mockReturnThis(),
 							range:
@@ -131,8 +134,10 @@ describe('draft set requests', () => {
 		expect(sets[0].preview?.target).toEqual(
 			renderAuthoredHexPuzzle(saved, palette).target,
 		)
-		expect(previewQuery.eq).toHaveBeenCalledWith('id', 'first')
-		expect(previewQuery.eq).toHaveBeenCalledWith('id', 'second')
+		expect(previewQuery.in).toHaveBeenCalledExactlyOnceWith('id', [
+			'first',
+			'second',
+		])
 		expect(sets[0].members.map(member => member.preview?.target)).toEqual([
 			sets[0].preview?.target,
 			sets[0].preview?.target,
@@ -145,14 +150,14 @@ describe('draft set requests', () => {
 			'Offline',
 		)
 		previewResult.mockResolvedValueOnce({
-			data: { ...data, palettes: null },
+			data: [{ ...data, palettes: null }],
 			error: null,
 		})
 		await expect(loadDraftSets(client({ from }), true)).rejects.toThrow(
 			'palette is unavailable',
 		)
 		previewResult.mockResolvedValueOnce({
-			data: { ...data, palettes: { ...palette, colors: ['#112233'] } },
+			data: [{ ...data, palettes: { ...palette, colors: ['#112233'] } }],
 			error: null,
 		})
 		await expect(loadDraftSets(client({ from }), true)).rejects.toThrow(
@@ -217,27 +222,32 @@ describe('draft set requests', () => {
 				data: [{ ...row, id: 'last' }],
 				error: null,
 			})
-		const memberRange = vi.fn().mockResolvedValue({ data: [], error: null })
-		memberRange
-			.mockResolvedValueOnce({
-				data: Array.from({ length: 1000 }, (_, i) => ({
-					puzzle_id: `p-${i}`,
-					position: i + 1,
-					puzzles: { name: `Puzzle ${i}` },
-				})),
+		const memberIn = vi.fn()
+		const memberRange = vi.fn((start: number) => {
+			const ids = memberIn.mock.lastCall?.[1] as string[]
+			if (!ids.includes('set-0'))
+				return Promise.resolve({ data: [], error: null })
+			return Promise.resolve({
+				data:
+					start === 0
+						? Array.from({ length: 1000 }, (_, i) => ({
+								collection_id: 'set-0',
+								puzzle_id: `p-${i}`,
+								position: i + 1,
+								puzzles: { name: `Puzzle ${i}` },
+							}))
+						: [
+								{
+									collection_id: 'set-0',
+									puzzle_id: 'p-last',
+									position: 1001,
+									puzzles: { name: 'Last puzzle' },
+								},
+							],
 				error: null,
 			})
-			.mockResolvedValueOnce({
-				data: [
-					{
-						puzzle_id: 'p-last',
-						position: 1001,
-						puzzles: { name: 'Last puzzle' },
-					},
-				],
-				error: null,
-			})
-		const makeQuery = (range: typeof setsRange) => ({
+		})
+		const makeQuery = (range: (start: number) => unknown) => ({
 			eq: vi.fn().mockReturnThis(),
 			is: vi.fn().mockReturnThis(),
 			order: vi.fn().mockReturnThis(),
@@ -245,8 +255,17 @@ describe('draft set requests', () => {
 		})
 		const query = makeQuery(setsRange)
 		const from = vi.fn((table: string) => ({
-			select: () =>
-				table === 'puzzle_collections' ? query : makeQuery(memberRange),
+			select: () => {
+				if (table === 'puzzle_collections') return query
+				const members = makeQuery(memberRange)
+				return {
+					...members,
+					in: (column: string, ids: string[]) => {
+						memberIn(column, ids)
+						return members
+					},
+				}
+			},
 		}))
 		const sets = await loadDraftSets(client({ from }))
 		expect(sets).toHaveLength(1001)
@@ -264,7 +283,12 @@ describe('draft set requests', () => {
 			name: 'Last puzzle',
 			preview: null,
 		})
-		expect(memberRange.mock.calls[1]).toEqual([1000, 1999])
+		// 11 chunks of set IDs, plus a second page for the full chunk.
+		expect(memberIn).toHaveBeenCalledTimes(12)
+		expect(memberIn.mock.calls.every(([, ids]) => ids.length <= 100)).toBe(
+			true,
+		)
+		expect(memberRange).toHaveBeenCalledWith(1000, 1999)
 	})
 	it.each([
 		{ data: null, error: null },
@@ -272,6 +296,7 @@ describe('draft set requests', () => {
 	])('does not hide set or membership read failures: %j', async result => {
 		const query = {
 			eq: vi.fn().mockReturnThis(),
+			in: vi.fn().mockReturnThis(),
 			is: vi.fn().mockReturnThis(),
 			order: vi.fn().mockReturnThis(),
 			range: vi.fn().mockResolvedValue(result),

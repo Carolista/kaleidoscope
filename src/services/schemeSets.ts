@@ -22,7 +22,7 @@ export interface SchemeSet {
 export async function loadSchemeSets(
 	client: SupabaseClient<Database>,
 ): Promise<SchemeSet[]> {
-	const sets: SchemeSet[] = []
+	const rows: (Tables<'palette_packs'> & { kind: SchemeSetKind })[] = []
 	for (let offset = 0; ; offset += 1000) {
 		const { data, error } = await client
 			.from('palette_packs')
@@ -43,36 +43,42 @@ export async function loadSchemeSets(
 				throw new Error(
 					`Palette set "${row.name}" has an unsupported label.`,
 				)
-			const members: SchemeSet['members'][number][] = []
-			for (let start = 0; ; start += 1000) {
-				const result = await client
-					.from('palette_pack_palettes')
-					.select('palette_id, position, palettes(id, name, colors)')
-					.eq('pack_id', row.id)
-					.order('position')
-					.range(start, start + 999)
-				if (result.error)
-					throw new Error(
-						`Unable to load palette set members: ${result.error.message}`,
-					)
-				if (!result.data)
-					throw new Error(
-						'The palette membership query returned no data.',
-					)
-				for (const member of result.data) {
-					if (!member.palettes)
-						throw new Error(
-							'A palette set member could not be resolved. Refresh the catalog.',
-						)
-					members.push(readColorScheme(member.palettes))
-				}
-				if (result.data.length < 1000) break
-			}
-			sets.push({ row, kind, members })
+			rows.push({ ...row, kind })
 		}
-		if (data.length < 1000)
-			return sets.sort((a, b) => a.row.name.localeCompare(b.row.name))
+		if (data.length < 1000) break
 	}
+	const members = new Map<string, SchemeSet['members'][number][]>()
+	for (let start = 0; rows.length > 0; start += 1000) {
+		const result = await client
+			.from('palette_pack_palettes')
+			.select('pack_id, position, palettes(id, name, colors)')
+			.order('pack_id')
+			.order('position')
+			.range(start, start + 999)
+		if (result.error)
+			throw new Error(
+				`Unable to load palette set members: ${result.error.message}`,
+			)
+		if (!result.data)
+			throw new Error('The palette membership query returned no data.')
+		for (const member of result.data) {
+			if (!member.palettes)
+				throw new Error(
+					'A palette set member could not be resolved. Refresh the catalog.',
+				)
+			const list = members.get(member.pack_id) ?? []
+			list.push(readColorScheme(member.palettes))
+			members.set(member.pack_id, list)
+		}
+		if (result.data.length < 1000) break
+	}
+	return rows
+		.map(row => ({
+			row,
+			kind: row.kind,
+			members: members.get(row.id) ?? [],
+		}))
+		.sort((a, b) => a.row.name.localeCompare(b.row.name))
 }
 
 export type SchemeSetAction =

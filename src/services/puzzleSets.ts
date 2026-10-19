@@ -17,11 +17,104 @@ export interface DraftSet {
 	}[]
 }
 
+// Keeps `.in()` filters well under URL length limits.
+const ID_CHUNK = 100
+
+function chunks<T>(values: readonly T[]): T[][] {
+	const result: T[][] = []
+	for (let index = 0; index < values.length; index += ID_CHUNK)
+		result.push(values.slice(index, index + ID_CHUNK))
+	return result
+}
+
+async function loadSetMembers(
+	client: SupabaseClient<Database>,
+	setIds: readonly string[],
+) {
+	const pages = await Promise.all(
+		chunks(setIds).map(async ids => {
+			const rows = []
+			for (let start = 0; ; start += 1000) {
+				const result = await client
+					.from('collection_puzzles')
+					.select('collection_id, puzzle_id, position, puzzles(name)')
+					.in('collection_id', ids)
+					.order('collection_id')
+					.order('position')
+					.range(start, start + 999)
+				if (result.error)
+					throw new Error(
+						`Unable to load set members: ${result.error.message}`,
+					)
+				if (!result.data)
+					throw new Error(
+						'The set membership query returned no data.',
+					)
+				rows.push(...result.data)
+				if (result.data.length < 1000) return rows
+			}
+		}),
+	)
+	const members = new Map<string, DraftSet['members'][number][]>()
+	for (const member of pages.flat()) {
+		if (!member.puzzles)
+			throw new Error(
+				'A set member is missing its puzzle. Refresh the catalog.',
+			)
+		const list = members.get(member.collection_id) ?? []
+		list.push({
+			puzzleId: member.puzzle_id,
+			name: member.puzzles.name,
+			position: member.position,
+			preview: null,
+		})
+		members.set(member.collection_id, list)
+	}
+	return members
+}
+
+async function loadPreviews(
+	client: SupabaseClient<Database>,
+	puzzleIds: readonly string[],
+) {
+	const pages = await Promise.all(
+		chunks(puzzleIds).map(async ids => {
+			const result = await client
+				.from('puzzles')
+				.select('*, puzzle_authoring(*), palettes(id, name, colors)')
+				.in('id', ids)
+			if (result.error)
+				throw new Error(
+					`Unable to load set preview: ${result.error.message}`,
+				)
+			if (!result.data)
+				throw new Error('The set preview query returned no data.')
+			return result.data
+		}),
+	)
+	const previews = new Map<string, HexPuzzle>()
+	for (const row of pages.flat()) {
+		if (!row.palettes)
+			throw new Error('The set preview or its palette is unavailable.')
+		previews.set(
+			row.id,
+			renderAuthoredHexPuzzle(
+				readAuthoredHexPuzzle(row, row.puzzle_authoring),
+				readColorScheme(row.palettes),
+			),
+		)
+	}
+	for (const id of puzzleIds)
+		if (!previews.has(id))
+			throw new Error('The set preview or its palette is unavailable.')
+	return previews
+}
+
 export async function loadDraftSets(
 	client: SupabaseClient<Database>,
 	withPreviews = false,
 ): Promise<DraftSet[]> {
-	const sets: DraftSet[] = []
+	const rows: Tables<'puzzle_collections'>[] = []
 	for (let offset = 0; ; offset += 1000) {
 		const { data, error } = await client
 			.from('puzzle_collections')
@@ -33,74 +126,31 @@ export async function loadDraftSets(
 		if (error)
 			throw new Error(`Unable to load draft sets: ${error.message}`)
 		if (!data) throw new Error('The draft set catalog returned no data.')
-		for (const row of data) {
-			const members: DraftSet['members'][number][] = []
-			for (let start = 0; ; start += 1000) {
-				const result = await client
-					.from('collection_puzzles')
-					.select('puzzle_id, position, puzzles(name)')
-					.eq('collection_id', row.id)
-					.order('position')
-					.range(start, start + 999)
-				if (result.error)
-					throw new Error(
-						`Unable to load set members: ${result.error.message}`,
-					)
-				if (!result.data)
-					throw new Error(
-						'The set membership query returned no data.',
-					)
-				for (const member of result.data) {
-					if (!member.puzzles)
-						throw new Error(
-							'A set member is missing its puzzle. Refresh the catalog.',
-						)
-					members.push({
-						puzzleId: member.puzzle_id,
-						name: member.puzzles.name,
-						position: member.position,
-						preview: null,
-					})
-				}
-				if (result.data.length < 1000) break
-			}
-			for (
-				let index = 0;
-				withPreviews && index < members.length;
-				index++
-			) {
-				const member = members[index]
-				const result = await client
-					.from('puzzles')
-					.select(
-						'*, puzzle_authoring(*), palettes(id, name, colors)',
-					)
-					.eq('id', member.puzzleId)
-					.single()
-				if (result.error)
-					throw new Error(
-						`Unable to load set preview: ${result.error.message}`,
-					)
-				if (!result.data?.palettes)
-					throw new Error(
-						'The set preview or its palette is unavailable.',
-					)
-				const palette = readColorScheme(result.data.palettes)
-				const preview = renderAuthoredHexPuzzle(
-					readAuthoredHexPuzzle(
-						result.data,
-						result.data.puzzle_authoring,
-					),
-					palette,
-				)
-				members[index] = { ...member, preview }
-			}
-			sets.push({ row, members, preview: members[0]?.preview ?? null })
-		}
-
-		if (data.length < 1000)
-			return sets.sort((a, b) => a.row.name.localeCompare(b.row.name))
+		rows.push(...data)
+		if (data.length < 1000) break
 	}
+	const members = await loadSetMembers(
+		client,
+		rows.map(row => row.id),
+	)
+	const previews = withPreviews
+		? await loadPreviews(client, [
+				...new Set(
+					[...members.values()].flatMap(list =>
+						list.map(member => member.puzzleId),
+					),
+				),
+			])
+		: new Map<string, HexPuzzle>()
+	return rows
+		.map(row => {
+			const list = (members.get(row.id) ?? []).map(member => ({
+				...member,
+				preview: previews.get(member.puzzleId) ?? null,
+			}))
+			return { row, members: list, preview: list[0]?.preview ?? null }
+		})
+		.sort((a, b) => a.row.name.localeCompare(b.row.name))
 }
 
 export type SetAction =

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type SubmitEvent } from 'react'
+import { useRef, useState, type SubmitEvent } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -20,7 +20,6 @@ import {
 import {
 	deletePuzzleDraft,
 	editPuzzleDraft,
-	loadPuzzleDrafts,
 	bulkPuzzleDrafts,
 	replacePuzzleDraft,
 	type LibraryDraft,
@@ -38,12 +37,9 @@ import Checkbox from '../shared/Checkbox'
 import AdminIconButton from './AdminIconButton'
 import { Button, ConfirmDialog, Loading, PaletteChoices, Select } from '@shared'
 import { AdminFeedback, AdminGallery, AdminSectionHeading } from './AdminLayout'
+import { useCatalog, useCatalogInvalidation } from './useAdminCatalog'
 import PuzzleDraftForm from './PuzzleDraftForm'
-import {
-	loadDraftSets,
-	manageDraftSet,
-	type DraftSet,
-} from '../../services/puzzleSets'
+import { manageDraftSet, type DraftSet } from '../../services/puzzleSets'
 import useUnsavedDraft from './useUnsavedDraft'
 import { useNavigationGuard } from './useNavigationGuard'
 import useModalState from '../../hooks/useModalState'
@@ -337,7 +333,6 @@ function DraftEditor({
 export default function PuzzleDraftLibrary({
 	client,
 	palettes,
-	revision,
 	onNew,
 	catalogStatus,
 	onRefreshPalettes,
@@ -347,7 +342,6 @@ export default function PuzzleDraftLibrary({
 }: {
 	readonly client: SupabaseClient<Database>
 	readonly palettes: readonly AuthoringPalette[]
-	readonly revision: number
 	readonly onNew?: () => void
 	readonly catalogStatus?: 'drafts' | 'assigned'
 	readonly onRefreshPalettes?: () => void
@@ -355,12 +349,13 @@ export default function PuzzleDraftLibrary({
 	readonly palettesRefreshing?: boolean
 	readonly palettesError?: boolean
 }) {
-	const [drafts, setDrafts] = useState<readonly LibraryDraft[]>([])
+	const draftCatalog = useCatalog('puzzleDrafts', client)
+	const invalidate = useCatalogInvalidation()
+	const drafts: readonly LibraryDraft[] = draftCatalog.data ?? []
+	const loading = draftCatalog.loading
+	const loadFailed = !!draftCatalog.error && !loading
 	const [selectedId, setSelectedId] = useState<string | null>(null)
-	const [loading, setLoading] = useState(true)
-	const [loadFailed, setLoadFailed] = useState(false)
 	const [error, setError] = useState('')
-	const [reload, setReload] = useState(0)
 	const [filter, setFilter] = useState('all')
 	const [status, setStatus] = useState('')
 	const [checkedIds, setCheckedIds] = useState<ReadonlySet<string>>(new Set())
@@ -369,71 +364,18 @@ export default function PuzzleDraftLibrary({
 		ids: readonly string[]
 	}>()
 	const [bulkPaletteId, setBulkPaletteId] = useState('')
-	const [draftSets, setDraftSets] = useState<readonly DraftSet[]>([])
-	const [setsLoading, setSetsLoading] = useState(false)
 	const [bulkSetId, setBulkSetId] = useState('')
 	const [bulkBusy, setBulkBusy] = useState(false)
 	const [actionError, setActionError] = useState('')
-	const [setsRetry, setSetsRetry] = useState(0)
 	const bulkWorking = useRef(false)
 	useUnsavedDraft({ dirty: false, pending: bulkBusy })
-	useEffect(() => {
-		if (action?.kind !== 'set') return
-		let active = true
-		void loadDraftSets(client)
-			.then(sets => {
-				if (active) setDraftSets(sets)
-			})
-			.catch((cause: unknown) => {
-				if (active) setActionError(message(cause))
-			})
-			.finally(() => {
-				if (active) setSetsLoading(false)
-			})
-		return () => {
-			active = false
-		}
-	}, [action, client, setsRetry])
-	useEffect(() => {
-		let active = true
-		async function load() {
-			setLoading(true)
-			setLoadFailed(false)
-			setError('')
-			setActionError('')
-			try {
-				const next = await loadPuzzleDrafts(client)
-				if (active) {
-					setDrafts(next)
-					setCheckedIds(
-						previous =>
-							new Set(
-								[...previous].filter(id =>
-									next.some(draft => draft.row.id === id),
-								),
-							),
-					)
-					setAction(null)
-					setSelectedId(previous =>
-						next.some(draft => draft.row.id === previous)
-							? previous
-							: null,
-					)
-				}
-			} catch (cause) {
-				if (active) {
-					setError(message(cause))
-					setLoadFailed(true)
-				}
-			} finally {
-				if (active) setLoading(false)
-			}
-		}
-		void load()
-		return () => {
-			active = false
-		}
-	}, [client, revision, reload, setAction])
+	const setCatalog = useCatalog('puzzleSets', client, action?.kind === 'set')
+	const draftSets: readonly DraftSet[] = setCatalog.data ?? []
+	const setsLoading = setCatalog.loading
+	const setsError =
+		action?.kind === 'set' && setCatalog.error
+			? message(setCatalog.error)
+			: ''
 	const selected = drafts.find(value => value.row.id === selectedId)
 	const visible = drafts.filter(
 		value =>
@@ -455,8 +397,6 @@ export default function PuzzleDraftLibrary({
 		setStatus('')
 		setBulkPaletteId('')
 		setBulkSetId('')
-		setSetsLoading(kind === 'set')
-		setDraftSets([])
 		setAction({ kind, ids })
 	}
 	async function applyAction() {
@@ -503,7 +443,7 @@ export default function PuzzleDraftLibrary({
 							: `Updated the palette for ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'}.`,
 				)
 				setCheckedIds(new Set())
-				setReload(value => value + 1)
+				invalidate('puzzleDrafts', 'puzzleSets')
 			})
 		} catch (cause) {
 			setActionError(message(cause))
@@ -523,7 +463,6 @@ export default function PuzzleDraftLibrary({
 					palettes={palettes}
 					onBack={() => {
 						setSelectedId(null)
-						setReload(value => value + 1)
 						setStatus('')
 					}}
 					onRefreshPalettes={onRefreshPalettes}
@@ -532,7 +471,7 @@ export default function PuzzleDraftLibrary({
 					palettesError={palettesError}
 					onChanged={(status, updated) => {
 						setStatus(status)
-						setDrafts(previous =>
+						draftCatalog.update(previous =>
 							updated
 								? previous.map(value =>
 										value.row.id === updated.row.id
@@ -545,7 +484,8 @@ export default function PuzzleDraftLibrary({
 									),
 						)
 						setSelectedId(null)
-						setReload(value => value + 1)
+						// Names, palettes, and designs also appear in set previews.
+						invalidate('puzzleDrafts', 'puzzleSets')
 					}}
 				/>
 			</>
@@ -576,7 +516,8 @@ export default function PuzzleDraftLibrary({
 					onClick={() => {
 						setCheckedIds(new Set())
 						setAction(null)
-						setReload(value => value + 1)
+						setError('')
+						void draftCatalog.refresh().catch(() => {})
 					}}
 				/>
 				<Select
@@ -596,7 +537,13 @@ export default function PuzzleDraftLibrary({
 					<option value="daily">Daily</option>
 				</Select>
 			</AdminSectionHeading>
-			<AdminFeedback error={error} status={status} />
+			<AdminFeedback
+				error={
+					error ||
+					(draftCatalog.error ? message(draftCatalog.error) : '')
+				}
+				status={status}
+			/>
 			{palettesLoading && (
 				<Loading
 					label={
@@ -609,7 +556,7 @@ export default function PuzzleDraftLibrary({
 			{loading ? (
 				<Loading
 					label={
-						reload > 0 || revision > 0
+						draftCatalog.refreshing
 							? 'Refreshing puzzle drafts…'
 							: 'Loading puzzle drafts...'
 					}
@@ -745,7 +692,7 @@ export default function PuzzleDraftLibrary({
 											: 'Updating puzzle palettes…'
 									: null
 							}
-							error={actionError}
+							error={actionError || setsError}
 							confirmDisabled={
 								(action.kind === 'palette' &&
 									(!bulkPaletteId ||
@@ -808,13 +755,15 @@ export default function PuzzleDraftLibrary({
 												</option>
 											))}
 										</Select>
-										{!draftSets.length && !actionError && (
-											<p>
-												Create a draft set using Manage
-												sets, then select puzzles to
-												assign.
-											</p>
-										)}
+										{!draftSets.length &&
+											!actionError &&
+											!setsError && (
+												<p>
+													Create a draft set using
+													Manage sets, then select
+													puzzles to assign.
+												</p>
+											)}
 									</>
 								))}
 							{action.kind === 'palette' && (
@@ -843,15 +792,15 @@ export default function PuzzleDraftLibrary({
 									/>
 								</fieldset>
 							)}
-							{action.kind === 'set' && actionError && (
+							{action.kind === 'set' && setsError && (
 								<Button
 									disabled={setsLoading || bulkBusy}
 									onClick={() => {
-										setSetsLoading(true)
 										setActionError('')
-										setDraftSets([])
 										setBulkSetId('')
-										setSetsRetry(value => value + 1)
+										void setCatalog
+											.refresh()
+											.catch(() => {})
 									}}
 								>
 									Retry loading sets

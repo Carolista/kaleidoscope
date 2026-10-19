@@ -25,7 +25,7 @@ function clientFrom(value: object) {
 function setup() {
 	const sets = vi.fn().mockResolvedValue({ data: [row], error: null })
 	const members = vi.fn().mockResolvedValue({
-		data: [{ palette_id: 'art', position: 1, palettes: palette }],
+		data: [{ pack_id: row.id, position: 1, palettes: palette }],
 		error: null,
 	})
 	const selects = vi.fn()
@@ -55,21 +55,26 @@ function setup() {
 }
 
 describe('palette set catalog', () => {
-	it('loads ordered palette swatches and label metadata', async () => {
-		const { client, selects, orders, filters } = setup()
+	it('loads ordered palette swatches for every set in one membership query', async () => {
+		const { client, selects, orders, filters, members } = setup()
 		expect(await loadSchemeSets(client)).toEqual([
 			{ row, kind: 'undecided', members: [palette] },
 		])
 		expect(selects).toHaveBeenCalledWith(
 			'palette_pack_palettes',
-			'palette_id, position, palettes(id, name, colors)',
+			'pack_id, position, palettes(id, name, colors)',
 		)
+		expect(orders).toHaveBeenCalledWith('palette_pack_palettes', 'pack_id')
 		expect(orders).toHaveBeenCalledWith('palette_pack_palettes', 'position')
-		expect(filters).toHaveBeenCalledWith(
-			'palette_pack_palettes',
-			'pack_id',
-			row.id,
-		)
+		expect(filters).not.toHaveBeenCalled()
+		expect(members).toHaveBeenCalledOnce()
+	})
+
+	it('skips membership reads when there are no palette sets', async () => {
+		const { client, sets, members } = setup()
+		sets.mockResolvedValueOnce({ data: [], error: null })
+		expect(await loadSchemeSets(client)).toEqual([])
+		expect(members).not.toHaveBeenCalled()
 	})
 
 	it('paginates both set records and membership without truncating', async () => {
@@ -77,7 +82,7 @@ describe('palette set catalog', () => {
 		sets.mockResolvedValueOnce({ data: Array(1000).fill(row), error: null })
 		members.mockResolvedValueOnce({
 			data: Array(1000).fill({
-				palette_id: 'art',
+				pack_id: row.id,
 				position: 1,
 				palettes: palette,
 			}),
@@ -124,14 +129,16 @@ describe('palette set catalog', () => {
 			'unsupported label',
 		)
 		members.mockResolvedValueOnce({
-			data: [{ palettes: null }],
+			data: [{ pack_id: row.id, palettes: null }],
 			error: null,
 		})
 		await expect(loadSchemeSets(client)).rejects.toThrow(
 			'could not be resolved',
 		)
 		members.mockResolvedValueOnce({
-			data: [{ palettes: { ...palette, colors: ['#bad'] } }],
+			data: [
+				{ pack_id: row.id, palettes: { ...palette, colors: ['#bad'] } },
+			],
 			error: null,
 		})
 		await expect(loadSchemeSets(client)).rejects.toThrow(

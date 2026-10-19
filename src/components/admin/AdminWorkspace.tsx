@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '../../types/database'
+import { AdminCatalogProvider } from './AdminCatalog'
 import AdminNavigation from './AdminNavigation'
 import PuzzleAuthoring from './PuzzleAuthoring'
 import PuzzleSetLibrary from './PuzzleSetLibrary'
@@ -32,7 +33,7 @@ export default function AdminWorkspace({
 		view === 'items' && (status === 'scheduled' || status === 'published')
 
 	return (
-		<>
+		<AdminCatalogProvider>
 			<AdminNavigation
 				label="Admin sections"
 				items={[
@@ -115,6 +116,6 @@ export default function AdminWorkspace({
 					)}
 				</>
 			)}
-		</>
+		</AdminCatalogProvider>
 	)
 }

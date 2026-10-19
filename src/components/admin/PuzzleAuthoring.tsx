@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { useEffect, useRef, useState, type SubmitEvent } from 'react'
+import { useRef, useState, type SubmitEvent } from 'react'
 import {
 	renderAuthoredHexPuzzle,
 	type AuthoredHexPuzzle,
@@ -22,7 +22,7 @@ import { useNavigationGuard } from './useNavigationGuard'
 import { faSquareArrowLeft } from '@fortawesome/pro-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import PuzzleDraftForm from './PuzzleDraftForm'
-import { loadColorSchemes } from '../../services/colorSchemes'
+import { useCatalog, useCatalogInvalidation } from './useAdminCatalog'
 import { Button, Loading } from '@shared'
 
 function messageFor(cause: unknown): string {
@@ -38,12 +38,14 @@ export default function PuzzleAuthoring({
 	readonly client: SupabaseClient<Database>
 	readonly catalogStatus?: 'drafts' | 'assigned'
 }) {
-	const [palettes, setPalettes] = useState<readonly AuthoringPalette[]>([])
-	const [loading, setLoading] = useState(true)
+	const paletteCatalog = useCatalog('palettes', client)
+	const invalidate = useCatalogInvalidation()
+	const palettes: readonly AuthoringPalette[] = paletteCatalog.data ?? []
+	const loading = paletteCatalog.loading
+	const paletteError = paletteCatalog.error
+		? messageFor(paletteCatalog.error)
+		: ''
 	const [error, setError] = useState('')
-	const [paletteError, setPaletteError] = useState('')
-	const [reload, setReload] = useState(0)
-	const [libraryRevision, setLibraryRevision] = useState(0)
 	const [creating, setCreating] = useState(false)
 	const [pending, setPending] = useState<string | null>(null)
 	const busy = pending !== null
@@ -71,31 +73,9 @@ export default function PuzzleAuthoring({
 	useUnsavedDraft({ dirty, pending: busy })
 	const { requestNavigation } = useNavigationGuard()
 
-	useEffect(() => {
-		let active = true
-		async function load() {
-			try {
-				const next = await loadColorSchemes(client)
-				if (active) setPalettes(next)
-			} catch (cause) {
-				if (active) {
-					setPaletteError(messageFor(cause))
-				}
-			} finally {
-				if (active) setLoading(false)
-			}
-		}
-		void load()
-		return () => {
-			active = false
-		}
-	}, [client, reload])
-
 	function refreshPalettes() {
-		setLoading(true)
 		setError('')
-		setPaletteError('')
-		setReload(value => value + 1)
+		void paletteCatalog.refresh().catch(() => {})
 	}
 
 	async function generate() {
@@ -160,7 +140,7 @@ export default function PuzzleAuthoring({
 			await savePuzzleDraft(client, args)
 			setSaved(true)
 			setSavedName(draftName)
-			setLibraryRevision(value => value + 1)
+			invalidate('puzzleDrafts')
 			setSaveMessage(
 				`Saved "${args.p_name}" as an unpublished ${usage === 'daily' ? 'daily' : 'set/pack'} draft. Name, palette, and recipe choices now apply to the next randomization; this saved preview stays unchanged.`,
 			)
@@ -192,7 +172,6 @@ export default function PuzzleAuthoring({
 				<PuzzleDraftLibrary
 					client={client}
 					palettes={palettes}
-					revision={libraryRevision}
 					catalogStatus={catalogStatus}
 					onNew={() => {
 						setGenerated(null)
@@ -206,7 +185,7 @@ export default function PuzzleAuthoring({
 					}}
 					onRefreshPalettes={refreshPalettes}
 					palettesLoading={loading}
-					palettesRefreshing={reload > 0}
+					palettesRefreshing={paletteCatalog.refreshing}
 					palettesError={!!paletteError}
 				/>
 			</>
@@ -257,7 +236,7 @@ export default function PuzzleAuthoring({
 					}}
 					onRefreshPalettes={refreshPalettes}
 					palettesLoading={loading}
-					palettesRefreshing={reload > 0}
+					palettesRefreshing={paletteCatalog.refreshing}
 					palettesError={!!paletteError}
 					busy={busy}
 					generation={{

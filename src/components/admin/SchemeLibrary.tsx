@@ -14,7 +14,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import type { Database } from '../../types/database'
 import type { ColorScheme } from '../../types/colorScheme'
 import {
-	loadColorSchemes,
 	manageColorScheme,
 	readColorScheme,
 	type CatalogScheme,
@@ -33,12 +32,12 @@ import adminStyles from './AdminPortal.module.css'
 import styles from './SchemeLibrary.module.css'
 import Checkbox from '../shared/Checkbox'
 import {
-	loadSchemeSets,
 	manageSchemeSet,
 	schemeSetLabels,
 	type SchemeSet,
 } from '../../services/schemeSets'
 import SchemeSetLibrary from './SchemeSetLibrary'
+import { useCatalog, useCatalogInvalidation } from './useAdminCatalog'
 import {
 	Button,
 	ConfirmDialog,
@@ -381,15 +380,40 @@ export default function SchemeLibrary({
 	readonly view?: 'sets' | 'palettes'
 	readonly catalogStatus?: 'drafts' | 'assigned'
 }) {
-	const [schemes, setSchemes] = useState<readonly CatalogScheme[]>([])
-	const [loading, setLoading] = useState(true)
-	const [error, setError] = useState('')
+	const paletteCatalog = useCatalog('palettes', client, view === 'palettes')
+	const setCatalog = useCatalog('paletteSets', client)
+	const invalidate = useCatalogInvalidation()
+	const schemes: readonly CatalogScheme[] = paletteCatalog.data ?? []
+	const sets: readonly SchemeSet[] = setCatalog.data ?? []
+	const loading = paletteCatalog.loading || setCatalog.loading
+	const refreshing = paletteCatalog.refreshing || setCatalog.refreshing
+	const catalogError =
+		(view === 'palettes' && paletteCatalog.error) || setCatalog.error
+	const error = catalogError ? errorMessage(catalogError) : ''
 	const [status, setStatus] = useState('')
-	const [reload, setReload] = useState(0)
-	const [sets, setSets] = useState<readonly SchemeSet[]>([])
-	const [filter, setFilter] = useState('all')
-	const [checked, setChecked] = useState<ReadonlySet<string>>(new Set())
-	const [targetSet, setTargetSet] = useState('')
+	const [filterChoice, setFilter] = useState('all')
+	const [checkedChoice, setChecked] = useState<ReadonlySet<string>>(new Set())
+	const [targetChoice, setTargetSet] = useState('')
+	// Drop choices that no longer exist after the catalog changes.
+	const filter =
+		filterChoice === 'all' ||
+		filterChoice === 'ungrouped' ||
+		sets.some(set => set.row.id === filterChoice)
+			? filterChoice
+			: 'all'
+	const checked: ReadonlySet<string> = new Set(
+		[...checkedChoice].filter(id =>
+			schemes.some(scheme => scheme.id === id),
+		),
+	)
+	const targetSet = sets.some(
+		set =>
+			set.row.id === targetChoice &&
+			!set.row.published_at &&
+			!set.row.release_at,
+	)
+		? targetChoice
+		: ''
 	const [busy, setBusy] = useState(false)
 	const [deleting, setDeleting, deleteModal] = useModalState<CatalogScheme>()
 	const [assigning, setAssigning, assignmentModal] = useModalState<true>()
@@ -400,55 +424,12 @@ export default function SchemeLibrary({
 		scheme: CatalogScheme | null
 		startingColors?: ColorScheme['colors']
 	} | null>(null)
-	useEffect(() => {
-		let active = true
-		void Promise.all([loadColorSchemes(client), loadSchemeSets(client)])
-			.then(([next, nextSets]) => {
-				if (active) {
-					setSchemes(next)
-					setSets(nextSets)
-					setChecked(
-						previous =>
-							new Set(
-								[...previous].filter(id =>
-									next.some(scheme => scheme.id === id),
-								),
-							),
-					)
-					setFilter(previous =>
-						previous === 'all' ||
-						previous === 'ungrouped' ||
-						nextSets.some(set => set.row.id === previous)
-							? previous
-							: 'all',
-					)
-					setTargetSet(previous =>
-						nextSets.some(
-							set =>
-								set.row.id === previous &&
-								!set.row.published_at &&
-								!set.row.release_at,
-						)
-							? previous
-							: '',
-					)
-				}
-			})
-			.catch((cause: unknown) => {
-				if (active) setError(errorMessage(cause))
-			})
-			.finally(() => {
-				if (active) setLoading(false)
-			})
-		return () => {
-			active = false
-		}
-	}, [client, reload])
-	function refresh(preserveSelection = false) {
-		setLoading(true)
-		setError('')
+	function refresh(preserveSelection = false, palettes = true) {
 		if (!preserveSelection) setChecked(new Set())
-		setReload(value => value + 1)
+		void Promise.all([
+			palettes && view === 'palettes' ? paletteCatalog.refresh() : null,
+			setCatalog.refresh(),
+		]).catch(() => {})
 	}
 	async function assign() {
 		if (working.current || !targetSet || checked.size === 0) return
@@ -464,7 +445,7 @@ export default function SchemeLibrary({
 				setStatus(
 					'Palettes assigned. Previous draft set memberships were replaced.',
 				)
-				refresh()
+				refresh(false, false)
 			})
 		} catch (cause) {
 			setActionError(errorMessage(cause))
@@ -479,9 +460,9 @@ export default function SchemeLibrary({
 				client={client}
 				sets={sets}
 				loading={loading}
-				refreshing={reload > 0}
+				refreshing={refreshing}
 				catalogError={error}
-				onChanged={refresh}
+				onChanged={() => refresh(false, false)}
 			/>
 		)
 	if (editing) {
@@ -505,6 +486,8 @@ export default function SchemeLibrary({
 					setStatus(message)
 					setEditing(null)
 					refresh()
+					// Set thumbnails are rendered with current palette colors.
+					invalidate('puzzleSets')
 				}}
 			/>
 		)
@@ -654,7 +637,7 @@ export default function SchemeLibrary({
 			{loading && (
 				<Loading
 					label={
-						reload > 0
+						refreshing
 							? 'Refreshing palettes…'
 							: 'Loading palettes…'
 					}

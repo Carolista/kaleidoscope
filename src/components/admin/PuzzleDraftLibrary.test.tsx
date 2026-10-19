@@ -111,7 +111,6 @@ function setup() {
 		<PuzzleDraftLibrary
 			client={getSupabaseClient()}
 			palettes={[palette, other]}
-			revision={0}
 		/>,
 	)
 }
@@ -508,7 +507,6 @@ describe('draft library', () => {
 			<PuzzleDraftLibrary
 				client={getSupabaseClient()}
 				palettes={[palette, other]}
-				revision={0}
 				onRefreshPalettes={refresh}
 			/>,
 		)
