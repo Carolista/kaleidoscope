@@ -32,11 +32,28 @@ The shared New/Edit form uses two columns from 640px: palette refresh/picker on 
 left; name, recipe/wand randomizer, and intended-use/save rows on the right.
 Narrower screens stack the columns. New-puzzle fields are visible before generation;
 saving requires a named preview. The preview omits repeated palette labels and the
-seed. The compact header groups account, sign-out, and theme controls at the right,
+seed. Save/load status sits below the form content so it never shifts the layout.
+The compact header groups account, sign-out, and theme controls at the right,
 with favicon navigation at the left. Admin defaults to dark mode using the shared
 neutral charcoal/white theme helper, without initializing player state.
 
-The portal starts in the draft gallery; New puzzle and Edit open dedicated views.
+Admin navigation has peer sections: **Puzzles | Palettes | Shapes**. Puzzles and
+Palettes each offer **Sets** (default) | items; items filter by **Drafts**
+(default) | **Assigned** | **Scheduled** | **Published**. Shapes, Scheduled, and
+Published are placeholders. A future top-level orchestration view will map how
+sets, rewards, and packs connect and roll out. Section/view changes use the
+navigation guard and reset lower choices to their defaults.
+
+[AdminCatalogProvider](./src/components/admin/AdminCatalog.tsx) caches puzzle
+sets, puzzle drafts, palettes, and palette sets for the signed-in session.
+Views read them through [useCatalog](./src/components/admin/useAdminCatalog.ts),
+so navigation shows cached data instantly. Data reloads only on explicit Refresh
+or after the admin's own saves: local edits update the cache in place, and saves
+affecting another catalog invalidate only catalogs already loaded. Changes made
+elsewhere (another tab or the database) need Refresh. Set loaders batch member
+and preview reads (`.in()` chunks of 100, paginated) rather than querying per set.
+
+The Puzzles item view opens the draft gallery; New puzzle and Edit open dedicated views.
 Saved definitions reopen without regeneration. Creation stays open after saving,
 with name/palette/recipe choices available for the next generation without changing
 the saved preview. A revised name carries forward; an exactly unchanged saved name
@@ -67,7 +84,7 @@ swatch selection and Apply; card/bulk deletion confirms count and names.
 Admin-only RPCs apply batches atomically under the catalog lock, rechecking release
 and references. Assigned drafts cannot switch use or delete; scheduled/live rows
 are excluded. Saved seed exclusions derive from surviving authoring records.
-Manage sets creates/renames Core, Reward, or Paid hexagon draft sets with flexible
+Puzzles > Sets creates/renames Core, Reward, or Paid hexagon draft sets with flexible
 member counts. Gallery **Assign to set** appends unassigned Set/pack drafts;
 membership is exclusive. Assigned cards show the set name and Core/Reward/Pack.
 New puzzle sets and palette sets use the shared set-creation form in a modal over
@@ -77,15 +94,19 @@ the name, role, and error in the modal, with retry-stable IDs. Existing set
 metadata/member editing remains a separate workspace.
 Set cards use two equal columns above 640px, one at/below, with left thumbnails
 and right-aligned actions/details. The editor shows each member's stored-design
-thumbnail in current Supabase palette colors beside reorder and square-minus
-removal controls. Ordering/removal save immediately; names require Save name.
+thumbnail in current Supabase palette colors beside a grip handle and square-minus
+removal control. Pointer drag (or Up/Down/Home/End on a focused handle; Escape
+cancels a drag) stages a local order; **Save order** writes it in one request,
+and staged order is guarded like other unsaved edits. Removal saves immediately;
+names require Save name. Palette sets still use up/down arrows that save immediately.
 Confirmed set deletion unassigns members but preserves puzzles/private solutions.
 Admin/invoker-RLS RPCs recheck release/reference state under the catalog lock;
 scheduled/live sets, prepared members, and dependent progression/routes/rewards,
 qualifications or grants block deletion. Membership reads paginate.
 Publishing, starter, route/core progression, and reward tools remain deferred.
 
-**Manage palettes** opens a database-backed catalog with swatches, release state,
+**Palettes** opens palette sets by default; its Palettes view is a database-backed
+catalog with swatches, release state, selection/**Assign to set**,
 and Duplicate/Edit/Delete controls. New palettes have blank names; Duplicate
 starts with the chosen palette's five ordered colors and creates a new ID on save.
 The editor pairs hex text and native color inputs in three equal-width columns.
@@ -96,8 +117,8 @@ invalid input blocks saving/preview until corrected without losing the pattern.
 
 Only unpublished palette drafts can be edited/deleted here. Scheduled/live
 palettes are read-only but can be duplicated. Save returns to the palette library;
-Back to puzzles refreshes authoring colors. Usage shows linked stored-design
-thumbnails, set/daily context, starter/reward/pack references, and grant/correction
+saves also refresh the shared catalog used by puzzle authoring and set previews.
+Usage shows linked stored-design thumbnails, set/daily context, starter/reward/pack references, and grant/correction
 counts without private solutions or account identities. Library trash opens a
 named deletion modal directly over the catalog, not the editor. The same dialog
 serves the editor, whose independent usage section remains available.
@@ -296,7 +317,9 @@ changes should be applied to all four SVG assets.
 | Labelled native field | [FormField](./src/components/shared/FormField.tsx) with [Input/Select](./src/components/shared/FormControl.tsx), including admin sign-in |
 | Player / admin icon action | [PlayerIconButton](./src/components/shared/PlayerIconButton.tsx) / [AdminIconButton](./src/components/admin/AdminIconButton.tsx); generic renderer is [IconButton](./src/components/shared/IconButton.tsx) |
 | Edit / delete / new / refresh | Admin icon action with `faPenToSquare` / `faTrashCan` / `faPlusLarge` / `faRotate`; item-specific label and title |
-| Reorder / unassign | `faArrowUp` / `faArrowDown` / `faSquareMinus`; unassign preserves the member |
+| Reorder / unassign | Staged `faGripVertical` drag handle + Save order ([PuzzleSetMembers](./src/components/admin/PuzzleSetMembers.tsx)); palette sets still use `faArrowUp` / `faArrowDown`; `faSquareMinus` unassign preserves the member |
+| Admin catalog data | [useCatalog](./src/components/admin/useAdminCatalog.ts) / `useCatalogInvalidation`; update locally after writes, invalidate other affected catalogs |
+| Section / view tabs | [AdminNavigation](./src/components/admin/AdminNavigation.tsx); wrap changes in `requestNavigation` |
 | Pending feedback | [Loading](./src/components/shared/Loading.tsx); readable request-specific label, not a success spinner |
 | Confirmation / rich action form | [ConfirmDialog](./src/components/shared/ConfirmDialog.tsx) on [Modal](./src/components/shared/Modal.tsx); errors/pending stay inside |
 | Simple set creation | [SetCreationDialog](./src/components/admin/SetCreationDialog.tsx); close/refresh/focus Add on success |
@@ -307,8 +330,8 @@ changes should be applied to all four SVG assets.
 
 Native mode/shape/color choice buttons, painting SVG cells, puzzle pieces, and
 the transparent native checkbox input are intentional specialized controls,
-not missed command-button migrations. File organization and admin navigation
-hierarchy remain separate follow-up work.
+not missed command-button migrations. File organization remains separate
+follow-up work.
 
 ## Architecture
 

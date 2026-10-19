@@ -124,16 +124,19 @@ available for unused drafts. The database rechecks these rules at write time,
 including content that was assigned or scheduled after the library loaded.
 
 Scheduled/live puzzles are excluded from this draft library and cannot be edited
-or deleted through its RPCs. Draft set assembly is available through **Manage sets**:
+or deleted through its RPCs. Draft set assembly is available under **Puzzles > Sets**:
 create a named hexagon set with a Core progression, Reward, or Paid role, then use
-gallery selection and **Assign to set** to append unassigned Set/pack drafts.
+**Puzzles > Puzzles** gallery selection and **Assign to set** to append unassigned
+Set/pack drafts.
 No puzzle count is enforced; 12, 18, or other counts remain possible. Cards show
 the assigned set name with its Core, Reward, or Pack type (unassigned puzzles keep
-Set/pack, and daily puzzles keep Daily). In the set workspace, rename the set, move members up/down,
-or remove them without deleting their saved designs. Each member shows its saved
-target thumbnail beside its name and order controls; the square-minus icon
-removes it from the set only. Ordering/removal save
-immediately; a changed set name requires **Save name** and is guarded on exit.
+Set/pack, and daily puzzles keep Daily). In the set workspace, rename the set,
+drag members into a new order, or remove them without deleting their saved designs.
+Each member shows its saved target thumbnail beside its name and drag handle
+(keyboard: Up/Down/Home/End on a focused handle); the square-minus icon removes it
+from the set only. **Save order** writes the staged order in one request; removal
+saves immediately. A changed name requires **Save name**; unsaved names and staged
+order are guarded on exit.
 The set role is chosen at creation and is not reclassified by this tool.
 Draft sets use landscape cards: the first ordered member's saved-design thumbnail
 spans the left column, with square Edit/Delete icons at the top right and name,
@@ -171,7 +174,7 @@ breaking the existing Zen/Puzzle app. The UI check is not a replacement for RLS.
 
 ### Admin palette library
 
-Use **Manage palettes** in the puzzle-library toolbar. The catalog reads all
+Open **Palettes > Palettes** in the admin navigation. The catalog reads all
 Supabase palettes with pagination; the original 19 already exist as drafts from
 the initial migration. Zen still uses its local array and is unchanged.
 
@@ -196,9 +199,9 @@ the initial migration. Zen still uses its local array and is unchanged.
   release scheduling, exceptional published color corrections, starter selection,
   pack organization, and reward mapping are separate later tools.
 
-Save returns to the palette library and refreshes it. **Back to puzzles** refreshes
-authoring selectors/previews; saved puzzle definitions, seeds, and solutions do
-not change. Unsaved edits are guarded on Back, sign-out, route exit, and reload.
+Save returns to the palette library and refreshes it, along with the cached
+catalog used by puzzle authoring selectors and set previews; saved puzzle
+definitions, seeds, and solutions do not change. Unsaved edits are guarded on Back, sign-out, route exit, and reload.
 Failed writes preserve inputs; a conflict requires refreshing/reviewing the
 catalog rather than silently replacing newer data.
 
@@ -423,9 +426,9 @@ After the design-replacement migration:
    once in SQL Editor as `postgres`. Do not rerun earlier migrations.
 2. Run [assemble_puzzle_sets.sql](./tests/assemble_puzzle_sets.sql) as `postgres`,
    without an automatic RLS wrapper. Expect **36 PASS results**; fixtures roll back.
-3. Open **Manage sets**, create a set, return to the gallery, select unassigned
-   Set/pack drafts, and use **Assign to set**. Open the set to check membership,
-   reorder, rename, and remove a puzzle. Confirm removal leaves the puzzle in the
+3. Open **Puzzles > Sets**, create a set, switch to **Puzzles > Puzzles**, select
+   unassigned Set/pack drafts, and use **Assign to set**. Open the set to check
+   membership, drag to reorder and **Save order**, rename, and remove a puzzle. Confirm removal leaves the puzzle in the
    gallery and restores its unassigned edit/replacement/deletion controls.
 
 The `manage_draft_set` RPC creates/renames draft hexagon sets or atomically appends,
@@ -453,9 +456,9 @@ After the set-assembly migration:
    once as `postgres`. Do not rerun earlier migrations.
 2. Run [delete_draft_set.sql](./tests/delete_draft_set.sql) as `postgres`, without
    an automatic RLS wrapper. Expect **15 PASS results**; fixtures roll back.
-3. In **Manage sets**, use a card's trash icon. Cancel first to verify no change;
-   then confirm deletion of an expendable set. Returning to the puzzle library
-   reloads assignments: all former members remain available as unassigned puzzles.
+3. In **Puzzles > Sets**, use a card's trash icon. Cancel first to verify no change;
+   then confirm deletion of an expendable set. The cached puzzle drafts reload
+   assignments: all former members remain available as unassigned puzzles.
 
 `delete_draft_set` requires admin authorization and caller RLS, READ COMMITTED
 isolation, and the catalog lock. It atomically removes memberships and the set

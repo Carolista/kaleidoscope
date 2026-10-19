@@ -161,7 +161,10 @@ allowed.
 Draft sets have a Core, Reward, or Paid role chosen at creation, not an Undecided
 state. Do not enforce a fixed count while 12 versus 18 remains undecided.
 Membership is exclusive; append eligible unassigned Set/pack drafts in selection
-order. Rename explicitly, but save member ordering/removal immediately.
+order. Rename explicitly and save removal immediately, but stage member ordering
+locally: drag (or keyboard-move) freely, then commit the whole order with **Save
+order** in one RPC. Per-move writes forced a round trip before each next move.
+Staged order counts as unsaved work for navigation guards.
 Keep existing selection mode separate from catalog ordering; do not imply that
 reordering enforces a player's completion sequence.
 
@@ -175,6 +178,25 @@ all puzzles/private solutions. Reject release and progression/route/reward/grant
 dependencies instead of silently cascading meaningful configuration away.
 Keep mutations atomic under caller RLS, explicit admin checks, READ COMMITTED
 isolation, and the catalog lock. Starter/route/core/reward/release tools follow.
+
+### Admin information hierarchy and catalog cache
+
+Palettes are not subordinate to puzzles: they also serve Zen Mode later. Top-level
+admin sections are peers (Puzzles | Palettes | Shapes, with a future orchestration
+view for sets/rewards/packs/rollout). Within a content section, Sets is the default
+view and items filter by release status (Drafts | Assigned | Scheduled |
+Published), so both sections share one mental model.
+
+The admin is a single user, so the catalog cache favors speed over freshness:
+keep loaded catalogs for the session in a provider (not module state, which
+leaks between tests/clients) and reload only after the admin's own writes or an
+explicit Refresh. Apply known edits locally instead of refetching; invalidate
+other affected catalogs only if already loaded. Database RPCs remain the
+authority for stale-view conflicts. Batch set membership/preview reads instead
+of one query per set, chunking `.in()` filters to keep URLs short.
+
+Keep transient save/load status below form content so it never displaces the
+controls the admin is using.
 
 ### Palette catalog and sandbox
 
@@ -203,7 +225,8 @@ so edits and duplicate colors recolor consistently without rerandomizing.
 Show saved puzzle targets and reference names/counts without fetching private
 solutions or account identities. Invalid text remains editable, blocks save and
 preview, and resumes the same preview pattern when valid. Saving returns to the
-palette catalog; returning to puzzles refreshes authoring colors. Sandbox changes
+palette catalog; palette saves refresh the shared admin catalog so authoring and
+set previews use current colors. Sandbox changes
 are transient and never affect player state. Reuse the admin dirty-navigation
 guards for palette edits.
 

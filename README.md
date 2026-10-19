@@ -90,7 +90,12 @@ Double-click/double-tap board pieces or drag back to return them to the tray.
 Keyboard users can rotate/select with Enter/Space, activate a board tile to place,
 and use Delete/Backspace on an occupied tile to return its piece. Square tray
 slots stay fixed through rotation and use one subtle selected border.
-The admin workspace opens with a draft gallery. **New puzzle** and each card's
+The admin workspace has peer **Puzzles | Palettes | Shapes** sections. Puzzles and
+Palettes each open on **Sets**, with an items view filtered by Drafts, Assigned,
+Scheduled, or Published (Shapes and the release views are placeholders for now).
+Loaded catalogs are cached for the session, so switching views is instant; lists
+reload after your own saves or with **Refresh**. In the puzzle drafts view,
+**New puzzle** and each card's
 **Edit** button open dedicated creation/editing views. Save named Set/pack or Daily
 drafts atomically; reopening uses the stored definition rather than regeneration.
 After saving, name/palette/recipe choices apply to the next generation without
@@ -110,28 +115,31 @@ Palette changes require Apply; deletion confirms count and names. Bulk operation
 are all-or-nothing, with database release/reference checks. Assigned drafts cannot
 be deleted or switch intended use.
 
-**Manage sets** creates named Core, Reward, or Paid hexagon draft sets with no
+**Puzzles > Sets** creates named Core, Reward, or Paid hexagon draft sets with no
 fixed puzzle count. Select unassigned Set/pack drafts in the puzzle gallery and
 use **Assign to set** to append them atomically. Assigned cards show their set
 name and Core/Reward/Pack type.
 
 Draft-set cards use two equal columns above 640px and one below, with a thumbnail
 on the left and edit/delete controls and details on the right. The set editor
-shows every member's saved-design thumbnail beside its name, up/down controls,
-and square-minus removal button. Reordering/removal save immediately; name edits
+shows every member's saved-design thumbnail beside its name, a drag handle,
+and square-minus removal button. Drag members (or use arrow/Home/End keys on a
+focused handle) into any order, then choose **Save order** to save it at once.
+Removal saves immediately; name edits
 use **Save name**. Removing a member or confirming set deletion preserves the
 puzzles and their private solutions. Scheduled/live content and dependent
 progression/routes/rewards remain protected by database checks.
 
-**Manage palettes** opens the Supabase palette library. Create or edit draft
+**Palettes** opens palette sets, and its **Palettes** view holds the Supabase
+palette library. Create or edit draft
 palettes using five ordered hex fields/color pickers, or use a card's **Duplicate**
 icon to start an unnamed palette with those colors. The medium hexagon sandbox
 offers **Randomize** with an equal chance for each palette slot and no neutral
 color. Editing colors recolors the current pattern without regenerating it.
 Usage includes linked puzzle previews and distribution references; only unused
 drafts can be deleted, with confirmation. Scheduled/live palettes are read-only
-but can be duplicated. Returning to puzzles refreshes the authoring palette
-catalog. Zen's local palettes and randomizer remain unchanged.
+but can be duplicated. Saving a palette refreshes the colors used by puzzle
+authoring and set previews. Zen's local palettes and randomizer remain unchanged.
 
 Playtest placements remain memory-only. Publishing, player progress,
 and changes to Zen saves are not included. See

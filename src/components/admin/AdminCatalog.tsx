@@ -9,7 +9,7 @@ import {
 	type Client,
 } from './useAdminCatalog'
 
-/** Session-scoped admin catalog cache; data reloads only on request or invalidation. */
+// Session-scoped admin catalog cache; data reloads only on request or invalidation.
 export function AdminCatalogProvider({
 	children,
 }: {
