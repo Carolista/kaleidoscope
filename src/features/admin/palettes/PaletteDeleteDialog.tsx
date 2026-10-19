@@ -11,6 +11,7 @@ import {
 } from '@/features/admin/services'
 import { useUnsavedDraft } from '@/ui/navigation'
 import PaletteUsageDetails from './PaletteUsageDetails'
+import { errorMessage } from '@/features/admin/common'
 
 export default function PaletteDeleteDialog({
 	client,
@@ -44,9 +45,7 @@ export default function PaletteDeleteDialog({
 			.catch((cause: unknown) => {
 				if (active)
 					setUsageError(
-						cause instanceof Error
-							? cause.message
-							: 'Unable to check palette usage.',
+						errorMessage(cause, 'Unable to check palette usage.'),
 					)
 			})
 			.finally(() => {
@@ -76,11 +75,7 @@ export default function PaletteDeleteDialog({
 			})
 			onDeleted()
 		} catch (cause) {
-			setError(
-				cause instanceof Error
-					? cause.message
-					: 'Unable to delete the palette.',
-			)
+			setError(errorMessage(cause, 'Unable to delete the palette.'))
 		} finally {
 			working.current = false
 			setBusy(false)

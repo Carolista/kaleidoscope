@@ -13,3 +13,4 @@ export {
 	AdminTag,
 } from './AdminLayout'
 export { default as useCheckedIds } from './useCheckedIds'
+export { errorMessage } from './errorMessage'

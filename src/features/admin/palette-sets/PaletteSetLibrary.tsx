@@ -21,6 +21,7 @@ import {
 	AdminSetCard,
 	AdminSetForm,
 	AdminIconButton,
+	errorMessage,
 } from '@/features/admin/common'
 import {
 	SortableSetMembers,
@@ -38,11 +39,7 @@ import {
 } from '@/features/admin/services'
 import { useUnsavedDraft } from '@/ui/navigation'
 
-function errorMessage(cause: unknown) {
-	return cause instanceof Error
-		? cause.message
-		: 'Unable to manage palette sets.'
-}
+const fallbackError = 'Unable to manage palette sets.'
 
 export default function PaletteSetLibrary({
 	client,
@@ -135,7 +132,9 @@ export default function PaletteSetLibrary({
 			}
 			setStatus(message)
 		} catch (cause) {
-			;(deleteAction ? setDeleteError : setError)(errorMessage(cause))
+			;(deleteAction ? setDeleteError : setError)(
+				errorMessage(cause, fallbackError),
+			)
 		} finally {
 			working.current = false
 			setBusy(false)

@@ -20,12 +20,9 @@ import { useUnsavedDraft } from '@/ui/navigation'
 import PuzzleDraftForm from './PuzzleDraftForm'
 import { useCatalog, useCatalogInvalidation } from '@/features/admin/catalog'
 import { Button, Loading } from '@/ui/components'
+import { errorMessage } from '@/features/admin/common'
 
-function messageFor(cause: unknown): string {
-	return cause instanceof Error
-		? cause.message
-		: 'Unable to prepare the puzzle playtest.'
-}
+const fallbackError = 'Unable to prepare the puzzle playtest.'
 
 export default function PuzzleAuthoring({
 	client,
@@ -39,7 +36,7 @@ export default function PuzzleAuthoring({
 	const palettes: readonly AuthoringPalette[] = paletteCatalog.data ?? []
 	const loading = paletteCatalog.loading
 	const paletteError = paletteCatalog.error
-		? messageFor(paletteCatalog.error)
+		? errorMessage(paletteCatalog.error, fallbackError)
 		: ''
 	const [error, setError] = useState('')
 	const [creating, setCreating] = useState(false)
@@ -102,7 +99,7 @@ export default function PuzzleAuthoring({
 				run: (previous?.run ?? 0) + 1,
 			}))
 		} catch (cause) {
-			setError(messageFor(cause))
+			setError(errorMessage(cause, fallbackError))
 		} finally {
 			working.current = false
 			setPending(null)
@@ -140,7 +137,7 @@ export default function PuzzleAuthoring({
 				`Saved "${args.p_name}" as an unpublished ${usage === 'daily' ? 'daily' : 'set/pack'} draft. Name, palette, and recipe choices now apply to the next randomization; this saved preview stays unchanged.`,
 			)
 		} catch (cause) {
-			setError(messageFor(cause))
+			setError(errorMessage(cause, fallbackError))
 		} finally {
 			working.current = false
 			setPending(null)

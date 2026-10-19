@@ -349,6 +349,8 @@ changes should be applied to all four SVG assets.
 | Guard edited/pending navigation | [useUnsavedDraft](./src/ui/navigation/useUnsavedDraft.ts) with [useNavigationGuard](./src/ui/navigation/useNavigationGuard.ts); first destination wins |
 | Decorative palette / palette selection | [PaletteStrip](./src/ui/components/PaletteStrip.tsx) / [PaletteChoices](./src/ui/components/PaletteChoices.tsx); not painting buttons |
 | Section / gallery / ordered members | [AdminLayout](./src/features/admin/common/AdminLayout.tsx); retain domain card layouts and local async ownership |
+| Error text from a caught value | [errorMessage](./src/features/admin/common/errorMessage.ts)`(cause, fallback)`; one `fallbackError` constant per library |
+| Admin editor vs library | Editors live in their own files (`PuzzleDraftEditor`, `PaletteEditor`) next to the library that opens them |
 
 Native mode/shape/color choice buttons, painting SVG cells, puzzle pieces, and
 the transparent native checkbox input are intentional specialized controls,

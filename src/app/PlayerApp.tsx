@@ -4,8 +4,7 @@ import { getThemeColors } from '@/domain/palettes'
 import { PuzzleMode } from '@/features/puzzle'
 import { hasPersistedDesign, ZenMode } from '@/features/zen'
 import { usePlayerTheme } from '@/ui/theme'
-import { Footer, Header } from './layout'
-import headerStyles from './layout/Header.module.css'
+import { Footer, Header, releaseOpeningTitle } from './layout'
 import styles from './PlayerApp.module.css'
 
 function PlayerApp() {
@@ -72,7 +71,7 @@ function PlayerApp() {
 
 		entranceStartedRef.current = true
 		const start = title.getBoundingClientRect()
-		title.classList.remove(headerStyles.openingTitle)
+		releaseOpeningTitle(title)
 		const target = title.getBoundingClientRect()
 		if (
 			start.width === 0 ||

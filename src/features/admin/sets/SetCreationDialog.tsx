@@ -1,7 +1,7 @@
 import { useId, useRef, useState, type SubmitEvent } from 'react'
 import { ConfirmDialog, FormField, Input, Select } from '@/ui/components'
 import { useUnsavedDraft } from '@/ui/navigation'
-import { AdminForm } from '@/features/admin/common'
+import { AdminForm, errorMessage } from '@/features/admin/common'
 
 interface SetCreationDialogProps<Kind extends string> {
 	readonly open: boolean
@@ -59,11 +59,7 @@ export default function SetCreationDialog<Kind extends string>({
 		try {
 			await onCreate(request.current.id, name.trim(), kind)
 		} catch (cause) {
-			setError(
-				cause instanceof Error
-					? cause.message
-					: 'Unable to create the set.',
-			)
+			setError(errorMessage(cause, 'Unable to create the set.'))
 		} finally {
 			working.current = false
 			setBusy(false)

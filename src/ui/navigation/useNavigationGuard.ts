@@ -19,6 +19,8 @@ export const NavigationGuardContext = createContext<NavigationGuard | null>(
 export function useNavigationGuard() {
 	const guard = useContext(NavigationGuardContext)
 	if (!guard)
-		throw new Error('Admin navigation requires NavigationGuardProvider.')
+		throw new Error(
+			'useNavigationGuard must be used within a NavigationGuardProvider',
+		)
 	return guard
 }

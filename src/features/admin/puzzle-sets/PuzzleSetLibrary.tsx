@@ -22,6 +22,7 @@ import {
 	AdminSetCard,
 	AdminSetForm,
 	AdminTag,
+	errorMessage,
 } from '@/features/admin/common'
 import { ConfirmDialog, Loading } from '@/ui/components'
 import {
@@ -38,11 +39,7 @@ function roleLabel(kind: string) {
 	return kind === 'core' ? 'Core' : kind === 'reward' ? 'Reward' : 'Pack'
 }
 
-function errorMessage(cause: unknown) {
-	return cause instanceof Error
-		? cause.message
-		: 'Unable to manage draft sets.'
-}
+const fallbackError = 'Unable to manage draft sets.'
 
 // Applies a successful set action to cached sets without refetching.
 function applyAction(set: DraftSet, action: SetAction): DraftSet {
@@ -120,7 +117,7 @@ export default function PuzzleSetLibrary({
 			invalidate('puzzleDrafts')
 			setDeleting(null)
 		} catch (cause) {
-			setDeleteError(errorMessage(cause))
+			setDeleteError(errorMessage(cause, fallbackError))
 		} finally {
 			working.current = false
 			setPending(null)
@@ -152,7 +149,7 @@ export default function PuzzleSetLibrary({
 			}
 			setStatus(success)
 		} catch (cause) {
-			setError(errorMessage(cause))
+			setError(errorMessage(cause, fallbackError))
 		} finally {
 			working.current = false
 			setPending(null)
@@ -215,7 +212,10 @@ export default function PuzzleSetLibrary({
 			</AdminSectionHeading>
 			<AdminFeedback
 				error={
-					error || (catalog.error ? errorMessage(catalog.error) : '')
+					error ||
+					(catalog.error
+						? errorMessage(catalog.error, fallbackError)
+						: '')
 				}
 				status={status}
 			/>

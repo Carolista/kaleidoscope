@@ -90,8 +90,8 @@ export function NavigationGuardProvider({
 			}
 			message={
 				kind === 'pending'
-					? 'Wait for the current admin operation to finish before leaving. Leaving would not cancel a request already sent to the server.'
-					: 'Your unsaved admin changes will be lost. Keep editing or discard them and continue?'
+					? 'Wait for the current operation to finish before leaving. Leaving would not cancel a request already sent to the server.'
+					: 'Your unsaved changes will be lost. Keep editing or discard them and continue?'
 			}
 			confirmLabel={kind === 'pending' ? 'Stay here' : 'Discard changes'}
 			cancelLabel={kind === 'pending' ? 'Close' : 'Keep editing'}
