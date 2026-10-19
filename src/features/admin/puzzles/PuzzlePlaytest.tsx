@@ -1,7 +1,7 @@
 import { useRef, type ReactNode } from 'react'
 import { faRotate } from '@fortawesome/sharp-duotone-solid-svg-icons'
 import { IconButton } from '@/ui/components'
-import type { HexPuzzle } from '@/domain/puzzles'
+import type { Puzzle } from '@/domain/puzzles'
 import { PuzzlePlay, type PuzzlePlayHandle } from '@/ui/puzzle'
 import styles from './PuzzlePlaytest.module.css'
 
@@ -9,7 +9,7 @@ export default function PuzzlePlaytest({
 	puzzle,
 	children,
 }: {
-	readonly puzzle: HexPuzzle
+	readonly puzzle: Puzzle
 	// Rendered above the playtest, e.g. a save status.
 	readonly children?: ReactNode
 }) {

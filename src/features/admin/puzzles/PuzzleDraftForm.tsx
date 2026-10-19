@@ -1,7 +1,7 @@
 import { faRotate, faWandMagicSparkles } from '@fortawesome/pro-solid-svg-icons'
 import type { SubmitEvent } from 'react'
 import type { AuthoringPalette } from '@/domain/puzzles'
-import { HEX_PUZZLE_RECIPES } from '@/domain/puzzles'
+import { PUZZLE_RECIPES } from '@/domain/puzzles'
 import type { PuzzleUsage } from '@/features/admin/services'
 import { AdminIconButton, AdminForm } from '@/features/admin/common'
 import {
@@ -145,7 +145,7 @@ export default function PuzzleDraftForm({
 										)
 									}
 								>
-									{HEX_PUZZLE_RECIPES.map(recipe => (
+									{PUZZLE_RECIPES.map(recipe => (
 										<option
 											key={recipe.id}
 											value={recipe.id}

@@ -2,9 +2,10 @@ import type { Palette } from '@/domain/palettes'
 import type { GridSize } from '@/domain/shapes'
 import type { AxialCoord } from '@/domain/shapes/hexagon'
 import {
-	generateHexagonCells,
-	HEXAGON_GRID_RADII,
-} from '@/domain/shapes/hexagon'
+	puzzleShapes,
+	type PuzzleShape,
+	type PuzzleShapeId,
+} from './puzzleShapes'
 
 export interface PuzzleTile extends AxialCoord {
 	readonly color: string
@@ -21,7 +22,7 @@ export interface PuzzlePlacement extends AxialCoord {
 
 export type PuzzlePlacements = Readonly<Record<string, PuzzlePlacement>>
 
-export const HEX_PUZZLE_RECIPES = [
+export const PUZZLE_RECIPES = [
 	{
 		id: 'easy-small',
 		label: 'EASY (S)',
@@ -66,13 +67,13 @@ export const HEX_PUZZLE_RECIPES = [
 	},
 ] as const
 
-export type HexPuzzleRecipe = (typeof HEX_PUZZLE_RECIPES)[number]
+export type PuzzleRecipe = (typeof PUZZLE_RECIPES)[number]
 
-export interface HexPuzzle {
+export interface Puzzle {
 	readonly version: 1
-	readonly shape: 'hexagon'
+	readonly shape: PuzzleShapeId
 	readonly seed: string
-	readonly radius: number
+	readonly gridSize: number
 	readonly paletteName: string
 	readonly target: Readonly<Record<string, string>>
 	readonly pieces: readonly PuzzlePiece[]
@@ -90,15 +91,6 @@ export function rotateCoordinate<T extends AxialCoord>(
 	}
 	return { ...cell, q: q === 0 ? 0 : q, r: r === 0 ? 0 : r }
 }
-
-const directions: readonly AxialCoord[] = [
-	{ q: 1, r: 0 },
-	{ q: 0, r: 1 },
-	{ q: -1, r: 1 },
-	{ q: -1, r: 0 },
-	{ q: 0, r: -1 },
-	{ q: 1, r: -1 },
-]
 
 export function coordinateKey({ q, r }: AxialCoord): string {
 	return `${q},${r}`
@@ -126,17 +118,16 @@ function shuffle<T>(items: readonly T[], random: () => number): T[] {
 	return result
 }
 
-function isConnected(cells: readonly AxialCoord[]): boolean {
+function isConnected(
+	shape: PuzzleShape,
+	cells: readonly AxialCoord[],
+): boolean {
 	const remaining = new Set(cells.map(coordinateKey))
 	const pending = [cells[0]]
 	remaining.delete(coordinateKey(cells[0]))
 	while (pending.length) {
 		const cell = pending.pop()!
-		for (const direction of directions) {
-			const neighbor = {
-				q: cell.q + direction.q,
-				r: cell.r + direction.r,
-			}
+		for (const neighbor of shape.neighbors(cell)) {
 			if (remaining.delete(coordinateKey(neighbor))) {
 				pending.push(neighbor)
 			}
@@ -156,15 +147,17 @@ function combinations<T>(items: readonly T[], count: number): T[][] {
 }
 
 function partition(
+	shape: PuzzleShape,
 	cells: readonly AxialCoord[],
 	sizes: readonly number[],
 	random: () => number,
 ): AxialCoord[][] | null {
 	if (sizes.length === 0) return cells.length === 0 ? [] : null
 	for (const candidate of shuffle(combinations(cells, sizes[0]), random)) {
-		if (!isConnected(candidate)) continue
+		if (!isConnected(shape, candidate)) continue
 		const keys = new Set(candidate.map(coordinateKey))
 		const rest = partition(
+			shape,
 			cells.filter(cell => !keys.has(coordinateKey(cell))),
 			sizes.slice(1),
 			random,
@@ -175,14 +168,15 @@ function partition(
 }
 
 // Keep the original default recipe reproducible for the player POC.
-export function generateHexPuzzle(
+export function generatePuzzle(
 	seed: string,
 	palette: Palette,
 	recipe: {
 		readonly size: GridSize
 		readonly rotation: boolean
-	} = HEX_PUZZLE_RECIPES[0],
-): HexPuzzle {
+	} = PUZZLE_RECIPES[0],
+	shapeId: PuzzleShapeId = 'hexagon',
+): Puzzle {
 	if (!seed.trim()) throw new Error('A puzzle seed is required.')
 	if (
 		palette.colors.length !== 5 ||
@@ -192,27 +186,27 @@ export function generateHexPuzzle(
 			'A puzzle requires a palette of five six-digit hex colors.',
 		)
 	}
-	const radius = HEXAGON_GRID_RADII[recipe.size]
-	const cells = generateHexagonCells(radius).filter(cell => cell.isClickable)
+	const shape = puzzleShapes[shapeId]
+	const gridSize = shape.gridSizes[recipe.size]
+	const cells = shape.cells(gridSize).filter(cell => cell.isClickable)
 	const random = seededRandom(seed)
-	const sizes =
-		recipe.size === 'sm'
-			? [3, 2, 1]
-			: recipe.size === 'md'
-				? [3, 3, 2, 1]
-				: [3, 3, 3, 3, 2, 1, 1]
-	const groups = partition(cells, sizes, random)
-	if (!groups) throw new Error('Unable to partition the hex puzzle wedge.')
+	const groups = partition(
+		shape,
+		cells,
+		shape.pieceSizes[recipe.size],
+		random,
+	)
+	if (!groups) throw new Error('Unable to partition the puzzle wedge.')
 	const target = Object.fromEntries(
 		cells.map(cell => [
-			cell.groupId,
+			coordinateKey(cell),
 			palette.colors[Math.floor(random() * palette.colors.length)],
 		]),
 	)
 	const solution: Record<string, PuzzlePlacement> = {}
 	const pieces = shuffle(groups, random).map((group, index) => {
 		const id = `piece-${index + 1}`
-		const anchor = group[0]
+		const anchor = shape.anchorFor(group[0])
 		const rotation = recipe.rotation ? Math.floor(random() * 6) : 0
 		solution[id] = {
 			q: anchor.q,
@@ -235,15 +229,25 @@ export function generateHexPuzzle(
 	})
 	return {
 		version: 1,
-		shape: 'hexagon',
+		shape: shapeId,
 		seed,
-		radius,
+		gridSize,
 		paletteName: palette.name,
 		target,
 		pieces,
 		solution,
 		...(recipe.rotation ? { rotationAllowed: true } : {}),
 	}
+}
+
+// The anchor that puts the piece's first tile on `cell` at this rotation.
+export function anchorAt(
+	piece: PuzzlePiece,
+	cell: AxialCoord,
+	rotation = 0,
+): AxialCoord {
+	const first = rotateCoordinate(piece.tiles[0], rotation)
+	return { q: cell.q - first.q, r: cell.r - first.r }
 }
 
 export function pieceCells(
@@ -257,7 +261,7 @@ export function pieceCells(
 }
 
 export function getPuzzleColors(
-	puzzle: HexPuzzle,
+	puzzle: Puzzle,
 	placements: PuzzlePlacements,
 ): Record<string, string> {
 	return Object.fromEntries(
@@ -274,7 +278,7 @@ export function getPuzzleColors(
 }
 
 export function placePuzzlePiece(
-	puzzle: HexPuzzle,
+	puzzle: Puzzle,
 	placements: PuzzlePlacements,
 	pieceId: string,
 	anchor: PuzzlePlacement,
@@ -313,7 +317,7 @@ export function placePuzzlePiece(
 }
 
 export function isPuzzleSolved(
-	puzzle: HexPuzzle,
+	puzzle: Puzzle,
 	placements: PuzzlePlacements,
 ): boolean {
 	const colors = getPuzzleColors(puzzle, placements)

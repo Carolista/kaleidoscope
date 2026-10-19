@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { Database, Tables } from '@/lib/supabase'
 import {
 	generateAuthoredHexPuzzle,
-	HEX_PUZZLE_RECIPES,
+	PUZZLE_RECIPES,
 	isPuzzleSolved,
 	renderAuthoredHexPuzzle,
 	readAuthoredHexPuzzle,
@@ -23,7 +23,7 @@ const palette = {
 	colors: ['#112233', '#223344', '#334455', '#445566', '#556677'] as const,
 }
 function fixture(
-	recipe = HEX_PUZZLE_RECIPES[0] as (typeof HEX_PUZZLE_RECIPES)[number],
+	recipe = PUZZLE_RECIPES[0] as (typeof PUZZLE_RECIPES)[number],
 ) {
 	const original = generateAuthoredHexPuzzle('saved-seed', palette.id, recipe)
 	const args = puzzleDraftArgs('id', 'Draft', 'collection', original)
@@ -52,7 +52,7 @@ function mockClient(value: object) {
 	return value as SupabaseClient<Database>
 }
 describe('saved puzzle decoding', () => {
-	it.each(HEX_PUZZLE_RECIPES)(
+	it.each(PUZZLE_RECIPES)(
 		'reopens exact stored $id content without regeneration',
 		recipe => {
 			const { original, row, authoring } = fixture(recipe)
@@ -93,7 +93,7 @@ describe('saved puzzle decoding', () => {
 })
 describe('draft library database requests', () => {
 	it('replaces the exact preview and private solution atomically under the existing ID', async () => {
-		const { original } = fixture(HEX_PUZZLE_RECIPES[3])
+		const { original } = fixture(PUZZLE_RECIPES[3])
 		const rpc = vi.fn().mockResolvedValue({ data: 'id', error: null })
 		await replacePuzzleDraft(
 			mockClient({ rpc }),

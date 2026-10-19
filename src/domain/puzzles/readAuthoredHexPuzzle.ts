@@ -1,5 +1,5 @@
 import type { Json, Tables } from '@/lib/supabase'
-import { HEX_PUZZLE_RECIPES, type PuzzlePlacement } from './hexPuzzle'
+import { PUZZLE_RECIPES, type PuzzlePlacement } from './puzzle'
 import type { AuthoredHexPuzzle, HexPuzzleDefinition } from './hexAuthoring'
 
 function object(value: Json | undefined): { [key: string]: Json | undefined } {
@@ -44,7 +44,7 @@ export function readAuthoredHexPuzzle(
 	row: Tables<'puzzles'>,
 	authoring: Tables<'puzzle_authoring'> | null,
 ): AuthoredHexPuzzle {
-	const recipe = HEX_PUZZLE_RECIPES.find(
+	const recipe = PUZZLE_RECIPES.find(
 		value =>
 			value.size === row.board_size &&
 			value.rotation === row.rotation_allowed &&

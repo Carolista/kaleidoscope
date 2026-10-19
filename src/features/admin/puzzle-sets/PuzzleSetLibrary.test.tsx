@@ -7,7 +7,7 @@ import PuzzleSetLibrary from './PuzzleSetLibrary'
 import {
 	generateAuthoredHexPuzzle,
 	renderAuthoredHexPuzzle,
-	HEX_PUZZLE_RECIPES,
+	PUZZLE_RECIPES,
 } from '@/domain/puzzles'
 import styles from './PuzzleSetLibrary.module.css'
 import toneStyles from '@/features/admin/common/AdminIconButton.module.css'
@@ -288,7 +288,7 @@ describe('draft set workspace', () => {
 				generateAuthoredHexPuzzle(
 					`member-${index}`,
 					palette.id,
-					HEX_PUZZLE_RECIPES[index],
+					PUZZLE_RECIPES[index],
 				),
 				palette,
 			),
@@ -366,7 +366,7 @@ describe('draft set workspace', () => {
 					generateAuthoredHexPuzzle(
 						'preview',
 						palette.id,
-						HEX_PUZZLE_RECIPES[0],
+						PUZZLE_RECIPES[0],
 					),
 					palette,
 				),

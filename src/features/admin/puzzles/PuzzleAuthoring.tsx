@@ -4,7 +4,7 @@ import {
 	renderAuthoredHexPuzzle,
 	type AuthoredHexPuzzle,
 	type AuthoringPalette,
-	HEX_PUZZLE_RECIPES,
+	PUZZLE_RECIPES,
 } from '@/domain/puzzles'
 import type { Database } from '@/lib/supabase'
 import {
@@ -45,7 +45,7 @@ export default function PuzzleAuthoring({
 	const working = useRef(false)
 	const [draftName, setDraftName] = useState('')
 	const [usage, setUsage] = useState<PuzzleUsage>('collection')
-	const [recipeId, setRecipeId] = useState<string>(HEX_PUZZLE_RECIPES[0].id)
+	const [recipeId, setRecipeId] = useState<string>(PUZZLE_RECIPES[0].id)
 	const [saved, setSaved] = useState(false)
 	const [savedName, setSavedName] = useState('')
 	const [saveMessage, setSaveMessage] = useState('')
@@ -75,7 +75,7 @@ export default function PuzzleAuthoring({
 		working.current = true
 		setPending('Generating puzzle preview…')
 		setError('')
-		const recipe = HEX_PUZZLE_RECIPES.find(value => value.id === recipeId)
+		const recipe = PUZZLE_RECIPES.find(value => value.id === recipeId)
 		const palette =
 			palettes.find(value => value.id === selectedPaletteId) ??
 			palettes[0]
@@ -167,7 +167,7 @@ export default function PuzzleAuthoring({
 					catalogStatus={catalogStatus}
 					onNew={() => {
 						setGenerated(null)
-						setRecipeId(HEX_PUZZLE_RECIPES[0].id)
+						setRecipeId(PUZZLE_RECIPES[0].id)
 						setSaved(false)
 						setDraftName('')
 						setSaveMessage('')

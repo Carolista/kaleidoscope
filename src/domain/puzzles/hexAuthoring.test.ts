@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { generateHexagonCells } from '@/domain/shapes/hexagon'
 import {
-	HEX_PUZZLE_RECIPES,
+	PUZZLE_RECIPES,
 	coordinateKey,
 	isPuzzleSolved,
 	pieceCells,
 	placePuzzlePiece,
 	rotateCoordinate,
 	type PuzzlePlacements,
-} from './hexPuzzle'
+} from './puzzle'
 import {
 	generateAuthoredHexPuzzle,
 	renderAuthoredHexPuzzle,
@@ -20,7 +20,7 @@ const palette = {
 	colors: ['#112233', '#112233', '#445566', '#778899', '#aabbcc'] as const,
 }
 
-describe.each(HEX_PUZZLE_RECIPES)('$label', recipe => {
+describe.each(PUZZLE_RECIPES)('$label', recipe => {
 	it.each(Array.from({ length: 30 }, (_, i) => `recipe-${i}`))(
 		'generates a connected, solvable exact cover for %s',
 		seed => {
@@ -57,7 +57,7 @@ describe.each(HEX_PUZZLE_RECIPES)('$label', recipe => {
 					)
 				}
 			}
-			const wedge = generateHexagonCells(puzzle.radius).filter(
+			const wedge = generateHexagonCells(puzzle.gridSize).filter(
 				cell => cell.isClickable,
 			)
 			expect(wedge.length).toBe(
@@ -137,7 +137,7 @@ it('retains palette slot identity through corrections, even with duplicate color
 	const authored = generateAuthoredHexPuzzle(
 		'slots',
 		palette.id,
-		HEX_PUZZLE_RECIPES[0],
+		PUZZLE_RECIPES[0],
 	)
 	const corrected = {
 		...palette,
@@ -164,11 +164,7 @@ it('rotates axial coordinates exactly and rejects invalid placement rotations', 
 	expect(rotateCoordinate(cell, 6)).toEqual(cell)
 	expect(rotateCoordinate(rotateCoordinate(cell, 1), -1)).toEqual(cell)
 	const noRotation = renderAuthoredHexPuzzle(
-		generateAuthoredHexPuzzle(
-			'rotations',
-			palette.id,
-			HEX_PUZZLE_RECIPES[0],
-		),
+		generateAuthoredHexPuzzle('rotations', palette.id, PUZZLE_RECIPES[0]),
 		palette,
 	)
 	expect(
@@ -182,7 +178,7 @@ it('rotates axial coordinates exactly and rejects invalid placement rotations', 
 		generateAuthoredHexPuzzle(
 			'rotations',
 			palette.id,
-			HEX_PUZZLE_RECIPES.find(recipe => recipe.id === 'moderate-small')!,
+			PUZZLE_RECIPES.find(recipe => recipe.id === 'moderate-small')!,
 		),
 		palette,
 	)

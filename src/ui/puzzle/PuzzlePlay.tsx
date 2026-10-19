@@ -3,7 +3,7 @@ import { useImperativeHandle, useRef, useState } from 'react'
 import {
 	coordinateKey,
 	getPuzzleColors,
-	type HexPuzzle,
+	type Puzzle,
 	isPuzzleSolved,
 	pieceCells,
 	placePuzzlePiece,
@@ -44,7 +44,7 @@ export default function PuzzlePlay({
 	children,
 }: {
 	readonly ref?: Ref<PuzzlePlayHandle>
-	readonly puzzle: HexPuzzle
+	readonly puzzle: Puzzle
 	readonly hidden?: boolean
 	readonly solvedMessage: string
 	readonly onSolve?: () => void
@@ -322,7 +322,7 @@ export default function PuzzlePlay({
 			<div className={styles.goalAndPieces}>
 				<figure className={styles.target}>
 					<HexPuzzleBoard
-						radius={currentPuzzle.radius}
+						radius={currentPuzzle.gridSize}
 						colors={currentPuzzle.target}
 						target
 					/>
@@ -372,7 +372,7 @@ export default function PuzzlePlay({
 			<div className={styles.board}>
 				<HexPuzzleBoard
 					svgRef={boardRef}
-					radius={currentPuzzle.radius}
+					radius={currentPuzzle.gridSize}
 					colors={colors}
 					solved={solved}
 					pieces={currentPuzzle.pieces}

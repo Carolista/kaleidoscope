@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { renderWithProvider } from '@/test/renderWithProvider'
 import { palettes } from '@/domain/palettes'
 import { generateHexagonCells } from '@/domain/shapes/hexagon'
-import { coordinateKey, generateHexPuzzle, pieceCells } from '@/domain/puzzles'
+import { coordinateKey, generatePuzzle, pieceCells } from '@/domain/puzzles'
 import PuzzleMode from './PuzzleMode'
 import styles from '@/ui/puzzle/HexPuzzleBoard.module.css'
 import {
@@ -16,7 +16,7 @@ import {
 } from '@/test/puzzleInteraction'
 
 const seed = 'ui-puzzle'
-const puzzle = generateHexPuzzle(seed, palettes[1])
+const puzzle = generatePuzzle(seed, palettes[1])
 function solvePuzzle() {
 	for (const [index, piece] of puzzle.pieces.entries()) {
 		dragTo(
@@ -292,7 +292,7 @@ describe('PuzzleMode', () => {
 		).toHaveLength(6)
 		expect(targetColors()).toEqual(
 			// Restart preserves the original puzzle rather than generating another.
-			generateHexagonCells(puzzle.radius).map(
+			generateHexagonCells(puzzle.gridSize).map(
 				cell => puzzle.target[cell.groupId],
 			),
 		)

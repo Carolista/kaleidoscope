@@ -2,7 +2,7 @@ import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { renderWithNavigationGuard as render } from '@/features/admin/testing'
 import { useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { generateAuthoredHexPuzzle, HEX_PUZZLE_RECIPES } from '@/domain/puzzles'
+import { generateAuthoredHexPuzzle, PUZZLE_RECIPES } from '@/domain/puzzles'
 import { puzzleDraftArgs } from '@/features/admin/services'
 import type { LibraryDraft } from '@/features/admin/services'
 import { getSupabaseClient } from '@/lib/supabase'
@@ -57,11 +57,7 @@ const other = {
 	name: 'Other',
 	colors: ['#abcdef', '#abcdef', '#abcdef', '#abcdef', '#abcdef'] as const,
 }
-const puzzle = generateAuthoredHexPuzzle(
-	'saved',
-	palette.id,
-	HEX_PUZZLE_RECIPES[1],
-)
+const puzzle = generateAuthoredHexPuzzle('saved', palette.id, PUZZLE_RECIPES[1])
 const args = puzzleDraftArgs('draft-id', 'Saved art', 'collection', puzzle)
 const draft: LibraryDraft = {
 	row: {
@@ -405,7 +401,7 @@ describe('draft library', () => {
 		const expected = generateAuthoredHexPuzzle(
 			'00000003000000030000000300000003',
 			other.id,
-			HEX_PUZZLE_RECIPES[3],
+			PUZZLE_RECIPES[3],
 		)
 		expect(mocks.replace).toHaveBeenCalledWith(
 			expect.anything(),

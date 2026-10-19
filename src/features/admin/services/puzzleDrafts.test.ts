@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase'
-import { HEX_PUZZLE_RECIPES, generateAuthoredHexPuzzle } from '@/domain/puzzles'
+import { PUZZLE_RECIPES, generateAuthoredHexPuzzle } from '@/domain/puzzles'
 import {
 	loadSavedPuzzleSeeds,
 	puzzleDraftArgs,
@@ -13,7 +13,7 @@ function clientWith(query: object) {
 }
 
 describe('puzzle draft requests', () => {
-	it.each(HEX_PUZZLE_RECIPES)(
+	it.each(PUZZLE_RECIPES)(
 		'serializes complete $id definitions and private solutions separately',
 		recipe => {
 			const puzzle = generateAuthoredHexPuzzle('seed', 'palette', recipe)
@@ -54,7 +54,7 @@ describe('puzzle draft requests', () => {
 		const from = vi.fn().mockReturnValue({ select })
 		const seeds = await loadSavedPuzzleSeeds(
 			clientWith({ from }),
-			HEX_PUZZLE_RECIPES[1],
+			PUZZLE_RECIPES[1],
 		)
 		expect(seeds.size).toBe(1001)
 		expect(seeds.has('last')).toBe(true)
@@ -80,14 +80,14 @@ describe('puzzle draft requests', () => {
 		await expect(
 			loadSavedPuzzleSeeds(
 				clientWith({ from: () => ({ select: () => query }) }),
-				HEX_PUZZLE_RECIPES[0],
+				PUZZLE_RECIPES[0],
 			),
 		).rejects.toThrow('returned no data')
 		const args = puzzleDraftArgs(
 			'id',
 			'Draft',
 			'collection',
-			generateAuthoredHexPuzzle('seed', 'palette', HEX_PUZZLE_RECIPES[0]),
+			generateAuthoredHexPuzzle('seed', 'palette', PUZZLE_RECIPES[0]),
 		)
 		await expect(
 			savePuzzleDraft(

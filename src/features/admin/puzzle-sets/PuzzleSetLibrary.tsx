@@ -307,7 +307,7 @@ export default function PuzzleSetLibrary({
 								{member.preview ? (
 									<HexPuzzleBoard
 										target
-										radius={member.preview.radius}
+										radius={member.preview.gridSize}
 										colors={member.preview.target}
 									/>
 								) : (
@@ -343,7 +343,7 @@ export default function PuzzleSetLibrary({
 								set.preview ? (
 									<HexPuzzleBoard
 										target
-										radius={set.preview.radius}
+										radius={set.preview.gridSize}
 										colors={set.preview.target}
 									/>
 								) : (

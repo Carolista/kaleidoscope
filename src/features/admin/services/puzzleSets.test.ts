@@ -10,7 +10,7 @@ import {
 import {
 	generateAuthoredHexPuzzle,
 	renderAuthoredHexPuzzle,
-	HEX_PUZZLE_RECIPES,
+	PUZZLE_RECIPES,
 } from '@/domain/puzzles'
 import { puzzleDraftArgs } from './puzzleDrafts'
 
@@ -62,7 +62,7 @@ describe('draft set requests', () => {
 		const saved = generateAuthoredHexPuzzle(
 			'set-preview',
 			palette.id,
-			HEX_PUZZLE_RECIPES[0],
+			PUZZLE_RECIPES[0],
 		)
 		const args = puzzleDraftArgs(
 			'first',

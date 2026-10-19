@@ -4,9 +4,9 @@ import userEvent from '@testing-library/user-event'
 import { palettes } from '@/domain/palettes'
 import {
 	coordinateKey,
-	generateHexPuzzle,
-	HEX_PUZZLE_RECIPES,
-	type HexPuzzle,
+	generatePuzzle,
+	PUZZLE_RECIPES,
+	type Puzzle,
 } from '@/domain/puzzles'
 import {
 	dragTo,
@@ -18,7 +18,7 @@ import {
 import PuzzlePlay from './PuzzlePlay'
 import styles from './PuzzlePlay.module.css'
 
-function renderPlay(puzzle: HexPuzzle) {
+function renderPlay(puzzle: Puzzle) {
 	return render(
 		<PuzzlePlay
 			puzzle={puzzle}
@@ -32,10 +32,10 @@ describe('PuzzlePlay', () => {
 	stubPointerHitTesting()
 
 	it('places the tray action beside the pieces and keeps feedback for screen readers only', () => {
-		const preview = generateHexPuzzle(
+		const preview = generatePuzzle(
 			'preview-layout',
 			palettes[1],
-			HEX_PUZZLE_RECIPES[0],
+			PUZZLE_RECIPES[0],
 		)
 		renderPlay(preview)
 		const restart = screen.getByRole('button', { name: 'Restart' })
@@ -47,10 +47,10 @@ describe('PuzzlePlay', () => {
 	})
 	it('rotates only tray pieces on click or keyboard activation, keeping square slots stable', async () => {
 		const user = userEvent.setup()
-		const recipe = HEX_PUZZLE_RECIPES.find(
+		const recipe = PUZZLE_RECIPES.find(
 			value => value.id === 'moderate-small',
 		)!
-		const rotated = generateHexPuzzle('tray-rotation', palettes[1], recipe)
+		const rotated = generatePuzzle('tray-rotation', palettes[1], recipe)
 		renderPlay(rotated)
 		const index = rotated.pieces.findIndex(piece => piece.tiles.length > 1)
 		const button = pieceButton(index)
@@ -97,10 +97,10 @@ describe('PuzzlePlay', () => {
 	it.each(['mouse', 'touch'])(
 		'drags a tray piece without rotating it with %s and suppresses the following click',
 		pointerType => {
-			const recipe = HEX_PUZZLE_RECIPES.find(
+			const recipe = PUZZLE_RECIPES.find(
 				value => value.id === 'moderate-small',
 			)!
-			const rotated = generateHexPuzzle('tray-drag', palettes[1], recipe)
+			const rotated = generatePuzzle('tray-drag', palettes[1], recipe)
 			renderPlay(rotated)
 			const index = rotated.pieces.findIndex(
 				piece => piece.tiles.length > 1,
@@ -118,14 +118,10 @@ describe('PuzzlePlay', () => {
 		'returns a board piece by double-%s activation preserving orientation',
 		async pointerType => {
 			const user = userEvent.setup()
-			const recipe = HEX_PUZZLE_RECIPES.find(
+			const recipe = PUZZLE_RECIPES.find(
 				value => value.id === 'moderate-small',
 			)!
-			const rotated = generateHexPuzzle(
-				'tray-return',
-				palettes[1],
-				recipe,
-			)
+			const rotated = generatePuzzle('tray-return', palettes[1], recipe)
 			renderPlay(rotated)
 			const index = rotated.pieces.findIndex(
 				piece => piece.tiles.length > 1,

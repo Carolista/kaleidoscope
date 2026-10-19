@@ -1,10 +1,10 @@
 import type { Palette } from '@/domain/palettes'
 import {
-	generateHexPuzzle,
-	type HexPuzzle,
-	type HexPuzzleRecipe,
+	generatePuzzle,
+	type Puzzle,
+	type PuzzleRecipe,
 	type PuzzlePlacements,
-} from './hexPuzzle'
+} from './puzzle'
 
 export interface AuthoringPalette extends Palette {
 	readonly id: string
@@ -35,7 +35,7 @@ export interface HexPuzzleDefinition {
 
 export interface AuthoredHexPuzzle {
 	readonly paletteId: string
-	readonly recipe: HexPuzzleRecipe
+	readonly recipe: PuzzleRecipe
 	readonly seed: string
 	readonly generatorVersion: 'hexagon-v2'
 	readonly definition: HexPuzzleDefinition
@@ -53,10 +53,10 @@ function colorSlot(color: string): ColorSlot {
 export function generateAuthoredHexPuzzle(
 	seed: string,
 	paletteId: string,
-	recipe: HexPuzzleRecipe,
+	recipe: PuzzleRecipe,
 ): AuthoredHexPuzzle {
 	if (!paletteId.trim()) throw new Error('A palette ID is required.')
-	const puzzle = generateHexPuzzle(
+	const puzzle = generatePuzzle(
 		seed,
 		{ name: 'Slots', colors: slotColors },
 		recipe,
@@ -68,7 +68,7 @@ export function generateAuthoredHexPuzzle(
 		generatorVersion: 'hexagon-v2',
 		definition: {
 			version: 2,
-			geometry: { radius: puzzle.radius },
+			geometry: { radius: puzzle.gridSize },
 			target: Object.fromEntries(
 				Object.entries(puzzle.target).map(([key, color]) => [
 					key,
@@ -91,7 +91,7 @@ export function generateAuthoredHexPuzzle(
 export function renderAuthoredHexPuzzle(
 	authored: AuthoredHexPuzzle,
 	palette: AuthoringPalette,
-): HexPuzzle {
+): Puzzle {
 	if (palette.id !== authored.paletteId)
 		throw new Error('The puzzle requires its assigned palette.')
 	if (
@@ -106,7 +106,7 @@ export function renderAuthoredHexPuzzle(
 		version: 1,
 		shape: 'hexagon',
 		seed: authored.seed,
-		radius: authored.definition.geometry.radius,
+		gridSize: authored.definition.geometry.radius,
 		paletteName: palette.name,
 		rotationAllowed: authored.recipe.rotation,
 		target: Object.fromEntries(

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getSupabaseClient } from '@/lib/supabase'
 import {
-	HEX_PUZZLE_RECIPES,
+	PUZZLE_RECIPES,
 	coordinateKey,
 	rotateCoordinate,
 	generateAuthoredHexPuzzle,
@@ -503,7 +503,7 @@ describe('admin puzzle lab', () => {
 			const puzzle = generateAuthoredHexPuzzle(
 				seed,
 				palette.id,
-				HEX_PUZZLE_RECIPES[0],
+				PUZZLE_RECIPES[0],
 			)
 			expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith(
 				'save_hex_puzzle_draft',
@@ -775,7 +775,7 @@ describe('admin puzzle lab', () => {
 		).toBeInTheDocument()
 	})
 
-	it.each(HEX_PUZZLE_RECIPES)(
+	it.each(PUZZLE_RECIPES)(
 		'generates and solves $label with keyboard-compatible controls and no writes',
 		async recipe => {
 			localStorage.setItem('lab-save-sentinel', 'unchanged')
@@ -852,7 +852,7 @@ describe('admin puzzle lab', () => {
 		await screen.findByLabelText('Recipe')
 		await randomize()
 		const puzzle = renderAuthoredHexPuzzle(
-			generateAuthoredHexPuzzle(seed, palette.id, HEX_PUZZLE_RECIPES[0]),
+			generateAuthoredHexPuzzle(seed, palette.id, PUZZLE_RECIPES[0]),
 			palette,
 		)
 		const first = puzzle.pieces[0]
@@ -895,7 +895,7 @@ describe('admin puzzle lab', () => {
 			generateAuthoredHexPuzzle(
 				seed,
 				palette.id,
-				HEX_PUZZLE_RECIPES.find(recipe => recipe.id === 'hard-medium')!,
+				PUZZLE_RECIPES.find(recipe => recipe.id === 'hard-medium')!,
 			),
 			palette,
 		)

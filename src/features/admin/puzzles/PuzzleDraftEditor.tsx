@@ -5,7 +5,7 @@ import {
 	renderAuthoredHexPuzzle,
 	type AuthoredHexPuzzle,
 	type AuthoringPalette,
-	HEX_PUZZLE_RECIPES,
+	PUZZLE_RECIPES,
 } from '@/domain/puzzles'
 import {
 	deletePuzzleDraft,
@@ -81,9 +81,7 @@ export default function PuzzleDraftEditor({
 		working.current = true
 		setPending('Generating puzzle preview…')
 		try {
-			const recipe = HEX_PUZZLE_RECIPES.find(
-				value => value.id === recipeId,
-			)
+			const recipe = PUZZLE_RECIPES.find(value => value.id === recipeId)
 			if (!recipe || !palette)
 				throw new Error(
 					'Choose a recipe and palette before generating.',

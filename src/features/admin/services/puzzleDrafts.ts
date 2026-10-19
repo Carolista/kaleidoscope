@@ -4,7 +4,7 @@ import {
 	type AuthoredHexPuzzle,
 	createUnusedPuzzleSeed,
 } from '@/domain/puzzles'
-import type { HexPuzzleRecipe } from '@/domain/puzzles'
+import type { PuzzleRecipe } from '@/domain/puzzles'
 import type { Database } from '@/lib/supabase'
 
 export type PuzzleUsage = 'collection' | 'daily'
@@ -47,7 +47,7 @@ export function puzzleDraftArgs(
 
 export async function loadSavedPuzzleSeeds(
 	client: SupabaseClient<Database>,
-	recipe: HexPuzzleRecipe,
+	recipe: PuzzleRecipe,
 ): Promise<Set<string>> {
 	const seeds = new Set<string>()
 	const pageSize = 1000
@@ -87,7 +87,7 @@ export async function savePuzzleDraft(
 
 export async function generateDraftPreview(
 	client: SupabaseClient<Database>,
-	recipe: HexPuzzleRecipe,
+	recipe: PuzzleRecipe,
 	paletteId: string,
 	previewedSeeds: Map<string, Set<string>>,
 ): Promise<AuthoredHexPuzzle> {

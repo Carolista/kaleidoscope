@@ -1,4 +1,5 @@
 export * from './hexAuthoring'
-export * from './hexPuzzle'
+export * from './puzzle'
 export * from './puzzleSeed'
+export * from './puzzleShapes'
 export * from './readAuthoredHexPuzzle'

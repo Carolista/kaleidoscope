@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database, Tables } from '@/lib/supabase'
-import type { HexPuzzle } from '@/domain/puzzles'
+import type { Puzzle } from '@/domain/puzzles'
 import {
 	readAuthoredHexPuzzle,
 	renderAuthoredHexPuzzle,
@@ -9,13 +9,13 @@ import { readPalette } from './palettes'
 
 export type SetKind = 'core' | 'reward' | 'paid'
 export interface DraftSet {
-	readonly preview: HexPuzzle | null
+	readonly preview: Puzzle | null
 	readonly row: Tables<'puzzle_collections'>
 	readonly members: readonly {
 		readonly puzzleId: string
 		readonly name: string
 		readonly position: number
-		readonly preview: HexPuzzle | null
+		readonly preview: Puzzle | null
 	}[]
 }
 
@@ -94,7 +94,7 @@ async function loadPreviews(
 			return result.data
 		}),
 	)
-	const previews = new Map<string, HexPuzzle>()
+	const previews = new Map<string, Puzzle>()
 	for (const row of pages.flat()) {
 		if (!row.palettes)
 			throw new Error('The set preview or its palette is unavailable.')
@@ -143,7 +143,7 @@ export async function loadDraftSets(
 					),
 				),
 			])
-		: new Map<string, HexPuzzle>()
+		: new Map<string, Puzzle>()
 	return rows
 		.map(row => {
 			const list = (members.get(row.id) ?? []).map(member => ({

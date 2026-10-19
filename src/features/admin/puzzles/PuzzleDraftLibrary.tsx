@@ -563,7 +563,7 @@ export default function PuzzleDraftLibrary({
 											>
 												<HexPuzzleBoard
 													target
-													radius={preview.radius}
+													radius={preview.gridSize}
 													colors={preview.target}
 												/>
 											</span>
