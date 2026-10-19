@@ -11,7 +11,7 @@ import { useNavigationGuard } from './useNavigationGuard'
 type CatalogStatus = 'drafts' | 'assigned' | 'scheduled' | 'published'
 
 const catalogStatuses = [
-	{ value: 'drafts', label: 'Drafts' },
+	{ value: 'drafts', label: 'Unassigned' },
 	{ value: 'assigned', label: 'Assigned' },
 	{ value: 'scheduled', label: 'Scheduled' },
 	{ value: 'published', label: 'Published' },

@@ -209,12 +209,6 @@ export default function PuzzleDraftForm({
 							{mode === 'create' ? 'Save Draft' : 'Save Changes'}
 						</Button>
 					</div>
-					{metadata.assigned && (
-						<p>
-							Unassign this puzzle before changing its intended
-							use or deleting it.
-						</p>
-					)}
 				</div>
 			</div>
 		</form>

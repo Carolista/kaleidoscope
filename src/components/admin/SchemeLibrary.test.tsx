@@ -266,6 +266,41 @@ describe('palette management', () => {
 		).not.toBeInTheDocument()
 	})
 
+	it('orders assigned palettes by set name, then position within the set', async () => {
+		const palette = (id: string, name: string) => ({ ...scheme, id, name })
+		const [a1, a2, b1] = [
+			palette('a1', 'Zebra'),
+			palette('a2', 'Apple'),
+			palette('b1', 'Mango'),
+		]
+		mocks.load.mockResolvedValue([a2, b1, a1])
+		mocks.sets.mockResolvedValue([
+			{
+				...paletteSet,
+				row: { ...paletteSet.row, id: 'beta', name: 'Beta' },
+				members: [b1],
+			},
+			{
+				...paletteSet,
+				row: { ...paletteSet.row, id: 'alpha', name: 'Alpha' },
+				members: [a1, a2],
+			},
+		])
+		render(
+			<SchemeLibrary
+				client={client}
+				view="palettes"
+				catalogStatus="assigned"
+			/>,
+		)
+		await screen.findByRole('button', { name: 'Edit Zebra' })
+		expect(
+			screen
+				.getAllByRole('listitem', { name: /^Palette / })
+				.map(item => item.getAttribute('aria-label')),
+		).toEqual(['Palette Zebra', 'Palette Apple', 'Palette Mango'])
+	})
+
 	it('bulk deletes only unassigned draft palettes and keeps failures visible', async () => {
 		const loose = { ...scheme, id: 'loose', name: 'Loose' }
 		mocks.load.mockResolvedValue([scheme, loose])

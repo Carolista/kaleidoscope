@@ -45,6 +45,15 @@ import PuzzleDraftForm from './PuzzleDraftForm'
 import { manageDraftSet, type DraftSet } from '../../services/puzzleSets'
 import useUnsavedDraft from './useUnsavedDraft'
 import useModalState from '../../hooks/useModalState'
+import { compareSetOrder } from './setOrder'
+
+function setOrderKey(draft: LibraryDraft) {
+	return {
+		setName: draft.collectionName,
+		position: draft.collectionPosition,
+		name: draft.row.name,
+	}
+}
 
 // Only unassigned drafts may be deleted, singly or in bulk.
 function deletable(draft: LibraryDraft) {
@@ -363,7 +372,7 @@ export default function PuzzleDraftLibrary({
 		setOptions.some(([id]) => id === setChoice)
 			? setChoice
 			: 'all'
-	const visible = inStatus.filter(
+	const filtered = inStatus.filter(
 		value =>
 			(filter === 'all' || value.row.usage === filter) &&
 			(shownSet === 'all' ||
@@ -371,6 +380,12 @@ export default function PuzzleDraftLibrary({
 					? !value.collectionId
 					: value.collectionId === shownSet)),
 	)
+	const visible =
+		catalogStatus === 'assigned'
+			? [...filtered].sort((a, b) =>
+					compareSetOrder(setOrderKey(a), setOrderKey(b)),
+				)
+			: filtered
 	const selection = useCheckedIds(visible.map(draft => draft.row.id))
 	const checked = visible.filter(draft => selection.checked.has(draft.row.id))
 	const canAssign = checked.every(

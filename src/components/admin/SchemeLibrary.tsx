@@ -50,6 +50,7 @@ import {
 import useCheckedIds from './useCheckedIds'
 import PaletteDeleteDialog from './PaletteDeleteDialog'
 import useModalState from '../../hooks/useModalState'
+import { compareSetOrder } from './setOrder'
 
 function errorMessage(cause: unknown): string {
 	return cause instanceof Error ? cause.message : 'Unable to manage palettes.'
@@ -333,7 +334,7 @@ export default function SchemeLibrary({
 		scheme: CatalogScheme | null
 		startingColors?: ColorScheme['colors']
 	} | null>(null)
-	const visibleSchemes = schemes.filter(scheme => {
+	const filteredSchemes = schemes.filter(scheme => {
 		const set = setOf(scheme.id)
 		return (
 			(filter === 'all' ||
@@ -344,10 +345,26 @@ export default function SchemeLibrary({
 					!!set === (catalogStatus === 'assigned')))
 		)
 	})
+	const visibleSchemes =
+		catalogStatus === 'assigned'
+			? [...filteredSchemes].sort((a, b) =>
+					compareSetOrder(setOrderKey(a), setOrderKey(b)),
+				)
+			: filteredSchemes
 	const selection = useCheckedIds(visibleSchemes.map(scheme => scheme.id))
 	const checked = selection.checked
 	function setOf(id: string) {
 		return sets.find(set => set.members.some(member => member.id === id))
+	}
+	function setOrderKey(scheme: CatalogScheme) {
+		const set = setOf(scheme.id)
+		return {
+			setName: set?.row.name ?? null,
+			position:
+				set?.members.findIndex(member => member.id === scheme.id) ??
+				null,
+			name: scheme.name,
+		}
 	}
 	// Only unassigned drafts may be deleted.
 	function deletable(scheme: CatalogScheme) {

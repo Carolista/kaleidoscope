@@ -189,6 +189,7 @@ describe('draft library database requests', () => {
 						collection_puzzles: [
 							{
 								puzzle_id: 'set',
+								position: 3,
 								puzzle_collections: {
 									name: 'First set',
 									kind: 'core',
@@ -225,6 +226,9 @@ describe('draft library database requests', () => {
 		expect(
 			drafts.find(value => value.row.id === 'set')?.collectionKind,
 		).toBe('core')
+		expect(
+			drafts.find(value => value.row.id === 'set')?.collectionPosition,
+		).toBe(3)
 		expect(
 			drafts.find(value => value.row.id === 'id-0')?.collectionKind,
 		).toBeNull()

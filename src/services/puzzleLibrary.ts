@@ -9,6 +9,7 @@ export interface LibraryDraft {
 	readonly assigned: boolean
 	readonly collectionId: string | null
 	readonly collectionName: string | null
+	readonly collectionPosition: number | null
 	readonly collectionKind: string | null
 	readonly puzzle: AuthoredHexPuzzle
 }
@@ -21,7 +22,7 @@ export async function loadPuzzleDrafts(
 		const { data, error } = await client
 			.from('puzzles')
 			.select(
-				'*, puzzle_authoring(*), collection_puzzles(puzzle_id, collection_id, puzzle_collections(name, kind)), daily_puzzles(id)',
+				'*, puzzle_authoring(*), collection_puzzles(puzzle_id, collection_id, position, puzzle_collections(name, kind)), daily_puzzles(id)',
 			)
 			.eq('shape_id', 'hexagon')
 			.is('published_at', null)
@@ -47,6 +48,7 @@ export async function loadPuzzleDrafts(
 				collectionId: row.collection_puzzles[0]?.collection_id ?? null,
 				collectionName:
 					row.collection_puzzles[0]?.puzzle_collections?.name ?? null,
+				collectionPosition: row.collection_puzzles[0]?.position ?? null,
 				collectionKind:
 					row.collection_puzzles[0]?.puzzle_collections?.kind ?? null,
 				puzzle: readAuthoredHexPuzzle(row, row.puzzle_authoring),

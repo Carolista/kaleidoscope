@@ -73,6 +73,7 @@ const draft: LibraryDraft = {
 	assigned: false,
 	collectionId: null,
 	collectionName: null,
+	collectionPosition: null,
 	collectionKind: null,
 	puzzle,
 }
@@ -245,7 +246,7 @@ describe('admin workspace navigation', () => {
 				screen.getByText(/This catalog view is not available yet/),
 			).toBeInTheDocument()
 		}
-		choose('Puzzles status', 'Drafts')
+		choose('Puzzles status', 'Unassigned')
 		expect(
 			await screen.findByRole('button', {
 				name: 'Edit draft Unassigned design',
@@ -389,7 +390,7 @@ describe('admin workspace navigation', () => {
 				name: 'Edit draft Unassigned design',
 			}),
 		).not.toBeInTheDocument()
-		choose('Puzzles status', 'Drafts')
+		choose('Puzzles status', 'Unassigned')
 		expect(
 			await screen.findByRole('button', {
 				name: 'Edit draft Unassigned design',
@@ -399,7 +400,7 @@ describe('admin workspace navigation', () => {
 		expect(
 			screen.getByRole('heading', { name: 'New puzzle' }),
 		).toBeInTheDocument()
-		choose('Puzzles status', 'Drafts')
+		choose('Puzzles status', 'Unassigned')
 		expect(
 			await screen.findByRole('button', {
 				name: 'Edit draft Unassigned design',
@@ -416,7 +417,7 @@ describe('admin workspace navigation', () => {
 			name: 'Edit draft Unassigned design',
 		})
 		choose('Puzzles status', 'Assigned')
-		choose('Puzzles status', 'Drafts')
+		choose('Puzzles status', 'Unassigned')
 		choose('Puzzles views', 'Sets')
 		expect(
 			screen.getByRole('button', { name: 'Edit set Design collection' }),

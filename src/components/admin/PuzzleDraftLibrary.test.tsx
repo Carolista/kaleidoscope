@@ -81,6 +81,7 @@ const draft: LibraryDraft = {
 	assigned: false,
 	collectionId: null,
 	collectionName: null,
+	collectionPosition: null,
 	collectionKind: null,
 	puzzle,
 }
@@ -708,6 +709,65 @@ describe('draft library', () => {
 		expect(
 			screen.getByRole('checkbox', { name: 'Select draft Saved art' }),
 		).not.toBeChecked()
+	})
+	it('orders assigned drafts by set name, then set position, with daily drafts last', async () => {
+		const inSet = (
+			id: string,
+			name: string,
+			set: string,
+			position: number,
+		) => ({
+			...draft,
+			row: { ...draft.row, id, name },
+			assigned: true,
+			collectionId: set,
+			collectionName: set,
+			collectionPosition: position,
+			collectionKind: 'core',
+		})
+		mocks.load.mockResolvedValue([
+			{
+				...draft,
+				row: {
+					...draft.row,
+					id: 'd',
+					name: 'Aardvark',
+					usage: 'daily',
+				},
+				assigned: true,
+			},
+			inSet('b1', 'Apple', 'Beta', 1),
+			inSet('a2', 'Apple', 'Alpha', 2),
+			inSet('a1', 'Zebra', 'Alpha', 1),
+		])
+		render(
+			<PuzzleDraftLibrary
+				client={getSupabaseClient()}
+				palettes={[palette, other]}
+				catalogStatus="assigned"
+			/>,
+		)
+		await screen.findByRole('button', { name: 'Edit draft Zebra' })
+		expect(
+			screen
+				.getAllByRole('checkbox', { name: /^Select draft / })
+				.map(box => box.getAttribute('aria-label')),
+		).toEqual([
+			'Select draft Zebra',
+			'Select draft Apple',
+			'Select draft Apple',
+			'Select draft Aardvark',
+		])
+		expect(
+			screen
+				.getAllByRole('button', { name: /^Edit draft / })
+				.map(button => button.closest('li')?.textContent),
+		).toEqual([
+			expect.stringContaining('Alpha'),
+			expect.stringContaining('Alpha'),
+			expect.stringContaining('Beta'),
+			expect.anything(),
+		])
 	})
 	it('isolates assigned drafts by set and offers no set filter for unassigned drafts', async () => {
 		const inSet = (
