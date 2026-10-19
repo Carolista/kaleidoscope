@@ -38,7 +38,7 @@ storage holds a session token: sign out on shared devices.
 ### Admin puzzle lab
 
 After sign-in, choose a palette from the visual Supabase swatch picker (including
-drafts), choose a shape (Hexagon or Triangle) and an exact recipe, and press
+drafts), choose any of the six shapes and an exact recipe, and press
 **Randomize puzzle** as often as you like. A puzzle's shape is fixed once saved. Selecting another palette also recolors the current playtest without
 changing its seed, layout, or placements.
 
@@ -55,6 +55,10 @@ changing its seed, layout, or placements.
 | --- | --- | --- | --- | --- |
 | Hexagon | 6 wedge tiles | 9 | 16 | 60° |
 | Triangle | 5 wedge tiles | 12 | 22 | 60° (flips each tile up/down) |
+| Diamond star | 6 | 10 | 15 | 180° |
+| Hexagram | 6 | 12 | 20 | 60° (flips each tile up/down) |
+| Circle rings | 6 | 9 | 16 | 60° |
+| Pinwheel | 4 | 6 | 9 | 180° |
 
 Seeds are generated automatically using browser cryptographic randomness and are
 not displayed or entered manually.
@@ -104,7 +108,7 @@ randomization with an error rather than silently ignoring saved puzzles.
 
 Saved drafts survive reload/sign-out, but unsaved previews and playtest placements
 do not. The admin workspace opens in the **Puzzle drafts** library, showing
-unpublished hexagon and triangle drafts with target thumbnails, shape/recipe/use labels, and
+unpublished drafts of every shape with target thumbnails, shape/recipe/use labels, and
 assignment status. Filter by Set/pack or Daily; refresh to pick up changes from
 another tab. **New puzzle** opens the creation workspace; choosing the **Drafts** tab
 returns to browsing (with the usual unsaved-changes prompt).
@@ -558,7 +562,8 @@ After the pre-release puzzle editing migration:
 actions. Any shape in the `shapes` table is accepted, so later puzzle shapes need
 no migration; the app decides which shapes it can author. Replacement rejects a
 shape change, and set assembly still requires members to match the set's shape.
-Generator versions are `hexagon-v2` and `triangle-v1`.
+Generator versions are `hexagon-v2` and `<shape>-v1` for the other five shapes
+(`triangle`, `diamondStar`, `hexagram`, `circleRings`, `pinwheel`).
 
 The earlier suites that call the removed function names
 ([save_puzzle_draft.sql](./tests/save_puzzle_draft.sql),
@@ -692,8 +697,10 @@ identity and do not accept an arbitrary user ID.
 - **Definitions:** the initial format uses `geometry`, a `target` map from cell key
   to color slot, and `pieces` containing unique IDs and `tiles` with integer
   `q`/`r` offsets and `color_slot`. Hexagon definitions use `geometry.radius` and
-  axial cell coordinates; triangle definitions use `geometry.size` and 3x-scaled
-  axial centroid coordinates. This format is **not**
+  axial cell coordinates; the other shapes use `geometry.size` (pinwheel: tiles
+  per spoke). Triangle and hexagram tiles use 3x-scaled axial centroid
+  coordinates, circle rings use the hex cell at the same ring position, and
+  diamond star and pinwheel use (row, col) within the top point or spoke. This format is **not**
   a conversion of the current version-1 POC. Structural checks are not a solver,
   geometry validator, difficulty certification, or uniqueness guarantee.
 - **Collections:** `kind` distinguishes `core`, `reward`, and `paid`. Membership

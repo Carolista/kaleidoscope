@@ -22,7 +22,7 @@ designs. See [README.md](./README.md#puzzle-mode-prototype) for scope.
 
 The separate `#/admin` portal uses Supabase password Auth, generated database
 types, and a database-backed singleton admin check. Its puzzle lab authors
-hexagon and triangle puzzles with all six size/rotation recipes, visual Supabase palettes (including
+puzzles in all six shapes with all six size/rotation recipes, visual Supabase palettes (including
 drafts), and one-click randomization. Version-2 definitions use ordered palette
 slots, with private seed/generator/solution data kept separate. Playtests are
 memory-only, while named Set/pack or Daily drafts save atomically to Supabase.
@@ -32,6 +32,8 @@ See [Supabase instructions](./supabase/README.md) for current scope.
 The shared New/Edit form uses two columns from 640px: palette refresh/picker on the
 left; name, shape, recipe/wand randomizer, and intended-use/save rows on the right.
 Shape, like recipe, applies at the next randomization; Edit shows it but fixed.
+Puzzle-creator palette pickers (New, Edit, bulk) list palettes by palette set and
+position, then unassigned palettes by name, falling back to names without set data.
 Narrower screens stack the columns. New-puzzle fields are visible before generation;
 saving requires a named preview. The preview omits repeated palette labels and the
 seed. Save/load status sits below the form content so it never shifts the layout.
@@ -147,7 +149,8 @@ Zen still uses its local catalog unchanged. Palette distribution and release
 tools remain deferred.
 
 In rotation-enabled playtests, click/tap a tray piece to rotate 60 degrees
-(triangle tiles flip between pointing up and down);
+(180 for diamond star and pinwheel, whose tiles only realign after a half turn;
+triangle and hexagram tiles flip between pointing up and down);
 dragging moves it without rotating. Double-click/double-tap a board piece or drag
 it back to return it to the tray, preserving orientation. Keyboard: Enter/Space
 rotates/selects in tray, board activation places, Delete/Backspace on an occupied

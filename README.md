@@ -73,10 +73,11 @@ in [supabase/README.md](./supabase/README.md). Admin sign-in is available at
 `#/admin` after local configuration; the player prototype below remains local
 and unchanged.
 
-The admin **puzzle lab** authors Hexagon and Triangle puzzles with all six size/rotation recipes, a visual
+The admin **puzzle lab** authors puzzles in all six shapes with all six size/rotation recipes, a visual
 Supabase palette picker, and one-click randomization. Previously previewed seeds
 are skipped per shape and recipe during the lab session; seeds are not displayed.
-A puzzle's shape is chosen before randomizing and fixed once saved.
+A puzzle's shape is chosen before randomizing and fixed once saved. Palette
+pickers list palettes in palette-set order, then unassigned palettes by name.
 Saved puzzles supply persistent exclusions across palettes and intended uses.
 Palette changes recolor the same design without resetting placements.
 At wider widths, the shared New/Edit form has a palette picker on the left and

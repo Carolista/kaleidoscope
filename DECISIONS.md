@@ -223,9 +223,27 @@ its definitions keep `geometry.radius` and `hexagon-v2`.
 - **Triangle pieces allow four tiles:** S [3, 2], M [4, 3, 3, 2], L
   [4, 4, 4, 3, 3, 2, 1, 1] for 5/12/22-tile wedges. Three connected triangles are
   always a straight strip, so four-tile pieces add more varied shapes.
+- **Diamond star and pinwheel turn 180 degrees (2 orientations).** Their
+  parallelogram tiles only realign after a half turn. Each shape declares its
+  rotation step in 60-degree units, and the tray, validation, and reader use it.
+  They share one (row, col) parallelogram adapter base; wedges are the top point's
+  right half (6/10/15) and the whole top spoke (4/6/9). Pieces: diamond star
+  S [3, 2, 1], M [4, 3, 2, 1], L [4, 4, 3, 2, 1, 1]; pinwheel S [2, 1, 1],
+  M [3, 2, 1], L [4, 3, 2]. Pinwheel's two step counts are stored as tiles per
+  spoke. Its small wedge makes its puzzles easier than other shapes' at the same recipe.
+- **Hexagram shares the triangle lattice** (centered on a vertex), so it reuses the
+  triangle adapter with its own cells. Wedges 6/12/20; pieces S [3, 2, 1],
+  M [4, 3, 3, 2], L [4, 4, 4, 3, 2, 2, 1].
+- **Circle rings is a hexagon grid drawn as circles.** Ring k has 6k circles, like
+  a hex ring, so each circle maps to the hex cell at the same ring position; hex
+  neighbours are the touching circles and 60-degree rotation maps rings onto
+  themselves. It reuses the hexagon adapter and piece sizes (wedges 6/9/16). Placed
+  pieces look slightly stretched in outer rings, accepted as the trade-off.
 - **Shape is chosen at creation and fixed.** Puzzles pick it in the New form; sets
   pick it in the set-creation dialog. Assign to set offers only sets of the
   selected drafts' shape, matching the one-shape-per-set rule.
+- **Puzzle-creator palettes follow palette-set order,** like assigned lists, because
+  an alphabetical list stopped scaling. Unassigned palettes follow by name.
 
 ### Admin information hierarchy and catalog cache
 
