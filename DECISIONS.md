@@ -162,7 +162,8 @@ rechecks. Assigned drafts cannot be deleted, but unpublished palette edits remai
 allowed.
 
 Draft sets have a Core, Reward, or Paid role chosen at creation, not an Undecided
-state. Do not enforce a fixed count while 12 versus 18 remains undecided.
+state. Puzzle sets hold 24 puzzles and palette sets hold 6 palettes, but drafts
+do not enforce a count; whether publishing enforces it is still open.
 Membership is exclusive; append eligible unassigned Set/pack drafts in selection
 order. Save removal immediately, but stage renames and member ordering locally: drag
 (or keyboard-move) freely, then commit name and order with the set's single

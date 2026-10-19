@@ -1,7 +1,8 @@
 # Kaleidoscope: Project Context
 
 Current behavior, architecture, and working standards. For rationale, see
-[DECISIONS.md](./DECISIONS.md).
+[DECISIONS.md](./DECISIONS.md). For where the project is going and what comes
+next, see [ROADMAP.md](./ROADMAP.md).
 
 For the UI consistency/reuse audit, implementation status, and reuse index, see
 [UI_AUDIT.md](./UI_AUDIT.md). Its progress section distinguishes implemented
