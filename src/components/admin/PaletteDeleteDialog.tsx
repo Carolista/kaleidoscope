@@ -17,7 +17,6 @@ import PaletteUsageDetails from './PaletteUsageDetails'
 export default function PaletteDeleteDialog({
 	client,
 	scheme,
-	dirty = false,
 	onCancel,
 	onDeleted,
 	open,
@@ -25,7 +24,6 @@ export default function PaletteDeleteDialog({
 }: {
 	readonly client: SupabaseClient<Database>
 	readonly scheme: CatalogScheme
-	readonly dirty?: boolean
 	readonly onCancel: () => void
 	readonly onDeleted: () => void
 	readonly open: boolean
@@ -97,7 +95,7 @@ export default function PaletteDeleteDialog({
 			title="Confirm palette deletion"
 			closeLabel="Close palette deletion"
 			destructive
-			message={`Delete "${scheme.name}" permanently? Any draft set membership will be removed.${dirty ? ' Unsaved edits will also be discarded.' : ''}`}
+			message={`Delete "${scheme.name}" permanently? Any draft set membership will be removed.`}
 			confirmLabel="Confirm delete palette"
 			cancelLabel="Cancel deletion"
 			confirmDisabled={blocked}
@@ -127,7 +125,12 @@ export default function PaletteDeleteDialog({
 				</Button>
 			)}
 			{usage && !loading && !usageError && (
-				<PaletteUsageDetails usage={usage} colors={scheme.colors} />
+				<>
+					{schemeIsUsed(usage) && (
+						<p>This palette is in use and cannot be deleted.</p>
+					)}
+					<PaletteUsageDetails usage={usage} colors={scheme.colors} />
+				</>
 			)}
 			{(scheme.published_at || scheme.release_at) && (
 				<p>Published or scheduled palettes cannot be deleted.</p>

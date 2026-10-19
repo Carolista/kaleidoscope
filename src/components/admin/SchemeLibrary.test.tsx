@@ -73,7 +73,7 @@ afterEach(() => vi.restoreAllMocks())
 
 async function openEditor() {
 	fireEvent.click(await screen.findByRole('button', { name: 'Edit Cabo' }))
-	await screen.findByText(/No saved references/)
+	await screen.findByText('Not used anywhere.')
 }
 async function openSets() {
 	await screen.findByRole('button', { name: 'Edit Cabo' })
@@ -554,17 +554,13 @@ describe('palette management', () => {
 				expect(screen.getByLabelText(`Color ${index + 1}`)).toHaveValue(
 					color,
 				)
-			expect(
-				screen.getByRole('button', { name: 'Save palette' }),
-			).toBeDisabled()
+			expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
 			expect(mocks.usage).not.toHaveBeenCalled()
 			expect(mocks.manage).not.toHaveBeenCalled()
 			fireEvent.change(screen.getByLabelText('Palette name'), {
 				target: { value: 'My variation' },
 			})
-			fireEvent.click(
-				screen.getByRole('button', { name: 'Save palette' }),
-			)
+			fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 			await screen.findByText('Saved "My variation" as a draft palette.')
 			const request = mocks.manage.mock.calls[0][1]
 			expect(request).toEqual({
@@ -613,7 +609,7 @@ describe('palette management', () => {
 		expect(screen.getByLabelText('Palette name')).toBeDisabled()
 		expect(screen.getByLabelText('Color 1')).toBeDisabled()
 		expect(
-			screen.queryByRole('button', { name: 'Save palette' }),
+			screen.queryByRole('button', { name: 'Save' }),
 		).not.toBeInTheDocument()
 		expect(
 			screen.queryByRole('button', { name: 'Delete palette' }),
@@ -635,7 +631,7 @@ describe('palette management', () => {
 		})
 		expect(isProtected()).toBe(true)
 		mocks.manage.mockRejectedValueOnce(new Error('Response lost'))
-		fireEvent.click(screen.getByRole('button', { name: 'Save palette' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 		expect(await screen.findByRole('alert')).toHaveTextContent(
 			'Response lost',
 		)
@@ -650,7 +646,7 @@ describe('palette management', () => {
 			scheme,
 			{ ...scheme, id: firstRequest.id, name: 'New art' },
 		])
-		fireEvent.click(screen.getByRole('button', { name: 'Save palette' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 		expect(
 			await screen.findByText('Saved "New art" as a draft palette.'),
 		).toBeInTheDocument()
@@ -669,9 +665,7 @@ describe('palette management', () => {
 		fireEvent.change(first, { target: { value: '#12' } })
 		expect(first).toHaveValue('#12')
 		expect(first).toHaveAttribute('aria-invalid', 'true')
-		expect(
-			screen.getByRole('button', { name: 'Save palette' }),
-		).toBeDisabled()
+		expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
 		expect(
 			screen.queryByRole('img', { name: 'Palette sandbox design' }),
 		).not.toBeInTheDocument()
@@ -686,7 +680,7 @@ describe('palette management', () => {
 				color === scheme.colors[0] ? '#abcdef' : color,
 			),
 		)
-		fireEvent.click(screen.getByRole('button', { name: 'Save palette' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 		await screen.findByRole('heading', { name: 'Palettes' })
 		expect(mocks.manage).toHaveBeenCalledWith(client, {
 			kind: 'update',
@@ -707,7 +701,7 @@ describe('palette management', () => {
 		mocks.manage.mockRejectedValue(
 			new Error('Refresh and review before retrying.'),
 		)
-		fireEvent.click(screen.getByRole('button', { name: 'Save palette' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 		expect(await screen.findByRole('alert')).toHaveTextContent(
 			'Refresh and review',
 		)
@@ -832,7 +826,7 @@ describe('palette management', () => {
 		fireEvent.click(
 			screen.getByRole('button', { name: 'Retry palette usage' }),
 		)
-		await screen.findByText(/No saved references/)
+		await screen.findByText('Not used anywhere.')
 		expect(
 			screen.getByRole('button', { name: 'Confirm delete palette' }),
 		).toBeEnabled()
@@ -931,48 +925,21 @@ describe('palette management', () => {
 		).toBeChecked()
 	})
 
-	it('opens editor deletion over unsaved edits and retains the independent usage preview on cancel', async () => {
-		mocks.usage.mockResolvedValue({
-			...emptyUsage,
-			puzzles: [],
-		})
+	it('keeps the editor free of deletion and shows only real usage references', async () => {
 		setup()
 		await openEditor()
-		fireEvent.change(screen.getByLabelText('Palette name'), {
-			target: { value: 'Unsaved name' },
-		})
-		fireEvent.change(screen.getByLabelText('Color 1'), {
-			target: { value: '#abcdef' },
-		})
-		const sandbox = screen.getByRole('img', {
-			name: 'Palette sandbox design',
-		})
-		fireEvent.click(screen.getByRole('button', { name: 'Delete palette' }))
-		const dialog = screen.getByRole('dialog', {
-			name: 'Confirm palette deletion',
-		})
-		expect(dialog).toHaveTextContent(
-			'Unsaved edits will also be discarded.',
-		)
-		await waitFor(() =>
-			expect(
-				within(dialog).getByRole('button', {
-					name: 'Confirm delete palette',
-				}),
-			).toBeEnabled(),
-		)
-		expect(mocks.usage).toHaveBeenCalledTimes(2)
-		fireEvent.click(
-			within(dialog).getByRole('button', { name: 'Cancel deletion' }),
-		)
-		expect(screen.getByLabelText('Palette name')).toHaveValue(
-			'Unsaved name',
-		)
-		expect(screen.getByLabelText('Color 1')).toHaveValue('#abcdef')
 		expect(
-			screen.getByRole('img', { name: 'Palette sandbox design' }),
-		).toBe(sandbox)
-		expect(mocks.manage).not.toHaveBeenCalled()
+			screen.queryByRole('button', { name: 'Delete palette' }),
+		).not.toBeInTheDocument()
+		expect(screen.queryByText(/starter/)).not.toBeInTheDocument()
+		expect(
+			screen.queryByRole('button', { name: 'Refresh palette usage' }),
+		).not.toBeInTheDocument()
+		expect(screen.queryByText(/Palette ID/)).not.toBeInTheDocument()
+		const save = screen.getByRole('button', { name: 'Save' })
+		expect(save.parentElement).toContainElement(
+			screen.getByLabelText('Palette name'),
+		)
 	})
 
 	it('reports catalog load failures and retries instead of showing an empty success', async () => {

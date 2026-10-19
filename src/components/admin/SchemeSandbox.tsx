@@ -55,10 +55,6 @@ export default function SchemeSandbox({
 			) : (
 				<p>Enter five valid hex colors to preview this palette.</p>
 			)}
-			<p className={styles.help}>
-				Color edits recolor this pattern. Randomize tries another
-				pattern.
-			</p>
 		</section>
 	)
 }

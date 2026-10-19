@@ -246,7 +246,7 @@ describe('admin puzzle lab', () => {
 		fireEvent.click(
 			await screen.findByRole('button', { name: 'Edit Test palette' }),
 		)
-		await screen.findByText(/No saved references/)
+		await screen.findByText('Not used anywhere.')
 		fireEvent.change(screen.getByLabelText('Palette name'), {
 			target: { value: 'Revised palette' },
 		})
@@ -260,7 +260,7 @@ describe('admin puzzle lab', () => {
 			colors: ['#abcdef', ...row.colors.slice(1)],
 		}
 		order.mockResolvedValue({ data: [updated], error: null })
-		fireEvent.click(screen.getByRole('button', { name: 'Save palette' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 		await screen.findByText('Saved "Revised palette" as a draft palette.')
 		expect(mocks.rpc).toHaveBeenCalledWith('manage_palette_draft', {
 			p_id: row.id,

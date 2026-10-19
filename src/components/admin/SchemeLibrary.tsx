@@ -17,11 +17,7 @@ import {
 	readColorScheme,
 	type CatalogScheme,
 } from '../../services/colorSchemes'
-import {
-	loadSchemeUsage,
-	schemeIsUsed,
-	type SchemeUsage,
-} from '../../services/schemeUsage'
+import { loadSchemeUsage, type SchemeUsage } from '../../services/schemeUsage'
 import PaletteUsageDetails from './PaletteUsageDetails'
 import AdminIconButton from './AdminIconButton'
 import SchemeSandbox from './SchemeSandbox'
@@ -84,11 +80,8 @@ function SchemeEditor({
 	const busy = pending !== null
 	const working = useRef(false)
 	const createRequest = useRef<{ id: string; content: string } | null>(null)
-	const [confirmDelete, setConfirmDelete, editorDeleteModal] =
-		useModalState<true>()
 	const [usage, setUsage] = useState<SchemeUsage | null>(null)
 	const [usageError, setUsageError] = useState('')
-	const [usageReload, setUsageReload] = useState(0)
 	const [usageLoading, setUsageLoading] = useState(!!initial)
 	const readOnly = !!initial?.published_at || !!initial?.release_at
 	const dirty =
@@ -118,14 +111,7 @@ function SchemeEditor({
 		return () => {
 			active = false
 		}
-	}, [client, initial, usageReload])
-	const canDelete =
-		!!initial &&
-		!readOnly &&
-		!!usage &&
-		!usageLoading &&
-		!usageError &&
-		!schemeIsUsed(usage)
+	}, [client, initial])
 
 	async function save(event: SubmitEvent<HTMLFormElement>) {
 		event.preventDefault()
@@ -173,12 +159,6 @@ function SchemeEditor({
 			{readOnly && (
 				<p>{initial && releaseState(initial)} palette (read-only).</p>
 			)}
-			{initial && (
-				<p className={styles.help}>
-					Palette ID: {initial.id} · Color revision:{' '}
-					{initial.revision}
-				</p>
-			)}
 			<AdminFeedback error={error} />
 			{pending && <Loading label={pending} />}
 			<div className={styles.editor}>
@@ -187,17 +167,35 @@ function SchemeEditor({
 					className={adminStyles.form}
 					aria-label={initial ? 'Edit palette' : 'Create palette'}
 				>
-					<FormField label="Palette name" id="scheme-name">
-						{field => (
-							<Input
-								{...field}
-								value={name}
-								required
-								disabled={busy || readOnly}
-								onChange={event => setName(event.target.value)}
-							/>
+					<div className={styles.nameRow}>
+						<FormField label="Palette name" id="scheme-name">
+							{field => (
+								<Input
+									{...field}
+									value={name}
+									required
+									disabled={busy || readOnly}
+									onChange={event =>
+										setName(event.target.value)
+									}
+								/>
+							)}
+						</FormField>
+						{!readOnly && (
+							<Button
+								type="submit"
+								variant="primary"
+								disabled={
+									busy ||
+									!validColors ||
+									!name.trim() ||
+									(!!initial && !dirty)
+								}
+							>
+								Save
+							</Button>
 						)}
-					</FormField>
+					</div>
 					<fieldset
 						className={styles.colors}
 						disabled={busy || readOnly}
@@ -262,19 +260,6 @@ function SchemeEditor({
 							)
 						})}
 					</fieldset>
-					{!readOnly && (
-						<Button
-							type="submit"
-							disabled={
-								busy ||
-								!validColors ||
-								!name.trim() ||
-								(!!initial && !dirty)
-							}
-						>
-							Save palette
-						</Button>
-					)}
 				</form>
 				<SchemeSandbox colors={validColors} />
 			</div>
@@ -284,66 +269,14 @@ function SchemeEditor({
 						id="scheme-usage-title"
 						title="Usage"
 						level={3}
-					>
-						<AdminIconButton
-							icon={faRotate}
-							label="Refresh palette usage"
-							disabled={busy || usageLoading}
-							onClick={() => {
-								setUsageLoading(true)
-								setUsageError('')
-								setUsageReload(value => value + 1)
-							}}
-						/>
-					</AdminSectionHeading>
-					{usageLoading && (
-						<Loading
-							label={
-								usageReload > 0
-									? 'Refreshing palette usage…'
-									: 'Loading palette usage…'
-							}
-						/>
-					)}
-					{usageError && (
-						<p role="alert">
-							{usageError} Deletion is disabled until usage can be
-							checked.
-						</p>
-					)}
+					/>
+					{usageLoading && <Loading label="Loading palette usage…" />}
+					{usageError && <p role="alert">{usageError}</p>}
 					{usage && !usageLoading && !usageError && (
 						<PaletteUsageDetails
 							usage={usage}
 							colors={validColors}
 						/>
-					)}
-					{!readOnly && (
-						<>
-							<Button
-								type="button"
-								className={styles.deleteButton}
-								disabled={busy || !canDelete}
-								onClick={() => setConfirmDelete(true)}
-							>
-								Delete palette
-							</Button>
-							{confirmDelete && (
-								<PaletteDeleteDialog
-									{...editorDeleteModal}
-									client={client}
-									scheme={initial}
-									dirty={dirty}
-									onCancel={() => setConfirmDelete(null)}
-									onDeleted={() =>
-										setConfirmDelete(null, () =>
-											onSaved(
-												`Deleted "${initial.name}".`,
-											),
-										)
-									}
-								/>
-							)}
-						</>
 					)}
 				</section>
 			)}

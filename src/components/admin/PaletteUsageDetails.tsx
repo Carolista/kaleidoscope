@@ -10,18 +10,10 @@ export default function PaletteUsageDetails({
 	readonly usage: SchemeUsage
 	readonly colors: ColorScheme['colors'] | null
 }) {
+	if (!schemeIsUsed(usage)) return <p>Not used anywhere.</p>
 	return (
 		<>
-			<p>
-				{usage.starters
-					? 'Included in starter offerings.'
-					: 'Not a starter palette.'}
-			</p>
-			<p>
-				{schemeIsUsed(usage)
-					? 'This palette is in use and cannot be deleted.'
-					: 'No saved references blocking deletion.'}
-			</p>
+			{usage.starters > 0 && <p>Included in starter offerings.</p>}
 			{usage.packs.length > 0 && (
 				<>
 					<h4>Palette sets</h4>
