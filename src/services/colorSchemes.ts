@@ -105,3 +105,22 @@ export async function manageColorScheme(
 			'The palette change was not confirmed. Refresh the catalog before retrying.',
 		)
 }
+
+export async function bulkDeleteColorSchemes(
+	client: SupabaseClient<Database>,
+	ids: readonly string[],
+): Promise<void> {
+	const { data, error } = await client.rpc('bulk_delete_palette_drafts', {
+		p_ids: [...ids],
+	})
+	if (error) throw new Error(`Unable to delete palettes: ${error.message}`)
+	if (
+		!data ||
+		data.length !== ids.length ||
+		new Set(data).size !== ids.length ||
+		ids.some(id => !data.includes(id))
+	)
+		throw new Error(
+			'The deletion was not confirmed. Refresh the catalog before retrying.',
+		)
+}

@@ -6,14 +6,13 @@ import {
 	faPenToSquare,
 	faPlusLarge,
 	faRotate,
-	faSquareArrowLeft,
 	faTrashCan,
 	faLayerGroup,
 } from '@fortawesome/pro-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import type { Database } from '../../types/database'
 import type { ColorScheme } from '../../types/colorScheme'
 import {
+	bulkDeleteColorSchemes,
 	manageColorScheme,
 	readColorScheme,
 	type CatalogScheme,
@@ -27,7 +26,6 @@ import PaletteUsageDetails from './PaletteUsageDetails'
 import AdminIconButton from './AdminIconButton'
 import SchemeSandbox from './SchemeSandbox'
 import useUnsavedDraft from './useUnsavedDraft'
-import { useNavigationGuard } from './useNavigationGuard'
 import adminStyles from './AdminPortal.module.css'
 import styles from './SchemeLibrary.module.css'
 import {
@@ -72,13 +70,11 @@ function SchemeEditor({
 	client,
 	initial,
 	startingColors,
-	onBack,
 	onSaved,
 }: {
 	readonly client: SupabaseClient<Database>
 	readonly initial: CatalogScheme | null
 	readonly startingColors: readonly string[]
-	readonly onBack: () => void
 	readonly onSaved: (message: string) => void
 }) {
 	const [name, setName] = useState(initial?.name ?? '')
@@ -100,7 +96,6 @@ function SchemeEditor({
 		(name !== (initial?.name ?? '') ||
 			colors.some((color, index) => color !== startingColors[index]))
 	useUnsavedDraft({ dirty, pending: busy })
-	const { requestNavigation } = useNavigationGuard()
 	const validColors =
 		colors.length === 5 &&
 		colors.every(color => /^#[0-9a-f]{6}$/i.test(color))
@@ -132,9 +127,6 @@ function SchemeEditor({
 		!usageError &&
 		!schemeIsUsed(usage)
 
-	function back() {
-		requestNavigation(onBack)
-	}
 	async function save(event: SubmitEvent<HTMLFormElement>) {
 		event.preventDefault()
 		if (working.current || readOnly) return
@@ -173,27 +165,13 @@ function SchemeEditor({
 	}
 	return (
 		<section aria-labelledby="scheme-editor-title">
-			<Button
-				variant="link"
-				type="button"
-				className={adminStyles.backLink}
-				disabled={busy}
-				onClick={back}
-			>
-				<FontAwesomeIcon icon={faSquareArrowLeft} aria-hidden="true" />{' '}
-				Back to palettes
-			</Button>
 			<h2 id="scheme-editor-title">
 				{initial
 					? `${readOnly ? 'View' : 'Edit'} palette`
 					: 'New palette'}
 			</h2>
 			{readOnly && (
-				<p>
-					{initial && releaseState(initial)} palette. Publishing and
-					color corrections are managed separately; this view is
-					read-only.
-				</p>
+				<p>{initial && releaseState(initial)} palette (read-only).</p>
 			)}
 			{initial && (
 				<p className={styles.help}>
@@ -284,10 +262,6 @@ function SchemeEditor({
 							)
 						})}
 					</fieldset>
-					<p className={styles.help}>
-						Slot order is used by saved puzzles. Saving colors
-						updates their appearance without changing their designs.
-					</p>
 					{!readOnly && (
 						<Button
 							type="submit"
@@ -417,6 +391,8 @@ export default function SchemeLibrary({
 	const [busy, setBusy] = useState(false)
 	const [deleting, setDeleting, deleteModal] = useModalState<CatalogScheme>()
 	const [assigning, setAssigning, assignmentModal] = useModalState<true>()
+	const [bulkDeleting, setBulkDeleting, bulkDeleteModal] =
+		useModalState<true>()
 	const [actionError, setActionError] = useState('')
 	const working = useRef(false)
 	useUnsavedDraft({ dirty: false, pending: busy })
@@ -474,6 +450,26 @@ export default function SchemeLibrary({
 			setBusy(false)
 		}
 	}
+	async function deleteSelected() {
+		if (working.current || checked.size === 0) return
+		working.current = true
+		setBusy(true)
+		setActionError('')
+		const count = checked.size
+		try {
+			await bulkDeleteColorSchemes(client, selection.ids)
+			setBulkDeleting(null, () => {
+				setStatus(`Deleted ${count} palette${count === 1 ? '' : 's'}.`)
+				refresh()
+			})
+		} catch (cause) {
+			setActionError(errorMessage(cause))
+		} finally {
+			working.current = false
+			setBusy(false)
+		}
+	}
+	const checkedSchemes = schemes.filter(scheme => checked.has(scheme.id))
 	if (view === 'sets')
 		return (
 			<SchemeSetLibrary
@@ -517,7 +513,6 @@ export default function SchemeLibrary({
 						'#ffffff',
 					]
 				}
-				onBack={() => setEditing(null)}
 				onSaved={message => {
 					setStatus(message)
 					setEditing(null)
@@ -605,11 +600,9 @@ export default function SchemeLibrary({
 					onCancel={() => setAssigning(null)}
 				>
 					<ul>
-						{schemes
-							.filter(scheme => checked.has(scheme.id))
-							.map(scheme => (
-								<li key={scheme.id}>{scheme.name}</li>
-							))}
+						{checkedSchemes.map(scheme => (
+							<li key={scheme.id}>{scheme.name}</li>
+						))}
 					</ul>
 					<FormField id="scheme-assign-set" label="Palette set">
 						{field => (
@@ -641,6 +634,29 @@ export default function SchemeLibrary({
 					</FormField>
 				</ConfirmDialog>
 			)}
+			{bulkDeleting && (
+				<ConfirmDialog
+					{...bulkDeleteModal}
+					title="Delete selected palettes"
+					closeLabel="Close bulk palette deletion"
+					destructive
+					message={`Permanently delete ${checked.size} selected palette${checked.size === 1 ? '' : 's'}?`}
+					confirmLabel="Delete palettes"
+					pending={busy ? 'Deleting palettes…' : null}
+					error={actionError}
+					confirmDisabled={loading || !!error || checked.size === 0}
+					onConfirm={() => {
+						void deleteSelected()
+					}}
+					onCancel={() => setBulkDeleting(null)}
+				>
+					<ul>
+						{checkedSchemes.map(scheme => (
+							<li key={scheme.id}>{scheme.name}</li>
+						))}
+					</ul>
+				</ConfirmDialog>
+			)}
 			{loading && (
 				<Loading
 					label={
@@ -669,6 +685,17 @@ export default function SchemeLibrary({
 							setAssigning(true)
 						}}
 					/>
+					{checkedSchemes.every(deletable) && (
+						<AdminIconButton
+							icon={faTrashCan}
+							label="Delete selected"
+							disabled={busy}
+							onClick={() => {
+								setActionError('')
+								setBulkDeleting(true)
+							}}
+						/>
+					)}
 				</AdminSelectionBar>
 			)}
 			{!loading &&

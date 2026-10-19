@@ -1,5 +1,6 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { renderWithNavigationGuard as render } from '@test/renderWithNavigationGuard'
+import { useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { generateAuthoredHexPuzzle } from '../../puzzles/hexAuthoring'
 import { HEX_PUZZLE_RECIPES } from '../../puzzles/hexPuzzle'
@@ -10,6 +11,7 @@ import styles from './AdminPortal.module.css'
 import layoutStyles from './AdminLayout.module.css'
 import iconStyles from '../shared/IconButton.module.css'
 import PuzzleDraftLibrary from './PuzzleDraftLibrary'
+import { useNavigationGuard } from './useNavigationGuard'
 
 const mocks = vi.hoisted(() => ({
 	load: vi.fn(),
@@ -107,13 +109,27 @@ beforeEach(() => {
 	mocks.manageSet.mockResolvedValue(undefined)
 })
 afterEach(() => vi.restoreAllMocks())
-function setup() {
-	return render(
-		<PuzzleDraftLibrary
-			client={getSupabaseClient()}
-			palettes={[palette, other]}
-		/>,
+// Mirrors AdminWorkspace: reselecting the Drafts tab remounts the library.
+function Harness() {
+	const { requestNavigation } = useNavigationGuard()
+	const [visit, setVisit] = useState(0)
+	return (
+		<>
+			<button
+				onClick={() => requestNavigation(() => setVisit(n => n + 1))}
+			>
+				Drafts tab
+			</button>
+			<PuzzleDraftLibrary
+				key={visit}
+				client={getSupabaseClient()}
+				palettes={[palette, other]}
+			/>
+		</>
 	)
+}
+function setup() {
+	return render(<Harness />)
 }
 async function open() {
 	fireEvent.click(
@@ -367,7 +383,7 @@ describe('draft library', () => {
 		fireEvent.click(randomize)
 		await waitFor(() => expect(randomize).toBeEnabled())
 		expect(words).toEqual([])
-		fireEvent.click(screen.getByRole('button', { name: 'Back to library' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Drafts tab' }))
 		expect(
 			screen.getByRole('dialog', { name: 'Discard unsaved changes?' }),
 		).toBeInTheDocument()
@@ -428,7 +444,7 @@ describe('draft library', () => {
 		const unload = new Event('beforeunload', { cancelable: true })
 		window.dispatchEvent(unload)
 		expect(unload.defaultPrevented).toBe(true)
-		fireEvent.click(screen.getByRole('button', { name: 'Back to library' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Drafts tab' }))
 		fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }))
 		await open()
 		expect(
@@ -526,8 +542,8 @@ describe('draft library', () => {
 		fireEvent.click(button)
 		expect(refresh).toHaveBeenCalledOnce()
 		expect(
-			screen.getByRole('button', { name: 'Back to library' }),
-		).toHaveClass(styles.backLink)
+			screen.queryByRole('button', { name: 'Back to library' }),
+		).not.toBeInTheDocument()
 	})
 	it('selects only shown drafts, reports mixed selection, and clears hidden selections on filter changes', async () => {
 		const daily = {
@@ -803,7 +819,7 @@ describe('draft library', () => {
 		expect(
 			within(editor).getAllByRole('button', { name: /^Select piece/ }),
 		).toHaveLength(puzzle.definition.pieces.length)
-		fireEvent.click(screen.getByRole('button', { name: 'Back to library' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Drafts tab' }))
 		await screen.findByRole('button', { name: 'Edit draft Saved art' })
 		fireEvent.change(screen.getByLabelText('Show drafts'), {
 			target: { value: 'daily' },
@@ -872,9 +888,6 @@ describe('draft library', () => {
 		expect(mocks.edit).toHaveBeenCalledTimes(1)
 		expect(button).toBeDisabled()
 		expect(
-			screen.getByRole('button', { name: 'Back to library' }),
-		).toBeDisabled()
-		expect(
 			screen.queryByRole('button', { name: 'Edit draft Saved art' }),
 		).not.toBeInTheDocument()
 		if (!finish) throw new Error('Save did not start')
@@ -890,7 +903,7 @@ describe('draft library', () => {
 		fireEvent.change(screen.getByLabelText('Puzzle name'), {
 			target: { value: 'Unsaved' },
 		})
-		fireEvent.click(screen.getByRole('button', { name: 'Back to library' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Drafts tab' }))
 		expect(screen.getByLabelText('Puzzle name')).toHaveValue('Unsaved')
 		expect(
 			screen.getByRole('dialog', { name: 'Discard unsaved changes?' }),

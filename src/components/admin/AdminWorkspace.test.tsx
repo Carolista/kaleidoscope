@@ -395,6 +395,16 @@ describe('admin workspace navigation', () => {
 				name: 'Edit draft Unassigned design',
 			}),
 		).toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: 'New puzzle' }))
+		expect(
+			screen.getByRole('heading', { name: 'New puzzle' }),
+		).toBeInTheDocument()
+		choose('Puzzles status', 'Drafts')
+		expect(
+			await screen.findByRole('button', {
+				name: 'Edit draft Unassigned design',
+			}),
+		).toBeInTheDocument()
 	})
 	it('reuses cached catalogs across navigation and refetches only on request', async () => {
 		render(<AdminWorkspace client={client} />)

@@ -375,6 +375,14 @@ export default function PuzzleMode({
 						</button>
 					))}
 				</div>
+				{previewPuzzle && (
+					<IconButton
+						size="sm"
+						icon={faRotate}
+						label="Restart"
+						onClick={() => reset(false)}
+					/>
+				)}
 			</div>
 			<div className={styles.board}>
 				<HexPuzzleBoard
@@ -402,36 +410,26 @@ export default function PuzzleMode({
 				/>
 			</div>
 
-			<div
-				role="status"
-				className={previewPuzzle ? undefined : 'visually-hidden'}
-			>
+			<div role="status" className="visually-hidden">
 				{solved
 					? previewPuzzle
 						? 'Playtest solved! No player progress recorded.'
 						: 'Puzzle solved! Your design matches the target.'
 					: message}
 			</div>
-			<div className={styles.actions}>
-				{!previewPuzzle && <DarkModeToggle />}
-				{solved && !previewPuzzle && (
-					<Button onClick={() => reset(true)}>Next puzzle</Button>
-				)}
-				{previewPuzzle ? (
-					<IconButton
-						size="sm"
-						icon={faRotate}
-						label="Restart"
-						onClick={() => reset(false)}
-					/>
-				) : (
+			{!previewPuzzle && (
+				<div className={styles.actions}>
+					<DarkModeToggle />
+					{solved && (
+						<Button onClick={() => reset(true)}>Next puzzle</Button>
+					)}
 					<PlayerIconButton
 						icon={faRotate}
 						label="Restart"
 						onClick={() => reset(false)}
 					/>
-				)}
-			</div>
+				</div>
+			)}
 			{!previewPuzzle && (
 				<Modal
 					open={showCongrats && !hidden}

@@ -1,6 +1,5 @@
 import { useRef, useState, type SubmitEvent } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
 	faPenToSquare,
 	faTrashCan,
@@ -8,7 +7,6 @@ import {
 	faPlusLarge,
 	faPalette,
 	faLayerGroup,
-	faSquareArrowLeft,
 } from '@fortawesome/pro-solid-svg-icons'
 import type { Database } from '../../types/database'
 import {
@@ -46,7 +44,6 @@ import { useCatalog, useCatalogInvalidation } from './useAdminCatalog'
 import PuzzleDraftForm from './PuzzleDraftForm'
 import { manageDraftSet, type DraftSet } from '../../services/puzzleSets'
 import useUnsavedDraft from './useUnsavedDraft'
-import { useNavigationGuard } from './useNavigationGuard'
 import useModalState from '../../hooks/useModalState'
 
 // Only unassigned drafts may be deleted, singly or in bulk.
@@ -65,7 +62,6 @@ function DraftEditor({
 	draft,
 	palettes,
 	onChanged,
-	onBack,
 	onRefreshPalettes,
 	palettesLoading,
 	palettesRefreshing,
@@ -75,7 +71,6 @@ function DraftEditor({
 	readonly draft: LibraryDraft
 	readonly palettes: readonly AuthoringPalette[]
 	readonly onChanged: (status: string, updated: LibraryDraft | null) => void
-	readonly onBack: () => void
 	readonly onRefreshPalettes?: () => void
 	readonly palettesLoading?: boolean
 	readonly palettesRefreshing?: boolean
@@ -111,7 +106,6 @@ function DraftEditor({
 		usage !== draft.row.usage ||
 		replacement !== null
 	useUnsavedDraft({ dirty, pending: busy })
-	const { requestNavigation } = useNavigationGuard()
 
 	async function generate() {
 		if (working.current) return
@@ -224,23 +218,7 @@ function DraftEditor({
 
 	return (
 		<article aria-label={`Edit ${draft.row.name}`}>
-			<Button
-				variant="link"
-				type="button"
-				className={styles.backLink}
-				disabled={busy}
-				onClick={() => {
-					requestNavigation(onBack)
-				}}
-			>
-				<FontAwesomeIcon icon={faSquareArrowLeft} aria-hidden="true" />{' '}
-				Back to library
-			</Button>
 			<h2>Editing: {draft.row.name}</h2>
-			<p>
-				{puzzle.recipe.label} ·{' '}
-				{draft.assigned ? 'Assigned' : 'Unassigned'}
-			</p>
 			<AdminFeedback error={error} />
 			<PuzzleDraftForm
 				mode="edit"
@@ -274,25 +252,8 @@ function DraftEditor({
 				}}
 				onSubmit={save}
 			/>
-			{!draft.assigned && (
-				<p>
-					Randomize previews a replacement. Save Changes replaces the
-					saved design; leaving without saving keeps the original.
-				</p>
-			)}
-			{draft.assigned && (
-				<p>Unassign this puzzle before replacing its design.</p>
-			)}
 			{palette ? (
 				<div className={styles.playtest}>
-					{puzzle.recipe.rotation && (
-						<p className={styles.rotationHelp}>
-							Tap tray pieces to rotate; drag to place. Double-tap
-							board pieces to return. Keyboard: Enter/Space
-							rotates, activate a tile to place, Delete/Backspace
-							returns.
-						</p>
-					)}
 					<PuzzleMode
 						key={previewRun}
 						previewPuzzle={renderAuthoredHexPuzzle(
@@ -498,10 +459,6 @@ export default function PuzzleDraftLibrary({
 					client={client}
 					draft={selected}
 					palettes={palettes}
-					onBack={() => {
-						setSelectedId(null)
-						setStatus('')
-					}}
 					onRefreshPalettes={onRefreshPalettes}
 					palettesLoading={palettesLoading}
 					palettesRefreshing={palettesRefreshing}

@@ -1,5 +1,6 @@
 import { act, fireEvent, screen, within, waitFor } from '@testing-library/react'
 import { renderWithNavigationGuard as render } from '@test/renderWithNavigationGuard'
+import { useState } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getSupabaseClient } from '../../services/supabaseClient'
 import {
@@ -13,6 +14,7 @@ import {
 } from '../../puzzles/hexAuthoring'
 import PuzzleAuthoring from './PuzzleAuthoring'
 import AdminWorkspace from './AdminWorkspace'
+import { useNavigationGuard } from './useNavigationGuard'
 import styles from './AdminPortal.module.css'
 import fieldStyles from '../shared/FormField.module.css'
 
@@ -67,6 +69,22 @@ afterEach(() => {
 	else Reflect.deleteProperty(Element.prototype, 'setPointerCapture')
 })
 
+// Mirrors AdminWorkspace: reselecting the Drafts tab remounts the lab.
+function Harness() {
+	const { requestNavigation } = useNavigationGuard()
+	const [visit, setVisit] = useState(0)
+	return (
+		<>
+			<button
+				onClick={() => requestNavigation(() => setVisit(n => n + 1))}
+			>
+				Drafts tab
+			</button>
+			<PuzzleAuthoring key={visit} client={getSupabaseClient()} />
+		</>
+	)
+}
+
 function setup(
 	result = {
 		data: [{ ...palette, colors: [...palette.colors] }],
@@ -114,7 +132,7 @@ function setup(
 		workspace ? (
 			<AdminWorkspace client={getSupabaseClient()} />
 		) : (
-			<PuzzleAuthoring client={getSupabaseClient()} />
+			<Harness />
 		),
 	)
 	if (startCreating)
@@ -305,7 +323,7 @@ describe('admin puzzle lab', () => {
 		const unload = new Event('beforeunload', { cancelable: true })
 		window.dispatchEvent(unload)
 		expect(unload.defaultPrevented).toBe(true)
-		fireEvent.click(screen.getByRole('button', { name: 'Back to library' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Drafts tab' }))
 		expect(
 			screen.getByRole('dialog', { name: 'Discard unsaved changes?' }),
 		).toBeInTheDocument()
@@ -357,7 +375,7 @@ describe('admin puzzle lab', () => {
 		const unload = new Event('beforeunload', { cancelable: true })
 		window.dispatchEvent(unload)
 		expect(unload.defaultPrevented).toBe(true)
-		fireEvent.click(screen.getByRole('button', { name: 'Back to library' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Drafts tab' }))
 		expect(
 			screen.getByRole('dialog', { name: 'Discard unsaved changes?' }),
 		).toBeInTheDocument()
@@ -738,7 +756,7 @@ describe('admin puzzle lab', () => {
 		await waitFor(() => expect(randomize).toBeEnabled())
 		expect(screen.queryByRole('alert')).not.toBeInTheDocument()
 		expect(
-			screen.getByText(/Tap tray pieces to rotate/),
+			screen.getByRole('region', { name: 'Puzzle Mode' }),
 		).toBeInTheDocument()
 		expect(screen.getByLabelText('Recipe')).toHaveValue('hard-medium')
 		fireEvent.change(screen.getByLabelText('Recipe'), {
@@ -750,7 +768,7 @@ describe('admin puzzle lab', () => {
 			'Unable to generate a fresh puzzle seed',
 		)
 		expect(
-			screen.getByText(/Tap tray pieces to rotate/),
+			screen.getByRole('region', { name: 'Puzzle Mode' }),
 		).toBeInTheDocument()
 	})
 

@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
 	usage: vi.fn(),
 	sets: vi.fn(),
 	manageSet: vi.fn(),
+	bulkDelete: vi.fn(),
 }))
 vi.mock('../../services/schemeSets', async importOriginal => ({
 	...(await importOriginal<typeof import('../../services/schemeSets')>()),
@@ -26,6 +27,7 @@ vi.mock('../../services/colorSchemes', async importOriginal => ({
 	...(await importOriginal<typeof import('../../services/colorSchemes')>()),
 	loadColorSchemes: (...args: unknown[]) => mocks.load(...args),
 	manageColorScheme: (...args: unknown[]) => mocks.manage(...args),
+	bulkDeleteColorSchemes: (...args: unknown[]) => mocks.bulkDelete(...args),
 }))
 vi.mock('../../services/schemeUsage', async importOriginal => ({
 	...(await importOriginal<typeof import('../../services/schemeUsage')>()),
@@ -262,6 +264,44 @@ describe('palette management', () => {
 		expect(
 			screen.queryByRole('group', { name: 'Bulk palette actions' }),
 		).not.toBeInTheDocument()
+	})
+
+	it('bulk deletes only unassigned draft palettes and keeps failures visible', async () => {
+		const loose = { ...scheme, id: 'loose', name: 'Loose' }
+		mocks.load.mockResolvedValue([scheme, loose])
+		mocks.sets.mockResolvedValue([paletteSet])
+		mocks.bulkDelete.mockRejectedValueOnce(new Error('Palette in use'))
+		mocks.bulkDelete.mockResolvedValueOnce(undefined)
+		setup()
+		fireEvent.click(
+			await screen.findByRole('checkbox', { name: 'Select all' }),
+		)
+		expect(
+			screen.queryByRole('button', { name: 'Delete selected' }),
+		).not.toBeInTheDocument()
+		fireEvent.click(screen.getByRole('checkbox', { name: 'Select Cabo' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Delete selected' }))
+		const dialog = screen.getByRole('dialog', {
+			name: 'Delete selected palettes',
+		})
+		expect(dialog).toHaveTextContent('Loose')
+		expect(dialog).not.toHaveTextContent('Cabo')
+		fireEvent.click(
+			within(dialog).getByRole('button', { name: 'Delete palettes' }),
+		)
+		expect(await within(dialog).findByRole('alert')).toHaveTextContent(
+			'Palette in use',
+		)
+		expect(
+			screen.getByRole('checkbox', { name: 'Select Loose' }),
+		).toBeChecked()
+		mocks.load.mockResolvedValue([scheme])
+		fireEvent.click(
+			within(dialog).getByRole('button', { name: 'Delete palettes' }),
+		)
+		await screen.findByText('Deleted 1 palette.')
+		expect(mocks.bulkDelete).toHaveBeenLastCalledWith(client, ['loose'])
+		expect(mocks.bulkDelete).toHaveBeenCalledTimes(2)
 	})
 
 	it('offers deletion only for unassigned draft palettes', async () => {
@@ -658,7 +698,7 @@ describe('palette management', () => {
 		})
 	})
 
-	it('preserves a conflicting edit and guards leaving through Back and browser close', async () => {
+	it('preserves a conflicting edit and guards leaving through the Palettes tab and browser close', async () => {
 		const { isProtected } = setup()
 		await openEditor()
 		fireEvent.change(screen.getByLabelText('Palette name'), {
@@ -672,9 +712,7 @@ describe('palette management', () => {
 			'Refresh and review',
 		)
 		expect(screen.getByLabelText('Palette name')).toHaveValue('Revised')
-		fireEvent.click(
-			screen.getByRole('button', { name: 'Back to palettes' }),
-		)
+		fireEvent.click(screen.getByRole('button', { name: 'Palette catalog' }))
 		expect(
 			screen.getByRole('dialog', { name: 'Discard unsaved changes?' }),
 		).toBeInTheDocument()
@@ -980,9 +1018,6 @@ describe('palette management', () => {
 			'aria-hidden',
 			'true',
 		)
-		expect(
-			screen.getByRole('button', { name: 'Back to palettes' }),
-		).toBeDisabled()
 		finish()
 		await waitFor(() =>
 			expect(

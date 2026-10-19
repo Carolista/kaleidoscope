@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { describe, expect, it, vi } from 'vitest'
 import type { Database } from '../types/database'
 import {
+	bulkDeleteColorSchemes,
 	loadColorSchemes,
 	manageColorScheme,
 	readColorScheme,
@@ -233,5 +234,29 @@ describe('draft palette operations', () => {
 			}),
 		).rejects.toThrow('five six-digit hex colors')
 		expect(rpc).not.toHaveBeenCalled()
+	})
+})
+
+describe('bulk palette deletion', () => {
+	it('deletes every selected palette in one confirmed request', async () => {
+		const rpc = vi.fn().mockResolvedValue({ data: ['b', 'a'], error: null })
+		await bulkDeleteColorSchemes(client({ rpc }), ['a', 'b'])
+		expect(rpc).toHaveBeenCalledExactlyOnceWith(
+			'bulk_delete_palette_drafts',
+			{ p_ids: ['a', 'b'] },
+		)
+		for (const data of [null, ['a'], ['a', 'a'], ['a', 'c']]) {
+			rpc.mockResolvedValue({ data, error: null })
+			await expect(
+				bulkDeleteColorSchemes(client({ rpc }), ['a', 'b']),
+			).rejects.toThrow('not confirmed')
+		}
+		rpc.mockResolvedValue({
+			data: null,
+			error: { message: 'Palette "A" is in a set' },
+		})
+		await expect(
+			bulkDeleteColorSchemes(client({ rpc }), ['a', 'b']),
+		).rejects.toThrow('Unable to delete palettes: Palette "A" is in a set')
 	})
 })

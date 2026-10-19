@@ -104,10 +104,6 @@
 	text-transform: uppercase;
 }
 
-.backLink {
-	justify-self: start;
-}
-
 .catalogNavigation {
 	display: flex;
 	flex-wrap: wrap;
@@ -170,11 +166,6 @@
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
-}
-
-.rotationHelp {
-	font-size: 0.875rem;
-	line-height: 1.4;
 }
 
 .metadataForm {

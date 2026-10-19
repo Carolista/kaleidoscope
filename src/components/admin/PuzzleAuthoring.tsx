@@ -18,9 +18,6 @@ import PuzzleMode from '../puzzle/PuzzleMode'
 import styles from './AdminPortal.module.css'
 import PuzzleDraftLibrary from './PuzzleDraftLibrary'
 import useUnsavedDraft from './useUnsavedDraft'
-import { useNavigationGuard } from './useNavigationGuard'
-import { faSquareArrowLeft } from '@fortawesome/pro-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import PuzzleDraftForm from './PuzzleDraftForm'
 import { useCatalog, useCatalogInvalidation } from './useAdminCatalog'
 import { Button, Loading } from '@shared'
@@ -71,7 +68,6 @@ export default function PuzzleAuthoring({
 			? draftName !== savedName
 			: !!generated || draftName.length > 0 || usage !== 'collection')
 	useUnsavedDraft({ dirty, pending: busy })
-	const { requestNavigation } = useNavigationGuard()
 
 	function refreshPalettes() {
 		setError('')
@@ -194,26 +190,7 @@ export default function PuzzleAuthoring({
 	return (
 		<>
 			<section aria-labelledby="puzzle-authoring-title">
-				<Button
-					variant="link"
-					type="button"
-					className={styles.backLink}
-					disabled={busy}
-					onClick={() => {
-						requestNavigation(() => setCreating(false))
-					}}
-				>
-					<FontAwesomeIcon
-						icon={faSquareArrowLeft}
-						aria-hidden="true"
-					/>{' '}
-					Back to library
-				</Button>
 				<h2 id="puzzle-authoring-title">New puzzle</h2>
-				<p>
-					Generate and playtest all six recipes, then save designs as
-					unpublished drafts.
-				</p>
 				{error && <p role="alert">{error}</p>}
 				{paletteError && <p role="alert">{paletteError}</p>}
 				<PuzzleDraftForm
@@ -259,14 +236,6 @@ export default function PuzzleAuthoring({
 				{generated && palette && (
 					<div className={styles.playtest}>
 						{saveMessage && <p role="status">{saveMessage}</p>}
-						{generated.puzzle.recipe.rotation && (
-							<p className={styles.rotationHelp}>
-								Tap tray pieces to rotate; drag to place.
-								Double-tap board pieces to return. Keyboard:
-								Enter/Space rotates, activate a tile to place,
-								Delete/Backspace returns.
-							</p>
-						)}
 						<PuzzleMode
 							key={generated.run}
 							previewPuzzle={renderAuthoredHexPuzzle(

@@ -19,6 +19,10 @@
 	max-width: 100%;
 }
 
+.preview .goalAndPieces {
+	grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
 .target {
 	width: 120px;
 	margin: 0;

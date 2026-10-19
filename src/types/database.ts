@@ -1002,6 +1002,12 @@ export type Database = {
 				}
 				Returns: string
 			}
+			bulk_delete_palette_drafts: {
+				Args: {
+					p_ids: string[]
+				}
+				Returns: string[]
+			}
 			delete_palette_draft: {
 				Args: {
 					p_id: string

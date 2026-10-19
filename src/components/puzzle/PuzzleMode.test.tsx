@@ -84,6 +84,20 @@ function targetColors() {
 }
 
 describe('PuzzleMode', () => {
+	it('places the playtest Restart beside the pieces and keeps feedback for screen readers only', () => {
+		const preview = generateHexPuzzle(
+			'preview-layout',
+			colorSchemes[1],
+			HEX_PUZZLE_RECIPES[0],
+		)
+		renderWithProvider(<PuzzleMode previewPuzzle={preview} />)
+		const restart = screen.getByRole('button', { name: 'Restart' })
+		expect(restart.parentElement).toHaveClass(styles.goalAndPieces)
+		expect(
+			screen.getByRole('group', { name: 'Puzzle pieces' }).nextSibling,
+		).toBe(restart)
+		expect(screen.getByRole('status')).toHaveClass('visually-hidden')
+	})
 	it('rotates only tray pieces on click or keyboard activation, keeping square slots stable', async () => {
 		const user = userEvent.setup()
 		const recipe = HEX_PUZZLE_RECIPES.find(
