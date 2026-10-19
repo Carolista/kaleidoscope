@@ -7,9 +7,9 @@ import {
 	faRotate,
 	faPlusLarge,
 	faPalette,
+	faLayerGroup,
 	faXmark,
 	faSquareArrowLeft,
-	faLayerGroup,
 } from '@fortawesome/pro-solid-svg-icons'
 import type { Database } from '../../types/database'
 import {
@@ -39,7 +39,6 @@ import AdminIconButton from './AdminIconButton'
 import { Button, ConfirmDialog, Loading, PaletteChoices, Select } from '@shared'
 import { AdminFeedback, AdminGallery, AdminSectionHeading } from './AdminLayout'
 import PuzzleDraftForm from './PuzzleDraftForm'
-import PuzzleSetLibrary from './PuzzleSetLibrary'
 import {
 	loadDraftSets,
 	manageDraftSet,
@@ -340,7 +339,7 @@ export default function PuzzleDraftLibrary({
 	palettes,
 	revision,
 	onNew,
-	onManagePalettes,
+	catalogStatus,
 	onRefreshPalettes,
 	palettesLoading,
 	palettesRefreshing,
@@ -350,7 +349,7 @@ export default function PuzzleDraftLibrary({
 	readonly palettes: readonly AuthoringPalette[]
 	readonly revision: number
 	readonly onNew?: () => void
-	readonly onManagePalettes?: () => void
+	readonly catalogStatus?: 'drafts' | 'assigned'
 	readonly onRefreshPalettes?: () => void
 	readonly palettesLoading?: boolean
 	readonly palettesRefreshing?: boolean
@@ -364,7 +363,6 @@ export default function PuzzleDraftLibrary({
 	const [reload, setReload] = useState(0)
 	const [filter, setFilter] = useState('all')
 	const [status, setStatus] = useState('')
-	const [showSets, setShowSets] = useState(false)
 	const [checkedIds, setCheckedIds] = useState<ReadonlySet<string>>(new Set())
 	const [action, setAction, actionModal] = useModalState<{
 		kind: 'delete' | 'palette' | 'set'
@@ -438,7 +436,12 @@ export default function PuzzleDraftLibrary({
 	}, [client, revision, reload, setAction])
 	const selected = drafts.find(value => value.row.id === selectedId)
 	const visible = drafts.filter(
-		value => filter === 'all' || value.row.usage === filter,
+		value =>
+			(filter === 'all' || value.row.usage === filter) &&
+			(!catalogStatus ||
+				(!value.row.published_at &&
+					!value.row.release_at &&
+					value.assigned === (catalogStatus === 'assigned'))),
 	)
 	const checked = visible.filter(draft => checkedIds.has(draft.row.id))
 	const allChecked = visible.length > 0 && checked.length === visible.length
@@ -509,19 +512,6 @@ export default function PuzzleDraftLibrary({
 			setBulkBusy(false)
 		}
 	}
-	if (showSets) {
-		return (
-			<PuzzleSetLibrary
-				client={client}
-				onBack={() => {
-					setShowSets(false)
-					setCheckedIds(new Set())
-					setAction(null)
-					setReload(value => value + 1)
-				}}
-			/>
-		)
-	}
 	if (selected) {
 		return (
 			<>
@@ -563,25 +553,14 @@ export default function PuzzleDraftLibrary({
 	}
 	return (
 		<section aria-labelledby="draft-library-title">
-			<AdminSectionHeading id="draft-library-title" title="Puzzle drafts">
-				{onManagePalettes && (
-					<AdminIconButton
-						icon={faPalette}
-						label="Manage palettes"
-						disabled={bulkBusy}
-						onClick={onManagePalettes}
-					/>
-				)}
-				<AdminIconButton
-					icon={faLayerGroup}
-					label="Manage sets"
-					disabled={bulkBusy}
-					onClick={() => {
-						setShowSets(true)
-						setAction(null)
-						setStatus('')
-					}}
-				/>
+			<AdminSectionHeading
+				id="draft-library-title"
+				title={
+					catalogStatus === 'assigned'
+						? 'Assigned puzzles'
+						: 'Puzzle drafts'
+				}
+			>
 				{onNew && (
 					<AdminIconButton
 						icon={faPlusLarge}

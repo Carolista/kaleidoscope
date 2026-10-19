@@ -55,7 +55,7 @@ export default function SchemeSetLibrary({
 	readonly loading: boolean
 	readonly refreshing?: boolean
 	readonly catalogError: string
-	readonly onBack: () => void
+	readonly onBack?: () => void
 	readonly onChanged: () => void
 }) {
 	const [editing, setEditing] = useState<{
@@ -95,7 +95,7 @@ export default function SchemeSetLibrary({
 				setEditing(null)
 				setError('')
 				setStatus('')
-			} else onBack()
+			} else onBack?.()
 		})
 	}
 	async function mutate(
@@ -156,16 +156,21 @@ export default function SchemeSetLibrary({
 	}
 	return (
 		<section aria-labelledby="scheme-sets-title">
-			<Button
-				variant="link"
-				type="button"
-				className={adminStyles.backLink}
-				disabled={busy || loading}
-				onClick={back}
-			>
-				<FontAwesomeIcon icon={faSquareArrowLeft} aria-hidden="true" />{' '}
-				{editing ? 'Back to sets' : 'Back to palettes'}
-			</Button>
+			{(editing || onBack) && (
+				<Button
+					variant="link"
+					type="button"
+					className={adminStyles.backLink}
+					disabled={busy || loading}
+					onClick={back}
+				>
+					<FontAwesomeIcon
+						icon={faSquareArrowLeft}
+						aria-hidden="true"
+					/>{' '}
+					{editing ? 'Back to sets' : 'Back to palettes'}
+				</Button>
+			)}
 			<AdminSectionHeading
 				id="scheme-sets-title"
 				title={

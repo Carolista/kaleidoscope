@@ -38,7 +38,7 @@ export default function PuzzleSetLibrary({
 	onBack,
 }: {
 	readonly client: SupabaseClient<Database>
-	readonly onBack: () => void
+	readonly onBack?: () => void
 }) {
 	const [sets, setSets] = useState<readonly DraftSet[]>([])
 	const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -214,7 +214,7 @@ export default function PuzzleSetLibrary({
 				setMemberIds([])
 				setError('')
 				setStatus('')
-			} else onBack()
+			} else onBack?.()
 		})
 	}
 	function save(event: SubmitEvent<HTMLFormElement>) {
@@ -233,16 +233,21 @@ export default function PuzzleSetLibrary({
 	}
 	return (
 		<section aria-labelledby="draft-sets-title">
-			<Button
-				variant="link"
-				type="button"
-				className={styles.backLink}
-				disabled={busy || loading}
-				onClick={back}
-			>
-				<FontAwesomeIcon icon={faSquareArrowLeft} aria-hidden="true" />{' '}
-				{selectedId ? 'Back to sets' : 'Back to library'}
-			</Button>
+			{(selectedId || onBack) && (
+				<Button
+					variant="link"
+					type="button"
+					className={styles.backLink}
+					disabled={busy || loading}
+					onClick={back}
+				>
+					<FontAwesomeIcon
+						icon={faSquareArrowLeft}
+						aria-hidden="true"
+					/>{' '}
+					{selectedId ? 'Back to sets' : 'Back to library'}
+				</Button>
+			)}
 			<AdminSectionHeading
 				id="draft-sets-title"
 				title={selected ? `Set: ${selected.row.name}` : 'Draft sets'}

@@ -262,7 +262,7 @@ describe('draft library', () => {
 			screen.queryByRole('group', { name: 'Bulk draft actions' }),
 		).not.toBeInTheDocument()
 	})
-	it('blocks assignment of daily or already assigned puzzles and opens the set workspace', async () => {
+	it('blocks assignment of daily or already assigned puzzles', async () => {
 		mocks.load.mockResolvedValue([
 			{ ...draft, row: { ...draft.row, usage: 'daily' } },
 		])
@@ -275,13 +275,6 @@ describe('draft library', () => {
 		expect(
 			screen.getByRole('button', { name: 'Assign to set' }),
 		).toBeDisabled()
-		fireEvent.click(screen.getByRole('button', { name: 'Manage sets' }))
-		await screen.findByRole('button', { name: 'Edit set First set' })
-		fireEvent.click(screen.getByRole('button', { name: 'Back to library' }))
-		await screen.findByRole('checkbox', { name: 'Select draft Saved art' })
-		expect(
-			screen.queryByRole('group', { name: 'Bulk draft actions' }),
-		).not.toBeInTheDocument()
 		mocks.load.mockResolvedValue([
 			{
 				...draft,

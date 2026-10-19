@@ -7,6 +7,7 @@ import type { CatalogScheme } from '../../services/colorSchemes'
 import type { SchemeUsage } from '../../services/schemeUsage'
 import SchemeLibrary from './SchemeLibrary'
 import type { SchemeSet } from '../../services/schemeSets'
+import { useState } from 'react'
 
 const mocks = vi.hoisted(() => ({
 	load: vi.fn(),
@@ -73,18 +74,26 @@ async function openEditor() {
 }
 async function openSets() {
 	await screen.findByRole('button', { name: 'Edit Cabo' })
-	fireEvent.click(screen.getByRole('button', { name: 'Manage palette sets' }))
+	fireEvent.click(screen.getByRole('button', { name: 'Sets' }))
+}
+function PaletteWorkspace() {
+	const [view, setView] = useState<'sets' | 'palettes'>('palettes')
+	return (
+		<>
+			<button onClick={() => setView('sets')}>Sets</button>
+			<button onClick={() => setView('palettes')}>Palette catalog</button>
+			<SchemeLibrary client={client} view={view} />
+		</>
+	)
 }
 function setup() {
-	const onBack = vi.fn()
 	const isProtected = () => {
 		const event = new Event('beforeunload', { cancelable: true })
 		window.dispatchEvent(event)
 		return event.defaultPrevented
 	}
 	return {
-		...render(<SchemeLibrary client={client} onBack={onBack} />),
-		onBack,
+		...render(<PaletteWorkspace />),
 		isProtected,
 	}
 }
@@ -378,9 +387,7 @@ describe('palette management', () => {
 		expect(
 			await screen.findByRole('checkbox', { name: 'Select Cabo' }),
 		).toBeDisabled()
-		fireEvent.click(
-			screen.getByRole('button', { name: 'Manage palette sets' }),
-		)
+		fireEvent.click(screen.getByRole('button', { name: 'Sets' }))
 		expect(
 			screen.getByRole('button', { name: 'Delete set Warm colors' }),
 		).toBeDisabled()
@@ -872,7 +879,7 @@ describe('palette management', () => {
 
 	it('reports catalog load failures and retries instead of showing an empty success', async () => {
 		mocks.load.mockRejectedValueOnce(new Error('Catalog offline'))
-		const { onBack } = setup()
+		setup()
 		expect(await screen.findByRole('alert')).toHaveTextContent(
 			'Catalog offline',
 		)
@@ -889,8 +896,6 @@ describe('palette management', () => {
 		)
 		await screen.findByRole('button', { name: 'Edit Cabo' })
 		expect(screen.queryByRole('alert')).not.toBeInTheDocument()
-		fireEvent.click(screen.getByRole('button', { name: 'Back to puzzles' }))
-		expect(onBack).toHaveBeenCalledOnce()
 	})
 
 	it('prevents duplicate submissions while a save is pending', async () => {

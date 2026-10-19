@@ -23,7 +23,6 @@ import { faSquareArrowLeft } from '@fortawesome/pro-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import PuzzleDraftForm from './PuzzleDraftForm'
 import { loadColorSchemes } from '../../services/colorSchemes'
-import SchemeLibrary from './SchemeLibrary'
 import { Button, Loading } from '@shared'
 
 function messageFor(cause: unknown): string {
@@ -34,8 +33,10 @@ function messageFor(cause: unknown): string {
 
 export default function PuzzleAuthoring({
 	client,
+	catalogStatus,
 }: {
 	readonly client: SupabaseClient<Database>
+	readonly catalogStatus?: 'drafts' | 'assigned'
 }) {
 	const [palettes, setPalettes] = useState<readonly AuthoringPalette[]>([])
 	const [loading, setLoading] = useState(true)
@@ -44,7 +45,6 @@ export default function PuzzleAuthoring({
 	const [reload, setReload] = useState(0)
 	const [libraryRevision, setLibraryRevision] = useState(0)
 	const [creating, setCreating] = useState(false)
-	const [managingSchemes, setManagingSchemes] = useState(false)
 	const [pending, setPending] = useState<string | null>(null)
 	const busy = pending !== null
 	const working = useRef(false)
@@ -177,21 +177,6 @@ export default function PuzzleAuthoring({
 	)
 	const selectedPalette =
 		palettes.find(value => value.id === selectedPaletteId) ?? palettes[0]
-	if (managingSchemes) {
-		return (
-			<SchemeLibrary
-				client={client}
-				onBack={() => {
-					setManagingSchemes(false)
-					setLoading(true)
-					setError('')
-					setPaletteError('')
-					setReload(value => value + 1)
-					setLibraryRevision(value => value + 1)
-				}}
-			/>
-		)
-	}
 	if (!creating) {
 		return (
 			<>
@@ -208,7 +193,7 @@ export default function PuzzleAuthoring({
 					client={client}
 					palettes={palettes}
 					revision={libraryRevision}
-					onManagePalettes={() => setManagingSchemes(true)}
+					catalogStatus={catalogStatus}
 					onNew={() => {
 						setGenerated(null)
 						setRecipeId(HEX_PUZZLE_RECIPES[0].id)

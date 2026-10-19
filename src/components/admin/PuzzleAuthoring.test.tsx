@@ -12,6 +12,7 @@ import {
 	renderAuthoredHexPuzzle,
 } from '../../puzzles/hexAuthoring'
 import PuzzleAuthoring from './PuzzleAuthoring'
+import AdminWorkspace from './AdminWorkspace'
 import styles from './AdminPortal.module.css'
 import fieldStyles from '../shared/FormField.module.css'
 
@@ -72,6 +73,7 @@ function setup(
 		error: null as { message: string } | null,
 	},
 	startCreating = true,
+	workspace = false,
 ) {
 	vi.spyOn(crypto, 'getRandomValues').mockImplementation(values => {
 		if (!(values instanceof Uint32Array))
@@ -108,7 +110,13 @@ function setup(
 		}
 		return { select: () => query }
 	})
-	const view = render(<PuzzleAuthoring client={getSupabaseClient()} />)
+	const view = render(
+		workspace ? (
+			<AdminWorkspace client={getSupabaseClient()} />
+		) : (
+			<PuzzleAuthoring client={getSupabaseClient()} />
+		),
+	)
 	if (startCreating)
 		fireEvent.click(screen.getByRole('button', { name: 'New puzzle' }))
 	return { ...view, order }
@@ -198,7 +206,7 @@ describe('admin puzzle lab', () => {
 			'Choose a piece to get started.',
 		)
 	})
-	it('opens palette management from the library and refreshes authoring swatches after a palette save', async () => {
+	it('opens palettes as a peer section and loads updated authoring swatches after a palette save', async () => {
 		const row = {
 			...palette,
 			colors: [...palette.colors],
@@ -206,8 +214,17 @@ describe('admin puzzle lab', () => {
 			published_at: null,
 			release_at: null,
 		}
-		const { order } = setup({ data: [row], error: null }, false)
-		fireEvent.click(screen.getByRole('button', { name: 'Manage palettes' }))
+		const { order } = setup({ data: [row], error: null }, false, true)
+		fireEvent.click(
+			within(
+				screen.getByRole('navigation', { name: 'Admin sections' }),
+			).getByRole('button', { name: 'Palettes' }),
+		)
+		fireEvent.click(
+			within(
+				screen.getByRole('navigation', { name: 'Palettes views' }),
+			).getByRole('button', { name: 'Palettes' }),
+		)
 		fireEvent.click(
 			await screen.findByRole('button', { name: 'Edit Test palette' }),
 		)
@@ -236,7 +253,16 @@ describe('admin puzzle lab', () => {
 			p_expected_colors: row.colors,
 			p_expected_revision: 1,
 		})
-		fireEvent.click(screen.getByRole('button', { name: 'Back to puzzles' }))
+		fireEvent.click(
+			within(
+				screen.getByRole('navigation', { name: 'Admin sections' }),
+			).getByRole('button', { name: 'Puzzles' }),
+		)
+		fireEvent.click(
+			within(
+				screen.getByRole('navigation', { name: 'Puzzles views' }),
+			).getByRole('button', { name: 'Puzzles' }),
+		)
 		fireEvent.click(
 			await screen.findByRole('button', { name: 'New puzzle' }),
 		)

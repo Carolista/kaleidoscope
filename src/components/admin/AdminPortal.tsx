@@ -12,7 +12,7 @@ import type { Database } from '../../types/database'
 import { getSupabaseClient } from '../../services/supabaseClient'
 import { getThemeColors } from '../../state/theme'
 import styles from './AdminPortal.module.css'
-import PuzzleAuthoring from './PuzzleAuthoring'
+import AdminWorkspace from './AdminWorkspace'
 import useUnsavedDraft from './useUnsavedDraft'
 import {
 	NavigationGuardBoundary,
@@ -280,7 +280,7 @@ function AdminSession({
 						<Loading label="Checking admin access…" />
 					) : checkedRole.status === 'allowed' ? (
 						<div inert={busy}>
-							<PuzzleAuthoring
+							<AdminWorkspace
 								key={session.user.id}
 								client={client}
 							/>

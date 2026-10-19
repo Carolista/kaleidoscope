@@ -2,7 +2,6 @@ import { useEffect, useRef, useState, type SubmitEvent } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import {
 	faCopy,
-	faLayerGroup,
 	faEye,
 	faPenToSquare,
 	faPlusLarge,
@@ -375,10 +374,12 @@ function SchemeEditor({
 
 export default function SchemeLibrary({
 	client,
-	onBack,
+	view = 'palettes',
+	catalogStatus,
 }: {
 	readonly client: SupabaseClient<Database>
-	readonly onBack: () => void
+	readonly view?: 'sets' | 'palettes'
+	readonly catalogStatus?: 'drafts' | 'assigned'
 }) {
 	const [schemes, setSchemes] = useState<readonly CatalogScheme[]>([])
 	const [loading, setLoading] = useState(true)
@@ -386,7 +387,6 @@ export default function SchemeLibrary({
 	const [status, setStatus] = useState('')
 	const [reload, setReload] = useState(0)
 	const [sets, setSets] = useState<readonly SchemeSet[]>([])
-	const [showSets, setShowSets] = useState(false)
 	const [filter, setFilter] = useState('all')
 	const [checked, setChecked] = useState<ReadonlySet<string>>(new Set())
 	const [targetSet, setTargetSet] = useState('')
@@ -473,7 +473,7 @@ export default function SchemeLibrary({
 			setBusy(false)
 		}
 	}
-	if (showSets)
+	if (view === 'sets')
 		return (
 			<SchemeSetLibrary
 				client={client}
@@ -481,10 +481,6 @@ export default function SchemeLibrary({
 				loading={loading}
 				refreshing={reload > 0}
 				catalogError={error}
-				onBack={() => {
-					setShowSets(false)
-					refresh()
-				}}
 				onChanged={refresh}
 			/>
 		)
@@ -518,32 +514,24 @@ export default function SchemeLibrary({
 			set.members.some(member => member.id === scheme.id),
 		)
 		return (
-			filter === 'all' ||
-			(filter === 'ungrouped' ? !set : set?.row.id === filter)
+			(filter === 'all' ||
+				(filter === 'ungrouped' ? !set : set?.row.id === filter)) &&
+			(!catalogStatus ||
+				(!scheme.published_at &&
+					!scheme.release_at &&
+					!!set === (catalogStatus === 'assigned')))
 		)
 	})
 	return (
 		<section aria-labelledby="scheme-library-title">
-			<Button
-				variant="link"
-				type="button"
-				className={adminStyles.backLink}
-				onClick={onBack}
-				disabled={busy}
+			<AdminSectionHeading
+				id="scheme-library-title"
+				title={
+					catalogStatus === 'assigned'
+						? 'Assigned palettes'
+						: 'Palettes'
+				}
 			>
-				<FontAwesomeIcon icon={faSquareArrowLeft} aria-hidden="true" />{' '}
-				Back to puzzles
-			</Button>
-			<AdminSectionHeading id="scheme-library-title" title="Palettes">
-				<AdminIconButton
-					icon={faLayerGroup}
-					label="Manage palette sets"
-					disabled={busy || loading || !!error}
-					onClick={() => {
-						setShowSets(true)
-						setStatus('')
-					}}
-				/>
 				<AdminIconButton
 					icon={faPlusLarge}
 					label="New palette"
