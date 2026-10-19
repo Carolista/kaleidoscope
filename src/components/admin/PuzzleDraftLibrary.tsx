@@ -237,7 +237,6 @@ function DraftEditor({
 				{draft.assigned ? 'Assigned' : 'Unassigned'}
 			</p>
 			<AdminFeedback error={error} />
-			{pending && !confirmDelete && <Loading label={pending} />}
 			<PuzzleDraftForm
 				mode="edit"
 				palettes={palettes}
@@ -331,6 +330,7 @@ function DraftEditor({
 			>
 				Delete draft
 			</Button>
+			{pending && !confirmDelete && <Loading label={pending} />}
 		</article>
 	)
 }

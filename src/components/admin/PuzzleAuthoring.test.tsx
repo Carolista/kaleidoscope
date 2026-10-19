@@ -405,6 +405,37 @@ describe('admin puzzle lab', () => {
 		}
 	})
 
+	it('shows pending save feedback after all editor content and removes it when saving finishes', async () => {
+		setup()
+		await screen.findByLabelText('Recipe')
+		await randomize()
+		fireEvent.change(screen.getByLabelText('Puzzle name'), {
+			target: { value: 'Save feedback' },
+		})
+		let finish!: (value: { data: string; error: null }) => void
+		mocks.rpc.mockReturnValueOnce(
+			new Promise(resolve => {
+				finish = resolve
+			}),
+		)
+		const target = screen.getByRole('img', { name: 'Target design' })
+		const playtest = target.closest(`.${styles.playtest}`)!
+		const save = screen.getByRole('button', { name: 'Save Draft' })
+		fireEvent.click(save)
+		const status = screen
+			.getByText('Saving puzzle draft…')
+			.closest('[role="status"]')!
+		expect(playtest.nextElementSibling).toBe(status)
+		expect(status.nextElementSibling).toBeNull()
+		expect(save).toBeDisabled()
+		await act(async () => {
+			finish({ data: mocks.rpc.mock.calls[0][1].p_id, error: null })
+		})
+		expect(status).not.toBeInTheDocument()
+		expect(target).toBeInTheDocument()
+		expect(screen.getByText(/Saved "Save feedback"/)).toBeInTheDocument()
+	})
+
 	it.each(['collection', 'daily'] as const)(
 		'saves the exact preview as an unpublished %s draft without saving playtest placements',
 		async usage => {

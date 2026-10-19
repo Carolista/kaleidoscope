@@ -122,6 +122,38 @@ async function open() {
 	return screen.getByRole('article', { name: 'Edit Saved art' })
 }
 describe('draft library', () => {
+	it('shows pending save feedback after all edit content and removes it after a failed save', async () => {
+		let fail!: (cause: Error) => void
+		mocks.edit.mockReturnValueOnce(
+			new Promise((_resolve, reject) => {
+				fail = reject
+			}),
+		)
+		setup()
+		const editor = await open()
+		const target = screen.getByRole('img', { name: 'Target design' })
+		fireEvent.change(screen.getByLabelText('Puzzle name'), {
+			target: { value: 'Revised name' },
+		})
+		const save = screen.getByRole('button', { name: 'Save Changes' })
+		fireEvent.click(save)
+		const status = within(editor)
+			.getByText('Saving puzzle draft…')
+			.closest('[role="status"]')!
+		expect(editor.lastElementChild).toBe(status)
+		expect(status.previousElementSibling).toBe(
+			screen.getByRole('button', { name: 'Delete draft' }),
+		)
+		expect(save).toBeDisabled()
+		await act(async () => {
+			fail(new Error('Save failed'))
+		})
+		expect(status).not.toBeInTheDocument()
+		expect(target).toBeInTheDocument()
+		expect(save).toBeEnabled()
+		expect(screen.getByRole('alert')).toHaveTextContent('Save failed')
+	})
+
 	it('distinguishes initial and empty-library refresh reads and clears pending feedback on failure', async () => {
 		let finish!: (drafts: readonly LibraryDraft[]) => void
 		mocks.load.mockReturnValueOnce(

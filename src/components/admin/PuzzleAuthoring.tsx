@@ -252,7 +252,6 @@ export default function PuzzleAuthoring({
 				</p>
 				{error && <p role="alert">{error}</p>}
 				{paletteError && <p role="alert">{paletteError}</p>}
-				{pending && <Loading label={pending} />}
 				<PuzzleDraftForm
 					mode="create"
 					palettes={palettes}
@@ -319,6 +318,7 @@ export default function PuzzleAuthoring({
 						generate a new playtest.
 					</p>
 				)}
+				{pending && <Loading label={pending} />}
 			</section>
 		</>
 	)
