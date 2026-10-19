@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { describe, expect, it, vi } from 'vitest'
-import type { Database, Tables } from '@/types/database'
+import type { Database, Tables } from '@/lib/supabase'
 import {
 	generateAuthoredHexPuzzle,
 	HEX_PUZZLE_RECIPES,

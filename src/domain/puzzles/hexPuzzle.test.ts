@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { colorSchemes } from '@/data/colorSchemes'
+import { colorSchemes } from '@/domain/palettes'
 import { generateHexagonCells } from '@/domain/shapes/hexagon'
 import {
 	coordinateKey,

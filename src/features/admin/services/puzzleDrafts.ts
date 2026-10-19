@@ -5,7 +5,7 @@ import {
 	createUnusedPuzzleSeed,
 } from '@/domain/puzzles'
 import type { HexPuzzleRecipe } from '@/domain/puzzles'
-import type { Database } from '@/types/database'
+import type { Database } from '@/lib/supabase'
 
 export type PuzzleUsage = 'collection' | 'daily'
 export type DraftArgs =

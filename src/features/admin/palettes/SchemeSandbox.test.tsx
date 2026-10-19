@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { generateHexagonCells, getGroupIds } from '@/domain/shapes/hexagon'
-import type { ColorScheme } from '@/types/colorScheme'
+import type { ColorScheme } from '@/domain/palettes'
 import SchemeSandbox from './SchemeSandbox'
 
 const colors: ColorScheme['colors'] = [

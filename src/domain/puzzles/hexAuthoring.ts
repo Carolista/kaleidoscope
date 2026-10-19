@@ -1,4 +1,4 @@
-import type { ColorScheme } from '@/types/colorScheme'
+import type { ColorScheme } from '@/domain/palettes'
 import {
 	generateHexPuzzle,
 	type HexPuzzle,

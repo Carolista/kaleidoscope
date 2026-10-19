@@ -1,4 +1,4 @@
-import type { ColorScheme } from '@/types/colorScheme'
+import type { ColorScheme } from '@/domain/palettes'
 import type { GridSize } from '@/domain/shapes'
 import type { AxialCoord } from '@/domain/shapes/hexagon'
 import {

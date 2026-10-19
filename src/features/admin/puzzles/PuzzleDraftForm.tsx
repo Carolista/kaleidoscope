@@ -11,7 +11,7 @@ import {
 	Loading,
 	PaletteChoices,
 	Select,
-} from '@/components/shared'
+} from '@/ui/components'
 import PaletteFieldset from './PaletteFieldset'
 import styles from './PuzzleDraftForm.module.css'
 

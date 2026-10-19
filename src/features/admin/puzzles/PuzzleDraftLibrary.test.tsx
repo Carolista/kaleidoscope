@@ -5,10 +5,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { generateAuthoredHexPuzzle, HEX_PUZZLE_RECIPES } from '@/domain/puzzles'
 import { puzzleDraftArgs } from '@/features/admin/services'
 import type { LibraryDraft } from '@/features/admin/services'
-import { getSupabaseClient } from '@/services/supabaseClient'
+import { getSupabaseClient } from '@/lib/supabase'
 import styles from './PuzzleDraftForm.module.css'
 import layoutStyles from '@/features/admin/common/AdminLayout.module.css'
-import iconStyles from '@/components/shared/IconButton.module.css'
+import iconStyles from '@/ui/components/IconButton.module.css'
 import PuzzleDraftLibrary from './PuzzleDraftLibrary'
 import { useNavigationGuard } from '@/ui/navigation'
 
@@ -34,7 +34,7 @@ vi.mock('@/features/admin/services/puzzleLibrary', () => ({
 	bulkPuzzleDrafts: (...args: unknown[]) => mocks.bulk(...args),
 	replacePuzzleDraft: (...args: unknown[]) => mocks.replace(...args),
 }))
-vi.mock('@/services/supabaseClient', () => ({
+vi.mock('@/lib/supabase/supabaseClient', () => ({
 	getSupabaseClient: () => ({
 		from: () => {
 			const query = {

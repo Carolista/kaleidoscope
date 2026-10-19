@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { colorSchemes } from '@/data/colorSchemes'
+import { colorSchemes } from '@/domain/palettes'
 import {
 	coordinateKey,
 	generateHexPuzzle,

@@ -2,7 +2,7 @@ import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { renderWithNavigationGuard as render } from '@/features/admin/testing'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Database } from '@/types/database'
+import type { Database } from '@/lib/supabase'
 import type {
 	CatalogScheme,
 	SchemeUsage,

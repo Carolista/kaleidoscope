@@ -1,4 +1,4 @@
-import { Button } from '@/components/shared'
+import { Button } from '@/ui/components'
 import styles from './AdminNavigation.module.css'
 
 export default function AdminNavigation<T extends string>({

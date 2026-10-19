@@ -1,8 +1,12 @@
 import { useId, useRef, useState } from 'react'
 import { faRotate } from '@fortawesome/sharp-duotone-solid-svg-icons'
-import { DarkModeToggle } from '@/components/controls'
-import { Button, Modal, PlayerIconButton } from '@/components/shared'
-import { colorSchemes } from '@/data/colorSchemes'
+import {
+	Button,
+	DarkModeToggle,
+	Modal,
+	PlayerIconButton,
+} from '@/ui/components'
+import { colorSchemes } from '@/domain/palettes'
 import { createPuzzleSeed, generateHexPuzzle } from '@/domain/puzzles'
 import { PuzzlePlay, type PuzzlePlayHandle } from '@/ui/puzzle'
 import styles from './PuzzleMode.module.css'

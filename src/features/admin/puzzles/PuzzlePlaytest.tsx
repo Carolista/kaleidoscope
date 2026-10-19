@@ -1,6 +1,6 @@
 import { useRef, type ReactNode } from 'react'
 import { faRotate } from '@fortawesome/sharp-duotone-solid-svg-icons'
-import { IconButton } from '@/components/shared'
+import { IconButton } from '@/ui/components'
 import type { HexPuzzle } from '@/domain/puzzles'
 import { PuzzlePlay, type PuzzlePlayHandle } from '@/ui/puzzle'
 import styles from './PuzzlePlaytest.module.css'

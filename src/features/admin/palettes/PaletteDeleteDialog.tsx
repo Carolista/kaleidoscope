@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { Button, ConfirmDialog, Loading } from '@/components/shared'
-import type { Database } from '@/types/database'
+import { Button, ConfirmDialog, Loading } from '@/ui/components'
+import type { Database } from '@/lib/supabase'
 import {
 	manageColorScheme,
 	type CatalogScheme,

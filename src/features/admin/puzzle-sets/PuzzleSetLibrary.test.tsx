@@ -1,7 +1,7 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { renderWithNavigationGuard as render } from '@/features/admin/testing'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { getSupabaseClient } from '@/services/supabaseClient'
+import { getSupabaseClient } from '@/lib/supabase'
 import type { DraftSet } from '@/features/admin/services'
 import PuzzleSetLibrary from './PuzzleSetLibrary'
 import {
@@ -14,7 +14,7 @@ import toneStyles from '@/features/admin/common/AdminIconButton.module.css'
 import layoutStyles from '@/features/admin/common/AdminLayout.module.css'
 import { useState } from 'react'
 import { useNavigationGuard } from '@/ui/navigation'
-import iconStyles from '@/components/shared/IconButton.module.css'
+import iconStyles from '@/ui/components/IconButton.module.css'
 
 const mocks = vi.hoisted(() => ({
 	load: vi.fn(),
@@ -26,7 +26,7 @@ vi.mock('@/features/admin/services/puzzleSets', () => ({
 	manageDraftSet: (...args: unknown[]) => mocks.manage(...args),
 	deleteDraftSet: (...args: unknown[]) => mocks.remove(...args),
 }))
-vi.mock('@/services/supabaseClient', () => ({
+vi.mock('@/lib/supabase/supabaseClient', () => ({
 	getSupabaseClient: () => ({}),
 }))
 const draftSet: DraftSet = {

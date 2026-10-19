@@ -2,7 +2,7 @@ import { act, fireEvent, screen, within, waitFor } from '@testing-library/react'
 import { renderWithNavigationGuard as render } from '@/features/admin/testing'
 import { useState } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { getSupabaseClient } from '@/services/supabaseClient'
+import { getSupabaseClient } from '@/lib/supabase'
 import {
 	HEX_PUZZLE_RECIPES,
 	coordinateKey,
@@ -15,7 +15,7 @@ import { AdminWorkspace } from '@/features/admin/shell'
 import { useNavigationGuard } from '@/ui/navigation'
 import styles from './PuzzleDraftForm.module.css'
 import playtestStyles from './PuzzlePlaytest.module.css'
-import fieldStyles from '@/components/shared/FormField.module.css'
+import fieldStyles from '@/ui/components/FormField.module.css'
 
 const seed = '00000001000000010000000100000001'
 
@@ -29,7 +29,7 @@ const mocks = vi.hoisted(() => ({
 	rpc: vi.fn(),
 	seeds: vi.fn(),
 }))
-vi.mock('@/services/supabaseClient', () => ({
+vi.mock('@/lib/supabase/supabaseClient', () => ({
 	getSupabaseClient: () => ({ from: mocks.from, rpc: mocks.rpc }),
 }))
 vi.mock('@/features/admin/services/puzzleLibrary', () => ({

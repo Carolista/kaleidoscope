@@ -1,4 +1,4 @@
-import type { ColorScheme } from '@/types/colorScheme'
+import type { ColorScheme } from '@/domain/palettes'
 import { schemeIsUsed, type SchemeUsage } from '@/features/admin/services'
 import { HexPuzzleBoard } from '@/ui/puzzle'
 import styles from './PaletteUsageDetails.module.css'

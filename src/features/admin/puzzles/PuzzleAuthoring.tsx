@@ -6,7 +6,7 @@ import {
 	type AuthoringPalette,
 	HEX_PUZZLE_RECIPES,
 } from '@/domain/puzzles'
-import type { Database } from '@/types/database'
+import type { Database } from '@/lib/supabase'
 import {
 	generateDraftPreview,
 	puzzleDraftArgs,
@@ -19,7 +19,7 @@ import PuzzleDraftLibrary from './PuzzleDraftLibrary'
 import { useUnsavedDraft } from '@/ui/navigation'
 import PuzzleDraftForm from './PuzzleDraftForm'
 import { useCatalog, useCatalogInvalidation } from '@/features/admin/catalog'
-import { Button, Loading } from '@/components/shared'
+import { Button, Loading } from '@/ui/components'
 
 function messageFor(cause: unknown): string {
 	return cause instanceof Error

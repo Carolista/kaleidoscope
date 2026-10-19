@@ -40,7 +40,7 @@ vi.mock('@/features/admin/services/schemeSets', () => ({
 		paid: 'Pack',
 	},
 }))
-vi.mock('@/services/supabaseClient', () => ({
+vi.mock('@/lib/supabase/supabaseClient', () => ({
 	getSupabaseClient: () => mocks.getClient(),
 }))
 

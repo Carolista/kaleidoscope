@@ -13,7 +13,7 @@ import {
 	Loading,
 	PaletteStrip,
 	Select,
-} from '@/components/shared'
+} from '@/ui/components'
 import {
 	AdminFeedback,
 	AdminGallery,
@@ -27,8 +27,8 @@ import {
 	SetCreationDialog,
 	useStagedOrder,
 } from '@/features/admin/sets'
-import useModalState from '@/hooks/useModalState'
-import type { Database } from '@/types/database'
+import { useModalState } from '@/ui/hooks'
+import type { Database } from '@/lib/supabase'
 import {
 	manageSchemeSet,
 	schemeSetLabels,

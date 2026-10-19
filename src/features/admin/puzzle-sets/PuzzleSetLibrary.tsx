@@ -12,7 +12,7 @@ import {
 	type DraftSet,
 	type SetAction,
 } from '@/features/admin/services'
-import type { Database } from '@/types/database'
+import type { Database } from '@/lib/supabase'
 import { HexPuzzleBoard } from '@/ui/puzzle'
 import {
 	AdminIconButton,
@@ -23,13 +23,13 @@ import {
 	AdminSetForm,
 	AdminTag,
 } from '@/features/admin/common'
-import { ConfirmDialog, Loading } from '@/components/shared'
+import { ConfirmDialog, Loading } from '@/ui/components'
 import {
 	SetCreationDialog,
 	SortableSetMembers,
 	useStagedOrder,
 } from '@/features/admin/sets'
-import useModalState from '@/hooks/useModalState'
+import { useModalState } from '@/ui/hooks'
 import styles from './PuzzleSetLibrary.module.css'
 import { useUnsavedDraft } from '@/ui/navigation'
 import { useCatalog, useCatalogInvalidation } from '@/features/admin/catalog'

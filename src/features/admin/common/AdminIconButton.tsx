@@ -1,5 +1,5 @@
-import IconButton from '@/components/shared/IconButton'
-import type { IconButtonProps } from '@/components/shared/IconButton'
+import { IconButton } from '@/ui/components'
+import type { IconButtonProps } from '@/ui/components'
 import styles from './AdminIconButton.module.css'
 
 export default function AdminIconButton({

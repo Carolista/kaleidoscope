@@ -9,8 +9,8 @@ import {
 	faTrashCan,
 	faLayerGroup,
 } from '@fortawesome/pro-solid-svg-icons'
-import type { Database } from '@/types/database'
-import type { ColorScheme } from '@/types/colorScheme'
+import type { Database } from '@/lib/supabase'
+import type { ColorScheme } from '@/domain/palettes'
 import {
 	bulkDeleteColorSchemes,
 	manageColorScheme,
@@ -46,9 +46,9 @@ import {
 	Loading,
 	PaletteStrip,
 	Select,
-} from '@/components/shared'
+} from '@/ui/components'
 import PaletteDeleteDialog from './PaletteDeleteDialog'
-import useModalState from '@/hooks/useModalState'
+import { useModalState } from '@/ui/hooks'
 import { compareSetOrder } from '@/features/admin/sets'
 
 function errorMessage(cause: unknown): string {

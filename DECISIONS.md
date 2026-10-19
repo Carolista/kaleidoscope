@@ -308,6 +308,16 @@ icon scale conveys size, while accessible names and tooltips retain identificati
 
 ## State, history, and storage
 
+### Player theme versus Zen state
+
+Dark mode and the active palette still live in Zen's reducer, because toggling
+the theme remaps painted neutrals and palette changes are undoable. Shared player
+UI (tinted icons, `Checkbox`, `DarkModeToggle`) and Puzzle Mode read them through
+the narrow `PlayerThemeContext` in `ui/theme`, which Zen's provider supplies. Only
+Zen depends on that context, not the other way around. When accounts arrive,
+the theme and palette can become player preferences with their own provider
+without changing those consumers.
+
 ### Design edits versus tool choices
 
 History wraps the app reducer with snapshots of scheme, shape, per-shape sizes,

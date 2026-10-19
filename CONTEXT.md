@@ -286,14 +286,14 @@ changes should be applied to all four SVG assets.
   They forward native props/refs; `Button` defaults to `type="button"` and forms
   explicitly request `type="submit"`. Keep visual swatches and gameplay pieces
   specialized rather than applying command-button styling to them.
-- Use [FormField](./src/components/shared/FormField.tsx) for ordinary stacked
+- Use [FormField](./src/ui/components/FormField.tsx) for ordinary stacked
   label/control rows. Its render function supplies the control ID and optional
   help/error associations; spread those onto the native Input/Select, retaining
   native required, disabled, ref, and submit behavior. Specialized paired
   hex/native-color inputs and inline filter controls keep their own layouts.
-- [PaletteStrip](./src/components/shared/PaletteStrip.tsx) owns decorative ordered
+- [PaletteStrip](./src/ui/components/PaletteStrip.tsx) owns decorative ordered
   colors: square swatches for choices, continuous strips for catalog/set previews.
-  [PaletteChoices](./src/components/shared/PaletteChoices.tsx) owns controlled,
+  [PaletteChoices](./src/ui/components/PaletteChoices.tsx) owns controlled,
   labelled palette buttons keyed/selected by ID, with optional visible names.
   Player SchemePicker adapts its local name-based catalog and applies/closes
   immediately; admin owns catalog IDs and bulk selection still requires Apply.
@@ -321,12 +321,12 @@ changes should be applied to all four SVG assets.
 - CSS Module class names are camelCase so they can be read as `styles.itemTitle`
   rather than `styles['item-title']`. Custom properties, element ids, and data
   attributes stay kebab-case.
-- Use global `.visually-hidden` from [index.css](./src/index.css) for accessible
+- Use global `.visually-hidden` from [index.css](./src/app/index.css) for accessible
   instructions/live announcements that should not occupy visual layout.
   Do not replace it with `display: none`, `hidden`, or `aria-hidden`.
   Admin playtest status is also visually hidden; the board shows the solved state.
 - Polygon and circle painting cells share grout, transitions, dimming, hover,
-  and focus rules in [Cell.module.css](./src/components/grid/Cell.module.css).
+  and focus rules in [Cell.module.css](./src/features/zen/grid/Cell.module.css).
   Polygon-only joins stay local. Puzzle board/piece interaction is different;
   do not merge it with painting-cell styles.
 
@@ -334,49 +334,48 @@ changes should be applied to all four SVG assets.
 
 | Need | Use / precedent |
 | --- | --- |
-| Ordinary command / submit | [Button](./src/components/shared/Button.tsx); explicit `type="submit"` for forms |
-| Labelled native field | [FormField](./src/components/shared/FormField.tsx) with [Input/Select](./src/components/shared/FormControl.tsx), including admin sign-in |
-| Player / admin icon action | [PlayerIconButton](./src/components/shared/PlayerIconButton.tsx) / [AdminIconButton](./src/features/admin/common/AdminIconButton.tsx); generic renderer is [IconButton](./src/components/shared/IconButton.tsx) |
+| Ordinary command / submit | [Button](./src/ui/components/Button.tsx); explicit `type="submit"` for forms |
+| Labelled native field | [FormField](./src/ui/components/FormField.tsx) with [Input/Select](./src/ui/components/FormControl.tsx), including admin sign-in |
+| Player / admin icon action | [PlayerIconButton](./src/ui/components/PlayerIconButton.tsx) / [AdminIconButton](./src/features/admin/common/AdminIconButton.tsx); generic renderer is [IconButton](./src/ui/components/IconButton.tsx) |
 | Edit / delete / new / refresh | Admin icon action with `faPenToSquare` / `faTrashCan` / `faPlusLarge` / `faRotate`; item-specific label and title; `tone="edit"` (blue) or `tone="delete"` (red) for edit and removal actions |
 | Reorder / unassign | Staged `faGripVertical` drag handle + the set's single Save ([SortableSetMembers](./src/features/admin/sets/SortableSetMembers.tsx)), shared by puzzle and palette sets; `faSquareMinus` unassign preserves the member |
 | Admin catalog data | [useCatalog](./src/features/admin/catalog/useAdminCatalog.ts) / `useCatalogInvalidation`; update locally after writes, invalidate other affected catalogs |
 | Section / view tabs | [AdminNavigation](./src/features/admin/shell/AdminNavigation.tsx); wrap changes in `requestNavigation` |
-| Pending feedback | [Loading](./src/components/shared/Loading.tsx); readable request-specific label, not a success spinner |
-| Confirmation / rich action form | [ConfirmDialog](./src/components/shared/ConfirmDialog.tsx) on [Modal](./src/components/shared/Modal.tsx); errors/pending stay inside |
+| Pending feedback | [Loading](./src/ui/components/Loading.tsx); readable request-specific label, not a success spinner |
+| Confirmation / rich action form | [ConfirmDialog](./src/ui/components/ConfirmDialog.tsx) on [Modal](./src/ui/components/Modal.tsx); errors/pending stay inside |
 | Simple set creation | [SetCreationDialog](./src/features/admin/sets/SetCreationDialog.tsx); close/refresh/focus Add on success |
-| Retain action content during exit | [useModalState](./src/hooks/useModalState.ts); defer destructive view changes until after close |
+| Retain action content during exit | [useModalState](./src/ui/hooks/useModalState.ts); defer destructive view changes until after close |
 | Guard edited/pending navigation | [useUnsavedDraft](./src/ui/navigation/useUnsavedDraft.ts) with [useNavigationGuard](./src/ui/navigation/useNavigationGuard.ts); first destination wins |
-| Decorative palette / palette selection | [PaletteStrip](./src/components/shared/PaletteStrip.tsx) / [PaletteChoices](./src/components/shared/PaletteChoices.tsx); not painting buttons |
+| Decorative palette / palette selection | [PaletteStrip](./src/ui/components/PaletteStrip.tsx) / [PaletteChoices](./src/ui/components/PaletteChoices.tsx); not painting buttons |
 | Section / gallery / ordered members | [AdminLayout](./src/features/admin/common/AdminLayout.tsx); retain domain card layouts and local async ownership |
 
 Native mode/shape/color choice buttons, painting SVG cells, puzzle pieces, and
 the transparent native checkbox input are intentional specialized controls,
-not missed command-button migrations. File organization remains separate
-follow-up work.
+not missed command-button migrations.
 
 ## Architecture
 
+`src/` holds the Vite entry [main.tsx](./src/main.tsx) and six folders. Dependencies
+point downward: `app` → `features` → `ui` → `domain`/`lib`. Features never import
+each other, and `domain` never imports React.
+
 | Location | Responsibility |
 | --- | --- |
-| [app/](./src/app/) | Entry-level routing (`useAdminRoute`) |
-| [ui/navigation/](./src/ui/navigation/) | App-wide unsaved-work navigation guard |
-| [components/layout/](./src/components/layout/) | Header and footer |
-| [components/grid/](./src/components/grid/) | Shape adapters, `ShapeGrid` (shape → adapter), shared `GridView`, polygon/circle cells |
-| [components/controls/](./src/components/controls/) | Toolbar, pickers, and modal content |
-| [components/intro/](./src/components/intro/) | First-visit learn-by-doing sequence |
-| [components/shared/](./src/components/shared/) | Buttons, palette-aware `Checkbox`, native `Modal`, `ModalHeader`, `ConfirmDialog` and its dismissal preferences |
-| [domain/shapes/](./src/domain/shapes/) | React-free shape catalog, sizes, registry, and one folder per shape (grid, layout, types) |
-| [domain/geometry/](./src/domain/geometry/) | `Point`, shared geometry math, symmetry engine, cell grouping, SVG points |
-| [utils/](./src/utils/) | Color math and design randomization |
-| [state/](./src/state/) | App reducer, history wrapper, and Context |
-| [services/](./src/services/) | Design persistence, export preferences, PNG export, Supabase client |
-| [hooks/](./src/hooks/) | React lifecycle and interaction logic |
-| [domain/puzzles/](./src/domain/puzzles/) | Pure seeded puzzle generation, authoring, stored-definition readers, placement validation, and completion |
-| [ui/puzzle/](./src/ui/puzzle/) | Shared `PuzzlePlay` (target, tray, board, pointer/keyboard interaction) and `HexPuzzleBoard` |
+| [app/](./src/app/) | `AppEntry` (player/admin routing, navigation guard), `PlayerApp` (page, entrance animation, header, mode switch, footer), `useAdminRoute`, [layout/](./src/app/layout/) (Header, Footer), global [index.css](./src/app/index.css) |
+| [features/zen/](./src/features/zen/) | Zen Mode: `ZenMode`, [state/](./src/features/zen/state/) (reducer, history, Context, localStorage persistence, design randomization), [controls/](./src/features/zen/controls/) (toolbar, palette and shape pickers), [grid/](./src/features/zen/grid/) (shape adapters, `ShapeGrid`, `GridView`, cells), [export/](./src/features/zen/export/) (Save Image), [intro/](./src/features/zen/intro/) |
 | [features/puzzle/](./src/features/puzzle/) | Player Puzzle Mode: seeded puzzles, Restart/Next, congratulations |
 | [features/admin/](./src/features/admin/) | Lazy-loaded admin portal. `shell/` (portal, workspace, navigation), `catalog/` (session cache), `common/` (layout, icon button, form), `sets/` (shared set editing), one folder per content area (`puzzles/`, `puzzle-sets/`, `palettes/`, `palette-sets/`), `services/` (Supabase reads/writes), `testing/` |
-| [data/](./src/data/) | Local palette catalog |
-| [types/](./src/types/) | Domain types, imported from individual modules |
+| [ui/components/](./src/ui/components/) | Shared controls: buttons, `DarkModeToggle`, palette-tinted `Checkbox`, native `Modal`, `ModalHeader`, `ConfirmDialog` and its dismissal preferences, form fields, loading, palette strips/choices |
+| [ui/theme/](./src/ui/theme/) | `PlayerThemeContext` (dark mode, active palette, toggle) and `useDuotoneIconTint` |
+| [ui/hooks/](./src/ui/hooks/) | `useModalState`, `useIsTouchDevice` |
+| [ui/navigation/](./src/ui/navigation/) | App-wide unsaved-work navigation guard |
+| [ui/puzzle/](./src/ui/puzzle/) | Shared `PuzzlePlay` (target, tray, board, pointer/keyboard interaction) and `HexPuzzleBoard` |
+| [domain/shapes/](./src/domain/shapes/) | React-free shape catalog, sizes, registry, and one folder per shape (grid, layout, types) |
+| [domain/geometry/](./src/domain/geometry/) | `Point`, shared geometry math, symmetry engine, cell grouping, SVG points |
+| [domain/puzzles/](./src/domain/puzzles/) | Pure seeded puzzle generation, authoring, stored-definition readers, placement validation, and completion |
+| [domain/palettes/](./src/domain/palettes/) | Local palette catalog, palette type, color math, light/dark theme colors |
+| [lib/supabase/](./src/lib/supabase/) | Supabase browser client and generated database types |
+| [test/](./src/test/) | Vitest setup and shared render/interaction helpers |
 
 Shape adapters supply geometry to `GridView`; it owns numbering, painting,
 highlighting, announcements, and SVG references. An optional `interaction`
@@ -424,7 +423,7 @@ symmetry engine. One representative per group is clickable.
 ### State and persistence
 
 - New designs start in dark mode with the first scheme in
-  [colorSchemes.ts](./src/data/colorSchemes.ts) and its first color selected.
+  [colorSchemes.ts](./src/domain/palettes/colorSchemes.ts) and its first color selected.
 - Painting toggles a group back to accent when its current color is selected again.
   Unpainted groups also display accent.
 - Each of the 18 shape/size combinations has an independent paint map. Switching

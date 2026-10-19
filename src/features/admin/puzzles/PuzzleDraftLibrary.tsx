@@ -8,7 +8,7 @@ import {
 	faPalette,
 	faLayerGroup,
 } from '@fortawesome/pro-solid-svg-icons'
-import type { Database } from '@/types/database'
+import type { Database } from '@/lib/supabase'
 import {
 	renderAuthoredHexPuzzle,
 	type AuthoredHexPuzzle,
@@ -46,11 +46,11 @@ import {
 	Loading,
 	PaletteChoices,
 	Select,
-} from '@/components/shared'
+} from '@/ui/components'
 import { useCatalog, useCatalogInvalidation } from '@/features/admin/catalog'
 import PuzzleDraftForm from './PuzzleDraftForm'
 import { useUnsavedDraft } from '@/ui/navigation'
-import useModalState from '@/hooks/useModalState'
+import { useModalState } from '@/ui/hooks'
 import { compareSetOrder } from '@/features/admin/sets'
 
 function setOrderKey(draft: LibraryDraft) {

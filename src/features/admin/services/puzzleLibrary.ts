@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Database, Tables } from '@/types/database'
+import type { Database, Tables } from '@/lib/supabase'
 import type { AuthoredHexPuzzle } from '@/domain/puzzles'
 import { readAuthoredHexPuzzle } from '@/domain/puzzles'
 import { puzzleDraftArgs, type PuzzleUsage } from './puzzleDrafts'

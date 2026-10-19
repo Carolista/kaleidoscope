@@ -6,7 +6,7 @@ import {
 	loadDraftSets,
 	loadSchemeSets,
 } from '@/features/admin/services'
-import type { Database } from '@/types/database'
+import type { Database } from '@/lib/supabase'
 
 export type Client = SupabaseClient<Database>
 

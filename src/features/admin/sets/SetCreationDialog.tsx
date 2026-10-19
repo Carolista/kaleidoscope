@@ -1,5 +1,5 @@
 import { useId, useRef, useState, type SubmitEvent } from 'react'
-import { ConfirmDialog, FormField, Input, Select } from '@/components/shared'
+import { ConfirmDialog, FormField, Input, Select } from '@/ui/components'
 import { useUnsavedDraft } from '@/ui/navigation'
 import { AdminForm } from '@/features/admin/common'
 
