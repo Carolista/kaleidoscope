@@ -3,6 +3,9 @@
 Current behavior, architecture, and working standards. For rationale, see
 [DECISIONS.md](./DECISIONS.md).
 
+For the UI consistency/reuse audit and proposed housekeeping conventions, see
+[UI_AUDIT.md](./UI_AUDIT.md). Recommendations there are not yet implemented.
+
 ## App
 
 A coloring toy: paint one tile and its symmetry group updates across the grid.

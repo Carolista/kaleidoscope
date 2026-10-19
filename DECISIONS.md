@@ -4,6 +4,10 @@ Settled choices and their rationale, grouped by topic. Superseded experiments
 are omitted unless they explain a constraint worth preserving. For current
 implementation and working agreements, see [CONTEXT.md](./CONTEXT.md).
 
+For verified UI inconsistencies and proposed improvements, see
+[UI_AUDIT.md](./UI_AUDIT.md). Its recommendations do not supersede the decisions
+below until accepted and implemented.
+
 ## Stack and boundaries
 
 - Rebuilt the 2020 DOM app in React/Vite/TypeScript rather than extending its
