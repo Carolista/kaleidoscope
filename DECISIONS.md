@@ -131,6 +131,8 @@ with one subtle selected/focus border. The first-rotation set tutorial is deferr
 The admin lab does not mount Zen state or write player progress. Named drafts
 save public definitions and private authoring atomically, with idempotent retry
 IDs. Intended use can switch between Set/pack and Daily while unassigned.
+Assigned galleries derive order from set membership (set name, then position)
+rather than naming conventions, so reordering a set reorders the list.
 Scheduled/live content is not managed through the draft-only editing/deletion RPCs.
 
 Use a library-first flow with dedicated New/Edit workspaces. Saving a new puzzle

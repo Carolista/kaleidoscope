@@ -91,8 +91,9 @@ Keyboard users can rotate/select with Enter/Space, activate a board tile to plac
 and use Delete/Backspace on an occupied tile to return its piece. Square tray
 slots stay fixed through rotation and use one subtle selected border.
 The admin workspace has peer **Puzzles | Palettes | Shapes** sections. Puzzles and
-Palettes each open on **Sets**, with an items view filtered by Drafts, Assigned,
+Palettes each open on **Sets**, with an items view filtered by Unassigned, Assigned,
 Scheduled, or Published (Shapes and the release views are placeholders for now).
+Assigned puzzles and palettes list in set order: set name, then position in the set.
 Loaded catalogs are cached for the session, so switching views is instant; lists
 reload after your own saves or with **Refresh**. In the puzzle drafts view,
 **New puzzle** and each card's
@@ -101,7 +102,7 @@ drafts atomically; reopening uses the stored definition rather than regeneration
 After saving, name/palette/recipe choices apply to the next generation without
 changing the saved puzzle. A revised name survives randomization; an unchanged
 saved name clears.
-Unsaved work is guarded when leaving the workspace; choose the **Drafts** tab
+Unsaved work is guarded when leaving the workspace; choose the **Unassigned** tab
 to return to the gallery. The playtest Restart sits beside the pieces.
 
 Drafts can preview replacement designs with the recipe/wand controls, even when

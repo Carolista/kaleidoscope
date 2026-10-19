@@ -38,9 +38,11 @@ with favicon navigation at the left. Admin defaults to dark mode using the share
 neutral charcoal/white theme helper, without initializing player state.
 
 Admin navigation has peer sections: **Puzzles | Palettes | Shapes**. Puzzles and
-Palettes each offer **Sets** (default) | items; items filter by **Drafts**
+Palettes each offer **Sets** (default) | items; items filter by **Unassigned**
 (default) | **Assigned** | **Scheduled** | **Published**. Shapes, Scheduled, and
-Published are placeholders. A future top-level orchestration view will map how
+Published are placeholders. Everything stays a draft until published; the first
+tab names the unassigned stage. Assigned lists sort by set name, then set position
+([setOrder](./src/components/admin/setOrder.ts)); daily puzzles follow by name. A future top-level orchestration view will map how
 sets, rewards, and packs connect and roll out. Section/view changes use the
 navigation guard and reset lower choices to their defaults.
 
