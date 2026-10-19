@@ -415,7 +415,7 @@ export type Database = {
 					{
 						foreignKeyName: 'palette_pack_palettes_palette_id_fkey'
 						columns: ['palette_id']
-						isOneToOne: false
+						isOneToOne: true
 						referencedRelation: 'palettes'
 						referencedColumns: ['id']
 					},
@@ -423,18 +423,21 @@ export type Database = {
 			}
 			palette_packs: {
 				Row: {
+					kind: string
 					id: string
 					name: string
 					published_at: string | null
 					release_at: string | null
 				}
 				Insert: {
+					kind?: string
 					id?: string
 					name: string
 					published_at?: string | null
 					release_at?: string | null
 				}
 				Update: {
+					kind?: string
 					id?: string
 					name?: string
 					published_at?: string | null
@@ -986,6 +989,25 @@ export type Database = {
 					p_expected_name?: string
 					p_expected_colors?: string[]
 					p_expected_revision?: number
+				}
+				Returns: string
+			}
+			manage_palette_set: {
+				Args: {
+					p_id: string
+					p_action: string
+					p_name?: string
+					p_kind?: string
+					p_palette_ids?: string[]
+				}
+				Returns: string
+			}
+			delete_palette_draft: {
+				Args: {
+					p_id: string
+					p_expected_name: string
+					p_expected_colors: string[]
+					p_expected_revision: number
 				}
 				Returns: string
 			}

@@ -11,6 +11,7 @@ export interface SchemeUsage {
 	}[]
 	readonly rewards: readonly string[]
 	readonly packs: readonly string[]
+	readonly preparedPacks?: number
 	readonly starters: number
 	readonly grants: number
 	readonly corrections: number
@@ -20,7 +21,7 @@ export function schemeIsUsed(usage: SchemeUsage): boolean {
 	return !!(
 		usage.puzzles.length ||
 		usage.rewards.length ||
-		usage.packs.length ||
+		(usage.preparedPacks ?? usage.packs.length) ||
 		usage.starters ||
 		usage.grants ||
 		usage.corrections
@@ -72,7 +73,7 @@ export async function loadSchemeUsage(
 		const { data, error } = await client
 			.from('reward_palettes')
 			.select(
-				'reward_rule_id, reward_rules(puzzle_collections(name), completion_routes(name))',
+				'reward_rule_id, reward_rules(puzzle_collections!reward_rules_collection_id_fkey(name), completion_routes!reward_rules_route_id_collection_id_fkey(name))',
 			)
 			.eq('palette_id', id)
 			.order('reward_rule_id')
@@ -93,10 +94,11 @@ export async function loadSchemeUsage(
 		if (data.length < 1000) break
 	}
 	const packs: string[] = []
+	let preparedPacks = 0
 	for (let offset = 0; ; offset += 1000) {
 		const { data, error } = await client
 			.from('palette_pack_palettes')
-			.select('pack_id, palette_packs(name)')
+			.select('pack_id, palette_packs(name, published_at, release_at)')
 			.eq('palette_id', id)
 			.order('pack_id')
 			.range(offset, offset + 999)
@@ -109,6 +111,8 @@ export async function loadSchemeUsage(
 					'A palette pack could not be resolved. Refresh the catalog.',
 				)
 			packs.push(row.palette_packs.name)
+			if (row.palette_packs.published_at || row.palette_packs.release_at)
+				preparedPacks++
 		}
 		if (data.length < 1000) break
 	}
@@ -130,5 +134,13 @@ export async function loadSchemeUsage(
 		count('palette_grants'),
 		count('palette_corrections'),
 	])
-	return { puzzles, rewards, packs, starters, grants, corrections }
+	return {
+		puzzles,
+		rewards,
+		packs,
+		preparedPacks,
+		starters,
+		grants,
+		corrections,
+	}
 }

@@ -132,6 +132,18 @@
 	color: var(--admin-red);
 }
 
+.organize {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem;
+	margin-block: 0.75rem;
+}
+
+.organize select {
+	max-width: 100%;
+}
+
 @media (min-width: 640px) {
 	.editor {
 		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);

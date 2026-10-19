@@ -71,15 +71,25 @@ export async function manageColorScheme(
 			throw new Error('Enter a name for the palette.')
 		readColorScheme({ id, ...action.scheme })
 	}
+	if (action.kind === 'delete') {
+		const { data, error } = await client.rpc('delete_palette_draft', {
+			p_id: id,
+			p_expected_name: action.previous.name,
+			p_expected_colors: [...action.previous.colors],
+			p_expected_revision: action.previous.revision,
+		})
+		if (error) throw new Error(`Unable to delete palette: ${error.message}`)
+		if (data !== id)
+			throw new Error(
+				'The palette change was not confirmed. Refresh the catalog before retrying.',
+			)
+		return
+	}
 	const { data, error } = await client.rpc('manage_palette_draft', {
 		p_id: id,
 		p_action: action.kind,
-		...(action.kind !== 'delete'
-			? {
-					p_name: action.scheme.name.trim(),
-					p_colors: [...action.scheme.colors],
-				}
-			: {}),
+		p_name: action.scheme.name.trim(),
+		p_colors: [...action.scheme.colors],
 		...(action.kind !== 'create'
 			? {
 					p_expected_name: action.previous.name,

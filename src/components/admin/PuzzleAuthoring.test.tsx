@@ -37,6 +37,16 @@ vi.mock('../../services/supabaseClient', () => ({
 vi.mock('../../services/puzzleLibrary', () => ({
 	loadPuzzleDrafts: async () => [],
 }))
+vi.mock('../../services/schemeSets', () => ({
+	loadSchemeSets: async () => [],
+	manageSchemeSet: vi.fn(),
+	schemeSetLabels: {
+		undecided: 'Undecided',
+		core: 'Core',
+		reward: 'Reward',
+		paid: 'Pack',
+	},
+}))
 
 const originalHitTest = Object.getOwnPropertyDescriptor(
 	document,

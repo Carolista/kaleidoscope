@@ -151,7 +151,6 @@ describe('draft palette operations', () => {
 			{ kind: 'delete', previous: scheme },
 			{
 				p_id: scheme.id,
-				p_action: 'delete',
 				p_expected_name: scheme.name,
 				p_expected_colors: [...scheme.colors],
 				p_expected_revision: 3,
@@ -164,7 +163,9 @@ describe('draft palette operations', () => {
 			const rpc = vi.fn().mockResolvedValue({ data: id, error: null })
 			await manageColorScheme(client({ rpc }), action)
 			expect(rpc).toHaveBeenCalledExactlyOnceWith(
-				'manage_palette_draft',
+				action.kind === 'delete'
+					? 'delete_palette_draft'
+					: 'manage_palette_draft',
 				args,
 			)
 		},

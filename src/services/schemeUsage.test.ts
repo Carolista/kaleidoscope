@@ -93,6 +93,7 @@ describe('palette usage', () => {
 			],
 			rewards: ['First set / Hard route'],
 			packs: ['Autumn pack'],
+			preparedPacks: 0,
 			starters: 1,
 			grants: 2,
 			corrections: 3,
@@ -114,6 +115,11 @@ describe('palette usage', () => {
 			count: 'exact',
 			head: true,
 		})
+		expect(selects).toHaveBeenCalledWith(
+			'reward_palettes',
+			'reward_rule_id, reward_rules(puzzle_collections!reward_rules_collection_id_fkey(name), completion_routes!reward_rules_route_id_collection_id_fkey(name))',
+			undefined,
+		)
 	})
 
 	it('paginates puzzle, reward, and pack references without truncation', async () => {
@@ -269,5 +275,30 @@ describe('palette usage', () => {
 			{ ...empty, corrections: 1 },
 		])
 			expect(schemeIsUsed(usage)).toBe(true)
+	})
+
+	it('permits draft organizational membership but blocks prepared set membership', async () => {
+		const { client, pages, counts } = setup()
+		pages.puzzles.mockResolvedValue({ data: [], error: null })
+		pages.reward_palettes.mockResolvedValue({ data: [], error: null })
+		for (const count of Object.values(counts))
+			count.mockResolvedValue({ count: 0, error: null })
+		expect(schemeIsUsed(await loadSchemeUsage(client, 'cabo'))).toBe(false)
+		pages.palette_pack_palettes.mockResolvedValue({
+			data: [
+				{
+					pack_id: 'pack',
+					palette_packs: {
+						name: 'Prepared',
+						published_at: '2026-01-01',
+						release_at: '2099-01-01',
+					},
+				},
+			],
+			error: null,
+		})
+		const usage = await loadSchemeUsage(client, 'cabo')
+		expect(usage.preparedPacks).toBe(1)
+		expect(schemeIsUsed(usage)).toBe(true)
 	})
 })

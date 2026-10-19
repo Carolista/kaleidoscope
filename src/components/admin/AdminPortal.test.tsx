@@ -18,6 +18,16 @@ let authCallback: (event: AuthChangeEvent, session: Session | null) => void
 vi.mock('../../services/puzzleLibrary', () => ({
 	loadPuzzleDrafts: async () => [],
 }))
+vi.mock('../../services/schemeSets', () => ({
+	loadSchemeSets: async () => [],
+	manageSchemeSet: vi.fn(),
+	schemeSetLabels: {
+		undecided: 'Undecided',
+		core: 'Core',
+		reward: 'Reward',
+		paid: 'Pack',
+	},
+}))
 vi.mock('../../services/supabaseClient', () => ({
 	getSupabaseClient: () => mocks.getClient(),
 }))
@@ -255,7 +265,7 @@ describe('AdminPortal', () => {
 			}),
 		).toBeInTheDocument()
 		expect(mocks.from).toHaveBeenCalledWith('admin_account')
-		expect(mocks.from).toHaveBeenCalledWith('palettes')
+		await waitFor(() => expect(mocks.from).toHaveBeenCalledWith('palettes'))
 		const signOut = screen.getByRole('button', {
 			name: 'Sign out on this device',
 		})

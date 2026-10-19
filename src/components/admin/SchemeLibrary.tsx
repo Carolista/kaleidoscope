@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type SubmitEvent } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import {
 	faCopy,
+	faLayerGroup,
 	faEye,
 	faPenToSquare,
 	faPlusLarge,
@@ -29,6 +30,14 @@ import SchemeSandbox from './SchemeSandbox'
 import useUnsavedDraft, { confirmDiscardDraft } from './useUnsavedDraft'
 import adminStyles from './AdminPortal.module.css'
 import styles from './SchemeLibrary.module.css'
+import Checkbox from '../shared/Checkbox'
+import {
+	loadSchemeSets,
+	manageSchemeSet,
+	schemeSetLabels,
+	type SchemeSet,
+} from '../../services/schemeSets'
+import SchemeSetLibrary from './SchemeSetLibrary'
 
 function errorMessage(cause: unknown): string {
 	return cause instanceof Error ? cause.message : 'Unable to manage palettes.'
@@ -65,13 +74,15 @@ function UsageDetails({
 					? 'Included in starter offerings.'
 					: 'Not a starter palette.'}
 			</p>
-			{!schemeIsUsed(usage) && <p>No saved references.</p>}
+			{!schemeIsUsed(usage) && (
+				<p>No saved references blocking deletion.</p>
+			)}
 			{schemeIsUsed(usage) && (
 				<p>This palette is in use and cannot be deleted.</p>
 			)}
 			{usage.packs.length > 0 && (
 				<>
-					<h4>Palette packs</h4>
+					<h4>Palette sets</h4>
 					<ul>
 						{usage.packs.map((name, index) => (
 							<li key={index}>{name}</li>
@@ -426,7 +437,8 @@ function SchemeEditor({
 									aria-label="Confirm palette deletion"
 								>
 									<p>
-										Delete "{initial.name}" permanently?
+										Delete "{initial.name}" permanently? Any
+										draft set membership will be removed.
 										{dirty
 											? ' Unsaved edits will also be discarded.'
 											: ''}
@@ -471,6 +483,15 @@ export default function SchemeLibrary({
 	const [error, setError] = useState('')
 	const [status, setStatus] = useState('')
 	const [reload, setReload] = useState(0)
+	const [sets, setSets] = useState<readonly SchemeSet[]>([])
+	const [showSets, setShowSets] = useState(false)
+	const [filter, setFilter] = useState('all')
+	const [checked, setChecked] = useState<ReadonlySet<string>>(new Set())
+	const [targetSet, setTargetSet] = useState('')
+	const [busy, setBusy] = useState(false)
+	const working = useRef(false)
+	const [childDirty, setChildDirty] = useState(false)
+	useUnsavedDraft(busy || childDirty, onDirtyChange)
 	const [editing, setEditing] = useState<{
 		scheme: CatalogScheme | null
 		deleting: boolean
@@ -478,9 +499,29 @@ export default function SchemeLibrary({
 	} | null>(null)
 	useEffect(() => {
 		let active = true
-		void loadColorSchemes(client)
-			.then(next => {
-				if (active) setSchemes(next)
+		void Promise.all([loadColorSchemes(client), loadSchemeSets(client)])
+			.then(([next, nextSets]) => {
+				if (active) {
+					setSchemes(next)
+					setSets(nextSets)
+					setFilter(previous =>
+						previous === 'all' ||
+						previous === 'ungrouped' ||
+						nextSets.some(set => set.row.id === previous)
+							? previous
+							: 'all',
+					)
+					setTargetSet(previous =>
+						nextSets.some(
+							set =>
+								set.row.id === previous &&
+								!set.row.published_at &&
+								!set.row.release_at,
+						)
+							? previous
+							: '',
+					)
+				}
 			})
 			.catch((cause: unknown) => {
 				if (active) setError(errorMessage(cause))
@@ -492,6 +533,48 @@ export default function SchemeLibrary({
 			active = false
 		}
 	}, [client, reload])
+	function refresh() {
+		setLoading(true)
+		setError('')
+		setChecked(new Set())
+		setReload(value => value + 1)
+	}
+	async function assign() {
+		if (working.current || !targetSet || checked.size === 0) return
+		working.current = true
+		setBusy(true)
+		setError('')
+		try {
+			await manageSchemeSet(client, targetSet, {
+				kind: 'assign',
+				paletteIds: [...checked],
+			})
+			setStatus(
+				'Palettes assigned. Previous draft set memberships were replaced.',
+			)
+			refresh()
+		} catch (cause) {
+			setError(errorMessage(cause))
+		} finally {
+			working.current = false
+			setBusy(false)
+		}
+	}
+	if (showSets)
+		return (
+			<SchemeSetLibrary
+				client={client}
+				sets={sets}
+				loading={loading}
+				catalogError={error}
+				onBack={() => {
+					setShowSets(false)
+					refresh()
+				}}
+				onChanged={refresh}
+				onDirtyChange={setChildDirty}
+			/>
+		)
 	if (editing) {
 		return (
 			<SchemeEditor
@@ -509,14 +592,12 @@ export default function SchemeLibrary({
 					]
 				}
 				deleting={editing.deleting}
-				onDirtyChange={onDirtyChange}
+				onDirtyChange={setChildDirty}
 				onBack={() => setEditing(null)}
 				onSaved={message => {
 					setStatus(message)
 					setEditing(null)
-					setLoading(true)
-					setError('')
-					setReload(value => value + 1)
+					refresh()
 				}}
 			/>
 		)
@@ -527,6 +608,7 @@ export default function SchemeLibrary({
 				type="button"
 				className={adminStyles.backLink}
 				onClick={onBack}
+				disabled={busy}
 			>
 				<FontAwesomeIcon icon={faSquareArrowLeft} aria-hidden="true" />{' '}
 				Back to puzzles
@@ -535,9 +617,18 @@ export default function SchemeLibrary({
 				<h2 id="scheme-library-title">Palettes</h2>
 				<div className={adminStyles.galleryControls}>
 					<AdminIconButton
+						icon={faLayerGroup}
+						label="Manage palette sets"
+						disabled={busy || loading || !!error}
+						onClick={() => {
+							setShowSets(true)
+							setStatus('')
+						}}
+					/>
+					<AdminIconButton
 						icon={faPlusLarge}
 						label="New palette"
-						disabled={loading || !!error}
+						disabled={busy || loading || !!error}
 						onClick={() => {
 							setStatus('')
 							setEditing({ scheme: null, deleting: false })
@@ -546,19 +637,75 @@ export default function SchemeLibrary({
 					<AdminIconButton
 						icon={faRotate}
 						label="Refresh palette catalog"
-						disabled={loading}
-						onClick={() => {
-							setLoading(true)
-							setError('')
-							setReload(value => value + 1)
-						}}
+						disabled={busy || loading}
+						onClick={refresh}
 					/>
 				</div>
 			</div>
 			<p>
-				Add and refine draft palettes. Starter offerings, rewards,
-				packs, and release controls follow separately.
+				Organize palettes in sets without changing starter offerings,
+				rewards, puzzle usage, or store access.
 			</p>
+			<div className={styles.organize}>
+				<label htmlFor="scheme-set-filter">Show palettes</label>
+				<select
+					id="scheme-set-filter"
+					value={filter}
+					disabled={loading || busy}
+					onChange={event => {
+						setFilter(event.target.value)
+						setChecked(new Set())
+					}}
+				>
+					<option value="all">All palettes</option>
+					<option value="ungrouped">Ungrouped</option>
+					{sets.map(set => (
+						<option key={set.row.id} value={set.row.id}>
+							{set.row.name} ({schemeSetLabels[set.kind]})
+						</option>
+					))}
+				</select>
+				<label htmlFor="scheme-assign-set">
+					Assign selected to set
+				</label>
+				<select
+					id="scheme-assign-set"
+					value={targetSet}
+					disabled={loading || busy}
+					onChange={event => setTargetSet(event.target.value)}
+				>
+					<option value="">Choose a draft set</option>
+					{sets
+						.filter(
+							set => !set.row.published_at && !set.row.release_at,
+						)
+						.map(set => (
+							<option key={set.row.id} value={set.row.id}>
+								{set.row.name}
+							</option>
+						))}
+				</select>
+				<button
+					type="button"
+					disabled={
+						loading || busy || !targetSet || checked.size === 0
+					}
+					onClick={() => {
+						void assign()
+					}}
+				>
+					Assign {checked.size} selected
+				</button>
+				{checked.size > 0 && (
+					<button
+						type="button"
+						disabled={busy}
+						onClick={() => setChecked(new Set())}
+					>
+						Clear selection
+					</button>
+				)}
+			</div>
 			{status && <p role="status">{status}</p>}
 			{loading && <p role="status">Loading palettes…</p>}
 			{error && <p role="alert">{error}</p>}
@@ -566,63 +713,121 @@ export default function SchemeLibrary({
 				!error &&
 				(schemes.length ? (
 					<ul className={styles.cards}>
-						{schemes.map(scheme => (
-							<li
-								className={styles.card}
-								key={scheme.id}
-								aria-label={`Palette ${scheme.name}`}
-							>
-								<Swatches colors={scheme.colors} />
-								<strong>{scheme.name}</strong>
-								<span>{releaseState(scheme)}</span>
-								<div className={styles.actions}>
-									<AdminIconButton
-										icon={faCopy}
-										label={`Duplicate ${scheme.name}`}
-										onClick={() => {
-											setStatus('')
-											setEditing({
-												scheme: null,
-												deleting: false,
-												startingColors: scheme.colors,
-											})
-										}}
-									/>
-									<AdminIconButton
-										icon={
-											scheme.published_at
-												? faEye
-												: faPenToSquare
-										}
-										label={`${scheme.published_at ? 'View' : 'Edit'} ${scheme.name}`}
-										className={adminStyles.editAction}
-										onClick={() => {
-											setStatus('')
-											setEditing({
-												scheme,
-												deleting: false,
-											})
-										}}
-									/>
-									<AdminIconButton
-										icon={faTrashCan}
-										label={`Delete ${scheme.name}`}
-										className={adminStyles.deleteAction}
+						{schemes
+							.filter(scheme => {
+								const set = sets.find(set =>
+									set.members.some(
+										member => member.id === scheme.id,
+									),
+								)
+								return (
+									filter === 'all' ||
+									(filter === 'ungrouped'
+										? !set
+										: set?.row.id === filter)
+								)
+							})
+							.map(scheme => (
+								<li
+									className={styles.card}
+									key={scheme.id}
+									aria-label={`Palette ${scheme.name}`}
+								>
+									<Swatches colors={scheme.colors} />
+									<strong>{scheme.name}</strong>
+									<Checkbox
+										plain
+										hideLabel
+										label={`Select ${scheme.name}`}
+										checked={checked.has(scheme.id)}
 										disabled={
-											!!scheme.published_at ||
-											!!scheme.release_at
+											busy ||
+											sets.some(
+												set =>
+													(set.row.published_at ||
+														set.row.release_at) &&
+													set.members.some(
+														member =>
+															member.id ===
+															scheme.id,
+													),
+											)
 										}
-										onClick={() => {
-											setStatus('')
-											setEditing({
-												scheme,
-												deleting: true,
+										onChange={value => {
+											setChecked(previous => {
+												const next = new Set(previous)
+												if (value) next.add(scheme.id)
+												else next.delete(scheme.id)
+												return next
 											})
 										}}
 									/>
-								</div>
-							</li>
-						))}
+									<span>{releaseState(scheme)}</span>
+									{sets
+										.filter(set =>
+											set.members.some(
+												member =>
+													member.id === scheme.id,
+											),
+										)
+										.map(set => (
+											<span key={set.row.id}>
+												{set.row.name} ·{' '}
+												{schemeSetLabels[set.kind]}
+											</span>
+										))}
+									<div className={styles.actions}>
+										<AdminIconButton
+											icon={faCopy}
+											label={`Duplicate ${scheme.name}`}
+											disabled={busy}
+											onClick={() => {
+												setStatus('')
+												setEditing({
+													scheme: null,
+													deleting: false,
+													startingColors:
+														scheme.colors,
+												})
+											}}
+										/>
+										<AdminIconButton
+											icon={
+												scheme.published_at
+													? faEye
+													: faPenToSquare
+											}
+											label={`${scheme.published_at ? 'View' : 'Edit'} ${scheme.name}`}
+											disabled={busy}
+											className={adminStyles.editAction}
+											onClick={() => {
+												setStatus('')
+												setEditing({
+													scheme,
+													deleting: false,
+												})
+											}}
+										/>
+										<AdminIconButton
+											icon={faTrashCan}
+											label={`Delete ${scheme.name}`}
+											className={adminStyles.deleteAction}
+											disabled={
+												busy ||
+												!!scheme.published_at ||
+												!!scheme.release_at
+											}
+											onClick={() => {
+												setStatus('')
+												setEditing({
+													scheme,
+													deleting: true,
+												})
+											}}
+										/>
+									</div>
+								</li>
+							))}
 					</ul>
 				) : (
 					<p>No palettes yet. Create a draft to get started.</p>
