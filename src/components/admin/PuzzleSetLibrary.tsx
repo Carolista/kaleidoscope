@@ -24,7 +24,7 @@ import useModalState from '../../hooks/useModalState'
 import styles from './AdminPortal.module.css'
 import useUnsavedDraft from './useUnsavedDraft'
 import { useNavigationGuard } from './useNavigationGuard'
-import PuzzleSetMembers from './PuzzleSetMembers'
+import SortableSetMembers from './SortableSetMembers'
 import { useCatalog, useCatalogInvalidation } from './useAdminCatalog'
 
 function errorMessage(cause: unknown) {
@@ -364,9 +364,29 @@ export default function PuzzleSetLibrary({
 							{!selected.members.length && (
 								<p>This set has no puzzles yet.</p>
 							)}
-							<PuzzleSetMembers
-								members={members}
+							<SortableSetMembers
+								members={members.map(member => ({
+									...member,
+									id: member.puzzleId,
+								}))}
+								noun="puzzles"
 								disabled={busy}
+								preview={member => (
+									<div
+										className={styles.setMemberThumbnail}
+										aria-hidden="true"
+									>
+										{member.preview ? (
+											<HexPuzzleBoard
+												target
+												radius={member.preview.radius}
+												colors={member.preview.target}
+											/>
+										) : (
+											<span>Preview unavailable</span>
+										)}
+									</div>
+								)}
 								onReorder={setMemberIds}
 								onRemove={puzzleId => {
 									void mutate(
@@ -378,7 +398,13 @@ export default function PuzzleSetLibrary({
 										'Puzzle removed from set.',
 									)
 								}}
-							/>
+							>
+								{(member, index) => (
+									<>
+										{index + 1}. {member.name}
+									</>
+								)}
+							</SortableSetMembers>
 							<Button
 								disabled={busy || !orderDirty}
 								onClick={() => {

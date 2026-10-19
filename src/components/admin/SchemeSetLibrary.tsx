@@ -1,12 +1,9 @@
 import { useEffect, useRef, useState, type SubmitEvent } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import {
-	faArrowDown,
-	faArrowUp,
 	faPenToSquare,
 	faPlusLarge,
 	faSquareArrowLeft,
-	faSquareMinus,
 	faTrashCan,
 } from '@fortawesome/pro-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -19,13 +16,8 @@ import {
 	PaletteStrip,
 	Select,
 } from '@shared'
-import {
-	AdminFeedback,
-	AdminGallery,
-	AdminMemberList,
-	AdminMemberRow,
-	AdminSectionHeading,
-} from './AdminLayout'
+import { AdminFeedback, AdminGallery, AdminSectionHeading } from './AdminLayout'
+import SortableSetMembers from './SortableSetMembers'
 import SetCreationDialog from './SetCreationDialog'
 import useModalState from '../../hooks/useModalState'
 import type { Database } from '../../types/database'
@@ -49,6 +41,7 @@ export default function SchemeSetLibrary({
 	catalogError,
 	onBack,
 	onChanged,
+	onOrderSaved,
 }: {
 	readonly client: SupabaseClient<Database>
 	readonly sets: readonly SchemeSet[]
@@ -57,6 +50,10 @@ export default function SchemeSetLibrary({
 	readonly catalogError: string
 	readonly onBack?: () => void
 	readonly onChanged: () => void
+	readonly onOrderSaved: (
+		setId: string,
+		paletteIds: readonly string[],
+	) => void
 }) {
 	const [editing, setEditing] = useState<{
 		id: string
@@ -68,6 +65,7 @@ export default function SchemeSetLibrary({
 	const addButton = useRef<HTMLButtonElement>(null)
 	const focusAdd = useRef(false)
 	const [kind, setKind] = useState<SchemeSetKind>('undecided')
+	const [memberIds, setMemberIds] = useState<readonly string[]>([])
 	const [error, setError] = useState('')
 	const [deleteError, setDeleteError] = useState('')
 	const [status, setStatus] = useState('')
@@ -77,10 +75,28 @@ export default function SchemeSetLibrary({
 	const selected = sets.find(set => set.row.id === editing?.id)
 	const readOnly = !!selected?.row.published_at || !!selected?.row.release_at
 	const unavailable = busy || loading || !!catalogError
+	const members = selected
+		? [
+				...memberIds.flatMap(id => {
+					const member = selected.members.find(
+						value => value.id === id,
+					)
+					return member ? [member] : []
+				}),
+				...selected.members.filter(
+					member => !memberIds.includes(member.id),
+				),
+			]
+		: []
+	const orderDirty =
+		!!selected &&
+		members.some(
+			(member, index) => member.id !== selected.members[index]?.id,
+		)
 	const dirty =
 		!!editing &&
 		!readOnly &&
-		(name !== editing.name || kind !== editing.kind)
+		(name !== editing.name || kind !== editing.kind || orderDirty)
 	useUnsavedDraft({ dirty, pending: busy })
 	const { requestNavigation } = useNavigationGuard()
 	useEffect(() => {
@@ -93,6 +109,7 @@ export default function SchemeSetLibrary({
 		requestNavigation(() => {
 			if (editing) {
 				setEditing(null)
+				setMemberIds([])
 				setError('')
 				setStatus('')
 			} else onBack?.()
@@ -118,9 +135,15 @@ export default function SchemeSetLibrary({
 			if (action.kind === 'delete') {
 				setDeleting(null)
 				setEditing(null)
+				setMemberIds([])
 			}
+			if (action.kind === 'remove')
+				setMemberIds(previous =>
+					previous.filter(id => !action.paletteIds.includes(id)),
+				)
 			setStatus(message)
-			onChanged()
+			if (action.kind === 'reorder') onOrderSaved(id, action.paletteIds)
+			else onChanged()
 		} catch (cause) {
 			const report = action.kind === 'delete' ? setDeleteError : setError
 			report(
@@ -140,18 +163,6 @@ export default function SchemeSetLibrary({
 			editing.id,
 			{ kind: 'update', name, role: kind },
 			'Set details saved.',
-		)
-	}
-	function move(index: number, direction: -1 | 1) {
-		if (!selected) return
-		const ids = selected.members.map(member => member.id)
-		const target = index + direction
-		if (target < 0 || target >= ids.length) return
-		;[ids[index], ids[target]] = [ids[target], ids[index]]
-		void mutate(
-			selected.row.id,
-			{ kind: 'reorder', paletteIds: ids },
-			'Palette order saved.',
 		)
 	}
 	return (
@@ -320,78 +331,58 @@ export default function SchemeSetLibrary({
 						<>
 							<p>
 								Assign or move palettes using the selection
-								controls in the palette library. Reordering and
-								removal save immediately.
+								controls in the palette library. Ordering saves
+								only when you choose Save order. Removal saves
+								immediately.
 							</p>
 							{selected.members.length === 0 && (
 								<p>This set has no palettes yet.</p>
 							)}
-							<AdminMemberList>
-								{selected.members.map((member, index) => (
-									<AdminMemberRow
-										key={member.id}
-										actions={
-											<>
-												<AdminIconButton
-													icon={faArrowUp}
-													label={`Move ${member.name} up`}
-													disabled={
-														unavailable ||
-														readOnly ||
-														index === 0
-													}
-													onClick={() =>
-														move(index, -1)
-													}
-												/>
-												<AdminIconButton
-													icon={faArrowDown}
-													label={`Move ${member.name} down`}
-													disabled={
-														unavailable ||
-														readOnly ||
-														index ===
-															selected.members
-																.length -
-																1
-													}
-													onClick={() =>
-														move(index, 1)
-													}
-												/>
-												<AdminIconButton
-													icon={faSquareMinus}
-													label={`Remove ${member.name} from set`}
-													disabled={
-														unavailable || readOnly
-													}
-													className={
-														adminStyles.minus
-													}
-													onClick={() => {
-														void mutate(
-															selected.row.id,
-															{
-																kind: 'remove',
-																paletteIds: [
-																	member.id,
-																],
-															},
-															'Palette removed; its design is unchanged.',
-														)
-													}}
-												/>
-											</>
-										}
-									>
+							<SortableSetMembers
+								members={members}
+								noun="palettes"
+								disabled={unavailable || readOnly}
+								onReorder={setMemberIds}
+								onRemove={paletteId => {
+									void mutate(
+										selected.row.id,
+										{
+											kind: 'remove',
+											paletteIds: [paletteId],
+										},
+										'Palette removed; its design is unchanged.',
+									)
+								}}
+							>
+								{member => (
+									<>
 										<PaletteStrip
 											colors={member.colors}
 											variant="continuous"
 										/>
 										{member.name}
-									</AdminMemberRow>
-								))}
-							</AdminMemberList>
+									</>
+								)}
+							</SortableSetMembers>
+							{!readOnly && (
+								<Button
+									disabled={unavailable || !orderDirty}
+									onClick={() => {
+										void mutate(
+											selected.row.id,
+											{
+												kind: 'reorder',
+												paletteIds: members.map(
+													member => member.id,
+												),
+											},
+											'Palette order saved.',
+										)
+									}}
+								>
+									Save order
+								</Button>
+							)}
 						</>
 					)}
 				</>
@@ -434,6 +425,7 @@ export default function SchemeSetLibrary({
 										})
 										setName(set.row.name)
 										setKind(set.kind)
+										setMemberIds([])
 										setStatus('')
 										setError('')
 									}}

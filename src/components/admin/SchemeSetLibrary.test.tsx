@@ -38,6 +38,7 @@ describe('palette set loading feedback', () => {
 				catalogError=""
 				onBack={onBack}
 				onChanged={vi.fn()}
+				onOrderSaved={vi.fn()}
 			/>,
 		)
 		fireEvent.click(
@@ -78,6 +79,7 @@ describe('palette set loading feedback', () => {
 			catalogError: '',
 			onBack: vi.fn(),
 			onChanged: vi.fn(),
+			onOrderSaved: vi.fn(),
 		}
 		const { rerender } = render(<SchemeSetLibrary {...props} />)
 		const status = screen.getByRole('status')
@@ -123,6 +125,7 @@ describe('palette set loading feedback', () => {
 				catalogError=""
 				onBack={vi.fn()}
 				onChanged={vi.fn()}
+				onOrderSaved={vi.fn()}
 			/>,
 		)
 		fireEvent.click(screen.getByRole('button', { name: 'New palette set' }))

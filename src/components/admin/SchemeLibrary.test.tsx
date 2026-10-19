@@ -315,25 +315,46 @@ describe('palette management', () => {
 		})
 	})
 
-	it('reorders and removes members immediately, and deletes a set only after confirmation', async () => {
+	it('stages member order until Save order, removes immediately, and deletes a set only after confirmation', async () => {
 		const second = { ...scheme, id: 'other', name: 'Other colors' }
 		mocks.sets.mockResolvedValue([
 			{ ...paletteSet, members: [scheme, second] },
 		])
-		setup()
+		const { isProtected } = setup()
 		await openSets()
 		fireEvent.click(
 			screen.getByRole('button', { name: 'Edit set Warm colors' }),
 		)
+		const saveOrder = screen.getByRole('button', { name: 'Save order' })
+		expect(saveOrder).toBeDisabled()
+		fireEvent.keyDown(
+			screen.getByRole('button', { name: 'Reorder Cabo' }),
+			{ key: 'ArrowDown' },
+		)
+		fireEvent.keyDown(
+			screen.getByRole('button', { name: 'Reorder Cabo' }),
+			{ key: 'ArrowUp' },
+		)
+		fireEvent.keyDown(
+			screen.getByRole('button', { name: 'Reorder Cabo' }),
+			{ key: 'End' },
+		)
 		expect(
-			screen.getByRole('button', { name: 'Move Cabo up' }),
-		).toBeDisabled()
-		fireEvent.click(screen.getByRole('button', { name: 'Move Cabo down' }))
+			within(screen.getByRole('list')).getAllByRole('listitem')[1],
+		).toHaveTextContent('Cabo')
+		expect(mocks.manageSet).not.toHaveBeenCalled()
+		expect(isProtected()).toBe(true)
+		fireEvent.click(saveOrder)
 		await screen.findByText('Palette order saved.')
+		expect(mocks.manageSet).toHaveBeenCalledOnce()
 		expect(mocks.manageSet).toHaveBeenLastCalledWith(client, 'set-one', {
 			kind: 'reorder',
 			paletteIds: ['other', 'cabo'],
 		})
+		expect(mocks.sets).toHaveBeenCalledOnce()
+		expect(isProtected()).toBe(false)
+		expect(saveOrder).toBeDisabled()
+		mocks.sets.mockResolvedValue([{ ...paletteSet, members: [second] }])
 		await waitFor(() =>
 			expect(
 				screen.getByRole('button', { name: 'Remove Cabo from set' }),
@@ -400,7 +421,13 @@ describe('palette management', () => {
 			screen.getByRole('button', { name: 'Remove Cabo from set' }),
 		).toBeDisabled()
 		expect(
+			screen.getByRole('button', { name: 'Reorder Cabo' }),
+		).toBeDisabled()
+		expect(
 			screen.queryByRole('button', { name: 'Save set' }),
+		).not.toBeInTheDocument()
+		expect(
+			screen.queryByRole('button', { name: 'Save order' }),
 		).not.toBeInTheDocument()
 	})
 

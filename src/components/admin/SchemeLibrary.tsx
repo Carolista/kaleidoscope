@@ -463,6 +463,22 @@ export default function SchemeLibrary({
 				refreshing={refreshing}
 				catalogError={error}
 				onChanged={() => refresh(false, false)}
+				onOrderSaved={(setId, paletteIds) =>
+					setCatalog.update(previous =>
+						previous.map(set =>
+							set.row.id === setId
+								? {
+										...set,
+										members: paletteIds.flatMap(id =>
+											set.members.filter(
+												member => member.id === id,
+											),
+										),
+									}
+								: set,
+						),
+					)
+				}
 			/>
 		)
 	if (editing) {

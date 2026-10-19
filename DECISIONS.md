@@ -164,7 +164,8 @@ Membership is exclusive; append eligible unassigned Set/pack drafts in selection
 order. Rename explicitly and save removal immediately, but stage member ordering
 locally: drag (or keyboard-move) freely, then commit the whole order with **Save
 order** in one RPC. Per-move writes forced a round trip before each next move.
-Staged order counts as unsaved work for navigation guards.
+Staged order counts as unsaved work for navigation guards. Palette sets share
+the same staged ordering component and Save order flow.
 Keep existing selection mode separate from catalog ordering; do not imply that
 reordering enforces a player's completion sequence.
 

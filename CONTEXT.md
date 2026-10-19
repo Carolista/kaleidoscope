@@ -98,7 +98,7 @@ thumbnail in current Supabase palette colors beside a grip handle and square-min
 removal control. Pointer drag (or Up/Down/Home/End on a focused handle; Escape
 cancels a drag) stages a local order; **Save order** writes it in one request,
 and staged order is guarded like other unsaved edits. Removal saves immediately;
-names require Save name. Palette sets still use up/down arrows that save immediately.
+names require Save name. Palette sets share the same staged drag ordering.
 Confirmed set deletion unassigns members but preserves puzzles/private solutions.
 Admin/invoker-RLS RPCs recheck release/reference state under the catalog lock;
 scheduled/live sets, prepared members, and dependent progression/routes/rewards,
@@ -317,7 +317,7 @@ changes should be applied to all four SVG assets.
 | Labelled native field | [FormField](./src/components/shared/FormField.tsx) with [Input/Select](./src/components/shared/FormControl.tsx), including admin sign-in |
 | Player / admin icon action | [PlayerIconButton](./src/components/shared/PlayerIconButton.tsx) / [AdminIconButton](./src/components/admin/AdminIconButton.tsx); generic renderer is [IconButton](./src/components/shared/IconButton.tsx) |
 | Edit / delete / new / refresh | Admin icon action with `faPenToSquare` / `faTrashCan` / `faPlusLarge` / `faRotate`; item-specific label and title |
-| Reorder / unassign | Staged `faGripVertical` drag handle + Save order ([PuzzleSetMembers](./src/components/admin/PuzzleSetMembers.tsx)); palette sets still use `faArrowUp` / `faArrowDown`; `faSquareMinus` unassign preserves the member |
+| Reorder / unassign | Staged `faGripVertical` drag handle + Save order ([SortableSetMembers](./src/components/admin/SortableSetMembers.tsx)), shared by puzzle and palette sets; `faSquareMinus` unassign preserves the member |
 | Admin catalog data | [useCatalog](./src/components/admin/useAdminCatalog.ts) / `useCatalogInvalidation`; update locally after writes, invalidate other affected catalogs |
 | Section / view tabs | [AdminNavigation](./src/components/admin/AdminNavigation.tsx); wrap changes in `requestNavigation` |
 | Pending feedback | [Loading](./src/components/shared/Loading.tsx); readable request-specific label, not a success spinner |

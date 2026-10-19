@@ -131,7 +131,8 @@ puzzles and their private solutions. Scheduled/live content and dependent
 progression/routes/rewards remain protected by database checks.
 
 **Palettes** opens palette sets, and its **Palettes** view holds the Supabase
-palette library. Create or edit draft
+palette library. Palette set members reorder with the same drag handles and
+**Save order** as puzzle sets. Create or edit draft
 palettes using five ordered hex fields/color pickers, or use a card's **Duplicate**
 icon to start an unnamed palette with those colors. The medium hexagon sandbox
 offers **Randomize** with an equal chance for each palette slot and no neutral
