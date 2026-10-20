@@ -60,12 +60,18 @@ function deletable(draft: LibraryDraft) {
 	return !draft.assigned && !draft.row.published_at && !draft.row.release_at
 }
 
+export interface LibraryView {
+	readonly filter: string
+	readonly setChoice: string
+}
+
 const fallbackError = 'Unable to manage puzzle drafts.'
 
 export default function PuzzleDraftLibrary({
 	client,
 	palettes,
 	onNew,
+	initialView,
 	catalogStatus,
 	onRefreshPalettes,
 	palettesLoading,
@@ -74,7 +80,9 @@ export default function PuzzleDraftLibrary({
 }: {
 	readonly client: SupabaseClient<Database>
 	readonly palettes: readonly AuthoringPalette[]
-	readonly onNew?: (set?: DraftSet) => void
+	readonly onNew?: (set?: DraftSet, view?: LibraryView) => void
+	// Restores the filters after returning from the creation form.
+	readonly initialView?: LibraryView
 	readonly catalogStatus?: 'drafts' | 'assigned'
 	readonly onRefreshPalettes?: () => void
 	readonly palettesLoading?: boolean
@@ -88,9 +96,9 @@ export default function PuzzleDraftLibrary({
 	const loadFailed = !!draftCatalog.error && !loading
 	const [selectedId, setSelectedId] = useState<string | null>(null)
 	const [error, setError] = useState('')
-	const [filter, setFilter] = useState('all')
+	const [filter, setFilter] = useState(initialView?.filter ?? 'all')
 	const [status, setStatus] = useState('')
-	const [setChoice, setSetChoice] = useState('all')
+	const [setChoice, setSetChoice] = useState(initialView?.setChoice ?? 'all')
 	const [action, setAction, actionModal] = useModalState<{
 		kind: 'delete' | 'palette' | 'set' | 'unassign'
 		ids: readonly string[]
@@ -276,6 +284,7 @@ export default function PuzzleDraftLibrary({
 					palettesLoading={palettesLoading}
 					palettesRefreshing={palettesRefreshing}
 					palettesError={palettesError}
+					onCancel={() => setSelectedId(null)}
 					onChanged={(status, updated) => {
 						setStatus(status)
 						draftCatalog.update(previous =>
@@ -313,7 +322,9 @@ export default function PuzzleDraftLibrary({
 						icon={faPlusLarge}
 						label="New puzzle"
 						disabled={bulkBusy}
-						onClick={() => onNew(filteredSet)}
+						onClick={() =>
+							onNew(filteredSet, { filter, setChoice })
+						}
 					/>
 				)}
 				<AdminIconButton

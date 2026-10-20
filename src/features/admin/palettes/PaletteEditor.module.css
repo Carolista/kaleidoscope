@@ -58,6 +58,11 @@
 	margin-block: 0;
 }
 
+.actions {
+	display: flex;
+	gap: 0.5rem;
+}
+
 @media (min-width: 640px) {
 	.editor {
 		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);

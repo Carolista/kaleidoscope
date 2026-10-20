@@ -515,6 +515,32 @@ describe('palette management', () => {
 		expect(mocks.manageSet).not.toHaveBeenCalled()
 	})
 
+	it('cancels the editor back to the same filtered list, asking before discarding edits', async () => {
+		mocks.sets.mockResolvedValue([paletteSet])
+		render(
+			<PaletteLibrary
+				client={client}
+				view="palettes"
+				catalogStatus="assigned"
+			/>,
+		)
+		await screen.findByRole('button', { name: 'Edit Cabo' })
+		fireEvent.change(screen.getByLabelText('Show palettes'), {
+			target: { value: 'set-one' },
+		})
+		fireEvent.click(screen.getByRole('button', { name: 'New palette' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+		expect(screen.getByLabelText('Show palettes')).toHaveValue('set-one')
+		fireEvent.click(screen.getByRole('button', { name: 'New palette' }))
+		fireEvent.change(screen.getByLabelText('Palette name'), {
+			target: { value: 'Draft' },
+		})
+		fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }))
+		expect(screen.getByLabelText('Show palettes')).toHaveValue('set-one')
+		expect(mocks.manage).not.toHaveBeenCalled()
+	})
+
 	it('retries a failed set assignment with the same palette ID', async () => {
 		mocks.sets.mockResolvedValue([paletteSet])
 		render(
@@ -1220,7 +1246,7 @@ describe('palette management', () => {
 		).not.toBeInTheDocument()
 		expect(screen.queryByText(/Palette ID/)).not.toBeInTheDocument()
 		const save = screen.getByRole('button', { name: 'Save' })
-		expect(save.parentElement).toContainElement(
+		expect(save.parentElement?.parentElement).toContainElement(
 			screen.getByLabelText('Palette name'),
 		)
 	})

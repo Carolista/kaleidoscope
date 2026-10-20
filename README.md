@@ -110,7 +110,9 @@ After saving, name/palette/recipe choices apply to the next generation without
 changing the saved puzzle. A revised name survives randomization; an unchanged
 saved name clears.
 Unsaved work is guarded when leaving the workspace; choose the **Unassigned** tab
-to return to the gallery. The playtest Restart sits beside the pieces.
+to return to the gallery. Every add/edit form also has a **Cancel** button (**Back**
+once saved or read-only) that returns to the same list, filters included, asking
+before it discards edits. The playtest Restart sits beside the pieces.
 
 Drafts can preview replacement designs with the recipe/wand controls, even when
 assigned or scheduled, until they go live.

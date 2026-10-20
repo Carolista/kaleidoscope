@@ -694,6 +694,14 @@ describe('admin puzzle lab', () => {
 		expect(screen.getByLabelText('Shape')).toHaveValue('triangle')
 		expect(screen.getByLabelText('Shape')).toBeDisabled()
 		expect(screen.getByLabelText('Intended use')).toBeDisabled()
+		fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+		expect(await screen.findByLabelText('Show set')).toHaveValue('set-t')
+		fireEvent.click(
+			await screen.findByRole('button', { name: 'New puzzle' }),
+		)
+		expect(
+			screen.getByText('This puzzle will be added to "Triangles".'),
+		).toBeInTheDocument()
 		await randomize()
 		fireEvent.change(screen.getByLabelText('Puzzle name'), {
 			target: { value: 'Triangle two' },

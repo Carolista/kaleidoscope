@@ -19,7 +19,7 @@ import {
 	type PuzzleUsage,
 } from '@/features/admin/services'
 import PuzzlePlaytest from './PuzzlePlaytest'
-import PuzzleDraftLibrary from './PuzzleDraftLibrary'
+import PuzzleDraftLibrary, { type LibraryView } from './PuzzleDraftLibrary'
 import { useUnsavedDraft } from '@/ui/navigation'
 import PuzzleDraftForm from './PuzzleDraftForm'
 import { useCatalog, useCatalogInvalidation } from '@/features/admin/catalog'
@@ -58,6 +58,8 @@ export default function PuzzleAuthoring({
 	const [creating, setCreating] = useState(false)
 	// A new puzzle made from a filtered set joins that set and takes its shape.
 	const [targetSet, setTargetSet] = useState<DraftSet | null>(null)
+	// Filters in force when creation began, restored on return to the list.
+	const [libraryView, setLibraryView] = useState<LibraryView>()
 	const [pending, setPending] = useState<string | null>(null)
 	const busy = pending !== null
 	const working = useRef(false)
@@ -191,7 +193,9 @@ export default function PuzzleAuthoring({
 					client={client}
 					palettes={palettes}
 					catalogStatus={catalogStatus}
-					onNew={set => {
+					initialView={libraryView}
+					onNew={(set, view) => {
+						setLibraryView(view)
 						setGenerated(null)
 						setTargetSet(set ?? null)
 						setShape(
@@ -273,6 +277,7 @@ export default function PuzzleAuthoring({
 						submitDisabled: loading || !generated || !palette,
 					}}
 					onSubmit={save}
+					onCancel={() => setCreating(false)}
 				/>
 				{generated && palette && (
 					<PuzzlePlaytest

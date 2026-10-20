@@ -271,6 +271,7 @@ export default function PaletteLibrary({
 					// Set thumbnails are rendered with current palette colors.
 					invalidate('puzzleSets')
 				}}
+				onCancel={() => setEditing(null)}
 			/>
 		)
 	}

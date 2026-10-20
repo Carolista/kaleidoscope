@@ -31,6 +31,7 @@ export default function PuzzleDraftEditor({
 	draft,
 	palettes,
 	onChanged,
+	onCancel,
 	onRefreshPalettes,
 	palettesLoading,
 	palettesRefreshing,
@@ -40,6 +41,7 @@ export default function PuzzleDraftEditor({
 	readonly draft: LibraryDraft
 	readonly palettes: readonly AuthoringPalette[]
 	readonly onChanged: (status: string, updated: LibraryDraft | null) => void
+	readonly onCancel: () => void
 	readonly onRefreshPalettes?: () => void
 	readonly palettesLoading?: boolean
 	readonly palettesRefreshing?: boolean
@@ -212,6 +214,7 @@ export default function PuzzleDraftEditor({
 					submitDisabled: !palette || palettesLoading,
 				}}
 				onSubmit={save}
+				onCancel={onCancel}
 			/>
 			{palette ? (
 				<PuzzlePlaytest

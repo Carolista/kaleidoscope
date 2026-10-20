@@ -1226,6 +1226,7 @@ describe('draft library', () => {
 			expect.objectContaining({
 				row: expect.objectContaining({ id: 'set' }),
 			}),
+			{ filter: 'all', setChoice: 'set' },
 		)
 	})
 
@@ -1329,7 +1330,56 @@ describe('draft library', () => {
 		fireEvent.click(
 			await screen.findByRole('button', { name: 'New puzzle' }),
 		)
-		expect(onNew).toHaveBeenCalledWith(undefined)
+		expect(onNew).toHaveBeenCalledWith(undefined, {
+			filter: 'all',
+			setChoice: 'all',
+		})
+	})
+
+	it('returns from the editor to the same filtered list with Cancel, asking before discarding edits', async () => {
+		mocks.load.mockResolvedValue([
+			{
+				...draft,
+				assigned: true,
+				collectionId: 'set',
+				collectionName: 'First set',
+				collectionPosition: 1,
+				collectionKind: 'core',
+			},
+		])
+		render(
+			<PuzzleDraftLibrary
+				client={getSupabaseClient()}
+				palettes={[palette, other]}
+				catalogStatus="assigned"
+			/>,
+		)
+		fireEvent.change(await screen.findByLabelText('Show set'), {
+			target: { value: 'set' },
+		})
+		fireEvent.click(
+			screen.getByRole('button', { name: 'Edit draft Saved art' }),
+		)
+		fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+		expect(screen.getByLabelText('Show set')).toHaveValue('set')
+		fireEvent.click(
+			screen.getByRole('button', { name: 'Edit draft Saved art' }),
+		)
+		fireEvent.change(screen.getByLabelText('Puzzle name'), {
+			target: { value: 'Changed' },
+		})
+		fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+		const dialog = screen.getByRole('dialog', {
+			name: 'Discard unsaved changes?',
+		})
+		fireEvent.click(
+			within(dialog).getByRole('button', { name: 'Keep editing' }),
+		)
+		expect(screen.getByLabelText('Puzzle name')).toHaveValue('Changed')
+		fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }))
+		expect(screen.getByLabelText('Show set')).toHaveValue('set')
+		expect(mocks.edit).not.toHaveBeenCalled()
 	})
 
 	it('shows load failures explicitly and supports retry', async () => {

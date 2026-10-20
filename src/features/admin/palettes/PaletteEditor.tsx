@@ -18,7 +18,7 @@ import {
 	errorMessage,
 } from '@/features/admin/common'
 import PaletteSandbox from './PaletteSandbox'
-import { useUnsavedDraft } from '@/ui/navigation'
+import { useNavigationGuard, useUnsavedDraft } from '@/ui/navigation'
 import styles from './PaletteEditor.module.css'
 import { releaseState } from './releaseState'
 import { Button, FormField, Input, Loading } from '@/ui/components'
@@ -31,6 +31,7 @@ export default function PaletteEditor({
 	startingColors,
 	targetSet,
 	onSaved,
+	onCancel,
 }: {
 	readonly client: SupabaseClient<Database>
 	readonly initial: CatalogPalette | null
@@ -38,7 +39,9 @@ export default function PaletteEditor({
 	// New palettes are added to this draft set as they are created.
 	readonly targetSet?: PaletteSet['row']
 	readonly onSaved: (message: string) => void
+	readonly onCancel: () => void
 }) {
+	const { requestNavigation } = useNavigationGuard()
 	const [name, setName] = useState(initial?.name ?? '')
 	const [colors, setColors] = useState<readonly string[]>(startingColors)
 	const [error, setError] = useState('')
@@ -155,20 +158,28 @@ export default function PaletteEditor({
 								/>
 							)}
 						</FormField>
-						{!readOnly && (
+						<div className={styles.actions}>
 							<Button
-								type="submit"
-								variant="primary"
-								disabled={
-									busy ||
-									!validColors ||
-									!name.trim() ||
-									(!!initial && !dirty)
-								}
+								disabled={busy}
+								onClick={() => requestNavigation(onCancel)}
 							>
-								Save
+								{readOnly ? 'Back' : 'Cancel'}
 							</Button>
-						)}
+							{!readOnly && (
+								<Button
+									type="submit"
+									variant="primary"
+									disabled={
+										busy ||
+										!validColors ||
+										!name.trim() ||
+										(!!initial && !dirty)
+									}
+								>
+									Save
+								</Button>
+							)}
+						</div>
 					</div>
 					<fieldset
 						className={styles.colors}

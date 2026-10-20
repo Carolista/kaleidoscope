@@ -17,6 +17,7 @@ import {
 	PaletteChoices,
 	Select,
 } from '@/ui/components'
+import { useNavigationGuard } from '@/ui/navigation'
 import PaletteFieldset from './PaletteFieldset'
 import styles from './PuzzleDraftForm.module.css'
 
@@ -52,6 +53,7 @@ export default function PuzzleDraftForm({
 	metadata,
 	generation,
 	onSubmit,
+	onCancel,
 }: {
 	readonly mode: 'create' | 'edit'
 	readonly palettes: readonly AuthoringPalette[]
@@ -65,7 +67,10 @@ export default function PuzzleDraftForm({
 	readonly metadata: DraftMetadata
 	readonly generation: DraftGeneration
 	readonly onSubmit: (event: SubmitEvent<HTMLFormElement>) => void
+	// Returns to the list, after the discard prompt when work is unsaved.
+	readonly onCancel: () => void
 }) {
+	const { requestNavigation } = useNavigationGuard()
 	return (
 		<AdminForm
 			onSubmit={onSubmit}
@@ -221,20 +226,30 @@ export default function PuzzleDraftForm({
 								</Select>
 							)}
 						</FormField>
-						<Button
-							variant="primary"
-							type="submit"
-							disabled={
-								busy ||
-								palettesLoading ||
-								palettesError ||
-								metadata.locked ||
-								metadata.submitDisabled ||
-								!metadata.name.trim()
-							}
-						>
-							{mode === 'create' ? 'Save Draft' : 'Save Changes'}
-						</Button>
+						<div className={styles.actions}>
+							<Button
+								disabled={busy}
+								onClick={() => requestNavigation(onCancel)}
+							>
+								{metadata.locked ? 'Back' : 'Cancel'}
+							</Button>
+							<Button
+								variant="primary"
+								type="submit"
+								disabled={
+									busy ||
+									palettesLoading ||
+									palettesError ||
+									metadata.locked ||
+									metadata.submitDisabled ||
+									!metadata.name.trim()
+								}
+							>
+								{mode === 'create'
+									? 'Save Draft'
+									: 'Save Changes'}
+							</Button>
+						</div>
 					</div>
 				</div>
 			</div>
