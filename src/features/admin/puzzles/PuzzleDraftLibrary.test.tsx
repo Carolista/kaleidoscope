@@ -1229,6 +1229,93 @@ describe('draft library', () => {
 		)
 	})
 
+	it('unassigns selected puzzles from each of their sets, but not daily assignments', async () => {
+		const inSet = (id: string, name: string, setId: string) => ({
+			...draft,
+			row: { ...draft.row, id, name },
+			assigned: true,
+			collectionId: setId,
+			collectionName: setId,
+			collectionPosition: 1,
+			collectionKind: 'core',
+		})
+		mocks.load.mockResolvedValue([
+			inSet('a', 'Alpha art', 'set-a'),
+			inSet('b', 'Beta art', 'set-b'),
+			{
+				...draft,
+				row: {
+					...draft.row,
+					id: 'd',
+					name: 'Daily art',
+					usage: 'daily',
+				},
+				assigned: true,
+			},
+		])
+		render(
+			<PuzzleDraftLibrary
+				client={getSupabaseClient()}
+				palettes={[palette, other]}
+				catalogStatus="assigned"
+			/>,
+		)
+		fireEvent.click(
+			await screen.findByRole('checkbox', {
+				name: 'Select draft Daily art',
+			}),
+		)
+		expect(
+			screen.getByRole('button', { name: 'Unassign from sets' }),
+		).toBeDisabled()
+		fireEvent.click(
+			screen.getByRole('checkbox', { name: 'Select draft Daily art' }),
+		)
+		fireEvent.click(
+			screen.getByRole('checkbox', { name: 'Select draft Alpha art' }),
+		)
+		fireEvent.click(
+			screen.getByRole('checkbox', { name: 'Select draft Beta art' }),
+		)
+		fireEvent.click(
+			screen.getByRole('button', { name: 'Unassign from sets' }),
+		)
+		expect(mocks.manageSet).not.toHaveBeenCalled()
+		fireEvent.click(
+			screen.getByRole('button', { name: 'Unassign puzzles' }),
+		)
+		await screen.findByText('Unassigned 2 drafts from their sets.')
+		expect(mocks.manageSet).toHaveBeenCalledTimes(2)
+		expect(mocks.manageSet).toHaveBeenCalledWith(
+			expect.anything(),
+			'set-a',
+			{ kind: 'remove', puzzleIds: ['a'] },
+		)
+		expect(mocks.manageSet).toHaveBeenCalledWith(
+			expect.anything(),
+			'set-b',
+			{ kind: 'remove', puzzleIds: ['b'] },
+		)
+	})
+
+	it('does not offer unassignment in the Unassigned view', async () => {
+		render(
+			<PuzzleDraftLibrary
+				client={getSupabaseClient()}
+				palettes={[palette, other]}
+				catalogStatus="drafts"
+			/>,
+		)
+		fireEvent.click(
+			await screen.findByRole('checkbox', {
+				name: 'Select draft Saved art',
+			}),
+		)
+		expect(
+			screen.queryByRole('button', { name: 'Unassign from sets' }),
+		).not.toBeInTheDocument()
+	})
+
 	it('offers an unassigned New puzzle in the Unassigned view', async () => {
 		const onNew = vi.fn()
 		render(

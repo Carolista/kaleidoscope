@@ -194,6 +194,76 @@ describe('palette management', () => {
 		).not.toBeInTheDocument()
 	})
 
+	it('unassigns selected palettes from each of their sets and hides the action for unassigned palettes', async () => {
+		const ember = { ...samplePalette, id: 'ember', name: 'Ember' }
+		const loose = { ...samplePalette, id: 'loose', name: 'Loose' }
+		mocks.load.mockResolvedValue([samplePalette, ember, loose])
+		mocks.sets.mockResolvedValue([
+			paletteSet,
+			{
+				...paletteSet,
+				row: { ...paletteSet.row, id: 'set-two', name: 'Pack colors' },
+				members: [ember],
+			},
+		])
+		render(<PaletteLibrary client={client} view="palettes" />)
+		await screen.findByRole('button', { name: 'Edit Cabo' })
+		fireEvent.click(screen.getByRole('checkbox', { name: 'Select Cabo' }))
+		fireEvent.click(screen.getByRole('checkbox', { name: 'Select Loose' }))
+		expect(
+			screen.queryByRole('button', { name: 'Unassign from sets' }),
+		).not.toBeInTheDocument()
+		fireEvent.click(screen.getByRole('checkbox', { name: 'Select Loose' }))
+		fireEvent.click(screen.getByRole('checkbox', { name: 'Select Ember' }))
+		fireEvent.click(
+			screen.getByRole('button', { name: 'Unassign from sets' }),
+		)
+		const dialog = screen.getByRole('dialog', {
+			name: 'Unassign selected palettes',
+		})
+		expect(mocks.manageSet).not.toHaveBeenCalled()
+		fireEvent.click(
+			within(dialog).getByRole('button', { name: 'Unassign palettes' }),
+		)
+		await screen.findByText(/Unassigned 2 palettes/)
+		expect(mocks.manageSet).toHaveBeenCalledTimes(2)
+		expect(mocks.manageSet).toHaveBeenCalledWith(client, 'set-one', {
+			kind: 'remove',
+			paletteIds: ['cabo'],
+		})
+		expect(mocks.manageSet).toHaveBeenCalledWith(client, 'set-two', {
+			kind: 'remove',
+			paletteIds: ['ember'],
+		})
+	})
+
+	it('keeps the unassignment dialog open with the error when a removal fails', async () => {
+		mocks.sets.mockResolvedValue([paletteSet])
+		render(
+			<PaletteLibrary
+				client={client}
+				view="palettes"
+				catalogStatus="assigned"
+			/>,
+		)
+		fireEvent.click(
+			await screen.findByRole('checkbox', { name: 'Select Cabo' }),
+		)
+		fireEvent.click(
+			screen.getByRole('button', { name: 'Unassign from sets' }),
+		)
+		mocks.manageSet.mockRejectedValueOnce(new Error('Set changed'))
+		fireEvent.click(
+			screen.getByRole('button', { name: 'Unassign palettes' }),
+		)
+		expect(await screen.findByRole('alert')).toHaveTextContent(
+			'Set changed',
+		)
+		expect(
+			screen.getByRole('dialog', { name: 'Unassign selected palettes' }),
+		).toBeInTheDocument()
+	})
+
 	it('retains the palette filter, selection, and assignment target on cancellation or write failure', async () => {
 		mocks.sets.mockResolvedValue([paletteSet])
 		let fail!: (cause: Error) => void

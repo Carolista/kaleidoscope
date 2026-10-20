@@ -7,6 +7,7 @@ import {
 	faPlusLarge,
 	faPalette,
 	faLayerGroup,
+	faLinkSlash,
 } from '@fortawesome/pro-solid-svg-icons'
 import type { Database } from '@/lib/supabase'
 import {
@@ -91,7 +92,7 @@ export default function PuzzleDraftLibrary({
 	const [status, setStatus] = useState('')
 	const [setChoice, setSetChoice] = useState('all')
 	const [action, setAction, actionModal] = useModalState<{
-		kind: 'delete' | 'palette' | 'set'
+		kind: 'delete' | 'palette' | 'set' | 'unassign'
 		ids: readonly string[]
 	}>()
 	const [bulkPaletteId, setBulkPaletteId] = useState('')
@@ -175,8 +176,10 @@ export default function PuzzleDraftLibrary({
 		set => set.row.shape_id === assignShape,
 	)
 	const canDelete = checked.every(deletable)
+	// Daily assignments have no set to leave.
+	const canUnassign = checked.every(draft => !!draft.collectionId)
 	function startAction(
-		kind: 'delete' | 'palette' | 'set',
+		kind: 'delete' | 'palette' | 'set' | 'unassign',
 		ids: readonly string[],
 	) {
 		setError('')
@@ -213,6 +216,25 @@ export default function PuzzleDraftLibrary({
 					kind: 'append',
 					puzzleIds: action.ids,
 				})
+			} else if (action.kind === 'unassign') {
+				// One request per set; a failure part-way leaves earlier sets unassigned.
+				const bySet = new Map<string, string[]>()
+				for (const draft of drafts)
+					if (draft.collectionId && action.ids.includes(draft.row.id))
+						bySet.set(draft.collectionId, [
+							...(bySet.get(draft.collectionId) ?? []),
+							draft.row.id,
+						])
+				try {
+					for (const [setId, puzzleIds] of bySet)
+						await manageDraftSet(client, setId, {
+							kind: 'remove',
+							puzzleIds,
+						})
+				} catch (cause) {
+					invalidate('puzzleDrafts', 'puzzleSets')
+					throw cause
+				}
 			} else
 				await bulkPuzzleDrafts(
 					client,
@@ -225,9 +247,11 @@ export default function PuzzleDraftLibrary({
 				setStatus(
 					action.kind === 'set'
 						? `Assigned ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'} to set.`
-						: action.kind === 'delete'
-							? `Deleted ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'}.`
-							: `Updated the palette for ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'}.`,
+						: action.kind === 'unassign'
+							? `Unassigned ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'} from their sets.`
+							: action.kind === 'delete'
+								? `Deleted ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'}.`
+								: `Updated the palette for ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'}.`,
 				)
 				selection.clear()
 				invalidate('puzzleDrafts', 'puzzleSets')
@@ -396,6 +420,21 @@ export default function PuzzleDraftLibrary({
 							disabled={bulkBusy || !canAssign}
 							onClick={() => startAction('set', selection.ids)}
 						/>
+						{catalogStatus !== 'drafts' && (
+							<AdminIconButton
+								icon={faLinkSlash}
+								label="Unassign from sets"
+								title={
+									canUnassign
+										? undefined
+										: 'Only drafts in a set can be unassigned.'
+								}
+								disabled={bulkBusy || !canUnassign}
+								onClick={() =>
+									startAction('unassign', selection.ids)
+								}
+							/>
+						)}
 						<AdminIconButton
 							icon={faPalette}
 							label="Change palette"
@@ -422,18 +461,22 @@ export default function PuzzleDraftLibrary({
 							title={
 								action.kind === 'set'
 									? 'Assign selected puzzles to set'
-									: action.kind === 'delete'
-										? 'Confirm gallery deletion'
-										: 'Change selected palettes'
+									: action.kind === 'unassign'
+										? 'Unassign selected puzzles'
+										: action.kind === 'delete'
+											? 'Confirm gallery deletion'
+											: 'Change selected palettes'
 							}
 							closeLabel="Close puzzle action"
 							destructive={action.kind === 'delete'}
 							confirmLabel={
 								action.kind === 'set'
 									? 'Assign puzzles'
-									: action.kind === 'delete'
-										? 'Confirm delete'
-										: 'Apply palette'
+									: action.kind === 'unassign'
+										? 'Unassign puzzles'
+										: action.kind === 'delete'
+											? 'Confirm delete'
+											: 'Apply palette'
 							}
 							pending={
 								bulkBusy
@@ -441,7 +484,9 @@ export default function PuzzleDraftLibrary({
 										? 'Deleting puzzle drafts…'
 										: action.kind === 'set'
 											? 'Assigning puzzles to set…'
-											: 'Updating puzzle palettes…'
+											: action.kind === 'unassign'
+												? 'Unassigning puzzles…'
+												: 'Updating puzzle palettes…'
 									: null
 							}
 							error={actionError || setsError}
@@ -461,9 +506,11 @@ export default function PuzzleDraftLibrary({
 							<p>
 								{action.kind === 'set'
 									? `Assign ${action.ids.length} drafts to a set?`
-									: action.kind === 'delete'
-										? `Permanently delete ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'}?`
-										: `Change palette for ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'}?`}
+									: action.kind === 'unassign'
+										? `Remove ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'} from their sets? Designs are unchanged.`
+										: action.kind === 'delete'
+											? `Permanently delete ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'}?`
+											: `Change palette for ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'}?`}
 							</p>
 							<ul>
 								{drafts

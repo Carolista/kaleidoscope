@@ -99,6 +99,8 @@ Assigned puzzles and palettes list in set order: set name, then position in the 
 In the Assigned views, **New puzzle** / **New palette** appears only while the list
 is filtered to one draft set; the new item is created directly in that set (a puzzle
 takes the set's shape and Set/pack use). Unassigned views create unassigned drafts.
+Selected items in the Assigned views can be bulk **Unassign**ed from their sets
+(one request per set); their designs are unchanged.
 Loaded catalogs are cached for the session, so switching views is instant; lists
 reload after your own saves or with **Refresh**. In the puzzle drafts view,
 **New puzzle** and each card's

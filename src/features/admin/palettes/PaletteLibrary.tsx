@@ -8,6 +8,7 @@ import {
 	faRotate,
 	faTrashCan,
 	faLayerGroup,
+	faLinkSlash,
 } from '@fortawesome/pro-solid-svg-icons'
 import type { Database } from '@/lib/supabase'
 import type { Palette } from '@/domain/palettes'
@@ -86,6 +87,7 @@ export default function PaletteLibrary({
 	const [busy, setBusy] = useState(false)
 	const [deleting, setDeleting, deleteModal] = useModalState<CatalogPalette>()
 	const [assigning, setAssigning, assignmentModal] = useModalState<true>()
+	const [unassigning, setUnassigning, unassignModal] = useModalState<true>()
 	const [bulkDeleting, setBulkDeleting, bulkDeleteModal] =
 		useModalState<true>()
 	const [actionError, setActionError] = useState('')
@@ -160,6 +162,39 @@ export default function PaletteLibrary({
 			})
 		} catch (cause) {
 			setActionError(errorMessage(cause, fallbackError))
+		} finally {
+			working.current = false
+			setBusy(false)
+		}
+	}
+	async function unassign() {
+		if (working.current || checked.size === 0) return
+		working.current = true
+		setBusy(true)
+		setActionError('')
+		const count = checked.size
+		const bySet = new Map<string, string[]>()
+		for (const id of selection.ids) {
+			const set = setOf(id)
+			if (set)
+				bySet.set(set.row.id, [...(bySet.get(set.row.id) ?? []), id])
+		}
+		try {
+			// One request per set; a failure part-way leaves earlier sets unassigned.
+			for (const [setId, paletteIds] of bySet)
+				await managePaletteSet(client, setId, {
+					kind: 'remove',
+					paletteIds,
+				})
+			setUnassigning(null, () => {
+				setStatus(
+					`Unassigned ${count} palette${count === 1 ? '' : 's'}. Designs are unchanged.`,
+				)
+				refresh(false, false)
+			})
+		} catch (cause) {
+			setActionError(errorMessage(cause, fallbackError))
+			refresh(true, false)
 		} finally {
 			working.current = false
 			setBusy(false)
@@ -357,6 +392,28 @@ export default function PaletteLibrary({
 					</FormField>
 				</ConfirmDialog>
 			)}
+			{unassigning && (
+				<ConfirmDialog
+					{...unassignModal}
+					title="Unassign selected palettes"
+					closeLabel="Close palette unassignment"
+					message={`Remove ${checked.size} selected palette${checked.size === 1 ? '' : 's'} from their sets? Designs are unchanged.`}
+					confirmLabel="Unassign palettes"
+					pending={busy ? 'Unassigning palettes…' : null}
+					error={actionError}
+					confirmDisabled={loading || !!error || checked.size === 0}
+					onConfirm={() => {
+						void unassign()
+					}}
+					onCancel={() => setUnassigning(null)}
+				>
+					<ul>
+						{checkedPalettes.map(palette => (
+							<li key={palette.id}>{palette.name}</li>
+						))}
+					</ul>
+				</ConfirmDialog>
+			)}
 			{bulkDeleting && (
 				<ConfirmDialog
 					{...bulkDeleteModal}
@@ -408,6 +465,17 @@ export default function PaletteLibrary({
 							setAssigning(true)
 						}}
 					/>
+					{checkedPalettes.every(palette => !!setOf(palette.id)) && (
+						<AdminIconButton
+							icon={faLinkSlash}
+							label="Unassign from sets"
+							disabled={busy}
+							onClick={() => {
+								setActionError('')
+								setUnassigning(true)
+							}}
+						/>
+					)}
 					{checkedPalettes.every(deletable) && (
 						<AdminIconButton
 							icon={faTrashCan}
