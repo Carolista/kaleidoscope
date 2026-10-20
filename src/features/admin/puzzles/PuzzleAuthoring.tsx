@@ -4,12 +4,15 @@ import {
 	renderAuthoredPuzzle,
 	type AuthoredPuzzle,
 	type AuthoringPalette,
+	isPuzzleShapeId,
 	PUZZLE_RECIPES,
 	type PuzzleShapeId,
 } from '@/domain/puzzles'
 import type { Database } from '@/lib/supabase'
 import {
 	generateDraftPreview,
+	manageDraftSet,
+	type DraftSet,
 	puzzleDraftArgs,
 	savePuzzleDraft,
 	type DraftArgs,
@@ -53,6 +56,8 @@ export default function PuzzleAuthoring({
 		: ''
 	const [error, setError] = useState('')
 	const [creating, setCreating] = useState(false)
+	// A new puzzle made from a filtered set joins that set and takes its shape.
+	const [targetSet, setTargetSet] = useState<DraftSet | null>(null)
 	const [pending, setPending] = useState<string | null>(null)
 	const busy = pending !== null
 	const working = useRef(false)
@@ -146,11 +151,16 @@ export default function PuzzleAuthoring({
 			}
 			pendingSave.current = args
 			await savePuzzleDraft(client, args)
+			if (targetSet)
+				await manageDraftSet(client, targetSet.row.id, {
+					kind: 'append',
+					puzzleIds: [args.p_id],
+				})
 			setSaved(true)
 			setSavedName(draftName)
-			invalidate('puzzleDrafts')
+			invalidate('puzzleDrafts', 'puzzleSets')
 			setSaveMessage(
-				`Saved "${args.p_name}" as an unpublished ${usage === 'daily' ? 'daily' : 'set/pack'} draft. Name, palette, and recipe choices now apply to the next randomization; this saved preview stays unchanged.`,
+				`Saved "${args.p_name}" as an unpublished ${targetSet ? `draft in "${targetSet.row.name}"` : `${usage === 'daily' ? 'daily' : 'set/pack'} draft`}. Name, palette, and recipe choices now apply to the next randomization; this saved preview stays unchanged.`,
 			)
 		} catch (cause) {
 			setError(errorMessage(cause, fallbackError))
@@ -181,9 +191,15 @@ export default function PuzzleAuthoring({
 					client={client}
 					palettes={palettes}
 					catalogStatus={catalogStatus}
-					onNew={() => {
+					onNew={set => {
 						setGenerated(null)
-						setShape('hexagon')
+						setTargetSet(set ?? null)
+						setShape(
+							set && isPuzzleShapeId(set.row.shape_id)
+								? set.row.shape_id
+								: 'hexagon',
+						)
+						setUsage('collection')
 						setRecipeId(PUZZLE_RECIPES[0].id)
 						setSaved(false)
 						setDraftName('')
@@ -207,6 +223,9 @@ export default function PuzzleAuthoring({
 		<>
 			<section aria-labelledby="puzzle-authoring-title">
 				<h2 id="puzzle-authoring-title">New puzzle</h2>
+				{targetSet && (
+					<p>This puzzle will be added to "{targetSet.row.name}".</p>
+				)}
 				{error && <p role="alert">{error}</p>}
 				{paletteError && <p role="alert">{paletteError}</p>}
 				<PuzzleDraftForm
@@ -237,7 +256,7 @@ export default function PuzzleAuthoring({
 					busy={busy}
 					generation={{
 						shape,
-						onShapeChange: setShape,
+						onShapeChange: targetSet ? undefined : setShape,
 						recipeId,
 						onRecipeChange: setRecipeId,
 						onGenerate: () => {
@@ -250,6 +269,7 @@ export default function PuzzleAuthoring({
 						onNameChange: setDraftName,
 						onUsageChange: setUsage,
 						locked: saved,
+						assigned: !!targetSet,
 						submitDisabled: loading || !generated || !palette,
 					}}
 					onSubmit={save}

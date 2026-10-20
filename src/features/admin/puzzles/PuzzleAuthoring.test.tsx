@@ -1,4 +1,11 @@
-import { act, fireEvent, screen, within, waitFor } from '@testing-library/react'
+import {
+	act,
+	cleanup,
+	fireEvent,
+	screen,
+	within,
+	waitFor,
+} from '@testing-library/react'
 import { renderWithNavigationGuard as render } from '@/features/admin/testing'
 import { useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -12,6 +19,7 @@ import {
 	generateAuthoredPuzzle,
 	renderAuthoredPuzzle,
 } from '@/domain/puzzles'
+import { puzzleDraftArgs } from '@/features/admin/services'
 import PuzzleAuthoring from './PuzzleAuthoring'
 import { AdminWorkspace } from '@/features/admin/shell'
 import { useNavigationGuard } from '@/ui/navigation'
@@ -31,12 +39,13 @@ const mocks = vi.hoisted(() => ({
 	rpc: vi.fn(),
 	seeds: vi.fn(),
 	paletteSets: vi.fn(),
+	drafts: vi.fn(),
 }))
 vi.mock('@/lib/supabase/supabaseClient', () => ({
 	getSupabaseClient: () => ({ from: mocks.from, rpc: mocks.rpc }),
 }))
 vi.mock('@/features/admin/services/puzzleLibrary', () => ({
-	loadPuzzleDrafts: async () => [],
+	loadPuzzleDrafts: async () => mocks.drafts(),
 }))
 vi.mock('@/features/admin/services/paletteSets', () => ({
 	loadPaletteSets: () => mocks.paletteSets(),
@@ -59,6 +68,7 @@ const originalCapture = Object.getOwnPropertyDescriptor(
 )
 beforeEach(() => {
 	mocks.paletteSets.mockReset().mockResolvedValue([])
+	mocks.drafts.mockReset().mockReturnValue([])
 })
 afterEach(() => {
 	vi.restoreAllMocks()
@@ -582,6 +592,128 @@ describe('admin puzzle lab', () => {
 			}),
 		)
 		expect(puzzle.definition.geometry).toEqual({ size: 4 })
+	})
+
+	it('creates a puzzle inside the filtered set with its shape and appends it after saving', async () => {
+		const member = generateAuthoredPuzzle(
+			seed,
+			palette.id,
+			PUZZLE_RECIPES[0],
+			'triangle',
+		)
+		const args = puzzleDraftArgs('member', 'Member', 'collection', member)
+		mocks.drafts.mockReturnValue([
+			{
+				row: {
+					id: 'member',
+					name: 'Member',
+					usage: 'collection',
+					shape_id: 'triangle',
+					palette_id: palette.id,
+					board_size: args.p_board_size,
+					rotation_allowed: args.p_rotation_allowed,
+					difficulty: args.p_difficulty,
+					definition: args.p_definition,
+					published_at: null,
+					release_at: null,
+				},
+				assigned: true,
+				collectionId: 'set-t',
+				collectionName: 'Triangles',
+				collectionPosition: 1,
+				collectionKind: 'core',
+				puzzle: member,
+			},
+		])
+		setup(undefined, false)
+		const baseFrom = mocks.from.getMockImplementation()!
+		const setRow = {
+			id: 'set-t',
+			name: 'Triangles',
+			kind: 'core',
+			shape_id: 'triangle',
+			selection_mode: 'any',
+			published_at: null,
+			release_at: null,
+		}
+		mocks.from.mockImplementation((table: string) => {
+			if (table === 'puzzle_collections')
+				return {
+					select: () => ({
+						in: () => ({
+							is: () => ({
+								order: () => ({
+									range: () =>
+										Promise.resolve({
+											data: [setRow],
+											error: null,
+										}),
+								}),
+							}),
+						}),
+					}),
+				}
+			if (table === 'collection_puzzles')
+				return {
+					select: () => ({
+						in: () => ({
+							order: () => ({
+								order: () => ({
+									range: () =>
+										Promise.resolve({
+											data: [],
+											error: null,
+										}),
+								}),
+							}),
+						}),
+					}),
+				}
+			return baseFrom(table)
+		})
+		cleanup()
+		render(
+			<PuzzleAuthoring
+				client={getSupabaseClient()}
+				catalogStatus="assigned"
+			/>,
+		)
+		await screen.findByRole('button', { name: 'Edit draft Member' })
+		expect(
+			screen.queryByRole('button', { name: 'New puzzle' }),
+		).not.toBeInTheDocument()
+		fireEvent.change(screen.getByLabelText('Show set'), {
+			target: { value: 'set-t' },
+		})
+		fireEvent.click(
+			await screen.findByRole('button', { name: 'New puzzle' }),
+		)
+		expect(
+			screen.getByText('This puzzle will be added to "Triangles".'),
+		).toBeInTheDocument()
+		expect(screen.getByLabelText('Shape')).toHaveValue('triangle')
+		expect(screen.getByLabelText('Shape')).toBeDisabled()
+		expect(screen.getByLabelText('Intended use')).toBeDisabled()
+		await randomize()
+		fireEvent.change(screen.getByLabelText('Puzzle name'), {
+			target: { value: 'Triangle two' },
+		})
+		fireEvent.click(screen.getByRole('button', { name: /save draft/i }))
+		await screen.findByText(
+			/Saved "Triangle two" as an unpublished draft in "Triangles"/,
+		)
+		const saved = mocks.rpc.mock.calls.find(
+			([name]) => name === 'save_puzzle_draft',
+		)![1]
+		expect(saved).toMatchObject({
+			p_shape_id: 'triangle',
+			p_usage: 'collection',
+		})
+		expect(mocks.rpc).toHaveBeenCalledWith('manage_draft_set', {
+			p_id: 'set-t',
+			p_action: 'append',
+			p_puzzle_ids: [saved.p_id],
+		})
 	})
 
 	it('preserves the preview and retries a failed save with the same request ID', async () => {

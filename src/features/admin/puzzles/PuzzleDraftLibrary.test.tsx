@@ -959,7 +959,7 @@ describe('draft library', () => {
 			within(filter)
 				.getAllByRole('option')
 				.map(option => option.textContent),
-		).toEqual(['All sets', 'No set', 'Alpha', 'Beta'])
+		).toEqual(['All sets', 'Alpha', 'Beta'])
 		fireEvent.click(
 			screen.getByRole('checkbox', { name: 'Select draft First art' }),
 		)
@@ -973,7 +973,10 @@ describe('draft library', () => {
 		expect(
 			screen.queryByRole('group', { name: 'Bulk draft actions' }),
 		).not.toBeInTheDocument()
-		fireEvent.change(filter, { target: { value: 'none' } })
+		fireEvent.change(filter, { target: { value: 'all' } })
+		fireEvent.change(screen.getByLabelText('Show drafts'), {
+			target: { value: 'daily' },
+		})
 		expect(
 			screen.getByRole('button', { name: 'Edit draft Daily art' }),
 		).toBeInTheDocument()
@@ -1186,6 +1189,62 @@ describe('draft library', () => {
 		)
 		expect(mocks.edit).not.toHaveBeenCalled()
 	})
+	it('offers New puzzle in the Assigned view only while a draft set is filtered, passing it to onNew', async () => {
+		mocks.load.mockResolvedValue([
+			{
+				...draft,
+				assigned: true,
+				collectionId: 'set',
+				collectionName: 'First set',
+				collectionPosition: 1,
+				collectionKind: 'core',
+			},
+		])
+		const onNew = vi.fn()
+		render(
+			<PuzzleDraftLibrary
+				client={getSupabaseClient()}
+				palettes={[palette, other]}
+				catalogStatus="assigned"
+				onNew={onNew}
+			/>,
+		)
+		const filter = await screen.findByLabelText('Show set')
+		expect(
+			screen.queryByRole('button', { name: 'New puzzle' }),
+		).not.toBeInTheDocument()
+		expect(
+			within(filter)
+				.getAllByRole('option')
+				.map(option => option.textContent),
+		).toEqual(['All sets', 'First set'])
+		fireEvent.change(filter, { target: { value: 'set' } })
+		fireEvent.click(
+			await screen.findByRole('button', { name: 'New puzzle' }),
+		)
+		expect(onNew).toHaveBeenCalledWith(
+			expect.objectContaining({
+				row: expect.objectContaining({ id: 'set' }),
+			}),
+		)
+	})
+
+	it('offers an unassigned New puzzle in the Unassigned view', async () => {
+		const onNew = vi.fn()
+		render(
+			<PuzzleDraftLibrary
+				client={getSupabaseClient()}
+				palettes={[palette, other]}
+				catalogStatus="drafts"
+				onNew={onNew}
+			/>,
+		)
+		fireEvent.click(
+			await screen.findByRole('button', { name: 'New puzzle' }),
+		)
+		expect(onNew).toHaveBeenCalledWith(undefined)
+	})
+
 	it('shows load failures explicitly and supports retry', async () => {
 		mocks.load.mockRejectedValueOnce(new Error('Network unavailable'))
 		setup()

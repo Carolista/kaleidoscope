@@ -73,7 +73,7 @@ export default function PuzzleDraftLibrary({
 }: {
 	readonly client: SupabaseClient<Database>
 	readonly palettes: readonly AuthoringPalette[]
-	readonly onNew?: () => void
+	readonly onNew?: (set?: DraftSet) => void
 	readonly catalogStatus?: 'drafts' | 'assigned'
 	readonly onRefreshPalettes?: () => void
 	readonly palettesLoading?: boolean
@@ -100,7 +100,15 @@ export default function PuzzleDraftLibrary({
 	const [actionError, setActionError] = useState('')
 	const bulkWorking = useRef(false)
 	useUnsavedDraft({ dirty: false, pending: bulkBusy })
-	const setCatalog = useCatalog('puzzleSets', client, action?.kind === 'set')
+	const setFilterActive =
+		catalogStatus === 'assigned' &&
+		setChoice !== 'all' &&
+		setChoice !== 'none'
+	const setCatalog = useCatalog(
+		'puzzleSets',
+		client,
+		action?.kind === 'set' || setFilterActive,
+	)
 	const draftSets: readonly DraftSet[] = setCatalog.data ?? []
 	const setsLoading = setCatalog.loading
 	const setsError =
@@ -132,6 +140,11 @@ export default function PuzzleDraftLibrary({
 		setOptions.some(([id]) => id === setChoice)
 			? setChoice
 			: 'all'
+	// New puzzles join the filtered set when it is still an editable draft.
+	const filteredSet = setFilterActive
+		? draftSets.find(set => set.row.id === shownSet && !set.row.release_at)
+		: undefined
+	const canCreate = catalogStatus !== 'assigned' || !!filteredSet
 	const filtered = inStatus.filter(
 		value =>
 			(filter === 'all' || value.row.usage === filter) &&
@@ -271,12 +284,12 @@ export default function PuzzleDraftLibrary({
 						: 'Puzzle drafts'
 				}
 			>
-				{onNew && (
+				{onNew && canCreate && (
 					<AdminIconButton
 						icon={faPlusLarge}
 						label="New puzzle"
 						disabled={bulkBusy}
-						onClick={onNew}
+						onClick={() => onNew(filteredSet)}
 					/>
 				)}
 				<AdminIconButton
@@ -319,7 +332,9 @@ export default function PuzzleDraftLibrary({
 						}}
 					>
 						<option value="all">All sets</option>
-						<option value="none">No set</option>
+						{catalogStatus !== 'assigned' && (
+							<option value="none">No set</option>
+						)}
 						{setOptions.map(([id, name]) => (
 							<option key={id} value={id}>
 								{name}

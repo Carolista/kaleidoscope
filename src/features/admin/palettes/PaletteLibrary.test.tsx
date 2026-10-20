@@ -316,6 +316,167 @@ describe('palette management', () => {
 		).toEqual(['Palette Zebra', 'Palette Apple', 'Palette Mango'])
 	})
 
+	it('offers New palette in the Assigned view only while filtered to a draft set, and assigns the new palette to it', async () => {
+		const prepared = {
+			...paletteSet,
+			row: {
+				...paletteSet.row,
+				id: 'live-set',
+				name: 'Live',
+				published_at: '2026-01-01T00:00:00Z',
+			},
+			members: [],
+		}
+		mocks.sets.mockResolvedValue([paletteSet, prepared])
+		render(
+			<PaletteLibrary
+				client={client}
+				view="palettes"
+				catalogStatus="assigned"
+			/>,
+		)
+		await screen.findByRole('button', { name: 'Edit Cabo' })
+		expect(
+			screen.queryByRole('option', { name: 'No set' }),
+		).not.toBeInTheDocument()
+		expect(
+			screen.queryByRole('button', { name: 'New palette' }),
+		).not.toBeInTheDocument()
+		fireEvent.change(screen.getByLabelText('Show palettes'), {
+			target: { value: 'live-set' },
+		})
+		expect(
+			screen.queryByRole('button', { name: 'New palette' }),
+		).not.toBeInTheDocument()
+		fireEvent.change(screen.getByLabelText('Show palettes'), {
+			target: { value: 'set-one' },
+		})
+		await clickWhenEnabled('New palette')
+		expect(
+			screen.getByText('This palette will be added to "Warm colors".'),
+		).toBeInTheDocument()
+		fireEvent.change(screen.getByLabelText('Palette name'), {
+			target: { value: 'Ember' },
+		})
+		fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+		expect(
+			await screen.findByText(
+				'Saved "Ember" as a draft palette in "Warm colors".',
+			),
+		).toBeInTheDocument()
+		const created = mocks.manage.mock.calls[0][1]
+		expect(mocks.manageSet).toHaveBeenCalledWith(client, 'set-one', {
+			kind: 'assign',
+			paletteIds: [created.id],
+		})
+		expect(screen.getByLabelText('Show palettes')).toHaveValue('set-one')
+	})
+
+	it('keeps New palette unassigned from the Unassigned view', async () => {
+		mocks.sets.mockResolvedValue([paletteSet])
+		render(
+			<PaletteLibrary
+				client={client}
+				view="palettes"
+				catalogStatus="drafts"
+			/>,
+		)
+		await clickWhenEnabled('New palette')
+		fireEvent.change(screen.getByLabelText('Palette name'), {
+			target: { value: 'Loose' },
+		})
+		fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+		expect(
+			await screen.findByText('Saved "Loose" as a draft palette.'),
+		).toBeInTheDocument()
+		expect(mocks.manageSet).not.toHaveBeenCalled()
+	})
+
+	it('adds a duplicate to the filtered set', async () => {
+		mocks.sets.mockResolvedValue([paletteSet])
+		render(
+			<PaletteLibrary
+				client={client}
+				view="palettes"
+				catalogStatus="assigned"
+			/>,
+		)
+		await screen.findByRole('button', { name: 'Duplicate Cabo' })
+		fireEvent.change(screen.getByLabelText('Show palettes'), {
+			target: { value: 'set-one' },
+		})
+		fireEvent.click(screen.getByRole('button', { name: 'Duplicate Cabo' }))
+		expect(
+			screen.getByText('This palette will be added to "Warm colors".'),
+		).toBeInTheDocument()
+		fireEvent.change(screen.getByLabelText('Palette name'), {
+			target: { value: 'Cabo copy' },
+		})
+		fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+		await screen.findByText(
+			'Saved "Cabo copy" as a draft palette in "Warm colors".',
+		)
+		expect(mocks.manageSet).toHaveBeenCalledWith(client, 'set-one', {
+			kind: 'assign',
+			paletteIds: [mocks.manage.mock.calls[0][1].id],
+		})
+	})
+
+	it('leaves a duplicate unassigned when no set is filtered', async () => {
+		mocks.sets.mockResolvedValue([paletteSet])
+		render(
+			<PaletteLibrary
+				client={client}
+				view="palettes"
+				catalogStatus="assigned"
+			/>,
+		)
+		fireEvent.click(
+			await screen.findByRole('button', { name: 'Duplicate Cabo' }),
+		)
+		expect(
+			screen.queryByText(/This palette will be added to/),
+		).not.toBeInTheDocument()
+		fireEvent.change(screen.getByLabelText('Palette name'), {
+			target: { value: 'Cabo copy' },
+		})
+		fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+		await screen.findByText('Saved "Cabo copy" as a draft palette.')
+		expect(mocks.manageSet).not.toHaveBeenCalled()
+	})
+
+	it('retries a failed set assignment with the same palette ID', async () => {
+		mocks.sets.mockResolvedValue([paletteSet])
+		render(
+			<PaletteLibrary
+				client={client}
+				view="palettes"
+				catalogStatus="assigned"
+			/>,
+		)
+		await screen.findByRole('button', { name: 'Edit Cabo' })
+		fireEvent.change(screen.getByLabelText('Show palettes'), {
+			target: { value: 'set-one' },
+		})
+		await clickWhenEnabled('New palette')
+		fireEvent.change(screen.getByLabelText('Palette name'), {
+			target: { value: 'Ember' },
+		})
+		mocks.manageSet.mockRejectedValueOnce(new Error('Assignment lost'))
+		fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+		expect(await screen.findByRole('alert')).toHaveTextContent(
+			'Assignment lost',
+		)
+		fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+		await screen.findByText(
+			'Saved "Ember" as a draft palette in "Warm colors".',
+		)
+		expect(mocks.manage.mock.calls[1][1]).toEqual(
+			mocks.manage.mock.calls[0][1],
+		)
+		expect(mocks.manageSet).toHaveBeenCalledTimes(2)
+	})
+
 	it('bulk deletes only unassigned draft palettes and keeps failures visible', async () => {
 		const loose = { ...samplePalette, id: 'loose', name: 'Loose' }
 		mocks.load.mockResolvedValue([samplePalette, loose])

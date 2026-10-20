@@ -96,6 +96,9 @@ The admin workspace has peer **Puzzles | Palettes | Shapes** sections. Puzzles a
 Palettes each open on **Sets**, with an items view filtered by Unassigned, Assigned,
 Scheduled, or Published (Shapes and the release views are placeholders for now).
 Assigned puzzles and palettes list in set order: set name, then position in the set.
+In the Assigned views, **New puzzle** / **New palette** appears only while the list
+is filtered to one draft set; the new item is created directly in that set (a puzzle
+takes the set's shape and Set/pack use). Unassigned views create unassigned drafts.
 Loaded catalogs are cached for the session, so switching views is instant; lists
 reload after your own saves or with **Refresh**. In the puzzle drafts view,
 **New puzzle** and each card's

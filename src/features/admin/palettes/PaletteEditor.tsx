@@ -3,10 +3,12 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase'
 import {
 	managePalette,
+	managePaletteSet,
 	readPalette,
 	type CatalogPalette,
 	loadPaletteUsage,
 	type PaletteUsage,
+	type PaletteSet,
 } from '@/features/admin/services'
 import PaletteUsageDetails from './PaletteUsageDetails'
 import {
@@ -27,11 +29,14 @@ export default function PaletteEditor({
 	client,
 	initial,
 	startingColors,
+	targetSet,
 	onSaved,
 }: {
 	readonly client: SupabaseClient<Database>
 	readonly initial: CatalogPalette | null
 	readonly startingColors: readonly string[]
+	// New palettes are added to this draft set as they are created.
+	readonly targetSet?: PaletteSet['row']
 	readonly onSaved: (message: string) => void
 }) {
 	const [name, setName] = useState(initial?.name ?? '')
@@ -100,8 +105,15 @@ export default function PaletteEditor({
 					id: createRequest.current.id,
 					palette,
 				})
+				if (targetSet)
+					await managePaletteSet(client, targetSet.id, {
+						kind: 'assign',
+						paletteIds: [createRequest.current.id],
+					})
 			}
-			onSaved(`Saved "${palette.name}" as a draft palette.`)
+			onSaved(
+				`Saved "${palette.name}" as a draft palette${!initial && targetSet ? ` in "${targetSet.name}"` : ''}.`,
+			)
 		} catch (cause) {
 			setError(errorMessage(cause, fallbackError))
 		} finally {
@@ -116,6 +128,9 @@ export default function PaletteEditor({
 					? `${readOnly ? 'View' : 'Edit'} palette`
 					: 'New palette'}
 			</h2>
+			{!initial && targetSet && (
+				<p>This palette will be added to "{targetSet.name}".</p>
+			)}
 			{readOnly && (
 				<p>{initial && releaseState(initial)} palette (read-only).</p>
 			)}

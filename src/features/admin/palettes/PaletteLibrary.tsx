@@ -94,7 +94,16 @@ export default function PaletteLibrary({
 	const [editing, setEditing] = useState<{
 		palette: CatalogPalette | null
 		startingColors?: Palette['colors']
+		targetSet?: PaletteSet
 	} | null>(null)
+	// New palettes join the filtered set when it is still an editable draft.
+	const filteredSet = sets.find(
+		set =>
+			set.row.id === filter &&
+			!set.row.published_at &&
+			!set.row.release_at,
+	)
+	const canCreate = catalogStatus !== 'assigned' || !!filteredSet
 	const filteredPalettes = palettes.filter(palette => {
 		const set = setOf(palette.id)
 		return (
@@ -219,6 +228,7 @@ export default function PaletteLibrary({
 						'#ffffff',
 					]
 				}
+				targetSet={editing.targetSet?.row}
 				onSaved={message => {
 					setStatus(message)
 					setEditing(null)
@@ -239,15 +249,20 @@ export default function PaletteLibrary({
 						: 'Palettes'
 				}
 			>
-				<AdminIconButton
-					icon={faPlusLarge}
-					label="New palette"
-					disabled={busy || loading || !!error}
-					onClick={() => {
-						setStatus('')
-						setEditing({ palette: null })
-					}}
-				/>
+				{canCreate && (
+					<AdminIconButton
+						icon={faPlusLarge}
+						label="New palette"
+						disabled={busy || loading || !!error}
+						onClick={() => {
+							setStatus('')
+							setEditing({
+								palette: null,
+								targetSet: filteredSet,
+							})
+						}}
+					/>
+				)}
 				<AdminIconButton
 					icon={faRotate}
 					label="Refresh palette catalog"
@@ -266,7 +281,9 @@ export default function PaletteLibrary({
 						}}
 					>
 						<option value="all">All sets</option>
-						<option value="ungrouped">No set</option>
+						{catalogStatus !== 'assigned' && (
+							<option value="ungrouped">No set</option>
+						)}
 						{sets.map(set => (
 							<option key={set.row.id} value={set.row.id}>
 								{set.row.name} ({paletteSetLabels[set.kind]})
@@ -443,6 +460,7 @@ export default function PaletteLibrary({
 														palette: null,
 														startingColors:
 															palette.colors,
+														targetSet: filteredSet,
 													})
 												}}
 											/>
