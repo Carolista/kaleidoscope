@@ -148,9 +148,10 @@ Stable square containers reserve all orientations at consistent tile scale,
 with one subtle selected/focus border. The first-rotation set tutorial is deferred.
 The admin lab does not mount Zen state or write player progress. Named drafts
 save public definitions and private authoring atomically, with idempotent retry
-IDs. Intended use can switch between Set/pack and Daily while unassigned.
-Assigned galleries derive order from set membership (set name, then position)
-rather than naming conventions, so reordering a set reorders the list.
+IDs. A puzzle has no intended use of its own: its purpose comes from the group it
+joins (see "Groups, purposes, and progression"). Its palette stays on the puzzle.
+Assigned galleries derive order from group membership (group name, then position)
+rather than naming conventions, so reordering a group reorders the list.
 Scheduled/live content is not managed through the draft-only editing/deletion RPCs.
 
 Use a library-first flow with dedicated New/Edit workspaces. Saving a new puzzle
@@ -179,11 +180,11 @@ admin RPC transactions under the catalog lock, with write-time release/reference
 rechecks. Assigned drafts cannot be deleted, but unpublished palette edits remain
 allowed.
 
-Draft sets have a Core, Reward, or Paid role chosen at creation, not an Undecided
-state. Puzzle sets hold 24 puzzles and palette sets hold 6 palettes, but drafts
-do not enforce a count; whether publishing enforces it is still open.
-Membership is exclusive; append eligible unassigned Set/pack drafts in selection
-order. Save removal immediately, but stage renames and member ordering locally: drag
+Draft groups have a purpose chosen at creation and editable until publication
+(see "Groups, purposes, and progression"). Puzzle groups hold 24 puzzles and
+palette groups 6 palettes, but drafts do not enforce a count; whether publishing
+enforces it is still open. Membership is exclusive; append eligible unassigned
+drafts in selection order. Save removal immediately, but stage renames and member ordering locally: drag
 (or keyboard-move) freely, then commit name and order with the set's single
 **Save**, the whole order in one RPC. Per-move writes forced a round trip before each next move.
 Staged order counts as unsaved work for navigation guards. Palette sets share
@@ -196,11 +197,69 @@ Place the representative thumbnail on the left, actions top right, and details
 bottom right. Show every member's saved design in the editor so ordering is
 visual, not name-dependent. Square-minus means remove membership, distinct from
 clearing gallery selection. Never regenerate stored designs for thumbnails.
-Confirmed deletion removes only the draft set and its memberships, preserving
-all puzzles/private solutions. Reject release and progression/route/reward/grant
+Confirmed deletion removes only the draft group and its memberships, preserving
+all puzzles/private solutions. Reject release and progression/reward/grant
 dependencies instead of silently cascading meaningful configuration away.
 Keep mutations atomic under caller RLS, explicit admin checks, READ COMMITTED
-isolation, and the catalog lock. Starter/route/core/reward/release tools follow.
+isolation, and the catalog lock. Progression, reward, and release tools follow.
+
+### Groups, purposes, and progression
+
+**Terminology.** A **group** is any collection of puzzles or palettes built for any
+purpose; it is admin and database wording only and never appears in the player UI.
+A group's **purpose** says how it is used:
+
+- **core:** free groups. Puzzle groups are the free sets players progress through;
+  the first shape's core groups are open from the start and later shapes unlock
+  as described below. A core palette group is the palettes available in Zen from
+  the beginning (replacing the old starter palette table).
+- **reward:** free groups unlocked by completing other groups (a palette group, or a
+  bonus puzzle group), never by advancing to the next shape.
+- **daily:** puzzles only. Organized into groups in admin (for example by month) but
+  scheduled one per day in a separate feature; players see only the last five
+  days. A daily group may mix shapes, so it has no shape.
+- **pack:** groups sold in the store. Pack means price. Combo deals bundle
+  existing packs and are a store product (Phase 2B), not a group.
+- **undecided:** a draft still choosing its purpose. It cannot be published, and its
+  purpose, shape, and track stay editable while unpublished.
+
+Palette groups have no daily purpose. Puzzles have no intended-use field: the group
+they belong to decides. A puzzle's **palette is stored on the puzzle** (never
+derived), so the store can later offer the palettes a player does not own. Playing a
+puzzle does not grant its palette in Zen.
+
+**Track.** Puzzle groups have a track: **basic** (no rotation; Easy/Moderate/Hard)
+or **rotation** (Moderate/Hard/Challenging). Core and reward groups are basic or
+rotation, packs may also be **mixed**, and undecided and daily groups have none.
+The database rejects a member that does not match the group's shape (except daily
+groups) or track, including when a puzzle's recipe is replaced while assigned.
+Counts and the difficulty split inside a group are not enforced yet.
+
+**Progression.** Each shape has two core groups, basic and rotation. Solving either
+one unlocks the next shape and its two core groups. The unlock order lives in
+`shape_progression` (default Hexagon, Triangle, Diamond Star, Hexagram, Circle
+Rings, Pinwheel), editable by the admin; the first shape is the starter. A group
+counts as completed when every puzzle in it is solved (`group_completions`);
+the earlier per-set qualifying routes no longer exist.
+
+**Rewards.** Completing the basic core group awards one palette; completing the
+rotation core group awards one palette plus two bonus groups (one basic, one
+rotation); completing each bonus group awards one palette. Rewards name exact
+palettes, not a palette group. That is the intended pattern for all six shapes, but
+reward rules stay flexible in the database (any group can award palettes and/or
+bonus groups) so a later admin screen can check a shape against the pattern. A player who
+solves all twelve core and twelve bonus groups earns the Zen randomizer.
+
+**Zen access.** Unlocked shapes and awarded palettes are usable in Zen at once, as are
+purchased palette packs. A puzzle pack unlocks only puzzles: its palettes come
+from a palette pack bought separately or in a discounted combo.
+
+**Implementation.** Tables `puzzle_groups` and `palette_groups` (with members) replace
+`puzzle_collections` and `palette_packs`; the routes, core-chain, `reward_shapes`,
+and starter tables are gone. The admin RPCs are `manage_puzzle_group` and
+`manage_palette_group`; deletion is an action of the former. Shape unlock, group
+completion, and pack access are enforced by the same security-definer helpers that
+gate puzzle reads.
 
 ### Puzzle shapes
 
@@ -239,18 +298,18 @@ its definitions keep `geometry.radius` and `hexagon-v2`.
   neighbours are the touching circles and 60-degree rotation maps rings onto
   themselves. It reuses the hexagon adapter and piece sizes (wedges 6/9/16). Placed
   pieces look slightly stretched in outer rings, accepted as the trade-off.
-- **Shape is chosen at creation and fixed.** Puzzles pick it in the New form; sets
-  pick it in the set-creation dialog. Assign to set offers only sets of the
-  selected drafts' shape, matching the one-shape-per-set rule.
-- **Puzzle-creator palettes follow palette-set order,** like assigned lists, because
+- **Shape is chosen at creation and fixed.** Puzzles pick it in the New form; groups
+  pick it in the group-creation dialog. Assign to group offers only groups that
+  accept every selected puzzle (shape and track), except daily groups, which mix shapes.
+- **Puzzle-creator palettes follow palette-group order,** like assigned lists, because
   an alphabetical list stopped scaling. Unassigned palettes follow by name.
 
 ### Admin information hierarchy and catalog cache
 
 Palettes are not subordinate to puzzles: they also serve Zen Mode later. Top-level
 admin sections are peers (Puzzles | Palettes | Shapes, with a future orchestration
-view for sets/rewards/packs/rollout). Within a content section, Sets is the default
-view and items filter by release status (Drafts | Assigned | Scheduled |
+view for groups/rewards/packs/rollout). Within a content section, Groups is the
+default view and items filter by release status (Unassigned | Assigned | Scheduled |
 Published), so both sections share one mental model.
 
 The admin is a single user, so the catalog cache favors speed over freshness:

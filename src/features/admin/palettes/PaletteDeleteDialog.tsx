@@ -88,7 +88,7 @@ export default function PaletteDeleteDialog({
 			title="Confirm palette deletion"
 			closeLabel="Close palette deletion"
 			destructive
-			message={`Delete "${palette.name}" permanently? Any draft set membership will be removed.`}
+			message={`Delete "${palette.name}" permanently? Any draft group membership will be removed.`}
 			confirmLabel="Confirm delete palette"
 			cancelLabel="Cancel deletion"
 			confirmDisabled={blocked}

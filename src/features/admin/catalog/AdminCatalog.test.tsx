@@ -3,47 +3,47 @@ import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase'
-import type { PaletteSet } from '@/features/admin/services'
+import type { PaletteGroup } from '@/features/admin/services'
 import { AdminCatalogProvider } from './AdminCatalog'
 import { useCatalog, useCatalogInvalidation } from './useAdminCatalog'
 
 const mocks = vi.hoisted(() => ({
-	paletteSets: vi.fn(),
-	puzzleSets: vi.fn(),
+	paletteGroups: vi.fn(),
+	puzzleGroups: vi.fn(),
 }))
-vi.mock('@/features/admin/services/paletteSets', async importOriginal => ({
+vi.mock('@/features/admin/services/paletteGroups', async importOriginal => ({
 	...(await importOriginal<
-		typeof import('@/features/admin/services/paletteSets')
+		typeof import('@/features/admin/services/paletteGroups')
 	>()),
-	loadPaletteSets: (...args: unknown[]) => mocks.paletteSets(...args),
+	loadPaletteGroups: (...args: unknown[]) => mocks.paletteGroups(...args),
 }))
-vi.mock('@/features/admin/services/puzzleSets', async importOriginal => ({
+vi.mock('@/features/admin/services/puzzleGroups', async importOriginal => ({
 	...(await importOriginal<
-		typeof import('@/features/admin/services/puzzleSets')
+		typeof import('@/features/admin/services/puzzleGroups')
 	>()),
-	loadDraftSets: (...args: unknown[]) => mocks.puzzleSets(...args),
+	loadPuzzleGroups: (...args: unknown[]) => mocks.puzzleGroups(...args),
 }))
 
 const client = {} as SupabaseClient<Database>
-const set = (name: string) =>
+const group = (name: string) =>
 	({
 		row: { id: name, name },
-		kind: 'core',
+		purpose: 'core',
 		members: [],
-	}) as never as PaletteSet
+	}) as never as PaletteGroup
 const wrapper = ({ children }: { children: ReactNode }) => (
 	<AdminCatalogProvider>{children}</AdminCatalogProvider>
 )
 function useHarness(enabled = true) {
 	return {
-		catalog: useCatalog('paletteSets', client, enabled),
+		catalog: useCatalog('paletteGroups', client, enabled),
 		invalidate: useCatalogInvalidation(),
 	}
 }
 
 beforeEach(() => {
 	vi.resetAllMocks()
-	mocks.paletteSets.mockResolvedValue([set('First')])
+	mocks.paletteGroups.mockResolvedValue([group('First')])
 })
 
 describe('admin catalog cache', () => {
@@ -53,43 +53,43 @@ describe('admin catalog cache', () => {
 			expect(first.result.current.catalog.data).toBeDefined(),
 		)
 		first.rerender()
-		expect(mocks.paletteSets).toHaveBeenCalledExactlyOnceWith(client)
+		expect(mocks.paletteGroups).toHaveBeenCalledExactlyOnceWith(client)
 	})
 
 	it('invalidates only loaded keys and keeps data visible while refreshing', async () => {
 		const { result } = renderHook(() => useHarness(), { wrapper })
 		await waitFor(() => expect(result.current.catalog.loading).toBe(false))
-		mocks.paletteSets.mockResolvedValue([set('Second')])
-		act(() => result.current.invalidate('paletteSets', 'puzzleSets'))
+		mocks.paletteGroups.mockResolvedValue([group('Second')])
+		act(() => result.current.invalidate('paletteGroups', 'puzzleGroups'))
 		expect(result.current.catalog.refreshing).toBe(true)
 		expect(result.current.catalog.data?.[0].row.name).toBe('First')
 		await waitFor(() =>
 			expect(result.current.catalog.data?.[0].row.name).toBe('Second'),
 		)
-		expect(mocks.puzzleSets).not.toHaveBeenCalled()
+		expect(mocks.puzzleGroups).not.toHaveBeenCalled()
 	})
 
 	it('keeps local updates over an older in-flight response', async () => {
 		const { result } = renderHook(() => useHarness(), { wrapper })
 		await waitFor(() => expect(result.current.catalog.loading).toBe(false))
-		let resolve: (value: PaletteSet[]) => void = () => {}
-		mocks.paletteSets.mockReturnValueOnce(
+		let resolve: (value: PaletteGroup[]) => void = () => {}
+		mocks.paletteGroups.mockReturnValueOnce(
 			new Promise(done => {
 				resolve = done
 			}),
 		)
-		act(() => result.current.invalidate('paletteSets'))
-		act(() => result.current.catalog.update(() => [set('Local')]))
-		await act(async () => resolve([set('Stale')]))
+		act(() => result.current.invalidate('paletteGroups'))
+		act(() => result.current.catalog.update(() => [group('Local')]))
+		await act(async () => resolve([group('Stale')]))
 		expect(result.current.catalog.data?.[0].row.name).toBe('Local')
 		expect(result.current.catalog.refreshing).toBe(false)
 	})
 
 	it('skips disabled keys and recovers from failures on refresh', async () => {
-		mocks.paletteSets.mockRejectedValueOnce(new Error('Offline'))
+		mocks.paletteGroups.mockRejectedValueOnce(new Error('Offline'))
 		const disabled = renderHook(() => useHarness(false), { wrapper })
 		expect(disabled.result.current.catalog.loading).toBe(false)
-		expect(mocks.paletteSets).not.toHaveBeenCalled()
+		expect(mocks.paletteGroups).not.toHaveBeenCalled()
 		disabled.unmount()
 		const failed = renderHook(() => useHarness(), { wrapper })
 		await waitFor(() =>

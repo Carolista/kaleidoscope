@@ -19,12 +19,12 @@ const mocks = vi.hoisted(() => ({
 	bulk: vi.fn(),
 	replace: vi.fn(),
 	seeds: vi.fn(),
-	loadSets: vi.fn(),
-	manageSet: vi.fn(),
+	loadGroups: vi.fn(),
+	manageGroup: vi.fn(),
 }))
-vi.mock('@/features/admin/services/puzzleSets', () => ({
-	loadDraftSets: (...args: unknown[]) => mocks.loadSets(...args),
-	manageDraftSet: (...args: unknown[]) => mocks.manageSet(...args),
+vi.mock('@/features/admin/services/puzzleGroups', () => ({
+	loadPuzzleGroups: (...args: unknown[]) => mocks.loadGroups(...args),
+	managePuzzleGroup: (...args: unknown[]) => mocks.manageGroup(...args),
 	deleteDraftSet: vi.fn(),
 }))
 vi.mock('@/features/admin/services/puzzleLibrary', () => ({
@@ -63,12 +63,11 @@ const puzzle = generateAuthoredPuzzle(
 	PUZZLE_RECIPES[1],
 	'hexagon',
 )
-const args = puzzleDraftArgs('draft-id', 'Saved art', 'collection', puzzle)
+const args = puzzleDraftArgs('draft-id', 'Saved art', puzzle)
 const draft: LibraryDraft = {
 	row: {
 		id: args.p_id,
 		name: args.p_name,
-		usage: args.p_usage,
 		shape_id: 'hexagon',
 		palette_id: args.p_palette_id,
 		board_size: args.p_board_size,
@@ -79,10 +78,11 @@ const draft: LibraryDraft = {
 		release_at: null,
 	},
 	assigned: false,
-	collectionId: null,
-	collectionName: null,
-	collectionPosition: null,
-	collectionKind: null,
+	groupId: null,
+	groupName: null,
+	groupPosition: null,
+	groupPurpose: null,
+	groupTrack: null,
 	puzzle,
 }
 beforeEach(() => {
@@ -93,21 +93,24 @@ beforeEach(() => {
 	mocks.bulk.mockResolvedValue(undefined)
 	mocks.replace.mockResolvedValue(undefined)
 	mocks.seeds.mockResolvedValue({ data: [], error: null })
-	mocks.loadSets.mockResolvedValue([
+	mocks.loadGroups.mockResolvedValue([
 		{
 			row: {
-				id: 'set',
-				name: 'First set',
-				kind: 'core',
+				id: 'group',
+				name: 'First group',
+				purpose: 'core',
+				track: 'rotation',
 				shape_id: 'hexagon',
 				selection_mode: 'any',
 				published_at: null,
 				release_at: null,
 			},
+			purpose: 'core',
+			track: 'rotation',
 			members: [],
 		},
 	])
-	mocks.manageSet.mockResolvedValue(undefined)
+	mocks.manageGroup.mockResolvedValue(undefined)
 })
 afterEach(() => vi.restoreAllMocks())
 // Mirrors AdminWorkspace: reselecting the Drafts tab remounts the library.
@@ -215,38 +218,39 @@ describe('draft library', () => {
 	it.each([
 		['core', 'Core'],
 		['reward', 'Reward'],
-		['paid', 'Pack'],
+		['daily', 'Daily'],
+		['pack', 'Pack'],
 	] as const)(
-		'labels assigned %s cards as %s beside the set name',
-		async (kind, label) => {
+		'labels assigned %s cards as %s beside the group name',
+		async (purpose, label) => {
 			mocks.load.mockResolvedValue([
 				{
 					...draft,
 					assigned: true,
-					collectionName: 'My set',
-					collectionKind: kind,
+					groupName: 'My group',
+					groupPurpose: purpose,
 				},
 			])
 			setup()
 			expect(
-				await screen.findByText(`${label} · My set`),
+				await screen.findByText(`${label} · My group`),
 			).toBeInTheDocument()
 		},
 	)
-	it('assigns selected puzzles to a draft set atomically, preserves failed selections, and shows membership after reload', async () => {
+	it('assigns selected puzzles to a draft group atomically, preserves failed selections, and shows membership after reload', async () => {
 		setup()
 		fireEvent.click(
 			await screen.findByRole('checkbox', {
 				name: 'Select draft Saved art',
 			}),
 		)
-		fireEvent.click(screen.getByRole('button', { name: 'Assign to set' }))
-		const picker = await screen.findByLabelText('Draft set')
+		fireEvent.click(screen.getByRole('button', { name: 'Assign to group' }))
+		const picker = await screen.findByLabelText('Draft group')
 		const apply = screen.getByRole('button', { name: 'Assign puzzles' })
 		expect(apply).toBeDisabled()
-		fireEvent.change(picker, { target: { value: 'set' } })
-		expect(mocks.manageSet).not.toHaveBeenCalled()
-		mocks.manageSet.mockRejectedValueOnce(
+		fireEvent.change(picker, { target: { value: 'group' } })
+		expect(mocks.manageGroup).not.toHaveBeenCalled()
+		mocks.manageGroup.mockRejectedValueOnce(
 			new Error('Puzzle assigned in another tab'),
 		)
 		fireEvent.click(apply)
@@ -256,32 +260,41 @@ describe('draft library', () => {
 		expect(
 			screen.getByRole('checkbox', { name: 'Select draft Saved art' }),
 		).toBeChecked()
-		expect(picker).toHaveValue('set')
+		expect(picker).toHaveValue('group')
 		mocks.load.mockResolvedValue([
 			{
 				...draft,
 				assigned: true,
-				collectionName: 'First set',
-				collectionKind: 'core',
+				groupId: 'group',
+				groupName: 'First group',
+				groupPurpose: 'core',
+				groupTrack: 'rotation',
 			},
 		])
 		fireEvent.click(apply)
 		fireEvent.click(apply)
-		await screen.findByText('Assigned 1 draft to set.')
-		expect(mocks.manageSet).toHaveBeenCalledTimes(2)
-		expect(mocks.manageSet).toHaveBeenLastCalledWith(
+		await screen.findByText('Assigned 1 draft to group.')
+		expect(mocks.manageGroup).toHaveBeenCalledTimes(2)
+		expect(mocks.manageGroup).toHaveBeenLastCalledWith(
 			expect.anything(),
-			'set',
+			'group',
 			{ kind: 'append', puzzleIds: ['draft-id'] },
 		)
-		await screen.findByText(/Core · First set/)
+		await screen.findByText(/Core · First group/)
 		expect(
 			screen.queryByRole('group', { name: 'Bulk draft actions' }),
 		).not.toBeInTheDocument()
 	})
-	it('blocks assignment of daily or already assigned puzzles', async () => {
+	it('blocks assignment of already assigned puzzles', async () => {
 		mocks.load.mockResolvedValue([
-			{ ...draft, row: { ...draft.row, usage: 'daily' } },
+			{
+				...draft,
+				assigned: true,
+				groupId: 'group',
+				groupName: 'First group',
+				groupPurpose: 'core',
+				groupTrack: 'rotation',
+			},
 		])
 		setup()
 		fireEvent.click(
@@ -289,28 +302,14 @@ describe('draft library', () => {
 				name: 'Select draft Saved art',
 			}),
 		)
-		expect(
-			screen.getByRole('button', { name: 'Assign to set' }),
-		).toBeDisabled()
-		mocks.load.mockResolvedValue([
-			{
-				...draft,
-				assigned: true,
-				collectionName: 'First set',
-				collectionKind: 'core',
-			},
-		])
-		fireEvent.click(screen.getByRole('button', { name: 'Refresh drafts' }))
-		fireEvent.click(
-			await screen.findByRole('checkbox', {
-				name: 'Select draft Saved art',
-			}),
+		const assign = screen.getByRole('button', { name: 'Assign to group' })
+		expect(assign).toBeDisabled()
+		expect(assign).toHaveAttribute(
+			'title',
+			'Only unassigned drafts can be assigned to a group.',
 		)
-		expect(
-			screen.getByRole('button', { name: 'Assign to set' }),
-		).toBeDisabled()
 	})
-	it("offers only sets of the selected drafts' shape and blocks mixed-shape selections", async () => {
+	it('offers only groups that accept every selected puzzle by shape and track', async () => {
 		const trianglePuzzle = generateAuthoredPuzzle(
 			'triangle',
 			palette.id,
@@ -324,100 +323,102 @@ describe('draft library', () => {
 				id: 'triangle-id',
 				name: 'Triangle art',
 				shape_id: 'triangle',
+				rotation_allowed: false,
 			},
 			puzzle: trianglePuzzle,
 		}
+		const group = (
+			id: string,
+			purpose: 'core' | 'pack' | 'daily',
+			shape: string | null,
+			track: 'basic' | 'rotation' | 'mixed' | null,
+		) => ({
+			row: {
+				id,
+				name: id,
+				purpose,
+				track,
+				shape_id: shape,
+				selection_mode: 'any',
+				published_at: null,
+				release_at: null,
+			},
+			purpose,
+			track,
+			members: [],
+		})
 		mocks.load.mockResolvedValue([draft, triangleDraft])
-		mocks.loadSets.mockResolvedValue([
-			{
-				row: {
-					id: 'set',
-					name: 'Hexagon set',
-					kind: 'core',
-					shape_id: 'hexagon',
-					selection_mode: 'any',
-					published_at: null,
-					release_at: null,
-				},
-				members: [],
-			},
-			{
-				row: {
-					id: 'triangle-set',
-					name: 'Triangle set',
-					kind: 'paid',
-					shape_id: 'triangle',
-					selection_mode: 'any',
-					published_at: null,
-					release_at: null,
-				},
-				members: [],
-			},
+		mocks.loadGroups.mockResolvedValue([
+			group('hexagon-rotation', 'core', 'hexagon', 'rotation'),
+			group('hexagon-basic', 'core', 'hexagon', 'basic'),
+			group('triangle-basic', 'core', 'triangle', 'basic'),
+			group('triangle-mixed', 'pack', 'triangle', 'mixed'),
+			group('october', 'daily', null, null),
 		])
 		setup()
 		expect(
 			await screen.findByText('Triangle · EASY (S)'),
 		).toBeInTheDocument()
 		expect(screen.getByText('Hexagon · MODERATE (S+)')).toBeInTheDocument()
+		const options = () =>
+			within(screen.getByLabelText('Draft group'))
+				.getAllByRole('option')
+				.map(option => option.getAttribute('value'))
 		fireEvent.click(
 			screen.getByRole('checkbox', { name: 'Select draft Saved art' }),
 		)
+		fireEvent.click(screen.getByRole('button', { name: 'Assign to group' }))
+		await screen.findByLabelText('Draft group')
+		// A rotation hexagon fits the rotation group and the daily group only.
+		expect(options()).toEqual(['', 'hexagon-rotation', 'october'])
+		fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
 		fireEvent.click(
 			screen.getByRole('checkbox', { name: 'Select draft Triangle art' }),
 		)
-		const assign = screen.getByRole('button', { name: 'Assign to set' })
-		expect(assign).toBeDisabled()
-		expect(assign).toHaveAttribute(
-			'title',
-			'Only unassigned Set/pack drafts of one shape can be assigned to a set.',
-		)
+		fireEvent.click(screen.getByRole('button', { name: 'Assign to group' }))
+		await screen.findByLabelText('Draft group')
+		// Only a daily group can hold both shapes.
+		expect(options()).toEqual(['', 'october'])
+		fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
 		fireEvent.click(
 			screen.getByRole('checkbox', { name: 'Select draft Saved art' }),
 		)
-		fireEvent.click(assign)
-		const picker = await screen.findByLabelText('Draft set')
-		expect(
-			within(picker)
-				.getAllByRole('option')
-				.map(option => option.getAttribute('value')),
-		).toEqual(['', 'triangle-set'])
-		fireEvent.change(picker, { target: { value: 'triangle-set' } })
+		fireEvent.click(screen.getByRole('button', { name: 'Assign to group' }))
+		await screen.findByLabelText('Draft group')
+		expect(options()).toEqual([
+			'',
+			'triangle-basic',
+			'triangle-mixed',
+			'october',
+		])
+		fireEvent.change(screen.getByLabelText('Draft group'), {
+			target: { value: 'triangle-basic' },
+		})
 		fireEvent.click(screen.getByRole('button', { name: 'Assign puzzles' }))
-		await screen.findByText('Assigned 1 draft to set.')
-		expect(mocks.manageSet).toHaveBeenCalledExactlyOnceWith(
+		await screen.findByText('Assigned 1 draft to group.')
+		expect(mocks.manageGroup).toHaveBeenCalledExactlyOnceWith(
 			expect.anything(),
-			'triangle-set',
+			'triangle-basic',
 			{ kind: 'append', puzzleIds: ['triangle-id'] },
 		)
 	})
-	it("explains when no set has the selected drafts' shape", async () => {
-		mocks.load.mockResolvedValue([
-			{
-				...draft,
-				row: { ...draft.row, shape_id: 'triangle' },
-				puzzle: generateAuthoredPuzzle(
-					'triangle',
-					palette.id,
-					PUZZLE_RECIPES[0],
-					'triangle',
-				),
-			},
-		])
+	it('explains when no group accepts the selected drafts', async () => {
 		setup()
 		fireEvent.click(
 			await screen.findByRole('checkbox', {
 				name: 'Select draft Saved art',
 			}),
 		)
-		fireEvent.click(screen.getByRole('button', { name: 'Assign to set' }))
-		await screen.findByLabelText('Draft set')
+		mocks.loadGroups.mockResolvedValue([])
+		fireEvent.click(screen.getByRole('button', { name: 'Assign to group' }))
+		await screen.findByLabelText('Draft group')
 		expect(
-			screen.getByText(/Create a triangle draft set using Manage sets/),
+			screen.getByText(/No draft group accepts all of these puzzles/),
 		).toBeInTheDocument()
 	})
-	it('surfaces set lookup failures without losing selected puzzles', async () => {
-		mocks.loadSets.mockRejectedValueOnce(
-			new Error('Set catalog unavailable'),
+	it('surfaces group lookup failures without losing selected puzzles', async () => {
+		mocks.loadGroups.mockRejectedValueOnce(
+			new Error('Group catalog unavailable'),
 		)
 		setup()
 		fireEvent.click(
@@ -425,9 +426,9 @@ describe('draft library', () => {
 				name: 'Select draft Saved art',
 			}),
 		)
-		fireEvent.click(screen.getByRole('button', { name: 'Assign to set' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Assign to group' }))
 		expect(await screen.findByRole('alert')).toHaveTextContent(
-			'Set catalog unavailable',
+			'Group catalog unavailable',
 		)
 		expect(
 			screen.getByRole('button', { name: 'Assign puzzles' }),
@@ -436,9 +437,9 @@ describe('draft library', () => {
 			screen.getByRole('checkbox', { name: 'Select draft Saved art' }),
 		).toBeChecked()
 		fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
-		fireEvent.click(screen.getByRole('button', { name: 'Assign to set' }))
-		await screen.findByLabelText('Draft set')
-		expect(mocks.loadSets).toHaveBeenCalledTimes(2)
+		fireEvent.click(screen.getByRole('button', { name: 'Assign to group' }))
+		await screen.findByLabelText('Draft group')
+		expect(mocks.loadGroups).toHaveBeenCalledTimes(2)
 	})
 	it("keeps a draft's shape fixed while editing and replaces triangle designs with triangles", async () => {
 		const trianglePuzzle = generateAuthoredPuzzle(
@@ -477,7 +478,7 @@ describe('draft library', () => {
 			expect(tile.getAttribute('points')!.split(' ')).toHaveLength(3)
 		fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }))
 		await waitFor(() => expect(mocks.replace).toHaveBeenCalledOnce())
-		expect(mocks.replace.mock.calls[0][4]).toMatchObject({
+		expect(mocks.replace.mock.calls[0][3]).toMatchObject({
 			shape: 'triangle',
 			generatorVersion: 'triangle-v1',
 			recipe: { id: 'hard-medium' },
@@ -505,9 +506,6 @@ describe('draft library', () => {
 		}).innerHTML
 		const name = screen.getByLabelText('Puzzle name')
 		fireEvent.change(name, { target: { value: 'Replacement name' } })
-		fireEvent.change(screen.getByLabelText('Intended use'), {
-			target: { value: 'daily' },
-		})
 		fireEvent.click(
 			screen.getByRole('button', {
 				name: 'Select the Other color palette',
@@ -524,7 +522,6 @@ describe('draft library', () => {
 		await waitFor(() => expect(randomize).toBeEnabled())
 		expect(mocks.seeds).toHaveBeenCalledTimes(1)
 		expect(name).toHaveValue('Replacement name')
-		expect(screen.getByLabelText('Intended use')).toHaveValue('daily')
 		expect(
 			screen.getByRole('img', { name: 'Target design' }).innerHTML,
 		).not.toBe(target)
@@ -562,7 +559,6 @@ describe('draft library', () => {
 			expect.anything(),
 			draft.row.id,
 			'Replacement name',
-			'daily',
 			expected,
 		)
 		// Changing the next recipe does not silently regenerate the pending design.
@@ -638,9 +634,9 @@ describe('draft library', () => {
 			'rotate',
 		)
 		expect(refresh.parentElement).toHaveClass(layoutStyles.actions)
-		const filter = screen.getByLabelText('Show drafts')
-		expect(filter).toHaveAccessibleName('Show drafts')
-		expect(screen.queryByText('Show drafts')).not.toBeInTheDocument()
+		const filter = screen.getByLabelText('Show shape')
+		expect(filter).toHaveAccessibleName('Show shape')
+		expect(screen.queryByText('Show shape')).not.toBeInTheDocument()
 		expect(filter.parentElement).toBe(refresh.parentElement)
 		const selectAll = await screen.findByRole('checkbox', {
 			name: 'Select all',
@@ -697,16 +693,22 @@ describe('draft library', () => {
 		).not.toBeInTheDocument()
 	})
 	it('selects only shown drafts, reports mixed selection, and clears hidden selections on filter changes', async () => {
-		const daily = {
+		const triangle = {
 			...draft,
 			row: {
 				...draft.row,
-				id: 'daily',
-				name: 'Daily art',
-				usage: 'daily',
+				id: 'triangle',
+				name: 'Triangle art',
+				shape_id: 'triangle',
 			},
+			puzzle: generateAuthoredPuzzle(
+				'triangle',
+				palette.id,
+				PUZZLE_RECIPES[1],
+				'triangle',
+			),
 		}
-		mocks.load.mockResolvedValue([draft, daily])
+		mocks.load.mockResolvedValue([draft, triangle])
 		setup()
 		const first = await screen.findByRole('checkbox', {
 			name: 'Select draft Saved art',
@@ -719,11 +721,11 @@ describe('draft library', () => {
 		fireEvent.click(screen.getByRole('checkbox', { name: 'Select all' }))
 		expect(first).toBeChecked()
 		expect(
-			screen.getByRole('checkbox', { name: 'Select draft Daily art' }),
+			screen.getByRole('checkbox', { name: 'Select draft Triangle art' }),
 		).toBeChecked()
 		expect(screen.queryByText(/selected\)/)).not.toBeInTheDocument()
-		fireEvent.change(screen.getByLabelText('Show drafts'), {
-			target: { value: 'daily' },
+		fireEvent.change(screen.getByLabelText('Show shape'), {
+			target: { value: 'triangle' },
 		})
 		expect(
 			screen.queryByRole('group', { name: 'Bulk draft actions' }),
@@ -733,7 +735,7 @@ describe('draft library', () => {
 		const confirmation = screen.getByRole('dialog', {
 			name: 'Confirm gallery deletion',
 		})
-		expect(confirmation).toHaveTextContent('Daily art')
+		expect(confirmation).toHaveTextContent('Triangle art')
 		expect(confirmation).not.toHaveTextContent('Saved art')
 		mocks.load.mockResolvedValue([draft])
 		fireEvent.click(
@@ -744,7 +746,7 @@ describe('draft library', () => {
 		await waitFor(() =>
 			expect(mocks.bulk).toHaveBeenCalledWith(
 				expect.anything(),
-				['daily'],
+				['triangle'],
 				{ kind: 'delete' },
 			),
 		)
@@ -850,7 +852,7 @@ describe('draft library', () => {
 			screen.queryByRole('button', { name: 'Delete selected' }),
 		).not.toBeInTheDocument()
 		expect(
-			screen.getByRole('button', { name: 'Assign to set' }),
+			screen.getByRole('button', { name: 'Assign to group' }),
 		).toBeDisabled()
 		expect(
 			screen.getByRole('button', { name: 'Change palette' }),
@@ -860,20 +862,20 @@ describe('draft library', () => {
 			screen.getByRole('checkbox', { name: 'Select draft Saved art' }),
 		).not.toBeChecked()
 	})
-	it('orders assigned drafts by set name, then set position, with daily drafts last', async () => {
-		const inSet = (
+	it('orders assigned drafts by group name, then group position, with ungrouped drafts last', async () => {
+		const inGroup = (
 			id: string,
 			name: string,
-			set: string,
+			group: string,
 			position: number,
 		) => ({
 			...draft,
 			row: { ...draft.row, id, name },
 			assigned: true,
-			collectionId: set,
-			collectionName: set,
-			collectionPosition: position,
-			collectionKind: 'core',
+			groupId: group,
+			groupName: group,
+			groupPosition: position,
+			groupPurpose: 'core',
 		})
 		mocks.load.mockResolvedValue([
 			{
@@ -882,13 +884,12 @@ describe('draft library', () => {
 					...draft.row,
 					id: 'd',
 					name: 'Aardvark',
-					usage: 'daily',
 				},
 				assigned: true,
 			},
-			inSet('b1', 'Apple', 'Beta', 1),
-			inSet('a2', 'Apple', 'Alpha', 2),
-			inSet('a1', 'Zebra', 'Alpha', 1),
+			inGroup('b1', 'Apple', 'Beta', 1),
+			inGroup('a2', 'Apple', 'Alpha', 2),
+			inGroup('a1', 'Zebra', 'Alpha', 1),
 		])
 		render(
 			<PuzzleDraftLibrary
@@ -919,33 +920,25 @@ describe('draft library', () => {
 			expect.anything(),
 		])
 	})
-	it('isolates assigned drafts by set and offers no set filter for unassigned drafts', async () => {
-		const inSet = (
+	it('isolates assigned drafts by purpose and group and offers no group filters for unassigned drafts', async () => {
+		const inGroup = (
 			id: string,
 			name: string,
-			setId: string,
-			set: string,
+			groupId: string,
+			group: string,
+			purpose: 'core' | 'daily',
 		) => ({
 			...draft,
 			row: { ...draft.row, id, name },
 			assigned: true,
-			collectionId: setId,
-			collectionName: set,
-			collectionKind: 'core',
+			groupId,
+			groupName: group,
+			groupPurpose: purpose,
 		})
 		mocks.load.mockResolvedValue([
-			inSet('a', 'First art', 'set-b', 'Beta'),
-			inSet('b', 'Second art', 'set-a', 'Alpha'),
-			{
-				...draft,
-				row: {
-					...draft.row,
-					id: 'c',
-					name: 'Daily art',
-					usage: 'daily',
-				},
-				assigned: true,
-			},
+			inGroup('a', 'First art', 'group-b', 'Beta', 'core'),
+			inGroup('b', 'Second art', 'group-a', 'Alpha', 'core'),
+			inGroup('c', 'Daily art', 'group-d', 'October', 'daily'),
 		])
 		const view = render(
 			<PuzzleDraftLibrary
@@ -954,16 +947,16 @@ describe('draft library', () => {
 				catalogStatus="assigned"
 			/>,
 		)
-		const filter = await screen.findByLabelText('Show set')
+		const filter = await screen.findByLabelText('Show group')
 		expect(
 			within(filter)
 				.getAllByRole('option')
 				.map(option => option.textContent),
-		).toEqual(['All sets', 'Alpha', 'Beta'])
+		).toEqual(['All groups', 'Alpha', 'Beta', 'October'])
 		fireEvent.click(
 			screen.getByRole('checkbox', { name: 'Select draft First art' }),
 		)
-		fireEvent.change(filter, { target: { value: 'set-a' } })
+		fireEvent.change(filter, { target: { value: 'group-a' } })
 		expect(
 			screen.getByRole('button', { name: 'Edit draft Second art' }),
 		).toBeInTheDocument()
@@ -974,7 +967,7 @@ describe('draft library', () => {
 			screen.queryByRole('group', { name: 'Bulk draft actions' }),
 		).not.toBeInTheDocument()
 		fireEvent.change(filter, { target: { value: 'all' } })
-		fireEvent.change(screen.getByLabelText('Show drafts'), {
+		fireEvent.change(screen.getByLabelText('Show purpose'), {
 			target: { value: 'daily' },
 		})
 		expect(
@@ -983,6 +976,12 @@ describe('draft library', () => {
 		expect(
 			screen.queryByRole('button', { name: 'Edit draft Second art' }),
 		).not.toBeInTheDocument()
+		// Only groups of the chosen purpose are offered.
+		expect(
+			within(screen.getByLabelText('Show group'))
+				.getAllByRole('option')
+				.map(option => option.textContent),
+		).toEqual(['All groups', 'October'])
 		view.unmount()
 		mocks.load.mockResolvedValue([draft])
 		render(
@@ -993,9 +992,63 @@ describe('draft library', () => {
 			/>,
 		)
 		await screen.findByRole('button', { name: 'Edit draft Saved art' })
-		expect(screen.queryByLabelText('Show set')).not.toBeInTheDocument()
+		expect(screen.queryByLabelText('Show group')).not.toBeInTheDocument()
+		expect(screen.queryByLabelText('Show purpose')).not.toBeInTheDocument()
+		expect(screen.getByLabelText('Show shape')).toBeInTheDocument()
+		expect(screen.getByLabelText('Show track')).toBeInTheDocument()
 	})
-	it('shows thumbnails, filters intended use, and reopens the stored design for playtesting', async () => {
+	it('filters drafts by shape and track', async () => {
+		const triangle = {
+			...draft,
+			row: {
+				...draft.row,
+				id: 'triangle',
+				name: 'Triangle art',
+				shape_id: 'triangle',
+				rotation_allowed: false,
+			},
+			puzzle: generateAuthoredPuzzle(
+				'triangle',
+				palette.id,
+				PUZZLE_RECIPES[0],
+				'triangle',
+			),
+		}
+		mocks.load.mockResolvedValue([draft, triangle])
+		setup()
+		await screen.findByRole('button', { name: 'Edit draft Saved art' })
+		fireEvent.change(screen.getByLabelText('Show shape'), {
+			target: { value: 'triangle' },
+		})
+		expect(
+			screen.queryByRole('button', { name: 'Edit draft Saved art' }),
+		).not.toBeInTheDocument()
+		expect(
+			screen.getByRole('button', { name: 'Edit draft Triangle art' }),
+		).toBeInTheDocument()
+		fireEvent.change(screen.getByLabelText('Show shape'), {
+			target: { value: 'all' },
+		})
+		fireEvent.change(screen.getByLabelText('Show track'), {
+			target: { value: 'rotation' },
+		})
+		expect(
+			screen.getByRole('button', { name: 'Edit draft Saved art' }),
+		).toBeInTheDocument()
+		expect(
+			screen.queryByRole('button', { name: 'Edit draft Triangle art' }),
+		).not.toBeInTheDocument()
+		fireEvent.change(screen.getByLabelText('Show track'), {
+			target: { value: 'basic' },
+		})
+		expect(
+			screen.getByRole('button', { name: 'Edit draft Triangle art' }),
+		).toBeInTheDocument()
+		expect(
+			screen.queryByRole('button', { name: 'Edit draft Saved art' }),
+		).not.toBeInTheDocument()
+	})
+	it('shows thumbnails, filters by shape, and reopens the stored design for playtesting', async () => {
 		setup()
 		const thumbnail = await screen.findByRole('button', {
 			name: 'Edit draft Saved art',
@@ -1034,8 +1087,8 @@ describe('draft library', () => {
 		).toHaveLength(puzzle.definition.pieces.length)
 		fireEvent.click(screen.getByRole('button', { name: 'Drafts tab' }))
 		await screen.findByRole('button', { name: 'Edit draft Saved art' })
-		fireEvent.change(screen.getByLabelText('Show drafts'), {
-			target: { value: 'daily' },
+		fireEvent.change(screen.getByLabelText('Show shape'), {
+			target: { value: 'triangle' },
 		})
 		expect(
 			screen.queryByRole('button', { name: 'Edit draft Saved art' }),
@@ -1066,9 +1119,6 @@ describe('draft library', () => {
 		fireEvent.change(screen.getByLabelText('Puzzle name'), {
 			target: { value: 'Renamed' },
 		})
-		fireEvent.change(screen.getByLabelText('Intended use'), {
-			target: { value: 'daily' },
-		})
 		fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }))
 		await waitFor(() =>
 			expect(mocks.edit).toHaveBeenCalledWith(
@@ -1076,7 +1126,6 @@ describe('draft library', () => {
 				'draft-id',
 				'Renamed',
 				'other',
-				'daily',
 			),
 		)
 		await screen.findByText('Draft changes saved.')
@@ -1165,11 +1214,30 @@ describe('draft library', () => {
 		expect(mocks.remove).toHaveBeenCalledTimes(2)
 		expect(screen.queryByRole('article')).not.toBeInTheDocument()
 	})
-	it('lets assigned drafts replace their design but not their intended use or deletion', async () => {
-		mocks.load.mockResolvedValue([{ ...draft, assigned: true }])
+	it('lets assigned drafts replace their design but not delete, offering only recipes that fit their group track', async () => {
+		mocks.load.mockResolvedValue([
+			{
+				...draft,
+				assigned: true,
+				groupId: 'group',
+				groupName: 'First group',
+				groupPurpose: 'core',
+				groupTrack: 'rotation',
+			},
+		])
 		setup()
 		await open()
-		expect(screen.getByLabelText('Intended use')).toBeDisabled()
+		expect(
+			within(screen.getByLabelText('Recipe'))
+				.getAllByRole('option')
+				.every(option =>
+					PUZZLE_RECIPES.some(
+						recipe =>
+							recipe.rotation &&
+							recipe.label === option.textContent,
+					),
+				),
+		).toBe(true)
 		expect(
 			screen.getByRole('button', { name: 'Delete draft' }),
 		).toBeDisabled()
@@ -1184,20 +1252,20 @@ describe('draft library', () => {
 			expect.anything(),
 			draft.row.id,
 			draft.row.name,
-			draft.row.usage,
 			expect.anything(),
 		)
 		expect(mocks.edit).not.toHaveBeenCalled()
 	})
-	it('offers New puzzle in the Assigned view only while a draft set is filtered, passing it to onNew', async () => {
+	it('offers New puzzle in the Assigned view only while a draft group is filtered, passing it to onNew', async () => {
 		mocks.load.mockResolvedValue([
 			{
 				...draft,
 				assigned: true,
-				collectionId: 'set',
-				collectionName: 'First set',
-				collectionPosition: 1,
-				collectionKind: 'core',
+				groupId: 'group',
+				groupName: 'First group',
+				groupPosition: 1,
+				groupPurpose: 'core',
+				groupTrack: 'rotation',
 			},
 		])
 		const onNew = vi.fn()
@@ -1209,7 +1277,7 @@ describe('draft library', () => {
 				onNew={onNew}
 			/>,
 		)
-		const filter = await screen.findByLabelText('Show set')
+		const filter = await screen.findByLabelText('Show group')
 		expect(
 			screen.queryByRole('button', { name: 'New puzzle' }),
 		).not.toBeInTheDocument()
@@ -1217,39 +1285,38 @@ describe('draft library', () => {
 			within(filter)
 				.getAllByRole('option')
 				.map(option => option.textContent),
-		).toEqual(['All sets', 'First set'])
-		fireEvent.change(filter, { target: { value: 'set' } })
+		).toEqual(['All groups', 'First group'])
+		fireEvent.change(filter, { target: { value: 'group' } })
 		fireEvent.click(
 			await screen.findByRole('button', { name: 'New puzzle' }),
 		)
 		expect(onNew).toHaveBeenCalledWith(
 			expect.objectContaining({
-				row: expect.objectContaining({ id: 'set' }),
+				row: expect.objectContaining({ id: 'group' }),
 			}),
-			{ filter: 'all', setChoice: 'set' },
+			{ purpose: 'all', shape: 'all', track: 'all', group: 'group' },
 		)
 	})
 
-	it('unassigns selected puzzles from each of their sets, but not daily assignments', async () => {
-		const inSet = (id: string, name: string, setId: string) => ({
+	it('unassigns selected puzzles from each of their groups, but not puzzles without a group', async () => {
+		const inGroup = (id: string, name: string, groupId: string) => ({
 			...draft,
 			row: { ...draft.row, id, name },
 			assigned: true,
-			collectionId: setId,
-			collectionName: setId,
-			collectionPosition: 1,
-			collectionKind: 'core',
+			groupId,
+			groupName: groupId,
+			groupPosition: 1,
+			groupPurpose: 'core',
 		})
 		mocks.load.mockResolvedValue([
-			inSet('a', 'Alpha art', 'set-a'),
-			inSet('b', 'Beta art', 'set-b'),
+			inGroup('a', 'Alpha art', 'group-a'),
+			inGroup('b', 'Beta art', 'group-b'),
 			{
 				...draft,
 				row: {
 					...draft.row,
 					id: 'd',
 					name: 'Daily art',
-					usage: 'daily',
 				},
 				assigned: true,
 			},
@@ -1267,7 +1334,7 @@ describe('draft library', () => {
 			}),
 		)
 		expect(
-			screen.getByRole('button', { name: 'Unassign from sets' }),
+			screen.getByRole('button', { name: 'Unassign from groups' }),
 		).toBeDisabled()
 		fireEvent.click(
 			screen.getByRole('checkbox', { name: 'Select draft Daily art' }),
@@ -1279,22 +1346,22 @@ describe('draft library', () => {
 			screen.getByRole('checkbox', { name: 'Select draft Beta art' }),
 		)
 		fireEvent.click(
-			screen.getByRole('button', { name: 'Unassign from sets' }),
+			screen.getByRole('button', { name: 'Unassign from groups' }),
 		)
-		expect(mocks.manageSet).not.toHaveBeenCalled()
+		expect(mocks.manageGroup).not.toHaveBeenCalled()
 		fireEvent.click(
 			screen.getByRole('button', { name: 'Unassign puzzles' }),
 		)
-		await screen.findByText('Unassigned 2 drafts from their sets.')
-		expect(mocks.manageSet).toHaveBeenCalledTimes(2)
-		expect(mocks.manageSet).toHaveBeenCalledWith(
+		await screen.findByText('Unassigned 2 drafts from their groups.')
+		expect(mocks.manageGroup).toHaveBeenCalledTimes(2)
+		expect(mocks.manageGroup).toHaveBeenCalledWith(
 			expect.anything(),
-			'set-a',
+			'group-a',
 			{ kind: 'remove', puzzleIds: ['a'] },
 		)
-		expect(mocks.manageSet).toHaveBeenCalledWith(
+		expect(mocks.manageGroup).toHaveBeenCalledWith(
 			expect.anything(),
-			'set-b',
+			'group-b',
 			{ kind: 'remove', puzzleIds: ['b'] },
 		)
 	})
@@ -1313,7 +1380,7 @@ describe('draft library', () => {
 			}),
 		)
 		expect(
-			screen.queryByRole('button', { name: 'Unassign from sets' }),
+			screen.queryByRole('button', { name: 'Unassign from groups' }),
 		).not.toBeInTheDocument()
 	})
 
@@ -1331,8 +1398,10 @@ describe('draft library', () => {
 			await screen.findByRole('button', { name: 'New puzzle' }),
 		)
 		expect(onNew).toHaveBeenCalledWith(undefined, {
-			filter: 'all',
-			setChoice: 'all',
+			purpose: 'all',
+			shape: 'all',
+			track: 'all',
+			group: 'all',
 		})
 	})
 
@@ -1341,10 +1410,11 @@ describe('draft library', () => {
 			{
 				...draft,
 				assigned: true,
-				collectionId: 'set',
-				collectionName: 'First set',
-				collectionPosition: 1,
-				collectionKind: 'core',
+				groupId: 'group',
+				groupName: 'First group',
+				groupPosition: 1,
+				groupPurpose: 'core',
+				groupTrack: 'rotation',
 			},
 		])
 		render(
@@ -1354,14 +1424,14 @@ describe('draft library', () => {
 				catalogStatus="assigned"
 			/>,
 		)
-		fireEvent.change(await screen.findByLabelText('Show set'), {
-			target: { value: 'set' },
+		fireEvent.change(await screen.findByLabelText('Show group'), {
+			target: { value: 'group' },
 		})
 		fireEvent.click(
 			screen.getByRole('button', { name: 'Edit draft Saved art' }),
 		)
 		fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
-		expect(screen.getByLabelText('Show set')).toHaveValue('set')
+		expect(screen.getByLabelText('Show group')).toHaveValue('group')
 		fireEvent.click(
 			screen.getByRole('button', { name: 'Edit draft Saved art' }),
 		)
@@ -1378,7 +1448,7 @@ describe('draft library', () => {
 		expect(screen.getByLabelText('Puzzle name')).toHaveValue('Changed')
 		fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
 		fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }))
-		expect(screen.getByLabelText('Show set')).toHaveValue('set')
+		expect(screen.getByLabelText('Show group')).toHaveValue('group')
 		expect(mocks.edit).not.toHaveBeenCalled()
 	})
 

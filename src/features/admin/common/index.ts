@@ -8,8 +8,8 @@ export {
 	AdminMemberRow,
 	AdminSectionHeading,
 	AdminSelectionBar,
-	AdminSetCard,
-	AdminSetForm,
+	AdminGroupCard,
+	AdminGroupForm,
 	AdminTag,
 } from './AdminLayout'
 export { default as useCheckedIds } from './useCheckedIds'

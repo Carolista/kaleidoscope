@@ -25,15 +25,17 @@ types, and a database-backed singleton admin check. Its puzzle lab authors
 puzzles in all six shapes with all six size/rotation recipes, visual Supabase palettes (including
 drafts), and one-click randomization. Version-2 definitions use ordered palette
 slots, with private seed/generator/solution data kept separate. Playtests are
-memory-only, while named Set/pack or Daily drafts save atomically to Supabase.
+memory-only, while named drafts save atomically to Supabase; a puzzle's purpose comes from its group.
 No player progress writes or Zen autosaves occur.
 See [Supabase instructions](./supabase/README.md) for current scope.
 
 The shared New/Edit form uses two columns from 640px: palette refresh/picker on the
-left; name, shape, recipe/wand randomizer, and intended-use/save rows on the right.
+left; name, shape, recipe/wand randomizer, and save rows on the right. Creating a
+puzzle inside a filtered group fixes its shape (unless the group is daily) and limits
+the recipes to the group's track.
 Shape, like recipe, applies at the next randomization; Edit shows it but fixed.
-Puzzle-creator palette pickers (New, Edit, bulk) list palettes by palette set and
-position, then unassigned palettes by name, falling back to names without set data.
+Puzzle-creator palette pickers (New, Edit, bulk) list palettes by palette group and
+position, then unassigned palettes by name, falling back to names without group data.
 Narrower screens stack the columns. New-puzzle fields are visible before generation;
 saving requires a named preview. The preview omits repeated palette labels and the
 seed. Save/load status sits below the form content so it never shifts the layout.
@@ -42,22 +44,23 @@ with favicon navigation at the left. Admin defaults to dark mode using the share
 neutral charcoal/white theme helper, without initializing player state.
 
 Admin navigation has peer sections: **Puzzles | Palettes | Shapes**. Puzzles and
-Palettes each offer **Sets** (default) | items; items filter by **Unassigned**
+Palettes each offer **Groups** (default) | items; items filter by **Unassigned**
 (default) | **Assigned** | **Scheduled** | **Published**. Shapes, Scheduled, and
 Published are placeholders. Everything stays a draft until published; the first
-tab names the unassigned stage. Assigned lists sort by set name, then set position
-([setOrder](./src/features/admin/sets/setOrder.ts)); daily puzzles follow by name. A future top-level orchestration view will map how
-sets, rewards, and packs connect and roll out. Section/view changes use the
+tab names the unassigned stage. Assigned lists sort by group name, then group position
+([groupOrder](./src/features/admin/groups/groupOrder.ts)); puzzles without a group follow by name. A future top-level orchestration view will map how
+groups, rewards, and packs connect and roll out. Group lists filter by purpose (puzzle groups also by
+shape and track); puzzle items filter by shape and track, and the Assigned view by purpose and group. Section/view changes use the
 navigation guard and reset lower choices to their defaults.
 
 [AdminCatalogProvider](./src/features/admin/catalog/AdminCatalog.tsx) caches puzzle
-sets, puzzle drafts, palettes, and palette sets for the signed-in session.
+groups, puzzle drafts, palettes, and palette groups for the signed-in session.
 Views read them through [useCatalog](./src/features/admin/catalog/useAdminCatalog.ts),
 so navigation shows cached data instantly. Data reloads only on explicit Refresh
 or after the admin's own saves: local edits update the cache in place, and saves
 affecting another catalog invalidate only catalogs already loaded. Changes made
-elsewhere (another tab or the database) need Refresh. Set loaders batch member
-and preview reads (`.in()` chunks of 100, paginated) rather than querying per set.
+elsewhere (another tab or the database) need Refresh. Group loaders batch member
+and preview reads (`.in()` chunks of 100, paginated) rather than querying per group.
 
 The Puzzles item view opens the draft gallery; New puzzle and Edit open dedicated views.
 Saved definitions reopen without regeneration. Creation stays open after saving,
@@ -80,8 +83,8 @@ and change recipe locally until release.
 Saving atomically replaces public design/recipe and private provenance/solution
 under the existing ID, then returns to the library. Discard keeps the original;
 failed reads/saves preserve the preview. Changing the recipe alone does not generate.
-Assigned drafts keep set/daily membership on replacement but cannot change intended
-use or be deleted. Only live puzzles are frozen. The replacement RPC rechecks
+Assigned drafts keep group membership on replacement (the new recipe must fit the
+group's track) but cannot be deleted. Only live puzzles are frozen. The replacement RPC rechecks
 existence, shape, release and references under the catalog lock.
 Hosted replacement functionality has been confirmed by the user.
 
@@ -90,40 +93,44 @@ links: a centered thumbnail and details sit above a bottom row with the custom
 checkbox at left and square blue Edit/red Delete icons at right; selected cards
 are highlighted blue. Delete appears only for unassigned drafts, and bulk Delete
 only when every checked draft qualifies. Select all supports a mixed state; the
-use and set filters and explicit refresh clear selection. Bulk palette changes require
+shape, track, purpose, and group filters and explicit refresh clear selection. Bulk palette changes require
 swatch selection and Apply; card/bulk deletion confirms count and names.
 Admin-only RPCs apply batches atomically under the catalog lock, rechecking release
-and references. Assigned drafts cannot switch use or delete; scheduled/live rows
+and references. Assigned drafts cannot be deleted; scheduled/live rows
 are excluded. Saved seed exclusions derive from surviving authoring records.
-Puzzles > Sets creates/renames Core, Reward, or Paid draft sets with flexible
-member counts; each set's shape is chosen at creation and fixed. Gallery
-**Assign to set** appends unassigned Set/pack drafts of one shape to a set of
-that shape; mixed-shape selections cannot be assigned. Membership is exclusive.
-Puzzle and set cards show the shape; assigned cards also show the set name and
-Core/Reward/Pack.
-New puzzle sets and palette sets use the shared set-creation form in a modal over
-their lists. Success closes the modal, refreshes the list, and focuses Add for
-another creation; it does not enter the new set's editor. Failed saves retain
-the name, role, and error in the modal, with retry-stable IDs. Existing set
-metadata/member editing remains a separate workspace.
-Set cards use two equal columns above 640px, one at/below, with left thumbnails,
+Puzzles > Groups creates and edits draft groups with a purpose (Undecided, Core,
+Reward, Daily, or Pack), a shape (not for Daily, which mixes shapes), and a track
+(Basic or Rotation for Core and Reward; also Mixed for Pack; none otherwise), with
+flexible member counts. Purpose, shape, and track stay editable until publication,
+and the database rejects members that do not match. Gallery **Assign to group**
+appends unassigned drafts to a group that accepts every selected puzzle (shape and
+track); a daily group accepts any shape. Membership is exclusive. Puzzle and group
+cards show purpose, shape, and track; assigned puzzle cards also show the group name.
+New puzzle groups and palette groups use the shared group-creation form in a modal
+over their lists. Success closes the modal, refreshes the list, and focuses Add for
+another creation; it does not enter the new group's editor. Failed saves retain
+the name, purpose, and error in the modal, with retry-stable IDs. Existing group
+metadata/member editing remains a separate workspace. Palette groups have no Daily
+purpose.
+Group cards use two equal columns above 640px, one at/below, with left thumbnails,
 details top right, and actions bottom right. The editor shows each member's stored-design
 thumbnail in current Supabase palette colors beside a grip handle and square-minus
 removal control. Pointer drag (or Up/Down/Home/End on a focused handle; Escape
 cancels a drag) stages a local order. One blue **Save** beside the name writes
 name and order together, and staged order is guarded like other unsaved edits.
-Removal saves immediately. Keyboard instructions are visually hidden. Palette sets share the same staged drag ordering.
-Confirmed set deletion unassigns members but preserves puzzles/private solutions.
+Removal saves immediately. Keyboard instructions are visually hidden. Palette groups share the same staged drag ordering.
+Confirmed group deletion unassigns members but preserves puzzles/private solutions.
 Admin/invoker-RLS RPCs recheck release/reference state under the catalog lock;
-scheduled/live sets, prepared members, and dependent progression/routes/rewards,
-qualifications or grants block deletion. Membership reads paginate.
-Publishing, starter, route/core progression, and reward tools remain deferred.
+scheduled/live groups, prepared members, and dependent rewards, completions or
+grants block deletion. Membership reads paginate.
+Publishing, shape progression, and reward screens remain deferred; the database
+already holds `shape_progression` and `group_completions`.
 
-**Palettes** opens palette sets by default; its Palettes view is a database-backed
+**Palettes** opens palette groups by default; its Palettes view is a database-backed
 catalog sharing the puzzle card layout, selection bar, and blue selected state,
-with swatches, release state, **Assign to set**, and Duplicate/Edit/Delete.
+with swatches, release state, **Assign to group**, and Duplicate/Edit/Delete.
 Bulk delete appears only when every checked palette is an unassigned draft;
-the batch RPC rejects set members, references, and scheduled/live palettes. New palettes have blank names; Duplicate
+the batch RPC rejects group members, references, and scheduled/live palettes. New palettes have blank names; Duplicate
 starts with the chosen palette's five ordered colors and creates a new ID on save.
 The editor pairs hex text and native color inputs in three equal-width columns.
 Its medium hexagon sandbox randomizes only palette slots, each with a 20% chance;
@@ -136,10 +143,10 @@ palettes are read-only but can be duplicated. Save returns to the palette librar
 saves also refresh the shared catalog used by puzzle authoring and set previews.
 The editor's blue Save sits beside the palette name; deletion happens only from
 the library. Usage loads once and lists only real references (linked stored-design
-thumbnails, sets, starters, rewards, grants, corrections), or "Not used anywhere."
+thumbnails, palette groups, rewards, grants, corrections), or "Not used anywhere."
 No private solutions or account identities are shown. Library trash opens a named
 deletion modal directly over the catalog.
-Deletion requires verified usage and no blocking references; draft-only set
+Deletion requires verified usage and no blocking references; draft-only group
 membership is removed on deletion. Failed usage reads offer retry and block
 deletion. The database rechecks under the catalog lock.
 Writes use loaded name/colors/revision conflict checks and retry-stable IDs.
@@ -301,7 +308,7 @@ changes should be applied to all four SVG assets.
   native required, disabled, ref, and submit behavior. Specialized paired
   hex/native-color inputs and inline filter controls keep their own layouts.
 - [PaletteStrip](./src/ui/components/PaletteStrip.tsx) owns decorative ordered
-  colors: square swatches for choices, continuous strips for catalog/set previews.
+  colors: square swatches for choices, continuous strips for catalog/group previews.
   [PaletteChoices](./src/ui/components/PaletteChoices.tsx) owns controlled,
   labelled palette buttons keyed/selected by ID, with optional visible names.
   Player PalettePicker adapts its local name-based catalog and applies/closes
@@ -310,7 +317,7 @@ changes should be applied to all four SVG assets.
   buttons remain the separate ColorSwatches component.
 - [AdminLayout](./src/features/admin/common/AdminLayout.tsx) supplies section
   headings/actions, feedback, gallery framing, and ordered member rows. Puzzle,
-  palette, and landscape-set cards retain their domain content/layouts; don't
+  palette, and landscape-group cards retain their domain content/layouts; don't
   create another generic gallery or member-action shell for the same pattern.
   Loading, empty-data decisions, retries, and writes stay with their owners.
 - `IconButton`, `CloseButton`, and `ModalHeader` do not require player state.
@@ -347,12 +354,12 @@ changes should be applied to all four SVG assets.
 | Labelled native field | [FormField](./src/ui/components/FormField.tsx) with [Input/Select](./src/ui/components/FormControl.tsx), including admin sign-in |
 | Player / admin icon action | [PlayerIconButton](./src/ui/components/PlayerIconButton.tsx) / [AdminIconButton](./src/features/admin/common/AdminIconButton.tsx); generic renderer is [IconButton](./src/ui/components/IconButton.tsx) |
 | Edit / delete / new / refresh | Admin icon action with `faPenToSquare` / `faTrashCan` / `faPlusLarge` / `faRotate`; item-specific label and title; `tone="edit"` (blue) or `tone="delete"` (red) for edit and removal actions |
-| Reorder / unassign | Staged `faGripVertical` drag handle + the set's single Save ([SortableSetMembers](./src/features/admin/sets/SortableSetMembers.tsx)), shared by puzzle and palette sets; `faSquareMinus` unassign preserves the member |
+| Reorder / unassign | Staged `faGripVertical` drag handle + the group's single Save ([SortableGroupMembers](./src/features/admin/groups/SortableGroupMembers.tsx)), shared by puzzle and palette groups; `faSquareMinus` unassign preserves the member |
 | Admin catalog data | [useCatalog](./src/features/admin/catalog/useAdminCatalog.ts) / `useCatalogInvalidation`; update locally after writes, invalidate other affected catalogs |
 | Section / view tabs | [AdminNavigation](./src/features/admin/shell/AdminNavigation.tsx); wrap changes in `requestNavigation` |
 | Pending feedback | [Loading](./src/ui/components/Loading.tsx); readable request-specific label, not a success spinner |
 | Confirmation / rich action form | [ConfirmDialog](./src/ui/components/ConfirmDialog.tsx) on [Modal](./src/ui/components/Modal.tsx); errors/pending stay inside |
-| Simple set creation | [SetCreationDialog](./src/features/admin/sets/SetCreationDialog.tsx); close/refresh/focus Add on success |
+| Group creation | [GroupCreationDialog](./src/features/admin/groups/GroupCreationDialog.tsx) with [GroupDetailsFields](./src/features/admin/groups/GroupDetailsFields.tsx) (purpose, shape, track; shared with group editing); close/refresh/focus Add on success |
 | Retain action content during exit | [useModalState](./src/ui/hooks/useModalState.ts); defer destructive view changes until after close |
 | Guard edited/pending navigation | [useUnsavedDraft](./src/ui/navigation/useUnsavedDraft.ts) with [useNavigationGuard](./src/ui/navigation/useNavigationGuard.ts); first destination wins |
 | Decorative palette / palette selection | [PaletteStrip](./src/ui/components/PaletteStrip.tsx) / [PaletteChoices](./src/ui/components/PaletteChoices.tsx); not painting buttons |
@@ -387,7 +394,7 @@ Test files and `src/test/` are exempt so tests can reach internals and mock exac
 | [app/](./src/app/) | `AppEntry` (player/admin routing, navigation guard), `PlayerApp` (page, entrance animation, header, mode switch, footer), `useAdminRoute`, [layout/](./src/app/layout/) (Header, Footer), global [index.css](./src/app/index.css) |
 | [features/zen/](./src/features/zen/) | Zen Mode: `ZenMode`, [state/](./src/features/zen/state/) (reducer, history, Context, localStorage persistence, design randomization), [controls/](./src/features/zen/controls/) (toolbar, palette and shape pickers), [grid/](./src/features/zen/grid/) (shape adapters, `ShapeGrid`, `GridView`, cells), [export/](./src/features/zen/export/) (Save Image), [intro/](./src/features/zen/intro/) |
 | [features/puzzle/](./src/features/puzzle/) | Player Puzzle Mode: seeded puzzles, Restart/Next, congratulations |
-| [features/admin/](./src/features/admin/) | Lazy-loaded admin portal. `shell/` (portal, workspace, navigation), `catalog/` (session cache), `common/` (layout, icon button, form), `sets/` (shared set editing), one folder per content area (`puzzles/`, `puzzle-sets/`, `palettes/`, `palette-sets/`), `services/` (Supabase reads/writes), `testing/` |
+| [features/admin/](./src/features/admin/) | Lazy-loaded admin portal. `shell/` (portal, workspace, navigation), `catalog/` (session cache), `common/` (layout, icon button, form), `groups/` (shared group editing), one folder per content area (`puzzles/`, `puzzle-groups/`, `palettes/`, `palette-groups/`), `services/` (Supabase reads/writes), `testing/` |
 | [ui/components/](./src/ui/components/) | Shared controls: buttons, `DarkModeToggle`, palette-tinted `Checkbox`, native `Modal`, `ModalHeader`, `ConfirmDialog` and its dismissal preferences, form fields, loading, palette strips/choices |
 | [ui/theme/](./src/ui/theme/) | `PlayerThemeContext` (dark mode, active palette, toggle) and `useDuotoneIconTint` |
 | [ui/hooks/](./src/ui/hooks/) | `useModalState`, `useIsTouchDevice` |
@@ -499,7 +506,7 @@ symmetry engine. One representative per group is clickable.
 - Native dialogs provide modal focus behavior. Reset confirmation has a
   persistent opt-out, saved only on confirmation. Board switches are immediate
   and non-destructive, so no shape-change confirmation is needed.
-- Admin palette/puzzle/set deletion, bulk palette changes, and set assignment
+- Admin palette/puzzle/group deletion, bulk palette changes, and group assignment
   use the shared rich `ConfirmDialog`, preserving the originating list/editor,
   affected names/counts, and explicit consequences. Admin confirmations have no
   opt-out. Errors and pending `Loading` stay in the dialog; writes disable

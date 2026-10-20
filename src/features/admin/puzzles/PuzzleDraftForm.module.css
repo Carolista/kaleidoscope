@@ -35,8 +35,8 @@
 }
 
 .metadataForm {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr) auto;
+	display: flex;
+	justify-content: flex-end;
 	gap: 0.5rem;
 	align-items: end;
 }

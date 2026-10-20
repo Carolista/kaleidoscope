@@ -2,14 +2,14 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { renderWithNavigationGuard as render } from '@/features/admin/testing'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getSupabaseClient } from '@/lib/supabase'
-import type { DraftSet } from '@/features/admin/services'
-import PuzzleSetLibrary from './PuzzleSetLibrary'
+import type { PuzzleGroup } from '@/features/admin/services'
+import PuzzleGroupLibrary from './PuzzleGroupLibrary'
 import {
 	generateAuthoredPuzzle,
 	renderAuthoredPuzzle,
 	PUZZLE_RECIPES,
 } from '@/domain/puzzles'
-import styles from './PuzzleSetLibrary.module.css'
+import styles from './PuzzleGroupLibrary.module.css'
 import toneStyles from '@/features/admin/common/AdminIconButton.module.css'
 import layoutStyles from '@/features/admin/common/AdminLayout.module.css'
 import { useState } from 'react'
@@ -19,27 +19,28 @@ import iconStyles from '@/ui/components/IconButton.module.css'
 const mocks = vi.hoisted(() => ({
 	load: vi.fn(),
 	manage: vi.fn(),
-	remove: vi.fn(),
 }))
-vi.mock('@/features/admin/services/puzzleSets', () => ({
-	loadDraftSets: (...args: unknown[]) => mocks.load(...args),
-	manageDraftSet: (...args: unknown[]) => mocks.manage(...args),
-	deleteDraftSet: (...args: unknown[]) => mocks.remove(...args),
+vi.mock('@/features/admin/services/puzzleGroups', () => ({
+	loadPuzzleGroups: (...args: unknown[]) => mocks.load(...args),
+	managePuzzleGroup: (...args: unknown[]) => mocks.manage(...args),
 }))
 vi.mock('@/lib/supabase/supabaseClient', () => ({
 	getSupabaseClient: () => ({}),
 }))
-const draftSet: DraftSet = {
+const draftGroup: PuzzleGroup = {
 	preview: null,
 	row: {
-		id: 'set',
-		name: 'First set',
-		kind: 'core',
+		id: 'group',
+		name: 'First group',
+		purpose: 'core',
+		track: 'basic',
 		shape_id: 'hexagon',
 		selection_mode: 'any',
 		published_at: null,
 		release_at: null,
 	},
+	purpose: 'core',
+	track: 'basic',
 	members: [
 		{ puzzleId: 'a', name: 'Puzzle A', position: 1, preview: null },
 		{ puzzleId: 'b', name: 'Puzzle B', position: 2, preview: null },
@@ -47,12 +48,11 @@ const draftSet: DraftSet = {
 }
 beforeEach(() => {
 	vi.resetAllMocks()
-	mocks.load.mockResolvedValue([draftSet])
+	mocks.load.mockResolvedValue([draftGroup])
 	mocks.manage.mockResolvedValue(undefined)
-	mocks.remove.mockResolvedValue(undefined)
 })
 afterEach(() => vi.restoreAllMocks())
-// Mirrors AdminWorkspace: reselecting the Sets tab remounts the library.
+// Mirrors AdminWorkspace: reselecting the Groups tab remounts the library.
 function Harness() {
 	const { requestNavigation } = useNavigationGuard()
 	const [visit, setVisit] = useState(0)
@@ -61,9 +61,9 @@ function Harness() {
 			<button
 				onClick={() => requestNavigation(() => setVisit(n => n + 1))}
 			>
-				Sets tab
+				Groups tab
 			</button>
-			<PuzzleSetLibrary key={visit} client={getSupabaseClient()} />
+			<PuzzleGroupLibrary key={visit} client={getSupabaseClient()} />
 		</>
 	)
 }
@@ -77,10 +77,10 @@ function isProtected() {
 }
 async function open() {
 	fireEvent.click(
-		await screen.findByRole('button', { name: 'Edit set First set' }),
+		await screen.findByRole('button', { name: 'Edit group First group' }),
 	)
 }
-describe('draft set workspace', () => {
+describe('puzzle group workspace', () => {
 	it.each(['mouse', 'touch'])(
 		'drags cards with %s input without requests, and restores the order on cancellation',
 		async pointerType => {
@@ -160,7 +160,7 @@ describe('draft set workspace', () => {
 			preview: null,
 		}
 		mocks.load.mockResolvedValue([
-			{ ...draftSet, members: [...draftSet.members, third] },
+			{ ...draftGroup, members: [...draftGroup.members, third] },
 		])
 		setup()
 		await open()
@@ -186,15 +186,15 @@ describe('draft set workspace', () => {
 		expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled()
 		mocks.load.mockResolvedValue([
 			{
-				...draftSet,
-				members: [draftSet.members[1], third, draftSet.members[0]],
+				...draftGroup,
+				members: [draftGroup.members[1], third, draftGroup.members[0]],
 			},
 		])
 		fireEvent.click(screen.getByRole('button', { name: 'Save' }))
-		await screen.findByText('Set saved.')
+		await screen.findByText('Group saved.')
 		expect(mocks.manage).toHaveBeenLastCalledWith(
 			expect.anything(),
-			'set',
+			'group',
 			{
 				kind: 'reorder',
 				puzzleIds: ['b', 'c', 'a'],
@@ -214,7 +214,7 @@ describe('draft set workspace', () => {
 			screen.getByRole('button', { name: 'Reorder Puzzle A' }),
 			{ key: 'End' },
 		)
-		fireEvent.click(screen.getByRole('button', { name: 'Sets tab' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Groups tab' }))
 		fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }))
 		await open()
 		expect(screen.getByText('1. Puzzle A')).toBeInTheDocument()
@@ -230,44 +230,60 @@ describe('draft set workspace', () => {
 			preview: null,
 		}
 		mocks.load.mockResolvedValue([
-			{ ...draftSet, members: [...draftSet.members, third] },
+			{ ...draftGroup, members: [...draftGroup.members, third] },
 		])
 		setup()
 		await open()
-		fireEvent.change(screen.getByLabelText('Set name'), {
-			target: { value: 'Renamed set' },
+		fireEvent.change(screen.getByLabelText('Group name'), {
+			target: { value: 'Renamed group' },
 		})
 		fireEvent.keyDown(
 			screen.getByRole('button', { name: 'Reorder Puzzle A' }),
 			{ key: 'End' },
 		)
 		fireEvent.click(
-			screen.getByRole('button', { name: 'Remove Puzzle B from set' }),
+			screen.getByRole('button', { name: 'Remove Puzzle B from group' }),
 		)
-		await screen.findByText('Puzzle removed from set.')
+		await screen.findByText('Puzzle removed from group.')
 		await screen.findByText('1. Puzzle C')
-		expect(screen.getByLabelText('Set name')).toHaveValue('Renamed set')
+		expect(screen.getByLabelText('Group name')).toHaveValue('Renamed group')
 		expect(mocks.manage).toHaveBeenCalledExactlyOnceWith(
 			expect.anything(),
-			'set',
+			'group',
 			{
 				kind: 'remove',
 				puzzleIds: ['b'],
 			},
 		)
 		fireEvent.click(screen.getByRole('button', { name: 'Save' }))
-		await screen.findByText('Set saved.')
+		await screen.findByText('Group saved.')
 		expect(mocks.manage.mock.calls.slice(1)).toEqual([
-			[expect.anything(), 'set', { kind: 'rename', name: 'Renamed set' }],
 			[
 				expect.anything(),
-				'set',
+				'group',
+				{
+					kind: 'update',
+					name: 'Renamed group',
+					details: {
+						purpose: 'core',
+						shape: 'hexagon',
+						track: 'basic',
+					},
+				},
+			],
+			[
+				expect.anything(),
+				'group',
 				{ kind: 'reorder', puzzleIds: ['c', 'a'] },
 			],
 		])
 		expect(mocks.load).toHaveBeenCalledOnce()
 		expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
-		expect(mocks.remove).not.toHaveBeenCalled()
+		expect(mocks.manage).not.toHaveBeenCalledWith(
+			expect.anything(),
+			'group',
+			{ kind: 'delete' },
+		)
 	})
 
 	it('shows each member design beside its name and keeps thumbnails attached to puzzles after reordering', async () => {
@@ -282,7 +298,7 @@ describe('draft set workspace', () => {
 				'#556677',
 			] as const,
 		}
-		const members = draftSet.members.map((member, index) => ({
+		const members = draftGroup.members.map((member, index) => ({
 			...member,
 			preview: renderAuthoredPuzzle(
 				generateAuthoredPuzzle(
@@ -294,32 +310,32 @@ describe('draft set workspace', () => {
 				palette,
 			),
 		}))
-		mocks.load.mockResolvedValue([{ ...draftSet, members }])
+		mocks.load.mockResolvedValue([{ ...draftGroup, members }])
 		setup()
 		await open()
 		const firstRow = screen.getByText('1. Puzzle A').closest('li')!
 		const secondRow = screen.getByText('2. Puzzle B').closest('li')!
 		expect(
-			firstRow.querySelector(`.${styles.setMemberThumbnail} svg`),
+			firstRow.querySelector(`.${styles.groupMemberThumbnail} svg`),
 		).toBeInTheDocument()
 		expect(
-			secondRow.querySelector(`.${styles.setMemberThumbnail} svg`),
+			secondRow.querySelector(`.${styles.groupMemberThumbnail} svg`),
 		).toBeInTheDocument()
 		expect(
 			within(firstRow)
-				.getByRole('button', { name: 'Remove Puzzle A from set' })
+				.getByRole('button', { name: 'Remove Puzzle A from group' })
 				.querySelector('svg'),
 		).toHaveAttribute('data-icon', 'square-minus')
 		const firstDesign = firstRow.querySelector(
-			`.${styles.setMemberThumbnail}`,
+			`.${styles.groupMemberThumbnail}`,
 		)?.innerHTML
 		const secondDesign = secondRow.querySelector(
-			`.${styles.setMemberThumbnail}`,
+			`.${styles.groupMemberThumbnail}`,
 		)?.innerHTML
 		expect(firstDesign).not.toEqual(secondDesign)
 		mocks.load.mockResolvedValue([
 			{
-				...draftSet,
+				...draftGroup,
 				members: [
 					{ ...members[1], position: 1 },
 					{ ...members[0], position: 2 },
@@ -339,13 +355,13 @@ describe('draft set workspace', () => {
 			screen
 				.getByText('1. Puzzle B')
 				.closest('li')
-				?.querySelector(`.${styles.setMemberThumbnail}`)?.innerHTML,
+				?.querySelector(`.${styles.groupMemberThumbnail}`)?.innerHTML,
 		).toEqual(secondDesign)
 		expect(
 			screen
 				.getByText('2. Puzzle A')
 				.closest('li')
-				?.querySelector(`.${styles.setMemberThumbnail}`)?.innerHTML,
+				?.querySelector(`.${styles.groupMemberThumbnail}`)?.innerHTML,
 		).toEqual(firstDesign)
 	})
 	it('shows a non-navigating landscape card with a stored thumbnail, role, count and colored square actions', async () => {
@@ -362,7 +378,7 @@ describe('draft set workspace', () => {
 		}
 		mocks.load.mockResolvedValue([
 			{
-				...draftSet,
+				...draftGroup,
 				preview: renderAuthoredPuzzle(
 					generateAuthoredPuzzle(
 						'preview',
@@ -376,198 +392,402 @@ describe('draft set workspace', () => {
 		])
 		setup()
 		const card = await screen.findByRole('listitem', {
-			name: 'Set First set',
+			name: 'Group First group',
 		})
-		expect(card).toHaveClass(layoutStyles.setCard)
-		expect(within(card).getByText('Hexagon · Core')).toBeInTheDocument()
+		expect(card).toHaveClass(layoutStyles.groupCard)
+		expect(
+			within(card).getByText('Core · Hexagon · Basic'),
+		).toBeInTheDocument()
 		expect(within(card).getByText('2 puzzles')).toBeInTheDocument()
 		expect(
 			card.querySelector('svg polygon[fill="#112233"]'),
 		).toBeInTheDocument()
 		expect(
-			within(card).getByRole('button', { name: 'Edit set First set' }),
+			within(card).getByRole('button', {
+				name: 'Edit group First group',
+			}),
 		).toHaveClass(iconStyles.button, toneStyles.edit)
 		expect(
-			within(card).getByRole('button', { name: 'Delete set First set' }),
+			within(card).getByRole('button', {
+				name: 'Delete group First group',
+			}),
 		).toHaveClass(iconStyles.button, toneStyles.delete)
-		fireEvent.click(within(card).getByText('First set'))
+		fireEvent.click(within(card).getByText('First group'))
 		expect(
-			screen.getByRole('heading', { name: 'Draft sets' }),
+			screen.getByRole('heading', { name: 'Puzzle groups' }),
 		).toBeInTheDocument()
-		expect(screen.getByRole('button', { name: 'New set' })).toHaveAttribute(
-			'title',
-			'New set',
-		)
+		expect(
+			screen.getByRole('button', { name: 'New group' }),
+		).toHaveAttribute('title', 'New group')
 	})
 	it.each([
-		['reward', 'Reward'],
-		['paid', 'Pack'],
+		['reward', 'rotation', 'Reward · Hexagon · Rotation'],
+		['pack', 'mixed', 'Pack · Hexagon · Mixed'],
 	] as const)(
-		'labels %s sets and explicitly shows empty sets',
-		async (kind, label) => {
+		'labels %s groups and explicitly shows empty groups',
+		async (purpose, track, label) => {
 			mocks.load.mockResolvedValue([
-				{ ...draftSet, row: { ...draftSet.row, kind }, members: [] },
+				{
+					...draftGroup,
+					purpose,
+					track,
+					row: { ...draftGroup.row, purpose, track },
+					members: [],
+				},
 			])
 			setup()
-			await screen.findByText(`Hexagon · ${label}`)
+			await screen.findByText(label)
 			expect(screen.getByText('0 puzzles')).toBeInTheDocument()
-			expect(screen.getByText('Empty set')).toBeInTheDocument()
+			expect(screen.getByText('Empty group')).toBeInTheDocument()
 		},
 	)
+	it('labels daily groups as mixing every shape, with no track', async () => {
+		mocks.load.mockResolvedValue([
+			{
+				...draftGroup,
+				purpose: 'daily',
+				track: null,
+				row: {
+					...draftGroup.row,
+					purpose: 'daily',
+					track: null,
+					shape_id: null,
+				},
+			},
+		])
+		setup()
+		await screen.findByText('Daily · All shapes')
+	})
 	it('confirms deletion, allows cancellation, and retains confirmation after failure for retry', async () => {
 		setup()
 		fireEvent.click(
-			await screen.findByRole('button', { name: 'Delete set First set' }),
+			await screen.findByRole('button', {
+				name: 'Delete group First group',
+			}),
 		)
 		expect(
 			screen.getByText(/2 puzzles will be unassigned, not deleted/),
 		).toBeInTheDocument()
-		expect(mocks.remove).not.toHaveBeenCalled()
-		fireEvent.click(screen.getByRole('button', { name: 'Keep set' }))
+		expect(mocks.manage).not.toHaveBeenCalled()
+		fireEvent.click(screen.getByRole('button', { name: 'Keep group' }))
 		expect(
-			screen.queryByRole('dialog', { name: 'Confirm set deletion' }),
+			screen.queryByRole('dialog', { name: 'Confirm group deletion' }),
 		).not.toBeInTheDocument()
 		fireEvent.click(
-			screen.getByRole('button', { name: 'Delete set First set' }),
+			screen.getByRole('button', { name: 'Delete group First group' }),
 		)
-		mocks.remove.mockRejectedValueOnce(
+		mocks.manage.mockRejectedValueOnce(
 			new Error('Remove reward dependencies'),
 		)
 		fireEvent.click(
-			screen.getByRole('button', { name: 'Confirm delete set' }),
+			screen.getByRole('button', { name: 'Confirm delete group' }),
 		)
 		expect(await screen.findByRole('alert')).toHaveTextContent(
 			'Remove reward dependencies',
 		)
 		expect(
-			screen.getByRole('dialog', { name: 'Confirm set deletion' }),
+			screen.getByRole('dialog', { name: 'Confirm group deletion' }),
 		).toBeInTheDocument()
 		mocks.load.mockResolvedValue([])
 		fireEvent.click(
-			screen.getByRole('button', { name: 'Confirm delete set' }),
+			screen.getByRole('button', { name: 'Confirm delete group' }),
 		)
-		await screen.findByText('No draft sets yet.')
+		await screen.findByText('No puzzle groups yet.')
 		expect(screen.queryByRole('list')).not.toBeInTheDocument()
 		expect(screen.getByRole('status')).toHaveTextContent(
 			'Its puzzles remain in the library',
 		)
-		expect(mocks.remove).toHaveBeenLastCalledWith(expect.anything(), 'set')
-		expect(mocks.manage).not.toHaveBeenCalled()
+		expect(mocks.manage).toHaveBeenCalledTimes(2)
+		expect(mocks.manage).toHaveBeenLastCalledWith(
+			expect.anything(),
+			'group',
+			{ kind: 'delete' },
+		)
 	})
 	it('prevents duplicate deletion and navigation while deletion is in flight', async () => {
 		let finish: (() => void) | undefined
-		mocks.remove.mockReturnValueOnce(
+		mocks.manage.mockReturnValueOnce(
 			new Promise<void>(resolve => {
 				finish = resolve
 			}),
 		)
 		setup()
 		fireEvent.click(
-			await screen.findByRole('button', { name: 'Delete set First set' }),
+			await screen.findByRole('button', {
+				name: 'Delete group First group',
+			}),
 		)
 		const confirm = screen.getByRole('button', {
-			name: 'Confirm delete set',
+			name: 'Confirm delete group',
 		})
 		fireEvent.click(confirm)
 		fireEvent.click(confirm)
-		expect(mocks.remove).toHaveBeenCalledOnce()
+		expect(mocks.manage).toHaveBeenCalledOnce()
 		expect(screen.getByRole('status')).toHaveTextContent(
-			'Deleting puzzle set…',
+			'Deleting puzzle group…',
 		)
 		expect(screen.getByRole('status').querySelector('img')).toHaveAttribute(
 			'aria-hidden',
 			'true',
 		)
 		expect(isProtected()).toBe(true)
-		expect(screen.getByRole('button', { name: 'Keep set' })).toBeDisabled()
+		expect(
+			screen.getByRole('button', { name: 'Keep group' }),
+		).toBeDisabled()
 		mocks.load.mockResolvedValue([])
 		finish?.()
-		await screen.findByText('No draft sets yet.')
+		await screen.findByText('No puzzle groups yet.')
 	})
-	it('creates a named set with a chosen role and no fixed puzzle count, retaining retry identity', async () => {
+	it('creates a named group with a purpose, shape, and track and no fixed puzzle count, retaining retry identity', async () => {
 		setup()
-		await screen.findByRole('button', { name: 'Edit set First set' })
-		fireEvent.click(screen.getByRole('button', { name: 'New set' }))
+		await screen.findByRole('button', { name: 'Edit group First group' })
+		fireEvent.click(screen.getByRole('button', { name: 'New group' }))
 		expect(
-			screen.getByRole('dialog', { name: 'New set' }),
+			screen.getByRole('dialog', { name: 'New puzzle group' }),
 		).toBeInTheDocument()
 		expect(
-			screen.getByRole('button', { name: 'Edit set First set' }),
+			screen.getByRole('button', { name: 'Edit group First group' }),
 		).toBeInTheDocument()
-		fireEvent.change(screen.getByLabelText('Set name'), {
+		fireEvent.change(screen.getByLabelText('Group name'), {
 			target: { value: 'New collection' },
 		})
-		fireEvent.change(screen.getByLabelText('Set role'), {
-			target: { value: 'paid' },
+		fireEvent.change(screen.getByLabelText('Purpose'), {
+			target: { value: 'pack' },
 		})
 		expect(screen.getByLabelText('Shape')).toHaveValue('hexagon')
 		fireEvent.change(screen.getByLabelText('Shape'), {
 			target: { value: 'triangle' },
 		})
+		fireEvent.change(screen.getByLabelText('Track'), {
+			target: { value: 'mixed' },
+		})
 		mocks.manage.mockRejectedValueOnce(new Error('Connection lost'))
-		fireEvent.click(screen.getByRole('button', { name: 'Create set' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Create group' }))
 		expect(await screen.findByRole('alert')).toHaveTextContent(
 			'Connection lost',
 		)
-		expect(screen.getByLabelText('Set name')).toHaveValue('New collection')
+		expect(screen.getByLabelText('Group name')).toHaveValue(
+			'New collection',
+		)
 		const id = mocks.manage.mock.calls[0][1]
 		mocks.load.mockResolvedValue([
 			{
-				...draftSet,
+				...draftGroup,
+				purpose: 'pack',
+				track: 'mixed',
 				row: {
-					...draftSet.row,
+					...draftGroup.row,
 					id,
 					name: 'New collection',
-					kind: 'paid',
+					purpose: 'pack',
+					track: 'mixed',
 					shape_id: 'triangle',
 				},
 				members: [],
 			},
 		])
-		fireEvent.click(screen.getByRole('button', { name: 'Create set' }))
-		await screen.findByRole('button', { name: 'Edit set New collection' })
+		fireEvent.click(screen.getByRole('button', { name: 'Create group' }))
+		await screen.findByRole('button', {
+			name: 'Edit group New collection',
+		})
 		expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-		expect(screen.getByRole('button', { name: 'New set' })).toBeEnabled()
+		expect(screen.getByRole('button', { name: 'New group' })).toBeEnabled()
 		expect(mocks.manage.mock.calls[1]).toEqual(mocks.manage.mock.calls[0])
 		expect(mocks.manage).toHaveBeenLastCalledWith(expect.anything(), id, {
 			kind: 'create',
 			name: 'New collection',
-			role: 'paid',
-			shape: 'triangle',
+			details: { purpose: 'pack', shape: 'triangle', track: 'mixed' },
 		})
-		fireEvent.click(screen.getByRole('button', { name: 'New set' }))
-		expect(screen.getByLabelText('Set name')).toHaveValue('')
-		expect(screen.getByLabelText('Set role')).toHaveValue('core')
+		fireEvent.click(screen.getByRole('button', { name: 'New group' }))
+		expect(screen.getByLabelText('Group name')).toHaveValue('')
+		expect(screen.getByLabelText('Purpose')).toHaveValue('core')
 		expect(screen.getByLabelText('Shape')).toHaveValue('hexagon')
+		expect(screen.getByLabelText('Track')).toHaveValue('basic')
 	})
-	it('guards unsaved names, renames the set and keeps its role unchanged', async () => {
+	it('creates a daily group without a shape or track', async () => {
+		setup()
+		await screen.findByRole('button', { name: 'Edit group First group' })
+		fireEvent.click(screen.getByRole('button', { name: 'New group' }))
+		fireEvent.change(screen.getByLabelText('Group name'), {
+			target: { value: 'October' },
+		})
+		fireEvent.change(screen.getByLabelText('Purpose'), {
+			target: { value: 'daily' },
+		})
+		expect(screen.queryByLabelText('Shape')).not.toBeInTheDocument()
+		expect(screen.queryByLabelText('Track')).not.toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: 'Create group' }))
+		await waitFor(() =>
+			expect(mocks.manage).toHaveBeenCalledWith(
+				expect.anything(),
+				expect.any(String),
+				{
+					kind: 'create',
+					name: 'October',
+					details: { purpose: 'daily', shape: null, track: null },
+				},
+			),
+		)
+	})
+	it('guards unsaved names and renames the group, keeping its purpose, shape, and track', async () => {
 		setup()
 		await open()
-		fireEvent.change(screen.getByLabelText('Set name'), {
+		fireEvent.change(screen.getByLabelText('Group name'), {
 			target: { value: 'Revised' },
 		})
-		fireEvent.click(screen.getByRole('button', { name: 'Sets tab' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Groups tab' }))
 		expect(
 			screen.getByRole('dialog', { name: 'Discard unsaved changes?' }),
 		).toBeInTheDocument()
 		fireEvent.click(screen.getByRole('button', { name: 'Keep editing' }))
-		expect(screen.getByLabelText('Set name')).toHaveValue('Revised')
+		expect(screen.getByLabelText('Group name')).toHaveValue('Revised')
 		mocks.load.mockResolvedValue([
-			{ ...draftSet, row: { ...draftSet.row, name: 'Revised' } },
+			{ ...draftGroup, row: { ...draftGroup.row, name: 'Revised' } },
 		])
 		fireEvent.click(screen.getByRole('button', { name: 'Save' }))
-		await screen.findByText('Set saved.')
+		await screen.findByText('Group saved.')
 		await waitFor(() =>
 			expect(
-				screen.queryByText('Loading draft sets...'),
+				screen.queryByText('Loading puzzle groups...'),
 			).not.toBeInTheDocument(),
 		)
-		fireEvent.click(screen.getByRole('button', { name: 'Sets tab' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Groups tab' }))
 		expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-		expect(mocks.manage).toHaveBeenCalledWith(expect.anything(), 'set', {
-			kind: 'rename',
+		expect(mocks.manage).toHaveBeenCalledWith(expect.anything(), 'group', {
+			kind: 'update',
 			name: 'Revised',
+			details: { purpose: 'core', shape: 'hexagon', track: 'basic' },
 		})
+	})
+	it('edits purpose, shape, and track together with the name in one update', async () => {
+		setup()
+		await open()
+		expect(screen.getByLabelText('Purpose')).toHaveValue('core')
+		expect(screen.getByLabelText('Shape')).toHaveValue('hexagon')
+		expect(screen.getByLabelText('Track')).toHaveValue('basic')
+		expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
+		fireEvent.change(screen.getByLabelText('Purpose'), {
+			target: { value: 'pack' },
+		})
+		fireEvent.change(screen.getByLabelText('Shape'), {
+			target: { value: 'triangle' },
+		})
+		fireEvent.change(screen.getByLabelText('Track'), {
+			target: { value: 'mixed' },
+		})
+		expect(isProtected()).toBe(true)
+		fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+		await screen.findByText('Group saved.')
+		expect(mocks.manage).toHaveBeenCalledExactlyOnceWith(
+			expect.anything(),
+			'group',
+			{
+				kind: 'update',
+				name: 'First group',
+				details: { purpose: 'pack', shape: 'triangle', track: 'mixed' },
+			},
+		)
+		expect(isProtected()).toBe(false)
+		fireEvent.click(screen.getByRole('button', { name: 'Groups tab' }))
+		expect(
+			await screen.findByText('Pack · Triangle · Mixed'),
+		).toBeInTheDocument()
+	})
+	it('drops the shape and track when a group becomes daily', async () => {
+		setup()
+		await open()
+		fireEvent.change(screen.getByLabelText('Purpose'), {
+			target: { value: 'daily' },
+		})
+		expect(screen.queryByLabelText('Shape')).not.toBeInTheDocument()
+		expect(screen.queryByLabelText('Track')).not.toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+		await screen.findByText('Group saved.')
+		expect(mocks.manage).toHaveBeenCalledWith(expect.anything(), 'group', {
+			kind: 'update',
+			name: 'First group',
+			details: { purpose: 'daily', shape: null, track: null },
+		})
+	})
+	it('keeps a failed purpose change editable with the server error', async () => {
+		mocks.manage.mockRejectedValueOnce(
+			new Error('Puzzle "A" does not match the group\'s shape or track.'),
+		)
+		setup()
+		await open()
+		fireEvent.change(screen.getByLabelText('Track'), {
+			target: { value: 'rotation' },
+		})
+		fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+		expect(await screen.findByRole('alert')).toHaveTextContent(
+			'does not match the group',
+		)
+		expect(screen.getByLabelText('Track')).toHaveValue('rotation')
+		expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled()
+	})
+	it('filters the gallery by purpose, shape, and track', async () => {
+		const group = (
+			id: string,
+			purpose: PuzzleGroup['purpose'],
+			shape: string | null,
+			track: PuzzleGroup['track'],
+		): PuzzleGroup => ({
+			...draftGroup,
+			purpose,
+			track,
+			row: {
+				...draftGroup.row,
+				id,
+				name: id,
+				purpose,
+				shape_id: shape,
+				track,
+			},
+		})
+		mocks.load.mockResolvedValue([
+			group('Hex basic core', 'core', 'hexagon', 'basic'),
+			group('Hex rotation core', 'core', 'hexagon', 'rotation'),
+			group('Triangle pack', 'pack', 'triangle', 'mixed'),
+			group('October', 'daily', null, null),
+		])
+		setup()
+		await screen.findByRole('listitem', { name: 'Group October' })
+		const names = () =>
+			screen
+				.getAllByRole('listitem')
+				.map(item => item.getAttribute('aria-label'))
+		expect(names()).toHaveLength(4)
+		fireEvent.change(screen.getByLabelText('Show purpose'), {
+			target: { value: 'core' },
+		})
+		expect(names()).toEqual([
+			'Group Hex basic core',
+			'Group Hex rotation core',
+		])
+		fireEvent.change(screen.getByLabelText('Show track'), {
+			target: { value: 'rotation' },
+		})
+		expect(names()).toEqual(['Group Hex rotation core'])
+		fireEvent.change(screen.getByLabelText('Show purpose'), {
+			target: { value: 'all' },
+		})
+		fireEvent.change(screen.getByLabelText('Show track'), {
+			target: { value: 'all' },
+		})
+		fireEvent.change(screen.getByLabelText('Show shape'), {
+			target: { value: 'triangle' },
+		})
+		expect(names()).toEqual(['Group Triangle pack'])
+		fireEvent.change(screen.getByLabelText('Show shape'), {
+			target: { value: 'none' },
+		})
+		expect(names()).toEqual(['Group October'])
+		fireEvent.change(screen.getByLabelText('Show track'), {
+			target: { value: 'basic' },
+		})
+		expect(
+			screen.getByText('No puzzle groups match these filters.'),
+		).toBeInTheDocument()
 	})
 	it('stages order changes, saves once, prevents duplicates in flight, and still removes immediately', async () => {
 		setup()
@@ -581,15 +801,15 @@ describe('draft set workspace', () => {
 		expect(screen.getByText('1. Puzzle B')).toBeInTheDocument()
 		expect(mocks.manage).not.toHaveBeenCalled()
 		expect(mocks.load).toHaveBeenCalledOnce()
-		fireEvent.click(screen.getByRole('button', { name: 'Sets tab' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Groups tab' }))
 		expect(
 			screen.getByRole('dialog', { name: 'Discard unsaved changes?' }),
 		).toBeInTheDocument()
 		fireEvent.click(screen.getByRole('button', { name: 'Keep editing' }))
 		mocks.load.mockResolvedValue([
 			{
-				...draftSet,
-				members: [...draftSet.members].reverse(),
+				...draftGroup,
+				members: [...draftGroup.members].reverse(),
 			},
 		])
 		let finish: (() => void) | undefined
@@ -601,24 +821,24 @@ describe('draft set workspace', () => {
 		fireEvent.click(saveOrder)
 		fireEvent.click(saveOrder)
 		expect(mocks.manage).toHaveBeenCalledOnce()
-		expect(mocks.manage).toHaveBeenCalledWith(expect.anything(), 'set', {
+		expect(mocks.manage).toHaveBeenCalledWith(expect.anything(), 'group', {
 			kind: 'reorder',
 			puzzleIds: ['b', 'a'],
 		})
 		expect(isProtected()).toBe(true)
 		finish?.()
-		await screen.findByText('Set saved.')
+		await screen.findByText('Group saved.')
 		await waitFor(() =>
 			expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled(),
 		)
 		const remove = await screen.findByRole('button', {
-			name: 'Remove Puzzle A from set',
+			name: 'Remove Puzzle A from group',
 		})
 		fireEvent.click(remove)
-		await screen.findByText('Puzzle removed from set.')
+		await screen.findByText('Puzzle removed from group.')
 		expect(mocks.manage).toHaveBeenLastCalledWith(
 			expect.anything(),
-			'set',
+			'group',
 			{ kind: 'remove', puzzleIds: ['a'] },
 		)
 	})
@@ -626,32 +846,34 @@ describe('draft set workspace', () => {
 		setup()
 		await open()
 		mocks.manage.mockRejectedValueOnce(
-			new Error('Remove qualifying routes first'),
+			new Error('Unschedule the puzzle first'),
 		)
 		fireEvent.click(
-			screen.getByRole('button', { name: 'Remove Puzzle A from set' }),
+			screen.getByRole('button', { name: 'Remove Puzzle A from group' }),
 		)
 		expect(await screen.findByRole('alert')).toHaveTextContent(
-			'Remove qualifying routes first',
+			'Unschedule the puzzle first',
 		)
 		expect(screen.getByText('1. Puzzle A')).toBeInTheDocument()
 		fireEvent.click(
-			screen.getByRole('button', { name: 'Remove Puzzle A from set' }),
+			screen.getByRole('button', { name: 'Remove Puzzle A from group' }),
 		)
-		await screen.findByText('Puzzle removed from set.')
+		await screen.findByText('Puzzle removed from group.')
 	})
 	it('shows load errors and refreshes instead of reporting an empty catalog', async () => {
 		mocks.load.mockRejectedValueOnce(new Error('Offline'))
 		setup()
 		expect(await screen.findByRole('alert')).toHaveTextContent('Offline')
-		expect(screen.queryByText('No draft sets yet.')).not.toBeInTheDocument()
-		fireEvent.click(screen.getByRole('button', { name: 'Refresh sets' }))
-		await screen.findByRole('button', { name: 'Edit set First set' })
+		expect(
+			screen.queryByText('No puzzle groups yet.'),
+		).not.toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: 'Refresh groups' }))
+		await screen.findByRole('button', { name: 'Edit group First group' })
 	})
 	it('saves the name and order together without reloading the catalog', async () => {
 		setup()
 		await open()
-		fireEvent.change(screen.getByLabelText('Set name'), {
+		fireEvent.change(screen.getByLabelText('Group name'), {
 			target: { value: 'Revised' },
 		})
 		fireEvent.keyDown(
@@ -659,15 +881,15 @@ describe('draft set workspace', () => {
 			{ key: 'ArrowDown' },
 		)
 		fireEvent.click(screen.getByRole('button', { name: 'Save' }))
-		await screen.findByText('Set saved.')
+		await screen.findByText('Group saved.')
 		expect(screen.getByText('1. Puzzle B')).toBeInTheDocument()
-		expect(screen.getByLabelText('Set name')).toHaveValue('Revised')
+		expect(screen.getByLabelText('Group name')).toHaveValue('Revised')
 		expect(mocks.load).toHaveBeenCalledOnce()
 		expect(isProtected()).toBe(false)
-		fireEvent.click(screen.getByRole('button', { name: 'Sets tab' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Groups tab' }))
 		expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 		expect(
-			await screen.findByRole('button', { name: 'Edit set Revised' }),
+			await screen.findByRole('button', { name: 'Edit group Revised' }),
 		).toBeInTheDocument()
 	})
 })

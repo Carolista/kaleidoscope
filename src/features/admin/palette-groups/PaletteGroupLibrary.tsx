@@ -9,7 +9,6 @@ import {
 import {
 	Button,
 	ConfirmDialog,
-	FormField,
 	Loading,
 	PaletteStrip,
 	Select,
@@ -18,32 +17,34 @@ import {
 	AdminFeedback,
 	AdminGallery,
 	AdminSectionHeading,
-	AdminSetCard,
-	AdminSetForm,
+	AdminGroupCard,
+	AdminGroupForm,
 	AdminIconButton,
 	errorMessage,
 } from '@/features/admin/common'
 import {
-	SortableSetMembers,
-	SetCreationDialog,
+	SortableGroupMembers,
+	GroupCreationDialog,
+	GroupDetailsFields,
 	useStagedOrder,
-} from '@/features/admin/sets'
+} from '@/features/admin/groups'
 import { useModalState } from '@/ui/hooks'
 import type { Database } from '@/lib/supabase'
 import {
-	managePaletteSet,
-	paletteSetLabels,
-	type PaletteSet,
-	type PaletteSetAction,
-	type PaletteSetKind,
+	managePaletteGroup,
+	paletteGroupPurposeLabels,
+	PALETTE_GROUP_PURPOSES,
+	type PaletteGroup,
+	type PaletteGroupAction,
+	type PaletteGroupPurpose,
 } from '@/features/admin/services'
 import { useUnsavedDraft } from '@/ui/navigation'
 
-const fallbackError = 'Unable to manage palette sets.'
+const fallbackError = 'Unable to manage palette groups.'
 
-export default function PaletteSetLibrary({
+export default function PaletteGroupLibrary({
 	client,
-	sets,
+	groups,
 	loading,
 	refreshing = false,
 	catalogError,
@@ -51,44 +52,49 @@ export default function PaletteSetLibrary({
 	onOrderSaved,
 }: {
 	readonly client: SupabaseClient<Database>
-	readonly sets: readonly PaletteSet[]
+	readonly groups: readonly PaletteGroup[]
 	readonly loading: boolean
 	readonly refreshing?: boolean
 	readonly catalogError: string
 	readonly onChanged: () => void
 	readonly onOrderSaved: (
-		setId: string,
+		groupId: string,
 		paletteIds: readonly string[],
 	) => void
 }) {
 	const [editing, setEditing] = useState<{
 		id: string
 		name: string
-		kind: PaletteSetKind
+		purpose: PaletteGroupPurpose
 	} | null>(null)
 	const [name, setName] = useState('')
 	const [creating, setCreating, creationModal] = useModalState<true>()
 	const addButton = useRef<HTMLButtonElement>(null)
 	const focusAdd = useRef(false)
-	const [kind, setKind] = useState<PaletteSetKind>('undecided')
+	const [purpose, setPurpose] = useState<PaletteGroupPurpose>('undecided')
+	const [purposeFilter, setPurposeFilter] = useState('all')
 	const [error, setError] = useState('')
 	const [deleteError, setDeleteError] = useState('')
 	const [status, setStatus] = useState('')
 	const [busy, setBusy] = useState(false)
-	const [deleting, setDeleting, deleteModal] = useModalState<PaletteSet>()
+	const [deleting, setDeleting, deleteModal] = useModalState<PaletteGroup>()
 	const working = useRef(false)
-	const selected = sets.find(set => set.row.id === editing?.id)
+	const selected = groups.find(group => group.row.id === editing?.id)
 	const readOnly = !!selected?.row.published_at || !!selected?.row.release_at
 	const unavailable = busy || loading || !!catalogError
 	const order = useStagedOrder(selected?.members ?? [], member => member.id)
 	const members = order.ordered
 	const detailsDirty =
-		!!editing && (name.trim() !== editing.name || kind !== editing.kind)
+		!!editing &&
+		(name.trim() !== editing.name || purpose !== editing.purpose)
 	const dirty =
 		!!editing &&
 		!readOnly &&
-		(name !== editing.name || kind !== editing.kind || order.dirty)
+		(name !== editing.name || purpose !== editing.purpose || order.dirty)
 	useUnsavedDraft({ dirty, pending: busy })
+	const shown = groups.filter(
+		group => purposeFilter === 'all' || group.purpose === purposeFilter,
+	)
 	useEffect(() => {
 		if (!loading && !creating && focusAdd.current) {
 			addButton.current?.focus()
@@ -97,7 +103,7 @@ export default function PaletteSetLibrary({
 	}, [loading, creating])
 	async function mutate(
 		id: string,
-		actions: readonly PaletteSetAction[],
+		actions: readonly PaletteGroupAction[],
 		message: string,
 	) {
 		if (working.current || loading || catalogError || !actions.length)
@@ -111,7 +117,7 @@ export default function PaletteSetLibrary({
 		let changed = false
 		try {
 			for (const action of actions) {
-				await managePaletteSet(client, id, action)
+				await managePaletteGroup(client, id, action)
 				if (action.kind === 'reorder')
 					onOrderSaved(id, action.paletteIds)
 				else changed = true
@@ -119,7 +125,7 @@ export default function PaletteSetLibrary({
 					setEditing({
 						id,
 						name: action.name.trim(),
-						kind: action.role,
+						purpose: action.purpose,
 					})
 					setName(action.name.trim())
 				}
@@ -138,7 +144,7 @@ export default function PaletteSetLibrary({
 		} finally {
 			working.current = false
 			setBusy(false)
-			// Detail, membership, and deletion changes reload the set catalog.
+			// Detail, membership, and deletion changes reload the group catalog.
 			if (changed) onChanged()
 		}
 	}
@@ -148,7 +154,7 @@ export default function PaletteSetLibrary({
 			editing.id,
 			[
 				...(detailsDirty
-					? [{ kind: 'update', name, role: kind } as const]
+					? [{ kind: 'update', name, purpose } as const]
 					: []),
 				...(order.dirty
 					? [
@@ -159,24 +165,24 @@ export default function PaletteSetLibrary({
 						]
 					: []),
 			],
-			'Set saved.',
+			'Group saved.',
 		)
 	}
 	return (
-		<section aria-labelledby="palette-sets-title">
+		<section aria-labelledby="palette-groups-title">
 			<AdminSectionHeading
-				id="palette-sets-title"
+				id="palette-groups-title"
 				title={
 					editing
-						? `Palette set: ${editing.name}${readOnly ? ' (read-only)' : ''}`
-						: 'Palette sets'
+						? `Palette group: ${editing.name}${readOnly ? ' (read-only)' : ''}`
+						: 'Palette groups'
 				}
 			>
 				{!editing && (
 					<>
 						<AdminIconButton
 							icon={faPlusLarge}
-							label="New palette set"
+							label="New palette group"
 							ref={addButton}
 							disabled={unavailable || !!deleting}
 							onClick={() => {
@@ -187,13 +193,28 @@ export default function PaletteSetLibrary({
 						/>
 						<AdminIconButton
 							icon={faRotate}
-							label="Refresh palette sets"
+							label="Refresh palette groups"
 							disabled={busy || loading || !!deleting}
 							onClick={() => {
 								setError('')
 								onChanged()
 							}}
 						/>
+						<Select
+							id="palette-group-purpose-filter"
+							aria-label="Show purpose"
+							value={purposeFilter}
+							onChange={event =>
+								setPurposeFilter(event.target.value)
+							}
+						>
+							<option value="all">All purposes</option>
+							{PALETTE_GROUP_PURPOSES.map(value => (
+								<option key={value} value={value}>
+									{paletteGroupPurposeLabels[value]}
+								</option>
+							))}
+						</Select>
 					</>
 				)}
 			</AdminSectionHeading>
@@ -206,43 +227,49 @@ export default function PaletteSetLibrary({
 						disabled={loading || busy}
 						onClick={onChanged}
 					>
-						Retry loading sets
+						Retry loading groups
 					</Button>
 				</p>
 			)}
 			<AdminFeedback status={status} />
-			{!editing && !loading && !catalogError && sets.length === 0 && (
-				<p>No palette sets yet.</p>
+			{!editing && !loading && !catalogError && groups.length === 0 && (
+				<p>No palette groups yet.</p>
 			)}
+			{!editing &&
+				!loading &&
+				!catalogError &&
+				groups.length > 0 &&
+				shown.length === 0 && (
+					<p>No palette groups match this purpose.</p>
+				)}
 			{creating && (
-				<SetCreationDialog
+				<GroupCreationDialog
 					{...creationModal}
-					title="New palette set"
-					formLabel="Palette set details"
-					kindLabel="Set label"
-					kinds={paletteSetLabels}
-					initialKind="undecided"
-					confirmLabel="Save set"
-					pendingLabel="Creating palette set…"
+					title="New palette group"
+					formLabel="Palette group details"
+					purposes={paletteGroupPurposeLabels}
+					initialPurpose="undecided"
+					confirmLabel="Save group"
+					pendingLabel="Creating palette group…"
 					onCancel={() => setCreating(null)}
-					onCreate={async (id, name, kind) => {
-						await managePaletteSet(client, id, {
+					onCreate={async (id, name, value) => {
+						await managePaletteGroup(client, id, {
 							kind: 'create',
 							name,
-							role: kind,
+							purpose: value.purpose,
 						})
 						focusAdd.current = true
 						setCreating(null)
-						setStatus('Palette set created.')
+						setStatus('Palette group created.')
 						onChanged()
 					}}
 				/>
 			)}
 			{editing ? (
 				<>
-					<AdminSetForm
-						label="Palette set details"
-						nameId="palette-set-name"
+					<AdminGroupForm
+						label="Palette group details"
+						nameId="palette-group-name"
 						name={name}
 						disabled={unavailable}
 						readOnly={readOnly}
@@ -250,40 +277,21 @@ export default function PaletteSetLibrary({
 						onNameChange={setName}
 						onSave={save}
 					>
-						<FormField label="Set label" id="palette-set-kind">
-							{field => (
-								<Select
-									{...field}
-									value={kind}
-									disabled={unavailable || readOnly}
-									onChange={event => {
-										const value = event.target.value
-										if (
-											value === 'undecided' ||
-											value === 'core' ||
-											value === 'reward' ||
-											value === 'paid'
-										)
-											setKind(value)
-									}}
-								>
-									{Object.entries(paletteSetLabels).map(
-										([value, label]) => (
-											<option key={value} value={value}>
-												{label}
-											</option>
-										),
-									)}
-								</Select>
-							)}
-						</FormField>
-					</AdminSetForm>
+						<GroupDetailsFields
+							idPrefix="palette-group-details"
+							purposes={paletteGroupPurposeLabels}
+							value={{ purpose, shape: 'hexagon', track: null }}
+							puzzleDetails={false}
+							disabled={unavailable || readOnly}
+							onChange={value => setPurpose(value.purpose)}
+						/>
+					</AdminGroupForm>
 					{selected && (
 						<>
 							{selected.members.length === 0 && (
 								<p>No palettes yet.</p>
 							)}
-							<SortableSetMembers
+							<SortableGroupMembers
 								members={members}
 								noun="palettes"
 								disabled={unavailable || readOnly}
@@ -310,20 +318,20 @@ export default function PaletteSetLibrary({
 										{member.name}
 									</>
 								)}
-							</SortableSetMembers>
+							</SortableGroupMembers>
 						</>
 					)}
 				</>
 			) : (
-				<AdminGallery layout="sets">
-					{sets.map(set => (
-						<AdminSetCard
-							key={set.row.id}
-							label={`Palette set ${set.row.name}`}
+				<AdminGallery layout="groups">
+					{shown.map(group => (
+						<AdminGroupCard
+							key={group.row.id}
+							label={`Palette group ${group.row.name}`}
 							thumbnail={
-								set.members.length === 0
-									? 'Empty set'
-									: set.members
+								group.members.length === 0
+									? 'Empty group'
+									: group.members
 											.slice(0, 3)
 											.map(member => (
 												<PaletteStrip
@@ -337,17 +345,17 @@ export default function PaletteSetLibrary({
 								<>
 									<AdminIconButton
 										icon={faPenToSquare}
-										label={`Edit set ${set.row.name}`}
+										label={`Edit group ${group.row.name}`}
 										tone="edit"
 										disabled={unavailable || !!deleting}
 										onClick={() => {
 											setEditing({
-												id: set.row.id,
-												name: set.row.name,
-												kind: set.kind,
+												id: group.row.id,
+												name: group.row.name,
+												purpose: group.purpose,
 											})
-											setName(set.row.name)
-											setKind(set.kind)
+											setName(group.row.name)
+											setPurpose(group.purpose)
 											order.reset()
 											setStatus('')
 											setError('')
@@ -355,51 +363,53 @@ export default function PaletteSetLibrary({
 									/>
 									<AdminIconButton
 										icon={faTrashCan}
-										label={`Delete set ${set.row.name}`}
+										label={`Delete group ${group.row.name}`}
 										tone="delete"
 										disabled={
 											unavailable ||
 											!!deleting ||
-											!!set.row.published_at ||
-											!!set.row.release_at
+											!!group.row.published_at ||
+											!!group.row.release_at
 										}
 										onClick={() => {
 											setDeleteError('')
-											setDeleting(set)
+											setDeleting(group)
 										}}
 									/>
 								</>
 							}
 						>
-							<strong>{set.row.name}</strong>
-							<span>{paletteSetLabels[set.kind]}</span>
+							<strong>{group.row.name}</strong>
 							<span>
-								{set.members.length}{' '}
-								{set.members.length === 1
+								{paletteGroupPurposeLabels[group.purpose]}
+							</span>
+							<span>
+								{group.members.length}{' '}
+								{group.members.length === 1
 									? 'palette'
 									: 'palettes'}
 							</span>
-						</AdminSetCard>
+						</AdminGroupCard>
 					))}
 				</AdminGallery>
 			)}
 			{deleting && (
 				<ConfirmDialog
 					{...deleteModal}
-					title="Confirm palette set deletion"
-					closeLabel="Close palette set deletion"
+					title="Confirm palette group deletion"
+					closeLabel="Close palette group deletion"
 					destructive
 					message={`Delete "${deleting.row.name}"? Its ${deleting.members.length} palettes will remain in the library, ungrouped.`}
-					confirmLabel="Confirm delete set"
+					confirmLabel="Confirm delete group"
 					cancelLabel="Cancel deletion"
 					confirmDisabled={loading || !!catalogError}
-					pending={busy ? 'Deleting palette set…' : null}
+					pending={busy ? 'Deleting palette group…' : null}
 					error={deleteError}
 					onConfirm={() => {
 						void mutate(
 							deleting.row.id,
 							[{ kind: 'delete' }],
-							'Set deleted. Its palettes remain in the library.',
+							'Group deleted. Its palettes remain in the library.',
 						)
 					}}
 					onCancel={() => setDeleting(null)}
@@ -411,13 +421,13 @@ export default function PaletteSetLibrary({
 					</ul>
 				</ConfirmDialog>
 			)}
-			{busy && !deleting && <Loading label="Saving palette set…" />}
+			{busy && !deleting && <Loading label="Saving palette group…" />}
 			{loading && (
 				<Loading
 					label={
 						refreshing
-							? 'Refreshing palette sets…'
-							: 'Loading palette sets…'
+							? 'Refreshing palette groups…'
+							: 'Loading palette groups…'
 					}
 				/>
 			)}

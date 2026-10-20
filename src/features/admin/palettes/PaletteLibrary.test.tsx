@@ -9,7 +9,7 @@ import type { Database } from '@/lib/supabase'
 import type {
 	CatalogPalette,
 	PaletteUsage,
-	PaletteSet,
+	PaletteGroup,
 } from '@/features/admin/services'
 import PaletteLibrary from './PaletteLibrary'
 import { useState } from 'react'
@@ -19,16 +19,16 @@ const mocks = vi.hoisted(() => ({
 	load: vi.fn(),
 	manage: vi.fn(),
 	usage: vi.fn(),
-	sets: vi.fn(),
-	manageSet: vi.fn(),
+	groups: vi.fn(),
+	manageGroup: vi.fn(),
 	bulkDelete: vi.fn(),
 }))
-vi.mock('@/features/admin/services/paletteSets', async importOriginal => ({
+vi.mock('@/features/admin/services/paletteGroups', async importOriginal => ({
 	...(await importOriginal<
-		typeof import('@/features/admin/services/paletteSets')
+		typeof import('@/features/admin/services/paletteGroups')
 	>()),
-	loadPaletteSets: (...args: unknown[]) => mocks.sets(...args),
-	managePaletteSet: (...args: unknown[]) => mocks.manageSet(...args),
+	loadPaletteGroups: (...args: unknown[]) => mocks.groups(...args),
+	managePaletteGroup: (...args: unknown[]) => mocks.manageGroup(...args),
 }))
 vi.mock('@/features/admin/services/palettes', async importOriginal => ({
 	...(await importOriginal<
@@ -56,20 +56,19 @@ const samplePalette: CatalogPalette = {
 const emptyUsage: PaletteUsage = {
 	puzzles: [],
 	rewards: [],
-	packs: [],
-	starters: 0,
+	groups: [],
 	grants: 0,
 	corrections: 0,
 }
-const paletteSet: PaletteSet = {
+const paletteGroup: PaletteGroup = {
 	row: {
 		id: 'set-one',
 		name: 'Warm colors',
-		kind: 'undecided',
+		purpose: 'undecided',
 		published_at: null,
 		release_at: null,
 	},
-	kind: 'undecided',
+	purpose: 'undecided',
 	members: [samplePalette],
 }
 beforeEach(() => {
@@ -77,8 +76,8 @@ beforeEach(() => {
 	mocks.load.mockResolvedValue([samplePalette])
 	mocks.manage.mockResolvedValue(undefined)
 	mocks.usage.mockResolvedValue(emptyUsage)
-	mocks.sets.mockResolvedValue([])
-	mocks.manageSet.mockResolvedValue(undefined)
+	mocks.groups.mockResolvedValue([])
+	mocks.manageGroup.mockResolvedValue(undefined)
 })
 afterEach(() => vi.restoreAllMocks())
 
@@ -86,16 +85,16 @@ async function openEditor() {
 	fireEvent.click(await screen.findByRole('button', { name: 'Edit Cabo' }))
 	await screen.findByText('Not used anywhere.')
 }
-async function openSets() {
+async function openGroups() {
 	await screen.findByRole('button', { name: 'Edit Cabo' })
-	fireEvent.click(screen.getByRole('button', { name: 'Sets' }))
+	fireEvent.click(screen.getByRole('button', { name: 'Groups' }))
 }
 // Mirrors AdminWorkspace: choosing any tab is guarded and remounts the view.
 function PaletteWorkspace() {
 	const { requestNavigation } = useNavigationGuard()
-	const [view, setView] = useState<'sets' | 'palettes'>('palettes')
+	const [view, setView] = useState<'groups' | 'palettes'>('palettes')
 	const [visit, setVisit] = useState(0)
-	function go(next: 'sets' | 'palettes') {
+	function go(next: 'groups' | 'palettes') {
 		requestNavigation(() => {
 			setView(next)
 			setVisit(n => n + 1)
@@ -103,7 +102,7 @@ function PaletteWorkspace() {
 	}
 	return (
 		<>
-			<button onClick={() => go('sets')}>Sets</button>
+			<button onClick={() => go('groups')}>Groups</button>
 			<button onClick={() => go('palettes')}>Palette catalog</button>
 			<PaletteLibrary
 				key={`${view}-${visit}`}
@@ -133,12 +132,16 @@ function sandboxFills() {
 }
 
 describe('palette management', () => {
-	it('filters grouped palettes and atomically moves selected palettes into a draft set', async () => {
-		mocks.sets.mockResolvedValue([
-			paletteSet,
+	it('filters grouped palettes and atomically moves selected palettes into a draft group', async () => {
+		mocks.groups.mockResolvedValue([
+			paletteGroup,
 			{
-				...paletteSet,
-				row: { ...paletteSet.row, id: 'set-two', name: 'Pack colors' },
+				...paletteGroup,
+				row: {
+					...paletteGroup.row,
+					id: 'set-two',
+					name: 'Pack colors',
+				},
 				members: [],
 			},
 		])
@@ -163,23 +166,23 @@ describe('palette management', () => {
 			screen.queryByText('No palettes match this view.'),
 		).not.toBeInTheDocument()
 		fireEvent.click(screen.getByRole('checkbox', { name: 'Select Cabo' }))
-		fireEvent.click(screen.getByRole('button', { name: 'Assign to set' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Assign to group' }))
 		const assignment = screen.getByRole('dialog', {
-			name: 'Assign selected palettes to set',
+			name: 'Assign selected palettes to group',
 		})
 		expect(
 			within(assignment).getByRole('button', { name: 'Assign palettes' }),
 		).toBeDisabled()
-		fireEvent.change(within(assignment).getByLabelText('Palette set'), {
+		fireEvent.change(within(assignment).getByLabelText('Palette group'), {
 			target: { value: 'set-two' },
 		})
 		expect(assignment).toHaveTextContent('Cabo')
-		expect(mocks.manageSet).not.toHaveBeenCalled()
+		expect(mocks.manageGroup).not.toHaveBeenCalled()
 		fireEvent.click(
 			within(assignment).getByRole('button', { name: 'Assign palettes' }),
 		)
 		await screen.findByText(/Palettes assigned/)
-		expect(mocks.manageSet).toHaveBeenCalledExactlyOnceWith(
+		expect(mocks.manageGroup).toHaveBeenCalledExactlyOnceWith(
 			client,
 			'set-two',
 			{ kind: 'assign', paletteIds: ['cabo'] },
@@ -194,15 +197,19 @@ describe('palette management', () => {
 		).not.toBeInTheDocument()
 	})
 
-	it('unassigns selected palettes from each of their sets and hides the action for unassigned palettes', async () => {
+	it('unassigns selected palettes from each of their groups and hides the action for unassigned palettes', async () => {
 		const ember = { ...samplePalette, id: 'ember', name: 'Ember' }
 		const loose = { ...samplePalette, id: 'loose', name: 'Loose' }
 		mocks.load.mockResolvedValue([samplePalette, ember, loose])
-		mocks.sets.mockResolvedValue([
-			paletteSet,
+		mocks.groups.mockResolvedValue([
+			paletteGroup,
 			{
-				...paletteSet,
-				row: { ...paletteSet.row, id: 'set-two', name: 'Pack colors' },
+				...paletteGroup,
+				row: {
+					...paletteGroup.row,
+					id: 'set-two',
+					name: 'Pack colors',
+				},
 				members: [ember],
 			},
 		])
@@ -211,34 +218,34 @@ describe('palette management', () => {
 		fireEvent.click(screen.getByRole('checkbox', { name: 'Select Cabo' }))
 		fireEvent.click(screen.getByRole('checkbox', { name: 'Select Loose' }))
 		expect(
-			screen.queryByRole('button', { name: 'Unassign from sets' }),
+			screen.queryByRole('button', { name: 'Unassign from groups' }),
 		).not.toBeInTheDocument()
 		fireEvent.click(screen.getByRole('checkbox', { name: 'Select Loose' }))
 		fireEvent.click(screen.getByRole('checkbox', { name: 'Select Ember' }))
 		fireEvent.click(
-			screen.getByRole('button', { name: 'Unassign from sets' }),
+			screen.getByRole('button', { name: 'Unassign from groups' }),
 		)
 		const dialog = screen.getByRole('dialog', {
 			name: 'Unassign selected palettes',
 		})
-		expect(mocks.manageSet).not.toHaveBeenCalled()
+		expect(mocks.manageGroup).not.toHaveBeenCalled()
 		fireEvent.click(
 			within(dialog).getByRole('button', { name: 'Unassign palettes' }),
 		)
 		await screen.findByText(/Unassigned 2 palettes/)
-		expect(mocks.manageSet).toHaveBeenCalledTimes(2)
-		expect(mocks.manageSet).toHaveBeenCalledWith(client, 'set-one', {
+		expect(mocks.manageGroup).toHaveBeenCalledTimes(2)
+		expect(mocks.manageGroup).toHaveBeenCalledWith(client, 'set-one', {
 			kind: 'remove',
 			paletteIds: ['cabo'],
 		})
-		expect(mocks.manageSet).toHaveBeenCalledWith(client, 'set-two', {
+		expect(mocks.manageGroup).toHaveBeenCalledWith(client, 'set-two', {
 			kind: 'remove',
 			paletteIds: ['ember'],
 		})
 	})
 
 	it('keeps the unassignment dialog open with the error when a removal fails', async () => {
-		mocks.sets.mockResolvedValue([paletteSet])
+		mocks.groups.mockResolvedValue([paletteGroup])
 		render(
 			<PaletteLibrary
 				client={client}
@@ -250,9 +257,9 @@ describe('palette management', () => {
 			await screen.findByRole('checkbox', { name: 'Select Cabo' }),
 		)
 		fireEvent.click(
-			screen.getByRole('button', { name: 'Unassign from sets' }),
+			screen.getByRole('button', { name: 'Unassign from groups' }),
 		)
-		mocks.manageSet.mockRejectedValueOnce(new Error('Set changed'))
+		mocks.manageGroup.mockRejectedValueOnce(new Error('Set changed'))
 		fireEvent.click(
 			screen.getByRole('button', { name: 'Unassign palettes' }),
 		)
@@ -265,9 +272,9 @@ describe('palette management', () => {
 	})
 
 	it('retains the palette filter, selection, and assignment target on cancellation or write failure', async () => {
-		mocks.sets.mockResolvedValue([paletteSet])
+		mocks.groups.mockResolvedValue([paletteGroup])
 		let fail!: (cause: Error) => void
-		mocks.manageSet.mockImplementationOnce(
+		mocks.manageGroup.mockImplementationOnce(
 			() =>
 				new Promise((_resolve, reject) => {
 					fail = reject
@@ -279,34 +286,34 @@ describe('palette management', () => {
 			target: { value: 'set-one' },
 		})
 		fireEvent.click(screen.getByRole('checkbox', { name: 'Select Cabo' }))
-		fireEvent.click(screen.getByRole('button', { name: 'Assign to set' }))
-		fireEvent.change(screen.getByLabelText('Palette set'), {
+		fireEvent.click(screen.getByRole('button', { name: 'Assign to group' }))
+		fireEvent.change(screen.getByLabelText('Palette group'), {
 			target: { value: 'set-one' },
 		})
 		fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
-		expect(mocks.manageSet).not.toHaveBeenCalled()
+		expect(mocks.manageGroup).not.toHaveBeenCalled()
 		expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 		expect(screen.getByLabelText('Show palettes')).toHaveValue('set-one')
 		expect(
 			screen.getByRole('checkbox', { name: 'Select Cabo' }),
 		).toBeChecked()
-		fireEvent.click(screen.getByRole('button', { name: 'Assign to set' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Assign to group' }))
 		const dialog = screen.getByRole('dialog')
-		fireEvent.change(within(dialog).getByLabelText('Palette set'), {
+		fireEvent.change(within(dialog).getByLabelText('Palette group'), {
 			target: { value: 'set-one' },
 		})
 		fireEvent.click(
 			within(dialog).getByRole('button', { name: 'Assign palettes' }),
 		)
 		expect(within(dialog).getByRole('status')).toHaveTextContent(
-			'Assigning palettes to set…',
+			'Assigning palettes to group…',
 		)
 		fireEvent.click(
 			within(dialog).getByRole('button', { name: 'Assign palettes' }),
 		)
 		fireEvent(dialog, new Event('cancel', { cancelable: true }))
 		expect(screen.getByRole('dialog')).toBe(dialog)
-		expect(mocks.manageSet).toHaveBeenCalledOnce()
+		expect(mocks.manageGroup).toHaveBeenCalledOnce()
 		await act(async () => fail(new Error('Assignment failed')))
 		expect(within(dialog).getByRole('alert')).toHaveTextContent(
 			'Assignment failed',
@@ -314,7 +321,7 @@ describe('palette management', () => {
 		expect(
 			screen.getByRole('checkbox', { name: 'Select Cabo' }),
 		).toBeChecked()
-		expect(within(dialog).getByLabelText('Palette set')).toHaveValue(
+		expect(within(dialog).getByLabelText('Palette group')).toHaveValue(
 			'set-one',
 		)
 		expect(
@@ -347,7 +354,7 @@ describe('palette management', () => {
 		).not.toBeInTheDocument()
 	})
 
-	it('orders assigned palettes by set name, then position within the set', async () => {
+	it('orders assigned palettes by group name, then position within the group', async () => {
 		const palette = (id: string, name: string) => ({
 			...samplePalette,
 			id,
@@ -359,15 +366,15 @@ describe('palette management', () => {
 			palette('b1', 'Mango'),
 		]
 		mocks.load.mockResolvedValue([a2, b1, a1])
-		mocks.sets.mockResolvedValue([
+		mocks.groups.mockResolvedValue([
 			{
-				...paletteSet,
-				row: { ...paletteSet.row, id: 'beta', name: 'Beta' },
+				...paletteGroup,
+				row: { ...paletteGroup.row, id: 'beta', name: 'Beta' },
 				members: [b1],
 			},
 			{
-				...paletteSet,
-				row: { ...paletteSet.row, id: 'alpha', name: 'Alpha' },
+				...paletteGroup,
+				row: { ...paletteGroup.row, id: 'alpha', name: 'Alpha' },
 				members: [a1, a2],
 			},
 		])
@@ -386,18 +393,18 @@ describe('palette management', () => {
 		).toEqual(['Palette Zebra', 'Palette Apple', 'Palette Mango'])
 	})
 
-	it('offers New palette in the Assigned view only while filtered to a draft set, and assigns the new palette to it', async () => {
+	it('offers New palette in the Assigned view only while filtered to a draft group, and assigns the new palette to it', async () => {
 		const prepared = {
-			...paletteSet,
+			...paletteGroup,
 			row: {
-				...paletteSet.row,
+				...paletteGroup.row,
 				id: 'live-set',
 				name: 'Live',
 				published_at: '2026-01-01T00:00:00Z',
 			},
 			members: [],
 		}
-		mocks.sets.mockResolvedValue([paletteSet, prepared])
+		mocks.groups.mockResolvedValue([paletteGroup, prepared])
 		render(
 			<PaletteLibrary
 				client={client}
@@ -407,7 +414,7 @@ describe('palette management', () => {
 		)
 		await screen.findByRole('button', { name: 'Edit Cabo' })
 		expect(
-			screen.queryByRole('option', { name: 'No set' }),
+			screen.queryByRole('option', { name: 'No group' }),
 		).not.toBeInTheDocument()
 		expect(
 			screen.queryByRole('button', { name: 'New palette' }),
@@ -435,7 +442,7 @@ describe('palette management', () => {
 			),
 		).toBeInTheDocument()
 		const created = mocks.manage.mock.calls[0][1]
-		expect(mocks.manageSet).toHaveBeenCalledWith(client, 'set-one', {
+		expect(mocks.manageGroup).toHaveBeenCalledWith(client, 'set-one', {
 			kind: 'assign',
 			paletteIds: [created.id],
 		})
@@ -443,7 +450,7 @@ describe('palette management', () => {
 	})
 
 	it('keeps New palette unassigned from the Unassigned view', async () => {
-		mocks.sets.mockResolvedValue([paletteSet])
+		mocks.groups.mockResolvedValue([paletteGroup])
 		render(
 			<PaletteLibrary
 				client={client}
@@ -459,11 +466,11 @@ describe('palette management', () => {
 		expect(
 			await screen.findByText('Saved "Loose" as a draft palette.'),
 		).toBeInTheDocument()
-		expect(mocks.manageSet).not.toHaveBeenCalled()
+		expect(mocks.manageGroup).not.toHaveBeenCalled()
 	})
 
-	it('adds a duplicate to the filtered set', async () => {
-		mocks.sets.mockResolvedValue([paletteSet])
+	it('adds a duplicate to the filtered group', async () => {
+		mocks.groups.mockResolvedValue([paletteGroup])
 		render(
 			<PaletteLibrary
 				client={client}
@@ -486,14 +493,14 @@ describe('palette management', () => {
 		await screen.findByText(
 			'Saved "Cabo copy" as a draft palette in "Warm colors".',
 		)
-		expect(mocks.manageSet).toHaveBeenCalledWith(client, 'set-one', {
+		expect(mocks.manageGroup).toHaveBeenCalledWith(client, 'set-one', {
 			kind: 'assign',
 			paletteIds: [mocks.manage.mock.calls[0][1].id],
 		})
 	})
 
-	it('leaves a duplicate unassigned when no set is filtered', async () => {
-		mocks.sets.mockResolvedValue([paletteSet])
+	it('leaves a duplicate unassigned when no group is filtered', async () => {
+		mocks.groups.mockResolvedValue([paletteGroup])
 		render(
 			<PaletteLibrary
 				client={client}
@@ -512,11 +519,11 @@ describe('palette management', () => {
 		})
 		fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 		await screen.findByText('Saved "Cabo copy" as a draft palette.')
-		expect(mocks.manageSet).not.toHaveBeenCalled()
+		expect(mocks.manageGroup).not.toHaveBeenCalled()
 	})
 
 	it('cancels the editor back to the same filtered list, asking before discarding edits', async () => {
-		mocks.sets.mockResolvedValue([paletteSet])
+		mocks.groups.mockResolvedValue([paletteGroup])
 		render(
 			<PaletteLibrary
 				client={client}
@@ -541,8 +548,8 @@ describe('palette management', () => {
 		expect(mocks.manage).not.toHaveBeenCalled()
 	})
 
-	it('retries a failed set assignment with the same palette ID', async () => {
-		mocks.sets.mockResolvedValue([paletteSet])
+	it('retries a failed group assignment with the same palette ID', async () => {
+		mocks.groups.mockResolvedValue([paletteGroup])
 		render(
 			<PaletteLibrary
 				client={client}
@@ -558,7 +565,7 @@ describe('palette management', () => {
 		fireEvent.change(screen.getByLabelText('Palette name'), {
 			target: { value: 'Ember' },
 		})
-		mocks.manageSet.mockRejectedValueOnce(new Error('Assignment lost'))
+		mocks.manageGroup.mockRejectedValueOnce(new Error('Assignment lost'))
 		fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 		expect(await screen.findByRole('alert')).toHaveTextContent(
 			'Assignment lost',
@@ -570,13 +577,13 @@ describe('palette management', () => {
 		expect(mocks.manage.mock.calls[1][1]).toEqual(
 			mocks.manage.mock.calls[0][1],
 		)
-		expect(mocks.manageSet).toHaveBeenCalledTimes(2)
+		expect(mocks.manageGroup).toHaveBeenCalledTimes(2)
 	})
 
 	it('bulk deletes only unassigned draft palettes and keeps failures visible', async () => {
 		const loose = { ...samplePalette, id: 'loose', name: 'Loose' }
 		mocks.load.mockResolvedValue([samplePalette, loose])
-		mocks.sets.mockResolvedValue([paletteSet])
+		mocks.groups.mockResolvedValue([paletteGroup])
 		mocks.bulkDelete.mockRejectedValueOnce(new Error('Palette in use'))
 		mocks.bulkDelete.mockResolvedValueOnce(undefined)
 		setup()
@@ -614,7 +621,7 @@ describe('palette management', () => {
 	it('offers deletion only for unassigned draft palettes', async () => {
 		const loose = { ...samplePalette, id: 'loose', name: 'Loose' }
 		mocks.load.mockResolvedValue([samplePalette, loose])
-		mocks.sets.mockResolvedValue([paletteSet])
+		mocks.groups.mockResolvedValue([paletteGroup])
 		setup()
 		fireEvent.click(
 			await screen.findByRole('button', { name: 'Delete Loose' }),
@@ -637,77 +644,77 @@ describe('palette management', () => {
 		})
 	})
 
-	it('creates Undecided sets over the list with retry-stable IDs and returns to Add, leaving editing separate', async () => {
+	it('creates Undecided groups over the list with retry-stable IDs and returns to Add, leaving editing separate', async () => {
 		const { isProtected } = setup()
-		await openSets()
-		await clickWhenEnabled('New palette set')
-		expect(screen.getByLabelText('Set label')).toHaveValue('undecided')
-		fireEvent.change(screen.getByLabelText('Set name'), {
+		await openGroups()
+		await clickWhenEnabled('New palette group')
+		expect(screen.getByLabelText('Purpose')).toHaveValue('undecided')
+		fireEvent.change(screen.getByLabelText('Group name'), {
 			target: { value: 'New colors' },
 		})
 		expect(isProtected()).toBe(true)
 		expect(
-			screen.getByRole('dialog', { name: 'New palette set' }),
+			screen.getByRole('dialog', { name: 'New palette group' }),
 		).toBeInTheDocument()
 		expect(
-			screen.getByRole('heading', { name: 'Palette sets' }),
+			screen.getByRole('heading', { name: 'Palette groups' }),
 		).toBeInTheDocument()
-		expect(screen.getByLabelText('Set name')).toHaveValue('New colors')
-		mocks.manageSet.mockRejectedValueOnce(new Error('Lost response'))
-		fireEvent.click(screen.getByRole('button', { name: 'Save set' }))
+		expect(screen.getByLabelText('Group name')).toHaveValue('New colors')
+		mocks.manageGroup.mockRejectedValueOnce(new Error('Lost response'))
+		fireEvent.click(screen.getByRole('button', { name: 'Save group' }))
 		await screen.findByText('Lost response')
-		const args = mocks.manageSet.mock.calls[0]
+		const args = mocks.manageGroup.mock.calls[0]
 		expect(args).toEqual([
 			client,
 			expect.any(String),
-			{ kind: 'create', name: 'New colors', role: 'undecided' },
+			{ kind: 'create', name: 'New colors', purpose: 'undecided' },
 		])
-		mocks.sets.mockResolvedValue([
+		mocks.groups.mockResolvedValue([
 			{
-				...paletteSet,
-				row: { ...paletteSet.row, id: args[1], name: 'New colors' },
+				...paletteGroup,
+				row: { ...paletteGroup.row, id: args[1], name: 'New colors' },
 				members: [],
 			},
 		])
-		fireEvent.click(screen.getByRole('button', { name: 'Save set' }))
-		await screen.findByText('Palette set created.')
+		fireEvent.click(screen.getByRole('button', { name: 'Save group' }))
+		await screen.findByText('Palette group created.')
 		await waitFor(() =>
 			expect(
-				screen.getByRole('button', { name: 'New palette set' }),
+				screen.getByRole('button', { name: 'New palette group' }),
 			).toBeEnabled(),
 		)
 		expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-		expect(mocks.manageSet.mock.calls[1]).toEqual(args)
+		expect(mocks.manageGroup.mock.calls[1]).toEqual(args)
 		await waitFor(() => expect(isProtected()).toBe(false))
-		await clickWhenEnabled('New palette set')
-		expect(screen.getByLabelText('Set name')).toHaveValue('')
-		expect(screen.getByLabelText('Set label')).toHaveValue('undecided')
+		await clickWhenEnabled('New palette group')
+		expect(screen.getByLabelText('Group name')).toHaveValue('')
+		expect(screen.getByLabelText('Purpose')).toHaveValue('undecided')
 		fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
 		fireEvent.click(
-			screen.getByRole('button', { name: 'Edit set New colors' }),
+			screen.getByRole('button', { name: 'Edit group New colors' }),
 		)
-		fireEvent.change(screen.getByLabelText('Set label'), {
+		fireEvent.change(screen.getByLabelText('Purpose'), {
 			target: { value: 'reward' },
 		})
 		expect(isProtected()).toBe(true)
 		fireEvent.click(screen.getByRole('button', { name: 'Save' }))
-		await screen.findByText('Set saved.')
-		expect(mocks.manageSet).toHaveBeenLastCalledWith(client, args[1], {
+		await screen.findByText('Group saved.')
+		expect(mocks.manageGroup).toHaveBeenLastCalledWith(client, args[1], {
 			kind: 'update',
 			name: 'New colors',
-			role: 'reward',
+			purpose: 'reward',
 		})
 	})
 
-	it('stages member order until Save, removes immediately, and deletes a set only after confirmation', async () => {
+	it('stages member order until Save, removes immediately, and deletes a group only after confirmation', async () => {
 		const second = { ...samplePalette, id: 'other', name: 'Other colors' }
-		mocks.sets.mockResolvedValue([
-			{ ...paletteSet, members: [samplePalette, second] },
+		mocks.groups.mockResolvedValue([
+			{ ...paletteGroup, members: [samplePalette, second] },
 		])
 		const { isProtected } = setup()
-		await openSets()
+		await openGroups()
 		fireEvent.click(
-			screen.getByRole('button', { name: 'Edit set Warm colors' }),
+			screen.getByRole('button', { name: 'Edit group Warm colors' }),
 		)
 		const saveOrder = screen.getByRole('button', { name: 'Save' })
 		expect(saveOrder).toBeDisabled()
@@ -726,59 +733,59 @@ describe('palette management', () => {
 		expect(
 			within(screen.getByRole('list')).getAllByRole('listitem')[1],
 		).toHaveTextContent('Cabo')
-		expect(mocks.manageSet).not.toHaveBeenCalled()
+		expect(mocks.manageGroup).not.toHaveBeenCalled()
 		expect(isProtected()).toBe(true)
 		fireEvent.click(saveOrder)
-		await screen.findByText('Set saved.')
-		expect(mocks.manageSet).toHaveBeenCalledOnce()
-		expect(mocks.manageSet).toHaveBeenLastCalledWith(client, 'set-one', {
+		await screen.findByText('Group saved.')
+		expect(mocks.manageGroup).toHaveBeenCalledOnce()
+		expect(mocks.manageGroup).toHaveBeenLastCalledWith(client, 'set-one', {
 			kind: 'reorder',
 			paletteIds: ['other', 'cabo'],
 		})
-		expect(mocks.sets).toHaveBeenCalledOnce()
+		expect(mocks.groups).toHaveBeenCalledOnce()
 		expect(isProtected()).toBe(false)
 		expect(saveOrder).toBeDisabled()
-		mocks.sets.mockResolvedValue([{ ...paletteSet, members: [second] }])
+		mocks.groups.mockResolvedValue([{ ...paletteGroup, members: [second] }])
 		await waitFor(() =>
 			expect(
-				screen.getByRole('button', { name: 'Remove Cabo from set' }),
+				screen.getByRole('button', { name: 'Remove Cabo from group' }),
 			).toBeEnabled(),
 		)
 		fireEvent.click(
-			screen.getByRole('button', { name: 'Remove Cabo from set' }),
+			screen.getByRole('button', { name: 'Remove Cabo from group' }),
 		)
 		await screen.findByText(/Palette removed/)
-		expect(mocks.manageSet).toHaveBeenLastCalledWith(client, 'set-one', {
+		expect(mocks.manageGroup).toHaveBeenLastCalledWith(client, 'set-one', {
 			kind: 'remove',
 			paletteIds: ['cabo'],
 		})
 		await waitFor(() => expect(isProtected()).toBe(false))
-		fireEvent.click(screen.getByRole('button', { name: 'Sets' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Groups' }))
 		fireEvent.click(
-			screen.getByRole('button', { name: 'Delete set Warm colors' }),
+			screen.getByRole('button', { name: 'Delete group Warm colors' }),
 		)
 		expect(
 			screen.getByText(/palettes will remain in the library/),
 		).toBeInTheDocument()
-		expect(mocks.manageSet).toHaveBeenCalledTimes(2)
+		expect(mocks.manageGroup).toHaveBeenCalledTimes(2)
 		fireEvent.click(
-			screen.getByRole('button', { name: 'Confirm delete set' }),
+			screen.getByRole('button', { name: 'Confirm delete group' }),
 		)
 		await screen.findByText(
-			'Set deleted. Its palettes remain in the library.',
+			'Group deleted. Its palettes remain in the library.',
 		)
-		expect(mocks.manageSet).toHaveBeenLastCalledWith(client, 'set-one', {
+		expect(mocks.manageGroup).toHaveBeenLastCalledWith(client, 'set-one', {
 			kind: 'delete',
 		})
 		expect(mocks.manage).not.toHaveBeenCalled()
 	})
 
-	it('keeps prepared sets read-only and prevents selecting their members for moves', async () => {
-		mocks.sets.mockResolvedValue([
+	it('keeps prepared groups read-only and prevents selecting their members for moves', async () => {
+		mocks.groups.mockResolvedValue([
 			{
-				...paletteSet,
+				...paletteGroup,
 				row: {
-					...paletteSet.row,
+					...paletteGroup.row,
 					published_at: '2026-01-01',
 					release_at: '2099-01-01',
 				},
@@ -788,17 +795,17 @@ describe('palette management', () => {
 		expect(
 			await screen.findByRole('checkbox', { name: 'Select Cabo' }),
 		).toBeDisabled()
-		fireEvent.click(screen.getByRole('button', { name: 'Sets' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Groups' }))
 		expect(
-			screen.getByRole('button', { name: 'Delete set Warm colors' }),
+			screen.getByRole('button', { name: 'Delete group Warm colors' }),
 		).toBeDisabled()
 		fireEvent.click(
-			screen.getByRole('button', { name: 'Edit set Warm colors' }),
+			screen.getByRole('button', { name: 'Edit group Warm colors' }),
 		)
-		expect(screen.getByLabelText('Set name')).toBeDisabled()
-		expect(screen.getByLabelText('Set label')).toBeDisabled()
+		expect(screen.getByLabelText('Group name')).toBeDisabled()
+		expect(screen.getByLabelText('Purpose')).toBeDisabled()
 		expect(
-			screen.getByRole('button', { name: 'Remove Cabo from set' }),
+			screen.getByRole('button', { name: 'Remove Cabo from group' }),
 		).toBeDisabled()
 		expect(
 			screen.getByRole('button', { name: 'Reorder Cabo' }),
@@ -808,33 +815,37 @@ describe('palette management', () => {
 		).not.toBeInTheDocument()
 	})
 
-	it('surfaces a set reload failure and supports retry without losing metadata edits', async () => {
-		mocks.sets.mockResolvedValue([paletteSet])
+	it('surfaces a group reload failure and supports retry without losing metadata edits', async () => {
+		mocks.groups.mockResolvedValue([paletteGroup])
 		setup()
-		await openSets()
+		await openGroups()
 		fireEvent.click(
-			screen.getByRole('button', { name: 'Edit set Warm colors' }),
+			screen.getByRole('button', { name: 'Edit group Warm colors' }),
 		)
-		fireEvent.change(screen.getByLabelText('Set name'), {
+		fireEvent.change(screen.getByLabelText('Group name'), {
 			target: { value: 'Renamed colors' },
 		})
-		mocks.sets.mockRejectedValueOnce(new Error('Membership read failed'))
+		mocks.groups.mockRejectedValueOnce(new Error('Membership read failed'))
 		fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 		await screen.findByText(/Membership read failed/)
-		expect(screen.getByLabelText('Set name')).toHaveValue('Renamed colors')
+		expect(screen.getByLabelText('Group name')).toHaveValue(
+			'Renamed colors',
+		)
 		expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
-		expect(mocks.manageSet).toHaveBeenCalledTimes(1)
+		expect(mocks.manageGroup).toHaveBeenCalledTimes(1)
 		fireEvent.click(
-			screen.getByRole('button', { name: 'Retry loading sets' }),
+			screen.getByRole('button', { name: 'Retry loading groups' }),
 		)
 		await waitFor(() =>
 			expect(screen.queryByRole('alert')).not.toBeInTheDocument(),
 		)
-		expect(screen.getByLabelText('Set name')).toHaveValue('Renamed colors')
-		fireEvent.change(screen.getByLabelText('Set label'), {
-			target: { value: 'paid' },
+		expect(screen.getByLabelText('Group name')).toHaveValue(
+			'Renamed colors',
+		)
+		fireEvent.change(screen.getByLabelText('Purpose'), {
+			target: { value: 'pack' },
 		})
-		expect(screen.getByLabelText('Set label')).toHaveValue('paid')
+		expect(screen.getByLabelText('Purpose')).toHaveValue('pack')
 	})
 
 	it.each([false, true])(
@@ -1076,7 +1087,7 @@ describe('palette management', () => {
 				{
 					id: 'puzzle',
 					name: 'Linked art',
-					context: 'First set',
+					context: 'Core · First group',
 					preview: {
 						shape: 'hexagon',
 						gridSize: 3,
@@ -1084,9 +1095,8 @@ describe('palette management', () => {
 					},
 				},
 			],
-			rewards: ['First set / Hard route'],
-			packs: ['Earth tones'],
-			starters: 1,
+			rewards: ['First group'],
+			groups: ['Earth tones · Pack'],
 			grants: 2,
 			corrections: 3,
 		})
@@ -1097,11 +1107,8 @@ describe('palette management', () => {
 		expect(
 			await screen.findByText(/This palette is in use/),
 		).toBeInTheDocument()
-		expect(screen.getByText('First set / Hard route')).toBeInTheDocument()
-		expect(screen.getByText('Earth tones')).toBeInTheDocument()
-		expect(
-			screen.getByText('Included in starter offerings.'),
-		).toBeInTheDocument()
+		expect(screen.getByText('First group')).toBeInTheDocument()
+		expect(screen.getByText('Earth tones · Pack')).toBeInTheDocument()
 		expect(screen.getByText('Ownership grants: 2')).toBeInTheDocument()
 		expect(
 			screen.getByText('Correction history records: 3'),
@@ -1169,7 +1176,7 @@ describe('palette management', () => {
 	})
 
 	it('keeps palette filter and selection mounted across deletion cancellation and failed writes, and blocks pending dismissal', async () => {
-		mocks.sets.mockResolvedValue([{ ...paletteSet, members: [] }])
+		mocks.groups.mockResolvedValue([{ ...paletteGroup, members: [] }])
 		let fail!: (cause: Error) => void
 		mocks.manage.mockReturnValueOnce(
 			new Promise((_resolve, reject) => {

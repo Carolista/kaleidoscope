@@ -88,11 +88,11 @@ their stable palette ID and ordered color slots against that result, so correcti
 update targets and pieces together without changing placement/layout. Failed reads
 show an error instead of silently falling back to the local player catalog.
 
-After generating, enter a **Puzzle name**, choose **Intended use** (Set/pack or
-Daily), and press **Save draft**. Apply the draft-saving migration below first.
-The save atomically creates an unpublished, unassigned puzzle and its private
-authoring record; it does not save playtest placements. A successful save locks
-intended use and saving until the next randomization. Name, palette, and recipe
+After generating, enter a **Puzzle name** and press **Save draft**. Apply the
+draft-saving migration below first. The save atomically creates an unpublished,
+unassigned puzzle and its private authoring record, with its palette stored on the
+puzzle; it does not save playtest placements. A successful save locks saving until
+the next randomization. Name, palette, and recipe
 stay available for the next generation without changing the saved puzzle. A revised
 name carries into the next randomization; an unchanged saved name is cleared.
 Leaving with a revised next-puzzle name warns before discarding it. Repeated clicks are
@@ -100,7 +100,7 @@ blocked while saving, and retrying an unchanged failed request reuses its ID.
 Errors preserve the preview and form values.
 
 Every randomization checks saved puzzle/authoring rows for excluded seeds keyed
-by shape and exact size/rotation recipe, independent of palette or intended use.
+by shape and exact size/rotation recipe, independent of palette.
 No separate blacklist table is used. Deleting the last unused saved puzzle for a
 seed/recipe removes its persistent exclusion; mounted-session preview history
 still applies until leaving/reloading the lab. A failed seed read blocks
@@ -108,59 +108,59 @@ randomization with an error rather than silently ignoring saved puzzles.
 
 Saved drafts survive reload/sign-out, but unsaved previews and playtest placements
 do not. The admin workspace opens in the **Puzzle drafts** library, showing
-unpublished drafts of every shape with target thumbnails, shape/recipe/use labels, and
-assignment status. Filter by Set/pack or Daily; refresh to pick up changes from
-another tab. **New puzzle** opens the creation workspace; choosing the **Drafts** tab
+unpublished drafts of every shape with target thumbnails, shape/recipe labels, and
+group assignment. Filter by shape and track (and, in the Assigned view, purpose and group);
+refresh to pick up changes from another tab. **New puzzle** opens the creation workspace; choosing the **Drafts** tab
 returns to browsing (with the usual unsaved-changes prompt).
 
 Cards are not navigation links. Each shows a centered thumbnail and details,
 with a bottom row holding the custom selection checkbox at left and square
 icon-only actions at right: a blue classic Edit icon and, only for unassigned
 drafts, a red classic Delete icon. Selected cards are highlighted blue. Use **Edit** to playtest the stored definition (not a regenerated seed).
-Edit its name, visual palette selection, or intended use and press **Save Changes**.
+Edit its name or visual palette selection and press **Save Changes**.
 For an unassigned draft, the recipe selector and wand **Randomize puzzle** button
-can preview a replacement without deleting the puzzle. Name, palette, and intended
-use are retained; each randomization resets playtest placements. **Save Changes**
+can preview a replacement without deleting the puzzle. Name and palette
+are retained; each randomization resets playtest placements. **Save Changes**
 atomically replaces the design, recipe, seed, and private solution under the same
 puzzle ID, then returns to the library. Changing the recipe selector alone does
 not change the preview. Leaving without saving keeps the original stored design.
-Assigned drafts must be unassigned before replacing their design; their existing
-name/palette editing remains available. Apply the replacement migration below first.
+Assigned drafts can also replace their design (including scheduled ones, until release),
+but the new recipe must fit the group's track (basic or rotation). Apply the replacement migration below first.
 Palette selection recolors without resetting playtest state. Changes remain local
-until saved; leaving an unsaved workspace warns before discarding edits. Unassigned
-unpublished drafts can switch intended use; assigned drafts must first be
-unassigned elsewhere. **Delete draft** requires explicit confirmation and is only
-available for unused drafts. The database rechecks these rules at write time,
+until saved; leaving an unsaved workspace warns before discarding edits.
+**Delete draft** requires explicit confirmation and is only available for unassigned drafts. The database rechecks these rules at write time,
 including content that was assigned or scheduled after the library loaded.
 
 Scheduled/live puzzles are excluded from this draft library and cannot be edited
-or deleted through its RPCs. Draft set assembly is available under **Puzzles > Sets**:
-create a named set with a Core progression, Reward, or Paid role and a shape, then use
-**Puzzles > Puzzles** gallery selection and **Assign to set** to append unassigned
-Set/pack drafts of that shape.
+or deleted through its RPCs. Draft group assembly is available under **Puzzles > Groups**:
+create a named group with a purpose (Undecided, Core, Reward, Daily, or Pack), a shape
+(not for Daily, which mixes shapes), and a track (Basic or Rotation for Core and Reward; also
+Mixed for Pack; none for Undecided and Daily), then use
+**Puzzles > Puzzles** gallery selection and **Assign to group** to append unassigned drafts that
+the group accepts (matching shape and track).
 No puzzle count is enforced; 12, 18, or other counts remain possible. Cards show
-the assigned set name with its Core, Reward, or Pack type (unassigned puzzles keep
-Set/pack, and daily puzzles keep Daily). In the set workspace, rename the set,
+the assigned group's purpose and name (unassigned puzzles show Unassigned). In the group workspace, edit
+the name, purpose, shape, and track (the database rejects a change the members violate),
 drag members into a new order, or remove them without deleting their saved designs.
 Each member shows its saved target thumbnail beside its name and drag handle
 (keyboard: Up/Down/Home/End on a focused handle); the square-minus icon removes it
-from the set only. One blue **Save** beside the name writes the name and staged order together;
-removal saves immediately. Unsaved names and staged order are guarded on exit.
-The set role is chosen at creation and is not reclassified by this tool.
-Draft sets use landscape cards: the first ordered member's saved-design thumbnail
-spans the left column, with name, Core/Reward/Pack type and member count aligned
-top right and square Edit/Delete icons at the bottom right. Empty sets show a placeholder. Thumbnails
+from the group only. One blue **Save** beside the name writes the details and staged order together;
+removal saves immediately. Unsaved edits and staged order are guarded on exit.
+Group lists filter by purpose, shape, and track.
+Draft groups use landscape cards: the first ordered member's saved-design thumbnail
+spans the left column, with name, purpose, shape, track, and member count aligned
+top right and square Edit/Delete icons at the bottom right. Empty groups show a placeholder. Thumbnails
 resolve current Supabase palette colors without regenerating designs.
-The large **New set** plus opens creation. Deleting a set requires confirmation
+The large **New group** plus opens creation. Deleting a group requires confirmation
 and unassigns its puzzles without deleting their designs or private solutions.
-Qualifying routes, core sequence, rewards, pricing/shop products, selection rules,
+The shape progression and reward screens, pricing/shop products, selection rules,
 scheduling, and publishing tools follow separately.
 No player attempts, completions, reward grants, guest imports,
 or Zen autosaves are written.
 
 Select card checkboxes for **Change palette** or **Delete selected** (shown only
-when every selected draft is unassigned). **Show set** narrows the gallery to one
-set's members. **Select all** affects the current filters only, with a mixed state for partial selection;
+when every selected draft is unassigned). **Show group** narrows the gallery to one
+group's members. **Select all** affects the current filters only, with a mixed state for partial selection;
 changing a filter or explicitly refreshing clears selection. Bulk palette changes
 use visual swatches and an explicit **Apply palette** action. Card and bulk deletion
 require a confirmation listing the count and names. Assigned drafts cannot be
@@ -199,14 +199,14 @@ the initial migration. Zen still uses its local array and is unchanged.
   palette slot has a 20% chance, with no base color. It is not puzzle generation
   and does not permit painting. Color/name/theme edits do not rerandomize it.
   Invalid hex text remains visible and blocks saving/preview until corrected.
-- **Usage** reads stored puzzle target slots for thumbnails, set/daily context,
-  starter/reward/pack references, and grant/correction counts. It does not load
+- **Usage** reads stored puzzle target slots for thumbnails, group context,
+  reward and palette group references, and grant/correction counts. It does not load
   private solutions or account identities. Refresh usage explicitly if needed.
 - **Delete** requires confirmation naming the palette and no saved references.
   Failure to load usage disables deletion; write-time database checks remain
   authoritative if the view becomes stale.
 - **Delete selected** appears in the selection bar only when every checked palette
-  is an unassigned draft (in no palette set and unreferenced). It confirms the
+  is an unassigned draft (in no palette group and unreferenced). It confirms the
   names and deletes them in one all-or-nothing request; apply the
   [bulk palette deletion migration](#apply-bulk-palette-deletion) first.
 - Scheduled/live palettes are read-only here, but can be duplicated. Publishing,
@@ -214,7 +214,7 @@ the initial migration. Zen still uses its local array and is unchanged.
   pack organization, and reward mapping are separate later tools.
 
 Save returns to the palette library and refreshes it, along with the cached
-catalog used by puzzle authoring selectors and set previews; saved puzzle
+catalog used by puzzle authoring selectors and group previews; saved puzzle
 definitions, seeds, and solutions do not change. Unsaved edits are guarded on tab changes, sign-out, route exit, and reload.
 Failed writes preserve inputs; a conflict requires refreshing/reviewing the
 catalog rather than silently replacing newer data.
@@ -577,6 +577,60 @@ after this migration. Before release, they were also run against it with local
 wrappers for the old names and kept their original pass counts. The hosted
 migration and assertions have been confirmed successful by the owner.
 
+## Apply groups and purposes
+
+After the shape-neutral puzzle authoring migration:
+
+1. Run
+   [20261020000000_groups_and_purpose.sql](./migrations/20261020000000_groups_and_purpose.sql)
+   once in SQL Editor as `postgres`. It runs in one transaction and preserves data.
+   Do not rerun earlier migrations.
+2. Run [groups_and_purpose.sql](./tests/groups_and_purpose.sql) as `postgres`, without
+   an automatic RLS wrapper. Expect **76 PASS results**; fixtures roll back.
+3. Regenerate the database types (`src/lib/supabase/database.ts`), then deploy the app.
+   The previously deployed admin cannot manage groups between steps 1 and 3. The types
+   currently in the repository were updated by hand to match this migration, so
+   regenerating should produce no functional change.
+
+A **group** is any ordered collection of puzzles or palettes; its **purpose** says how it
+is used (core, reward, daily, pack, or undecided). The migration:
+
+- Renames `puzzle_collections` to `puzzle_groups` (`kind` becomes `purpose`, `paid`
+  becomes `pack`, plus `undecided`, `daily`, and a new `track`), `collection_puzzles`
+  to `puzzle_group_members`, `palette_packs` to `palette_groups`,
+  `palette_pack_palettes` to `palette_group_members`, `reward_sets` to
+  `reward_puzzle_groups`, and `collection_grants` to `puzzle_group_grants`.
+- Derives each existing core/reward group's track from its puzzles (all without rotation:
+  basic; all with rotation: rotation). Groups that were empty or mixed become undecided;
+  pack groups become basic, rotation, or mixed.
+- Drops `puzzles.usage`. Puzzles that were meant for the daily feature move into a new
+  "Daily drafts" daily group. `puzzles.palette_id` is unchanged and stays required.
+- Drops the routes, route puzzles, set qualifications, core progression and steps,
+  `reward_shapes`, and the starter tables. It adds `shape_progression` (default order
+  Hexagon, Triangle, Diamond Star, Hexagram, Circle Rings, Pinwheel) and
+  `group_completions`.
+- Replaces `manage_draft_set`/`delete_draft_set` with `manage_puzzle_group` (create, update,
+  delete, append, remove, reorder), `manage_palette_set` with `manage_palette_group`, and
+  drops the intended-use argument from `save_puzzle_draft`, `replace_puzzle_draft`, and
+  `edit_puzzle_draft`.
+
+Rules enforced by the database:
+
+- Puzzle group `purpose` is `undecided`, `core`, `reward`, `daily`, or `pack`; palette
+  groups have no `daily`. Only daily groups have no shape. Core and reward groups have a
+  `basic` or `rotation` track, packs may also be `mixed`, and undecided and daily groups
+  have none. Members must match the shape (except daily) and track, including when a
+  member's recipe is replaced. Undecided groups cannot be published.
+- Shape access: the first `shape_progression` shape is open to everyone; a later shape
+  opens once the account has a `group_completions` row for a core group of the previous
+  shape (or an admin grant). Core groups are playable with the shape; reward and pack
+  groups also need a group grant.
+- A daily assignment requires a published puzzle that belongs to a daily group.
+
+Older SQL suites target the schema at the time of their migration; run each one right
+after its own migration, not after this one. A local harness that applies the
+migrations to PGlite and then runs the new suite is a convenient pre-flight check.
+
 ## Bootstrap the one admin
 
 An ordinary app user cannot make themselves an admin. There is no public
@@ -639,29 +693,23 @@ knowing those values does not grant access to gated puzzle definitions.
 | `palettes` | Catalog read | Catalog read |
 | `palette_corrections` | None | None |
 | `shapes` | Catalog read | Catalog read |
-| `puzzle_collections` | Catalog read | Catalog read |
+| `puzzle_groups` | Catalog read | Catalog read |
 | `puzzles` | Initial core set and current daily definitions only | Authorized definitions only |
 | `puzzle_authoring` | None | None |
-| `collection_puzzles` | Released collection memberships | Same |
-| `completion_routes` | Released collection routes | Same |
-| `route_puzzles` | Released collection route memberships | Same |
-| `core_progression` | Released core metadata | Same |
-| `core_steps` | Released steps of the released core | Same |
-| `reward_rules` | Released collection reward rules | Same |
+| `puzzle_group_members` | Released group memberships | Same |
+| `shape_progression` | Order of released shapes | Same |
+| `reward_rules` | Released group reward rules | Same |
 | `reward_palettes` | Released rules and released target palettes | Same |
-| `reward_sets` | Released rules and released target sets | Same |
-| `reward_shapes` | Released rules and released target shapes | Same |
-| `starter_palettes` | Released starter palette IDs | Same |
-| `starter_shapes` | Released starter shape IDs | Same |
-| `palette_packs` | Catalog read | Catalog read |
-| `palette_pack_palettes` | Released packs and palettes | Same |
+| `reward_puzzle_groups` | Released rules and released target groups | Same |
+| `palette_groups` | Catalog read | Catalog read |
+| `palette_group_members` | Released groups and palettes | Same |
 | `daily_schedule` | Global rollover time | Same |
 | `daily_puzzles` | Current five-day assignments | Same |
 | `puzzle_completions` | None | Read own rows only |
-| `set_qualifications` | None | Read own rows only |
+| `group_completions` | None | Read own rows only |
 | `palette_grants` | None | Read own rows only |
 | `shape_grants` | None | Read own rows only |
-| `collection_grants` | None | Read own rows only |
+| `puzzle_group_grants` | None | Read own rows only |
 | `feature_grants` | None | Read own rows only |
 | `puzzle_attempts` | None | Read own rows only |
 | `daily_play_sessions` | None | Read own rows only |
@@ -703,30 +751,32 @@ identity and do not accept an arbitrary user ID.
   diamond star and pinwheel use (row, col) within the top point or spoke. This format is **not**
   a conversion of the current version-1 POC. Structural checks are not a solver,
   geometry validator, difficulty certification, or uniqueness guarantee.
-- **Collections:** `kind` distinguishes `core`, `reward`, and `paid`. Membership
-  enforces one collection per puzzle, matching shapes, and distinct positive
-  positions. Daily puzzles cannot be members. `selection_mode` records fixed
+- **Groups:** `puzzle_groups.purpose` distinguishes `undecided`, `core`, `reward`, `daily`, and
+  `pack`; `track` is `basic`, `rotation`, or `mixed`. Membership enforces one group
+  per puzzle, distinct positive positions, and the group's shape (except daily) and
+  track. A daily group has no shape, so it can mix shapes. `selection_mode` records fixed
   versus freely selectable order. For unauthenticated guest play the intro
   sequence is necessarily enforced locally; guests have no server progress
   identity. Do not describe that UX ordering as proof of completion.
-- **Core:** one `core_progression` row and contiguous `core_steps` established
-  before launch. Publishing locks the sequence. Step 1 is the guest offering.
-  Later core definitions require a registered identity, the shape, and recorded
-  qualification in all preceding core steps.
-- **Routes:** each route requires its listed member puzzles; any completed route
-  can qualify a core set. A qualification records one successful route, while
-  individual completions preserve evidence for later harder-route rewards.
-- **Rewards:** a rule applies to any qualifying route when `route_id` is null,
-  or to that specific route otherwise. Child tables award one/multiple palettes,
-  optional reward sets, or shapes. The final randomizer is represented by a
-  `feature_grants` row with source `core_progression`; no hint economy is included.
-- **Access:** palette/shape/collection grants preserve distinct rule sources.
+  A puzzle stores its own `palette_id`; the store will look up which palette
+  groups sell it, and puzzle completion never grants a palette.
+- **Progression:** `shape_progression` orders the shapes (position 1 is the starter).
+  Each shape has two core groups, basic and rotation; completing either (every
+  puzzle solved, recorded in `group_completions`) opens the next shape.
+- **Rewards:** a `reward_rules` row applies when its group is completed. Child tables
+  award exact palettes and/or bonus puzzle groups (which must have the `reward`
+  purpose). The intended pattern per shape is: basic core awards one palette,
+  rotation core awards one palette plus two bonus groups (one basic, one rotation),
+  and each bonus awards one palette. The rules stay flexible; a later admin screen
+  will check them. The final randomizer is a `feature_grants` row with source
+  `progression`, earned after all core and bonus groups; no hint economy is included.
+- **Access:** palette/shape/group grants preserve distinct rule sources.
   Current grant sources are `reward` and `admin`; payment-origin grants and
   revocation references will arrive with commerce, not unverified purchase flags.
-  Reward and paid puzzle definitions require both a collection grant and shape
+  Reward and pack puzzle definitions require both a group grant and shape
   ownership. Puzzle palette ownership is never required.
-- **Starters:** initial shape availability is seeded as Hexagon only. Choose
-  starter palettes explicitly; no palette is silently made free.
+- **Starters:** the first progression shape is the starter. Starter palettes are
+  the members of core palette groups; no palette is silently made free.
 - **Daily:** an assignment lasts exactly 120 hours, at global absolute timestamps.
   Choose `daily_schedule.rollover_time_utc` before scheduling entries; no hour is
   silently selected. Assignments must match that time, and distinct release
@@ -751,13 +801,12 @@ Author in this order:
 
 1. Prepare/publish palettes and supported shapes.
 2. Save a puzzle draft and its authoring provenance/known solution, then publish.
-3. Assemble collection membership, routes, and reward rules, then publish the set.
-4. Fill the complete core sequence, then publish the core progression for launch.
-5. Set the global UTC rollover time, then schedule published daily definitions
-   using `daily_puzzles`.
+3. Assemble group membership and reward rules, then publish the group (it needs a purpose).
+4. Fill the shape progression with published core groups ready by launch.
+5. Set the global UTC rollover time, then schedule published puzzles from daily
+   groups using `daily_puzzles`.
 
-Puzzle and collection publication checks dependency release dates. Core
-publication checks contiguous steps and that its sets are published by launch.
+Puzzle and group publication checks dependency release dates, and groups need a purpose other than undecided.
 The migration does not publish incomplete example puzzles or invent content
 choices.
 
@@ -775,9 +824,9 @@ migration, and rendering consistency are application work, not performed here.
 ## Seeded data
 
 - Six supported shapes, with released catalog metadata.
-- Hexagon as the sole starter shape.
+- The default shape progression, with Hexagon first (the only starter shape).
 - All 19 current palettes copied exactly from the app catalog, as **drafts**.
-- No starter palettes, puzzles, sets, daily schedule setting, purchases, admin assignment,
+- No starter palettes, puzzles, groups, daily schedule setting, purchases, admin assignment,
   or player data.
 
 The app continues behaving exactly as before until intentionally integrated.
@@ -786,9 +835,9 @@ The app continues behaving exactly as before until intentionally integrated.
 
 - Player Auth/registration flows, explicit guest import, and the rest of the admin
   authoring workspace. Admin sign-in, generated types, and six-recipe isolated
-  playtesting, atomic draft saving/library, draft set assembly/deletion,
-  and draft palette management are available; starter selection, palette-pack
-  organization, routes/core/reward/release tools remain pending.
+  playtesting, atomic draft saving/library, draft group assembly/deletion,
+  and draft palette management are available; the progression, reward, and
+  release tools remain pending.
 - Server-side structural/geometric authoring validation and slot-based saved-content
   integration into player mode. The admin engine and palette-slot rendering adapter
   exist; the player POC remains local. Regenerate types when public schema changes.

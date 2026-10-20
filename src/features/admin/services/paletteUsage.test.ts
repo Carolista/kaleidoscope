@@ -20,9 +20,10 @@ const puzzle = {
 	id: 'puzzle',
 	name: 'Saved art',
 	shape_id: 'hexagon',
-	usage: 'collection',
 	definition,
-	collection_puzzles: [{ puzzle_collections: { name: 'First set' } }],
+	puzzle_group_members: {
+		puzzle_groups: { name: 'First group', purpose: 'core' },
+	},
 }
 function setup() {
 	const pages = {
@@ -31,21 +32,22 @@ function setup() {
 			data: [
 				{
 					reward_rule_id: 'rule',
-					reward_rules: {
-						puzzle_collections: { name: 'First set' },
-						completion_routes: { name: 'Hard route' },
-					},
+					reward_rules: { puzzle_groups: { name: 'First group' } },
 				},
 			],
 			error: null,
 		}),
-		palette_pack_palettes: vi.fn().mockResolvedValue({
-			data: [{ pack_id: 'pack', palette_packs: { name: 'Autumn pack' } }],
+		palette_group_members: vi.fn().mockResolvedValue({
+			data: [
+				{
+					group_id: 'group',
+					palette_groups: { name: 'Autumn pack', purpose: 'pack' },
+				},
+			],
 			error: null,
 		}),
 	}
 	const counts = {
-		starter_palettes: vi.fn().mockResolvedValue({ count: 1, error: null }),
 		palette_grants: vi.fn().mockResolvedValue({ count: 2, error: null }),
 		palette_corrections: vi
 			.fn()
@@ -91,7 +93,7 @@ describe('palette usage', () => {
 				{
 					id: 'puzzle',
 					name: 'Saved art',
-					context: 'First set',
+					context: 'Core · First group',
 					preview: {
 						shape: 'hexagon',
 						gridSize: 4,
@@ -99,18 +101,16 @@ describe('palette usage', () => {
 					},
 				},
 			],
-			rewards: ['First set / Hard route'],
-			packs: ['Autumn pack'],
-			preparedPacks: 0,
-			starters: 1,
+			rewards: ['First group'],
+			groups: ['Autumn pack · Pack'],
+			preparedGroups: 0,
 			grants: 2,
 			corrections: 3,
 		})
 		for (const table of [
 			'puzzles',
 			'reward_palettes',
-			'palette_pack_palettes',
-			'starter_palettes',
+			'palette_group_members',
 			'palette_grants',
 			'palette_corrections',
 		]) {
@@ -125,12 +125,12 @@ describe('palette usage', () => {
 		})
 		expect(selects).toHaveBeenCalledWith(
 			'reward_palettes',
-			'reward_rule_id, reward_rules(puzzle_collections!reward_rules_collection_id_fkey(name), completion_routes!reward_rules_route_id_collection_id_fkey(name))',
+			'reward_rule_id, reward_rules(puzzle_groups(name))',
 			undefined,
 		)
 	})
 
-	it('paginates puzzle, reward, and pack references without truncation', async () => {
+	it('paginates puzzle, reward, and palette group references without truncation', async () => {
 		const { client, pages } = setup()
 		for (const [table, range] of Object.entries(pages)) {
 			const result =
@@ -139,11 +139,15 @@ describe('palette usage', () => {
 					: table === 'reward_palettes'
 						? {
 								reward_rules: {
-									puzzle_collections: { name: 'Set' },
-									completion_routes: null,
+									puzzle_groups: { name: 'Group' },
 								},
 							}
-						: { palette_packs: { name: 'Pack' } }
+						: {
+								palette_groups: {
+									name: 'Pack',
+									purpose: 'pack',
+								},
+							}
 			range.mockResolvedValueOnce({
 				data: Array(1000).fill(result),
 				error: null,
@@ -152,7 +156,7 @@ describe('palette usage', () => {
 		const usage = await loadPaletteUsage(client, 'cabo')
 		expect(usage.puzzles).toHaveLength(1001)
 		expect(usage.rewards).toHaveLength(1001)
-		expect(usage.packs).toHaveLength(1001)
+		expect(usage.groups).toHaveLength(1001)
 		for (const range of Object.values(pages))
 			expect(range.mock.calls).toEqual([
 				[0, 999],
@@ -160,21 +164,22 @@ describe('palette usage', () => {
 			])
 	})
 
-	it('labels daily/unassigned puzzles and supports absent previews for unknown shapes', async () => {
+	it('labels each puzzle by its group and supports absent previews for unknown shapes', async () => {
 		const { client, pages } = setup()
 		pages.puzzles.mockResolvedValue({
 			data: [
 				{
 					...puzzle,
 					id: 'daily',
-					usage: 'daily',
-					collection_puzzles: [],
+					puzzle_group_members: {
+						puzzle_groups: { name: 'October', purpose: 'daily' },
+					},
 				},
 				{
 					...puzzle,
 					id: 'other',
 					shape_id: 'square',
-					collection_puzzles: [],
+					puzzle_group_members: null,
 				},
 				{
 					...puzzle,
@@ -184,16 +189,16 @@ describe('palette usage', () => {
 						...definition,
 						geometry: { size: 7 },
 					},
-					collection_puzzles: [],
+					puzzle_group_members: null,
 				},
 			],
 			error: null,
 		})
 		const usage = await loadPaletteUsage(client, 'cabo')
 		expect(usage.puzzles.map(value => value.context)).toEqual([
-			'Daily',
-			'Unassigned Set/pack',
-			'Unassigned Set/pack',
+			'Daily · October',
+			'Unassigned',
+			'Unassigned',
 		])
 		expect(usage.puzzles[1].preview).toBeNull()
 		expect(usage.puzzles[2].preview).toEqual({
@@ -203,7 +208,7 @@ describe('palette usage', () => {
 		})
 	})
 
-	it.each(['puzzles', 'reward_palettes', 'palette_pack_palettes'] as const)(
+	it.each(['puzzles', 'reward_palettes', 'palette_group_members'] as const)(
 		'fails explicitly for missing, erroneous, or unresolved %s data',
 		async table => {
 			const { client, pages } = setup()
@@ -222,11 +227,11 @@ describe('palette usage', () => {
 				table === 'puzzles'
 					? {
 							...puzzle,
-							collection_puzzles: [{ puzzle_collections: null }],
+							puzzle_group_members: { puzzle_groups: null },
 						}
 					: table === 'reward_palettes'
 						? { reward_rules: null }
-						: { palette_packs: null }
+						: { palette_groups: null }
 			pages[table].mockResolvedValueOnce({
 				data: [unresolved],
 				error: null,
@@ -237,11 +242,7 @@ describe('palette usage', () => {
 		},
 	)
 
-	it.each([
-		'starter_palettes',
-		'palette_grants',
-		'palette_corrections',
-	] as const)(
+	it.each(['palette_grants', 'palette_corrections'] as const)(
 		'fails rather than treating a missing %s count as zero',
 		async table => {
 			const { client, counts } = setup()
@@ -279,8 +280,7 @@ describe('palette usage', () => {
 		const empty: PaletteUsage = {
 			puzzles: [],
 			rewards: [],
-			packs: [],
-			starters: 0,
+			groups: [],
 			grants: 0,
 			corrections: 0,
 		}
@@ -293,15 +293,14 @@ describe('palette usage', () => {
 				],
 			},
 			{ ...empty, rewards: ['Reward'] },
-			{ ...empty, packs: ['Pack'] },
-			{ ...empty, starters: 1 },
+			{ ...empty, groups: ['Pack · Pack'] },
 			{ ...empty, grants: 1 },
 			{ ...empty, corrections: 1 },
 		])
 			expect(paletteIsUsed(usage)).toBe(true)
 	})
 
-	it('permits draft organizational membership but blocks prepared set membership', async () => {
+	it('permits draft organizational membership but blocks prepared group membership', async () => {
 		const { client, pages, counts } = setup()
 		pages.puzzles.mockResolvedValue({ data: [], error: null })
 		pages.reward_palettes.mockResolvedValue({ data: [], error: null })
@@ -310,12 +309,13 @@ describe('palette usage', () => {
 		expect(paletteIsUsed(await loadPaletteUsage(client, 'cabo'))).toBe(
 			false,
 		)
-		pages.palette_pack_palettes.mockResolvedValue({
+		pages.palette_group_members.mockResolvedValue({
 			data: [
 				{
-					pack_id: 'pack',
-					palette_packs: {
+					group_id: 'group',
+					palette_groups: {
 						name: 'Prepared',
+						purpose: 'pack',
 						published_at: '2026-01-01',
 						release_at: '2099-01-01',
 					},
@@ -324,7 +324,7 @@ describe('palette usage', () => {
 			error: null,
 		})
 		const usage = await loadPaletteUsage(client, 'cabo')
-		expect(usage.preparedPacks).toBe(1)
+		expect(usage.preparedGroups).toBe(1)
 		expect(paletteIsUsed(usage)).toBe(true)
 	})
 })

@@ -2,15 +2,22 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database, Tables } from '@/lib/supabase'
 import type { AuthoredPuzzle } from '@/domain/puzzles'
 import { PUZZLE_SHAPE_IDS, readAuthoredPuzzle } from '@/domain/puzzles'
-import { puzzleDraftArgs, type PuzzleUsage } from './puzzleDrafts'
+import {
+	isPuzzleGroupPurpose,
+	isPuzzleGroupTrack,
+	type PuzzleGroupPurpose,
+	type PuzzleGroupTrack,
+} from './groupDetails'
+import { puzzleDraftArgs } from './puzzleDrafts'
 
 export interface LibraryDraft {
 	readonly row: Tables<'puzzles'>
 	readonly assigned: boolean
-	readonly collectionId: string | null
-	readonly collectionName: string | null
-	readonly collectionPosition: number | null
-	readonly collectionKind: string | null
+	readonly groupId: string | null
+	readonly groupName: string | null
+	readonly groupPosition: number | null
+	readonly groupPurpose: PuzzleGroupPurpose | null
+	readonly groupTrack: PuzzleGroupTrack | null
 	readonly puzzle: AuthoredPuzzle
 }
 
@@ -22,7 +29,7 @@ export async function loadPuzzleDrafts(
 		const { data, error } = await client
 			.from('puzzles')
 			.select(
-				'*, puzzle_authoring(*), collection_puzzles(puzzle_id, collection_id, position, puzzle_collections(name, kind)), daily_puzzles(id)',
+				'*, puzzle_authoring(*), puzzle_group_members(puzzle_id, group_id, position, puzzle_groups(name, purpose, track)), daily_puzzles(id)',
 			)
 			.in('shape_id', [...PUZZLE_SHAPE_IDS])
 			.is('published_at', null)
@@ -31,26 +38,29 @@ export async function loadPuzzleDrafts(
 		if (error) throw new Error(`Unable to load drafts: ${error.message}`)
 		if (!data) throw new Error('The draft library returned no data.')
 		for (const row of data) {
-			if (
-				row.collection_puzzles.some(
-					member => !member.puzzle_collections,
-				)
-			) {
+			const member = row.puzzle_group_members
+			if (member && !member.puzzle_groups)
 				throw new Error(
-					'A puzzle set assignment could not be resolved. Refresh the catalog.',
+					'A puzzle group assignment could not be resolved. Refresh the catalog.',
 				)
-			}
+			const purpose = member?.puzzle_groups?.purpose ?? null
+			if (purpose !== null && !isPuzzleGroupPurpose(purpose))
+				throw new Error(
+					`Puzzle group "${member?.puzzle_groups?.name}" has an unsupported purpose.`,
+				)
+			const track = member?.puzzle_groups?.track ?? null
+			if (track !== null && !isPuzzleGroupTrack(track))
+				throw new Error(
+					`Puzzle group "${member?.puzzle_groups?.name}" has an unsupported track.`,
+				)
 			drafts.push({
 				row,
-				assigned:
-					row.collection_puzzles.length > 0 ||
-					row.daily_puzzles.length > 0,
-				collectionId: row.collection_puzzles[0]?.collection_id ?? null,
-				collectionName:
-					row.collection_puzzles[0]?.puzzle_collections?.name ?? null,
-				collectionPosition: row.collection_puzzles[0]?.position ?? null,
-				collectionKind:
-					row.collection_puzzles[0]?.puzzle_collections?.kind ?? null,
+				assigned: member !== null || row.daily_puzzles !== null,
+				groupId: member?.group_id ?? null,
+				groupName: member?.puzzle_groups?.name ?? null,
+				groupPosition: member?.position ?? null,
+				groupPurpose: purpose,
+				groupTrack: track,
 				puzzle: readAuthoredPuzzle(row, row.puzzle_authoring),
 			})
 		}
@@ -64,13 +74,11 @@ export async function editPuzzleDraft(
 	id: string,
 	name: string,
 	paletteId: string,
-	usage: PuzzleUsage,
 ): Promise<void> {
 	const { data, error } = await client.rpc('edit_puzzle_draft', {
 		p_id: id,
 		p_name: name.trim(),
 		p_palette_id: paletteId,
-		p_usage: usage,
 	})
 	if (error) throw new Error(`Unable to update draft: ${error.message}`)
 	if (data !== id) throw new Error('The draft update was not confirmed.')
@@ -91,12 +99,11 @@ export async function replacePuzzleDraft(
 	client: SupabaseClient<Database>,
 	id: string,
 	name: string,
-	usage: PuzzleUsage,
 	puzzle: AuthoredPuzzle,
 ): Promise<void> {
 	const { data, error } = await client.rpc(
 		'replace_puzzle_draft',
-		puzzleDraftArgs(id, name, usage, puzzle),
+		puzzleDraftArgs(id, name, puzzle),
 	)
 	if (error) throw new Error(`Unable to replace draft: ${error.message}`)
 	if (data !== id) throw new Error('The draft replacement was not confirmed.')

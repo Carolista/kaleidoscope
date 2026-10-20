@@ -15,9 +15,9 @@ import type { Palette } from '@/domain/palettes'
 import {
 	bulkDeletePalettes,
 	type CatalogPalette,
-	managePaletteSet,
-	paletteSetLabels,
-	type PaletteSet,
+	managePaletteGroup,
+	paletteGroupPurposeLabels,
+	type PaletteGroup,
 } from '@/features/admin/services'
 import {
 	AdminIconButton,
@@ -32,7 +32,7 @@ import {
 import { useUnsavedDraft } from '@/ui/navigation'
 import PaletteEditor from './PaletteEditor'
 import { releaseState } from './releaseState'
-import { PaletteSetLibrary } from '@/features/admin/palette-sets'
+import { PaletteGroupLibrary } from '@/features/admin/palette-groups'
 import { useCatalog, useCatalogInvalidation } from '@/features/admin/catalog'
 import {
 	ConfirmDialog,
@@ -43,7 +43,7 @@ import {
 } from '@/ui/components'
 import PaletteDeleteDialog from './PaletteDeleteDialog'
 import { useModalState } from '@/ui/hooks'
-import { compareSetOrder, memberSetOrderKey } from '@/features/admin/sets'
+import { compareGroupOrder, memberGroupOrderKey } from '@/features/admin/groups'
 
 const fallbackError = 'Unable to manage palettes.'
 
@@ -53,34 +53,34 @@ export default function PaletteLibrary({
 	catalogStatus,
 }: {
 	readonly client: SupabaseClient<Database>
-	readonly view?: 'sets' | 'palettes'
+	readonly view?: 'groups' | 'palettes'
 	readonly catalogStatus?: 'drafts' | 'assigned'
 }) {
 	const paletteCatalog = useCatalog('palettes', client, view === 'palettes')
-	const setCatalog = useCatalog('paletteSets', client)
+	const groupCatalog = useCatalog('paletteGroups', client)
 	const invalidate = useCatalogInvalidation()
 	const palettes: readonly CatalogPalette[] = paletteCatalog.data ?? []
-	const sets: readonly PaletteSet[] = setCatalog.data ?? []
-	const loading = paletteCatalog.loading || setCatalog.loading
-	const refreshing = paletteCatalog.refreshing || setCatalog.refreshing
+	const groups: readonly PaletteGroup[] = groupCatalog.data ?? []
+	const loading = paletteCatalog.loading || groupCatalog.loading
+	const refreshing = paletteCatalog.refreshing || groupCatalog.refreshing
 	const catalogError =
-		(view === 'palettes' && paletteCatalog.error) || setCatalog.error
+		(view === 'palettes' && paletteCatalog.error) || groupCatalog.error
 	const error = catalogError ? errorMessage(catalogError, fallbackError) : ''
 	const [status, setStatus] = useState('')
 	const [filterChoice, setFilter] = useState('all')
-	const [targetChoice, setTargetSet] = useState('')
+	const [targetChoice, setTargetGroup] = useState('')
 	// Drop choices that no longer exist after the catalog changes.
 	const filter =
 		filterChoice === 'all' ||
 		filterChoice === 'ungrouped' ||
-		sets.some(set => set.row.id === filterChoice)
+		groups.some(group => group.row.id === filterChoice)
 			? filterChoice
 			: 'all'
-	const targetSet = sets.some(
-		set =>
-			set.row.id === targetChoice &&
-			!set.row.published_at &&
-			!set.row.release_at,
+	const targetGroup = groups.some(
+		group =>
+			group.row.id === targetChoice &&
+			!group.row.published_at &&
+			!group.row.release_at,
 	)
 		? targetChoice
 		: ''
@@ -96,67 +96,69 @@ export default function PaletteLibrary({
 	const [editing, setEditing] = useState<{
 		palette: CatalogPalette | null
 		startingColors?: Palette['colors']
-		targetSet?: PaletteSet
+		targetGroup?: PaletteGroup
 	} | null>(null)
-	// New palettes join the filtered set when it is still an editable draft.
-	const filteredSet = sets.find(
-		set =>
-			set.row.id === filter &&
-			!set.row.published_at &&
-			!set.row.release_at,
+	// New palettes join the filtered group when it is still an editable draft.
+	const filteredGroup = groups.find(
+		group =>
+			group.row.id === filter &&
+			!group.row.published_at &&
+			!group.row.release_at,
 	)
-	const canCreate = catalogStatus !== 'assigned' || !!filteredSet
+	const canCreate = catalogStatus !== 'assigned' || !!filteredGroup
 	const filteredPalettes = palettes.filter(palette => {
-		const set = setOf(palette.id)
+		const group = groupOf(palette.id)
 		return (
 			(filter === 'all' ||
-				(filter === 'ungrouped' ? !set : set?.row.id === filter)) &&
+				(filter === 'ungrouped' ? !group : group?.row.id === filter)) &&
 			(!catalogStatus ||
 				(!palette.published_at &&
 					!palette.release_at &&
-					!!set === (catalogStatus === 'assigned')))
+					!!group === (catalogStatus === 'assigned')))
 		)
 	})
 	const visiblePalettes =
 		catalogStatus === 'assigned'
 			? [...filteredPalettes].sort((a, b) =>
-					compareSetOrder(
-						memberSetOrderKey(a, sets),
-						memberSetOrderKey(b, sets),
+					compareGroupOrder(
+						memberGroupOrderKey(a, groups),
+						memberGroupOrderKey(b, groups),
 					),
 				)
 			: filteredPalettes
 	const selection = useCheckedIds(visiblePalettes.map(palette => palette.id))
 	const checked = selection.checked
-	function setOf(id: string) {
-		return sets.find(set => set.members.some(member => member.id === id))
+	function groupOf(id: string) {
+		return groups.find(group =>
+			group.members.some(member => member.id === id),
+		)
 	}
 	// Only unassigned drafts may be deleted.
 	function deletable(palette: CatalogPalette) {
 		return (
-			!palette.published_at && !palette.release_at && !setOf(palette.id)
+			!palette.published_at && !palette.release_at && !groupOf(palette.id)
 		)
 	}
 	function refresh(preserveSelection = false, palettes = true) {
 		if (!preserveSelection) selection.clear()
 		void Promise.all([
 			palettes && view === 'palettes' ? paletteCatalog.refresh() : null,
-			setCatalog.refresh(),
+			groupCatalog.refresh(),
 		]).catch(() => {})
 	}
 	async function assign() {
-		if (working.current || !targetSet || checked.size === 0) return
+		if (working.current || !targetGroup || checked.size === 0) return
 		working.current = true
 		setBusy(true)
 		setActionError('')
 		try {
-			await managePaletteSet(client, targetSet, {
+			await managePaletteGroup(client, targetGroup, {
 				kind: 'assign',
 				paletteIds: selection.ids,
 			})
 			setAssigning(null, () => {
 				setStatus(
-					'Palettes assigned. Previous draft set memberships were replaced.',
+					'Palettes assigned. Previous draft group memberships were replaced.',
 				)
 				refresh(false, false)
 			})
@@ -173,16 +175,19 @@ export default function PaletteLibrary({
 		setBusy(true)
 		setActionError('')
 		const count = checked.size
-		const bySet = new Map<string, string[]>()
+		const byGroup = new Map<string, string[]>()
 		for (const id of selection.ids) {
-			const set = setOf(id)
-			if (set)
-				bySet.set(set.row.id, [...(bySet.get(set.row.id) ?? []), id])
+			const group = groupOf(id)
+			if (group)
+				byGroup.set(group.row.id, [
+					...(byGroup.get(group.row.id) ?? []),
+					id,
+				])
 		}
 		try {
-			// One request per set; a failure part-way leaves earlier sets unassigned.
-			for (const [setId, paletteIds] of bySet)
-				await managePaletteSet(client, setId, {
+			// One request per group; a failure part-way leaves earlier groups unassigned.
+			for (const [groupId, paletteIds] of byGroup)
+				await managePaletteGroup(client, groupId, {
 					kind: 'remove',
 					paletteIds,
 				})
@@ -220,28 +225,28 @@ export default function PaletteLibrary({
 		}
 	}
 	const checkedPalettes = palettes.filter(palette => checked.has(palette.id))
-	if (view === 'sets')
+	if (view === 'groups')
 		return (
-			<PaletteSetLibrary
+			<PaletteGroupLibrary
 				client={client}
-				sets={sets}
+				groups={groups}
 				loading={loading}
 				refreshing={refreshing}
 				catalogError={error}
 				onChanged={() => refresh(false, false)}
-				onOrderSaved={(setId, paletteIds) =>
-					setCatalog.update(previous =>
-						previous.map(set =>
-							set.row.id === setId
+				onOrderSaved={(groupId, paletteIds) =>
+					groupCatalog.update(previous =>
+						previous.map(group =>
+							group.row.id === groupId
 								? {
-										...set,
+										...group,
 										members: paletteIds.flatMap(id =>
-											set.members.filter(
+											group.members.filter(
 												member => member.id === id,
 											),
 										),
 									}
-								: set,
+								: group,
 						),
 					)
 				}
@@ -263,13 +268,13 @@ export default function PaletteLibrary({
 						'#ffffff',
 					]
 				}
-				targetSet={editing.targetSet?.row}
+				targetGroup={editing.targetGroup?.row}
 				onSaved={message => {
 					setStatus(message)
 					setEditing(null)
 					refresh()
-					// Set thumbnails are rendered with current palette colors.
-					invalidate('puzzleSets')
+					// Group thumbnails are rendered with current palette colors.
+					invalidate('puzzleGroups')
 				}}
 				onCancel={() => setEditing(null)}
 			/>
@@ -294,7 +299,7 @@ export default function PaletteLibrary({
 							setStatus('')
 							setEditing({
 								palette: null,
-								targetSet: filteredSet,
+								targetGroup: filteredGroup,
 							})
 						}}
 					/>
@@ -307,7 +312,7 @@ export default function PaletteLibrary({
 				/>
 				{catalogStatus !== 'drafts' && (
 					<Select
-						id="palette-set-filter"
+						id="palette-group-filter"
 						aria-label="Show palettes"
 						value={filter}
 						disabled={loading || busy}
@@ -316,13 +321,14 @@ export default function PaletteLibrary({
 							selection.clear()
 						}}
 					>
-						<option value="all">All sets</option>
+						<option value="all">All groups</option>
 						{catalogStatus !== 'assigned' && (
-							<option value="ungrouped">No set</option>
+							<option value="ungrouped">No group</option>
 						)}
-						{sets.map(set => (
-							<option key={set.row.id} value={set.row.id}>
-								{set.row.name} ({paletteSetLabels[set.kind]})
+						{groups.map(group => (
+							<option key={group.row.id} value={group.row.id}>
+								{group.row.name} (
+								{paletteGroupPurposeLabels[group.purpose]})
 							</option>
 						))}
 					</Select>
@@ -346,13 +352,13 @@ export default function PaletteLibrary({
 			{assigning && (
 				<ConfirmDialog
 					{...assignmentModal}
-					title="Assign selected palettes to set"
+					title="Assign selected palettes to group"
 					closeLabel="Close palette assignment"
-					message={`Assign ${checked.size} selected palette${checked.size === 1 ? '' : 's'} to a set? Previous draft set memberships will be replaced.`}
+					message={`Assign ${checked.size} selected palette${checked.size === 1 ? '' : 's'} to a group? Previous draft group memberships will be replaced.`}
 					confirmLabel="Assign palettes"
-					pending={busy ? 'Assigning palettes to set…' : null}
+					pending={busy ? 'Assigning palettes to group…' : null}
 					error={actionError}
-					confirmDisabled={loading || !!error || !targetSet}
+					confirmDisabled={loading || !!error || !targetGroup}
 					onConfirm={() => {
 						void assign()
 					}}
@@ -363,29 +369,29 @@ export default function PaletteLibrary({
 							<li key={palette.id}>{palette.name}</li>
 						))}
 					</ul>
-					<FormField id="palette-assign-set" label="Palette set">
+					<FormField id="palette-assign-group" label="Palette group">
 						{field => (
 							<Select
 								{...field}
-								value={targetSet}
+								value={targetGroup}
 								disabled={busy}
 								onChange={event =>
-									setTargetSet(event.target.value)
+									setTargetGroup(event.target.value)
 								}
 							>
-								<option value="">Choose a draft set</option>
-								{sets
+								<option value="">Choose a draft group</option>
+								{groups
 									.filter(
-										set =>
-											!set.row.published_at &&
-											!set.row.release_at,
+										group =>
+											!group.row.published_at &&
+											!group.row.release_at,
 									)
-									.map(set => (
+									.map(group => (
 										<option
-											key={set.row.id}
-											value={set.row.id}
+											key={group.row.id}
+											value={group.row.id}
 										>
-											{set.row.name}
+											{group.row.name}
 										</option>
 									))}
 							</Select>
@@ -398,7 +404,7 @@ export default function PaletteLibrary({
 					{...unassignModal}
 					title="Unassign selected palettes"
 					closeLabel="Close palette unassignment"
-					message={`Remove ${checked.size} selected palette${checked.size === 1 ? '' : 's'} from their sets? Designs are unchanged.`}
+					message={`Remove ${checked.size} selected palette${checked.size === 1 ? '' : 's'} from their groups? Designs are unchanged.`}
 					confirmLabel="Unassign palettes"
 					pending={busy ? 'Unassigning palettes…' : null}
 					error={actionError}
@@ -458,18 +464,20 @@ export default function PaletteLibrary({
 				>
 					<AdminIconButton
 						icon={faLayerGroup}
-						label="Assign to set"
+						label="Assign to group"
 						disabled={busy}
 						onClick={() => {
 							setActionError('')
-							setTargetSet('')
+							setTargetGroup('')
 							setAssigning(true)
 						}}
 					/>
-					{checkedPalettes.every(palette => !!setOf(palette.id)) && (
+					{checkedPalettes.every(
+						palette => !!groupOf(palette.id),
+					) && (
 						<AdminIconButton
 							icon={faLinkSlash}
-							label="Unassign from sets"
+							label="Unassign from groups"
 							disabled={busy}
 							onClick={() => {
 								setActionError('')
@@ -496,7 +504,7 @@ export default function PaletteLibrary({
 					<AdminGallery layout="palettes">
 						{visiblePalettes.map(palette => {
 							const state = releaseState(palette)
-							const set = setOf(palette.id)
+							const group = groupOf(palette.id)
 							return (
 								<AdminItemCard
 									key={palette.id}
@@ -505,8 +513,8 @@ export default function PaletteLibrary({
 									selected={checked.has(palette.id)}
 									selectDisabled={
 										busy ||
-										!!set?.row.published_at ||
-										!!set?.row.release_at
+										!!group?.row.published_at ||
+										!!group?.row.release_at
 									}
 									onSelect={value =>
 										selection.toggle(palette.id, value)
@@ -529,7 +537,8 @@ export default function PaletteLibrary({
 														palette: null,
 														startingColors:
 															palette.colors,
-														targetSet: filteredSet,
+														targetGroup:
+															filteredGroup,
 													})
 												}}
 											/>
@@ -564,10 +573,14 @@ export default function PaletteLibrary({
 								>
 									<strong>{palette.name}</strong>
 									{state !== 'Draft' && <span>{state}</span>}
-									{set && (
+									{group && (
 										<span>
-											{set.row.name} ·{' '}
-											{paletteSetLabels[set.kind]}
+											{group.row.name} ·{' '}
+											{
+												paletteGroupPurposeLabels[
+													group.purpose
+												]
+											}
 										</span>
 									)}
 								</AdminItemCard>

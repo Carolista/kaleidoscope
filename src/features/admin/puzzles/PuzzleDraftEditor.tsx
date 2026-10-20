@@ -15,7 +15,7 @@ import {
 	generateDraftPreview,
 	previewedSeedKey,
 	puzzleDraftArgs,
-	type PuzzleUsage,
+	recipesForTrack,
 } from '@/features/admin/services'
 import PuzzlePlaytest from './PuzzlePlaytest'
 import { AdminFeedback, errorMessage } from '@/features/admin/common'
@@ -49,9 +49,6 @@ export default function PuzzleDraftEditor({
 }) {
 	const [name, setName] = useState(draft.row.name)
 	const [paletteId, setPaletteId] = useState(draft.row.palette_id)
-	const [usage, setUsage] = useState<PuzzleUsage>(
-		draft.row.usage === 'daily' ? 'daily' : 'collection',
-	)
 	const [pending, setPending] = useState<string | null>(null)
 	const busy = pending !== null
 	const working = useRef(false)
@@ -75,7 +72,6 @@ export default function PuzzleDraftEditor({
 	const dirty =
 		name !== draft.row.name ||
 		paletteId !== draft.row.palette_id ||
-		usage !== draft.row.usage ||
 		replacement !== null
 	useUnsavedDraft({ dirty, pending: busy })
 
@@ -124,24 +120,12 @@ export default function PuzzleDraftEditor({
 					client,
 					draft.row.id,
 					name,
-					usage,
 					updatedPuzzle,
 				)
 			} else {
-				await editPuzzleDraft(
-					client,
-					draft.row.id,
-					name,
-					paletteId,
-					usage,
-				)
+				await editPuzzleDraft(client, draft.row.id, name, paletteId)
 			}
-			const args = puzzleDraftArgs(
-				draft.row.id,
-				name,
-				usage,
-				updatedPuzzle,
-			)
+			const args = puzzleDraftArgs(draft.row.id, name, updatedPuzzle)
 			setName(name.trim())
 			onChanged('Draft changes saved.', {
 				...draft,
@@ -149,7 +133,6 @@ export default function PuzzleDraftEditor({
 					...draft.row,
 					name: name.trim(),
 					palette_id: paletteId,
-					usage,
 					board_size: args.p_board_size,
 					rotation_allowed: args.p_rotation_allowed,
 					difficulty: args.p_difficulty,
@@ -199,6 +182,8 @@ export default function PuzzleDraftEditor({
 				busy={busy}
 				generation={{
 					shape: draft.puzzle.shape,
+					// An assigned puzzle keeps its group's track.
+					recipes: recipesForTrack(draft.groupTrack),
 					recipeId,
 					onRecipeChange: setRecipeId,
 					onGenerate: () => {
@@ -207,10 +192,7 @@ export default function PuzzleDraftEditor({
 				}}
 				metadata={{
 					name,
-					usage,
 					onNameChange: setName,
-					onUsageChange: setUsage,
-					assigned: draft.assigned,
 					submitDisabled: !palette || palettesLoading,
 				}}
 				onSubmit={save}

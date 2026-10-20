@@ -26,20 +26,13 @@ let authCallback: (event: AuthChangeEvent, session: Session | null) => void
 vi.mock('@/features/admin/services/puzzleLibrary', () => ({
 	loadPuzzleDrafts: async () => [],
 }))
-vi.mock('@/features/admin/services/puzzleSets', () => ({
-	loadDraftSets: async () => [],
-	manageDraftSet: vi.fn(),
-	deleteDraftSet: vi.fn(),
+vi.mock('@/features/admin/services/puzzleGroups', () => ({
+	loadPuzzleGroups: async () => [],
+	managePuzzleGroup: vi.fn(),
 }))
-vi.mock('@/features/admin/services/paletteSets', () => ({
-	loadPaletteSets: async () => [],
-	managePaletteSet: vi.fn(),
-	paletteSetLabels: {
-		undecided: 'Undecided',
-		core: 'Core',
-		reward: 'Reward',
-		paid: 'Pack',
-	},
+vi.mock('@/features/admin/services/paletteGroups', () => ({
+	loadPaletteGroups: async () => [],
+	managePaletteGroup: vi.fn(),
 }))
 vi.mock('@/lib/supabase/supabaseClient', () => ({
 	getSupabaseClient: () => mocks.getClient(),
@@ -419,7 +412,7 @@ describe('AdminPortal', () => {
 		render(<AdminPortal />)
 		expect(
 			await screen.findByRole('heading', {
-				name: 'Draft sets',
+				name: 'Puzzle groups',
 			}),
 		).toBeInTheDocument()
 		expect(mocks.from).toHaveBeenCalledWith('admin_account')
@@ -458,7 +451,7 @@ describe('AdminPortal', () => {
 			screen.queryByRole('button', { name: 'Refresh palettes' }),
 		).not.toBeInTheDocument()
 		const lab = await screen.findByRole('heading', {
-			name: 'Draft sets',
+			name: 'Puzzle groups',
 		})
 		expect(
 			signOut.compareDocumentPosition(lab) &
@@ -477,7 +470,7 @@ describe('AdminPortal', () => {
 			'does not have admin access',
 		)
 		expect(
-			screen.queryByRole('heading', { name: 'Draft sets' }),
+			screen.queryByRole('heading', { name: 'Puzzle groups' }),
 		).not.toBeInTheDocument()
 		expect(mocks.from).not.toHaveBeenCalledWith('palettes')
 	})
@@ -496,13 +489,13 @@ describe('AdminPortal', () => {
 			'Network unavailable',
 		)
 		expect(
-			screen.queryByRole('heading', { name: 'Draft sets' }),
+			screen.queryByRole('heading', { name: 'Puzzle groups' }),
 		).not.toBeInTheDocument()
 		fireEvent.click(
 			screen.getByRole('button', { name: 'Retry access check' }),
 		)
 		expect(
-			await screen.findByRole('heading', { name: 'Draft sets' }),
+			await screen.findByRole('heading', { name: 'Puzzle groups' }),
 		).toBeInTheDocument()
 	})
 
@@ -512,11 +505,11 @@ describe('AdminPortal', () => {
 			error: null,
 		})
 		render(<AdminPortal />)
-		await screen.findByRole('heading', { name: 'Draft sets' })
+		await screen.findByRole('heading', { name: 'Puzzle groups' })
 		mocks.maybeSingle.mockImplementation(() => new Promise(() => {}))
 		act(() => authCallback('SIGNED_IN', session('player')))
 		expect(
-			screen.queryByRole('heading', { name: 'Draft sets' }),
+			screen.queryByRole('heading', { name: 'Puzzle groups' }),
 		).not.toBeInTheDocument()
 		expect(screen.getByRole('status')).toHaveTextContent(
 			'Checking admin access',
@@ -548,7 +541,7 @@ describe('AdminPortal', () => {
 			resolveRole({ data: { user_id: 'admin' }, error: null })
 		})
 		expect(
-			screen.queryByRole('heading', { name: 'Draft sets' }),
+			screen.queryByRole('heading', { name: 'Puzzle groups' }),
 		).not.toBeInTheDocument()
 		expect(screen.getByLabelText('Password')).toBeInTheDocument()
 	})
@@ -559,7 +552,7 @@ describe('AdminPortal', () => {
 			error: null,
 		})
 		const { unmount } = render(<AdminPortal />)
-		await screen.findByRole('heading', { name: 'Draft sets' })
+		await screen.findByRole('heading', { name: 'Puzzle groups' })
 		fireEvent.click(
 			screen.getByRole('button', { name: 'Sign out on this device' }),
 		)

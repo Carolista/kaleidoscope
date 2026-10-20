@@ -11,12 +11,12 @@ import {
 import type { Database } from '@/lib/supabase'
 import {
 	generateDraftPreview,
-	manageDraftSet,
-	type DraftSet,
+	managePuzzleGroup,
+	type PuzzleGroup,
 	puzzleDraftArgs,
 	savePuzzleDraft,
 	type DraftArgs,
-	type PuzzleUsage,
+	recipesForTrack,
 } from '@/features/admin/services'
 import PuzzlePlaytest from './PuzzlePlaytest'
 import PuzzleDraftLibrary, { type LibraryView } from './PuzzleDraftLibrary'
@@ -25,7 +25,7 @@ import PuzzleDraftForm from './PuzzleDraftForm'
 import { useCatalog, useCatalogInvalidation } from '@/features/admin/catalog'
 import { Button, Loading } from '@/ui/components'
 import { errorMessage } from '@/features/admin/common'
-import { compareSetOrder, memberSetOrderKey } from '@/features/admin/sets'
+import { compareGroupOrder, memberGroupOrderKey } from '@/features/admin/groups'
 
 const fallbackError = 'Unable to prepare the puzzle playtest.'
 
@@ -37,34 +37,33 @@ export default function PuzzleAuthoring({
 	readonly catalogStatus?: 'drafts' | 'assigned'
 }) {
 	const paletteCatalog = useCatalog('palettes', client)
-	const paletteSetCatalog = useCatalog('paletteSets', client)
+	const paletteGroupCatalog = useCatalog('paletteGroups', client)
 	const invalidate = useCatalogInvalidation()
-	// Order like the palette library: by set and position, then unassigned by name.
-	// Without set data (still loading or failed), palettes stay alphabetical.
+	// Order like the palette library: by group and position, then unassigned by name.
+	// Without group data (still loading or failed), palettes stay alphabetical.
 	const palettes: readonly AuthoringPalette[] = useMemo(() => {
-		const sets = paletteSetCatalog.data ?? []
+		const groups = paletteGroupCatalog.data ?? []
 		return [...(paletteCatalog.data ?? [])].sort((a, b) =>
-			compareSetOrder(
-				memberSetOrderKey(a, sets),
-				memberSetOrderKey(b, sets),
+			compareGroupOrder(
+				memberGroupOrderKey(a, groups),
+				memberGroupOrderKey(b, groups),
 			),
 		)
-	}, [paletteCatalog.data, paletteSetCatalog.data])
-	const loading = paletteCatalog.loading || paletteSetCatalog.loading
+	}, [paletteCatalog.data, paletteGroupCatalog.data])
+	const loading = paletteCatalog.loading || paletteGroupCatalog.loading
 	const paletteError = paletteCatalog.error
 		? errorMessage(paletteCatalog.error, fallbackError)
 		: ''
 	const [error, setError] = useState('')
 	const [creating, setCreating] = useState(false)
-	// A new puzzle made from a filtered set joins that set and takes its shape.
-	const [targetSet, setTargetSet] = useState<DraftSet | null>(null)
+	// A new puzzle made from a filtered group joins that group, taking its shape and track.
+	const [targetGroup, setTargetGroup] = useState<PuzzleGroup | null>(null)
 	// Filters in force when creation began, restored on return to the list.
 	const [libraryView, setLibraryView] = useState<LibraryView>()
 	const [pending, setPending] = useState<string | null>(null)
 	const busy = pending !== null
 	const working = useRef(false)
 	const [draftName, setDraftName] = useState('')
-	const [usage, setUsage] = useState<PuzzleUsage>('collection')
 	const [shape, setShape] = useState<PuzzleShapeId>('hexagon')
 	const [recipeId, setRecipeId] = useState<string>(PUZZLE_RECIPES[0].id)
 	const [saved, setSaved] = useState(false)
@@ -81,15 +80,13 @@ export default function PuzzleAuthoring({
 	} | null>(null)
 	const dirty =
 		creating &&
-		(saved
-			? draftName !== savedName
-			: !!generated || draftName.length > 0 || usage !== 'collection')
+		(saved ? draftName !== savedName : !!generated || draftName.length > 0)
 	useUnsavedDraft({ dirty, pending: busy })
 
 	function refreshPalettes() {
 		setError('')
 		void paletteCatalog.refresh().catch(() => {})
-		void paletteSetCatalog.refresh().catch(() => {})
+		void paletteGroupCatalog.refresh().catch(() => {})
 	}
 
 	async function generate() {
@@ -144,7 +141,6 @@ export default function PuzzleAuthoring({
 			const args = puzzleDraftArgs(
 				previous?.p_id ?? crypto.randomUUID(),
 				draftName,
-				usage,
 				generated.puzzle,
 			)
 			// Retain the request ID after a failed response so retrying is idempotent.
@@ -153,16 +149,16 @@ export default function PuzzleAuthoring({
 			}
 			pendingSave.current = args
 			await savePuzzleDraft(client, args)
-			if (targetSet)
-				await manageDraftSet(client, targetSet.row.id, {
+			if (targetGroup)
+				await managePuzzleGroup(client, targetGroup.row.id, {
 					kind: 'append',
 					puzzleIds: [args.p_id],
 				})
 			setSaved(true)
 			setSavedName(draftName)
-			invalidate('puzzleDrafts', 'puzzleSets')
+			invalidate('puzzleDrafts', 'puzzleGroups')
 			setSaveMessage(
-				`Saved "${args.p_name}" as an unpublished ${targetSet ? `draft in "${targetSet.row.name}"` : `${usage === 'daily' ? 'daily' : 'set/pack'} draft`}. Name, palette, and recipe choices now apply to the next randomization; this saved preview stays unchanged.`,
+				`Saved "${args.p_name}" as an unpublished ${targetGroup ? `draft in "${targetGroup.row.name}"` : 'draft'}. Name, palette, and recipe choices now apply to the next randomization; this saved preview stays unchanged.`,
 			)
 		} catch (cause) {
 			setError(errorMessage(cause, fallbackError))
@@ -194,17 +190,17 @@ export default function PuzzleAuthoring({
 					palettes={palettes}
 					catalogStatus={catalogStatus}
 					initialView={libraryView}
-					onNew={(set, view) => {
+					onNew={(group, view) => {
 						setLibraryView(view)
 						setGenerated(null)
-						setTargetSet(set ?? null)
+						setTargetGroup(group ?? null)
 						setShape(
-							set && isPuzzleShapeId(set.row.shape_id)
-								? set.row.shape_id
+							group?.row.shape_id &&
+								isPuzzleShapeId(group.row.shape_id)
+								? group.row.shape_id
 								: 'hexagon',
 						)
-						setUsage('collection')
-						setRecipeId(PUZZLE_RECIPES[0].id)
+						setRecipeId(recipesForTrack(group?.track ?? null)[0].id)
 						setSaved(false)
 						setDraftName('')
 						setSaveMessage('')
@@ -216,7 +212,7 @@ export default function PuzzleAuthoring({
 					palettesLoading={loading}
 					palettesRefreshing={
 						paletteCatalog.refreshing ||
-						paletteSetCatalog.refreshing
+						paletteGroupCatalog.refreshing
 					}
 					palettesError={!!paletteError}
 				/>
@@ -227,8 +223,10 @@ export default function PuzzleAuthoring({
 		<>
 			<section aria-labelledby="puzzle-authoring-title">
 				<h2 id="puzzle-authoring-title">New puzzle</h2>
-				{targetSet && (
-					<p>This puzzle will be added to "{targetSet.row.name}".</p>
+				{targetGroup && (
+					<p>
+						This puzzle will be added to "{targetGroup.row.name}".
+					</p>
 				)}
 				{error && <p role="alert">{error}</p>}
 				{paletteError && <p role="alert">{paletteError}</p>}
@@ -254,13 +252,17 @@ export default function PuzzleAuthoring({
 					palettesLoading={loading}
 					palettesRefreshing={
 						paletteCatalog.refreshing ||
-						paletteSetCatalog.refreshing
+						paletteGroupCatalog.refreshing
 					}
 					palettesError={!!paletteError}
 					busy={busy}
 					generation={{
 						shape,
-						onShapeChange: targetSet ? undefined : setShape,
+						// A group with a shape fixes it; daily groups leave it open.
+						onShapeChange: targetGroup?.row.shape_id
+							? undefined
+							: setShape,
+						recipes: recipesForTrack(targetGroup?.track ?? null),
 						recipeId,
 						onRecipeChange: setRecipeId,
 						onGenerate: () => {
@@ -269,11 +271,8 @@ export default function PuzzleAuthoring({
 					}}
 					metadata={{
 						name: draftName,
-						usage,
 						onNameChange: setDraftName,
-						onUsageChange: setUsage,
 						locked: saved,
-						assigned: !!targetSet,
 						submitDisabled: loading || !generated || !palette,
 					}}
 					onSubmit={save}

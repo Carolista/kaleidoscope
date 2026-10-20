@@ -3,18 +3,18 @@ import { createContext, useContext, useEffect } from 'react'
 import {
 	loadPalettes,
 	loadPuzzleDrafts,
-	loadDraftSets,
-	loadPaletteSets,
+	loadPuzzleGroups,
+	loadPaletteGroups,
 } from '@/features/admin/services'
 import type { Database } from '@/lib/supabase'
 
 export type Client = SupabaseClient<Database>
 
 export const catalogLoaders = {
-	puzzleSets: (client: Client) => loadDraftSets(client, true),
+	puzzleGroups: (client: Client) => loadPuzzleGroups(client, true),
 	puzzleDrafts: loadPuzzleDrafts,
 	palettes: loadPalettes,
-	paletteSets: loadPaletteSets,
+	paletteGroups: loadPaletteGroups,
 }
 
 export type CatalogKey = keyof typeof catalogLoaders

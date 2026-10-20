@@ -11,15 +11,19 @@ import {
 } from '@fortawesome/pro-solid-svg-icons'
 import type { Database } from '@/lib/supabase'
 import {
+	PUZZLE_SHAPE_IDS,
 	PUZZLE_SHAPE_LABELS,
 	renderAuthoredPuzzle,
 	type AuthoringPalette,
 } from '@/domain/puzzles'
 import {
 	bulkPuzzleDrafts,
+	groupAcceptsPuzzle,
+	managePuzzleGroup,
+	PUZZLE_GROUP_PURPOSES,
+	puzzleGroupPurposeLabels,
 	type LibraryDraft,
-	manageDraftSet,
-	type DraftSet,
+	type PuzzleGroup,
 } from '@/features/admin/services'
 import { PuzzleBoard } from '@/ui/puzzle'
 import PaletteFieldset from './PaletteFieldset'
@@ -45,12 +49,12 @@ import { useCatalog, useCatalogInvalidation } from '@/features/admin/catalog'
 import PuzzleDraftEditor from './PuzzleDraftEditor'
 import { useUnsavedDraft } from '@/ui/navigation'
 import { useModalState } from '@/ui/hooks'
-import { compareSetOrder } from '@/features/admin/sets'
+import { compareGroupOrder } from '@/features/admin/groups'
 
-function setOrderKey(draft: LibraryDraft) {
+function groupOrderKey(draft: LibraryDraft) {
 	return {
-		setName: draft.collectionName,
-		position: draft.collectionPosition,
+		groupName: draft.groupName,
+		position: draft.groupPosition,
 		name: draft.row.name,
 	}
 }
@@ -61,8 +65,10 @@ function deletable(draft: LibraryDraft) {
 }
 
 export interface LibraryView {
-	readonly filter: string
-	readonly setChoice: string
+	readonly purpose: string
+	readonly shape: string
+	readonly track: string
+	readonly group: string
 }
 
 const fallbackError = 'Unable to manage puzzle drafts.'
@@ -80,7 +86,7 @@ export default function PuzzleDraftLibrary({
 }: {
 	readonly client: SupabaseClient<Database>
 	readonly palettes: readonly AuthoringPalette[]
-	readonly onNew?: (set?: DraftSet, view?: LibraryView) => void
+	readonly onNew?: (group?: PuzzleGroup, view?: LibraryView) => void
 	// Restores the filters after returning from the creation form.
 	readonly initialView?: LibraryView
 	readonly catalogStatus?: 'drafts' | 'assigned'
@@ -96,33 +102,37 @@ export default function PuzzleDraftLibrary({
 	const loadFailed = !!draftCatalog.error && !loading
 	const [selectedId, setSelectedId] = useState<string | null>(null)
 	const [error, setError] = useState('')
-	const [filter, setFilter] = useState(initialView?.filter ?? 'all')
+	const [purposeFilter, setPurposeFilter] = useState(
+		initialView?.purpose ?? 'all',
+	)
+	const [shapeFilter, setShapeFilter] = useState(initialView?.shape ?? 'all')
+	const [trackFilter, setTrackFilter] = useState(initialView?.track ?? 'all')
 	const [status, setStatus] = useState('')
-	const [setChoice, setSetChoice] = useState(initialView?.setChoice ?? 'all')
+	const [groupChoice, setGroupChoice] = useState(initialView?.group ?? 'all')
 	const [action, setAction, actionModal] = useModalState<{
-		kind: 'delete' | 'palette' | 'set' | 'unassign'
+		kind: 'delete' | 'palette' | 'group' | 'unassign'
 		ids: readonly string[]
 	}>()
 	const [bulkPaletteId, setBulkPaletteId] = useState('')
-	const [bulkSetId, setBulkSetId] = useState('')
+	const [bulkGroupId, setBulkGroupId] = useState('')
 	const [bulkBusy, setBulkBusy] = useState(false)
 	const [actionError, setActionError] = useState('')
 	const bulkWorking = useRef(false)
 	useUnsavedDraft({ dirty: false, pending: bulkBusy })
-	const setFilterActive =
+	const groupFilterActive =
 		catalogStatus === 'assigned' &&
-		setChoice !== 'all' &&
-		setChoice !== 'none'
-	const setCatalog = useCatalog(
-		'puzzleSets',
+		groupChoice !== 'all' &&
+		groupChoice !== 'none'
+	const groupCatalog = useCatalog(
+		'puzzleGroups',
 		client,
-		action?.kind === 'set' || setFilterActive,
+		action?.kind === 'group' || groupFilterActive,
 	)
-	const draftSets: readonly DraftSet[] = setCatalog.data ?? []
-	const setsLoading = setCatalog.loading
-	const setsError =
-		action?.kind === 'set' && setCatalog.error
-			? errorMessage(setCatalog.error, fallbackError)
+	const draftGroups: readonly PuzzleGroup[] = groupCatalog.data ?? []
+	const groupsLoading = groupCatalog.loading
+	const groupsError =
+		action?.kind === 'group' && groupCatalog.error
+			? errorMessage(groupCatalog.error, fallbackError)
 			: ''
 	const selected = drafts.find(value => value.row.id === selectedId)
 	const inStatus = drafts.filter(
@@ -132,69 +142,70 @@ export default function PuzzleDraftLibrary({
 				!value.row.release_at &&
 				value.assigned === (catalogStatus === 'assigned')),
 	)
-	// Unassigned drafts never belong to a set, so only offer the set filter elsewhere.
-	const showSetFilter = catalogStatus !== 'drafts'
-	const setOptions = [
+	// Unassigned drafts never belong to a group, so only offer those filters elsewhere.
+	const showGroupFilters = catalogStatus !== 'drafts'
+	const inPurpose = inStatus.filter(
+		value =>
+			purposeFilter === 'all' || value.groupPurpose === purposeFilter,
+	)
+	const groupOptions = [
 		...new Map(
-			inStatus.flatMap(value =>
-				value.collectionId
-					? [[value.collectionId, value.collectionName ?? '']]
-					: [],
+			inPurpose.flatMap(value =>
+				value.groupId ? [[value.groupId, value.groupName ?? '']] : [],
 			),
 		),
 	].sort((a, b) => a[1].localeCompare(b[1]))
-	const shownSet =
-		setChoice === 'all' ||
-		setChoice === 'none' ||
-		setOptions.some(([id]) => id === setChoice)
-			? setChoice
+	const shownGroup =
+		groupChoice === 'all' ||
+		groupChoice === 'none' ||
+		groupOptions.some(([id]) => id === groupChoice)
+			? groupChoice
 			: 'all'
-	// New puzzles join the filtered set when it is still an editable draft.
-	const filteredSet = setFilterActive
-		? draftSets.find(set => set.row.id === shownSet && !set.row.release_at)
+	// New puzzles join the filtered group when it is still an editable draft.
+	const filteredGroup = groupFilterActive
+		? draftGroups.find(
+				group => group.row.id === shownGroup && !group.row.release_at,
+			)
 		: undefined
-	const canCreate = catalogStatus !== 'assigned' || !!filteredSet
-	const filtered = inStatus.filter(
+	const canCreate = catalogStatus !== 'assigned' || !!filteredGroup
+	const filtered = inPurpose.filter(
 		value =>
-			(filter === 'all' || value.row.usage === filter) &&
-			(shownSet === 'all' ||
-				(shownSet === 'none'
-					? !value.collectionId
-					: value.collectionId === shownSet)),
+			(shapeFilter === 'all' || value.row.shape_id === shapeFilter) &&
+			(trackFilter === 'all' ||
+				value.row.rotation_allowed === (trackFilter === 'rotation')) &&
+			(shownGroup === 'all' ||
+				(shownGroup === 'none'
+					? !value.groupId
+					: value.groupId === shownGroup)),
 	)
 	const visible =
 		catalogStatus === 'assigned'
 			? [...filtered].sort((a, b) =>
-					compareSetOrder(setOrderKey(a), setOrderKey(b)),
+					compareGroupOrder(groupOrderKey(a), groupOrderKey(b)),
 				)
 			: filtered
 	const selection = useCheckedIds(visible.map(draft => draft.row.id))
 	const checked = visible.filter(draft => selection.checked.has(draft.row.id))
-	// Each set uses one shape, so a batch must share the shape of its set.
-	const canAssign =
-		checked.every(
-			draft => !draft.assigned && draft.row.usage === 'collection',
-		) && new Set(checked.map(draft => draft.puzzle.shape)).size <= 1
-	const assignShape =
-		action?.kind === 'set'
-			? drafts.find(draft => action.ids.includes(draft.row.id))?.puzzle
-					.shape
-			: undefined
-	const assignableSets = draftSets.filter(
-		set => set.row.shape_id === assignShape,
+	// Groups accept only puzzles matching their shape and track, so the choices depend on the batch.
+	const canAssign = checked.every(draft => !draft.assigned)
+	const assigning =
+		action?.kind === 'group'
+			? drafts.filter(draft => action.ids.includes(draft.row.id))
+			: []
+	const assignableGroups = draftGroups.filter(group =>
+		assigning.every(draft => groupAcceptsPuzzle(group.row, draft.row)),
 	)
 	const canDelete = checked.every(deletable)
-	// Daily assignments have no set to leave.
-	const canUnassign = checked.every(draft => !!draft.collectionId)
+	const canUnassign = checked.every(draft => !!draft.groupId)
 	function startAction(
-		kind: 'delete' | 'palette' | 'set' | 'unassign',
+		kind: 'delete' | 'palette' | 'group' | 'unassign',
 		ids: readonly string[],
 	) {
 		setError('')
 		setActionError('')
 		setStatus('')
 		setBulkPaletteId('')
-		setBulkSetId('')
+		setBulkGroupId('')
 		setAction({ kind, ids })
 	}
 	async function applyAction() {
@@ -209,38 +220,38 @@ export default function PuzzleDraftLibrary({
 			return
 		}
 		if (
-			action.kind === 'set' &&
-			!assignableSets.some(set => set.row.id === bulkSetId)
+			action.kind === 'group' &&
+			!assignableGroups.some(group => group.row.id === bulkGroupId)
 		) {
-			setActionError('Choose a draft set before assigning puzzles.')
+			setActionError('Choose a draft group before assigning puzzles.')
 			return
 		}
 		bulkWorking.current = true
 		setBulkBusy(true)
 		setActionError('')
 		try {
-			if (action.kind === 'set') {
-				await manageDraftSet(client, bulkSetId, {
+			if (action.kind === 'group') {
+				await managePuzzleGroup(client, bulkGroupId, {
 					kind: 'append',
 					puzzleIds: action.ids,
 				})
 			} else if (action.kind === 'unassign') {
-				// One request per set; a failure part-way leaves earlier sets unassigned.
-				const bySet = new Map<string, string[]>()
+				// One request per group; a failure part-way leaves earlier groups unassigned.
+				const byGroup = new Map<string, string[]>()
 				for (const draft of drafts)
-					if (draft.collectionId && action.ids.includes(draft.row.id))
-						bySet.set(draft.collectionId, [
-							...(bySet.get(draft.collectionId) ?? []),
+					if (draft.groupId && action.ids.includes(draft.row.id))
+						byGroup.set(draft.groupId, [
+							...(byGroup.get(draft.groupId) ?? []),
 							draft.row.id,
 						])
 				try {
-					for (const [setId, puzzleIds] of bySet)
-						await manageDraftSet(client, setId, {
+					for (const [groupId, puzzleIds] of byGroup)
+						await managePuzzleGroup(client, groupId, {
 							kind: 'remove',
 							puzzleIds,
 						})
 				} catch (cause) {
-					invalidate('puzzleDrafts', 'puzzleSets')
+					invalidate('puzzleDrafts', 'puzzleGroups')
 					throw cause
 				}
 			} else
@@ -253,16 +264,16 @@ export default function PuzzleDraftLibrary({
 				)
 			setAction(null, () => {
 				setStatus(
-					action.kind === 'set'
-						? `Assigned ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'} to set.`
+					action.kind === 'group'
+						? `Assigned ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'} to group.`
 						: action.kind === 'unassign'
-							? `Unassigned ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'} from their sets.`
+							? `Unassigned ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'} from their groups.`
 							: action.kind === 'delete'
 								? `Deleted ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'}.`
 								: `Updated the palette for ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'}.`,
 				)
 				selection.clear()
-				invalidate('puzzleDrafts', 'puzzleSets')
+				invalidate('puzzleDrafts', 'puzzleGroups')
 			})
 		} catch (cause) {
 			setActionError(errorMessage(cause, fallbackError))
@@ -300,8 +311,8 @@ export default function PuzzleDraftLibrary({
 									),
 						)
 						setSelectedId(null)
-						// Names, palettes, and designs also appear in set previews.
-						invalidate('puzzleDrafts', 'puzzleSets')
+						// Names, palettes, and designs also appear in group previews.
+						invalidate('puzzleDrafts', 'puzzleGroups')
 					}}
 				/>
 			</>
@@ -323,7 +334,12 @@ export default function PuzzleDraftLibrary({
 						label="New puzzle"
 						disabled={bulkBusy}
 						onClick={() =>
-							onNew(filteredSet, { filter, setChoice })
+							onNew(filteredGroup, {
+								purpose: purposeFilter,
+								shape: shapeFilter,
+								track: trackFilter,
+								group: groupChoice,
+							})
 						}
 					/>
 				)}
@@ -339,43 +355,82 @@ export default function PuzzleDraftLibrary({
 					}}
 				/>
 				<Select
-					id="draft-filter"
-					aria-label="Show drafts"
-					value={filter}
+					id="draft-shape-filter"
+					aria-label="Show shape"
+					value={shapeFilter}
 					disabled={bulkBusy}
 					onChange={event => {
-						setFilter(event.target.value)
+						setShapeFilter(event.target.value)
 						setSelectedId(null)
 						selection.clear()
 						setAction(null)
 					}}
 				>
-					<option value="all">All uses</option>
-					<option value="collection">Set/pack</option>
-					<option value="daily">Daily</option>
+					<option value="all">All shapes</option>
+					{PUZZLE_SHAPE_IDS.map(shape => (
+						<option key={shape} value={shape}>
+							{PUZZLE_SHAPE_LABELS[shape]}
+						</option>
+					))}
 				</Select>
-				{showSetFilter && (
-					<Select
-						id="draft-set-filter"
-						aria-label="Show set"
-						value={shownSet}
-						disabled={bulkBusy}
-						onChange={event => {
-							setSetChoice(event.target.value)
-							selection.clear()
-							setAction(null)
-						}}
-					>
-						<option value="all">All sets</option>
-						{catalogStatus !== 'assigned' && (
-							<option value="none">No set</option>
-						)}
-						{setOptions.map(([id, name]) => (
-							<option key={id} value={id}>
-								{name}
-							</option>
-						))}
-					</Select>
+				<Select
+					id="draft-track-filter"
+					aria-label="Show track"
+					value={trackFilter}
+					disabled={bulkBusy}
+					onChange={event => {
+						setTrackFilter(event.target.value)
+						setSelectedId(null)
+						selection.clear()
+						setAction(null)
+					}}
+				>
+					<option value="all">All tracks</option>
+					<option value="basic">Basic</option>
+					<option value="rotation">Rotation</option>
+				</Select>
+				{showGroupFilters && (
+					<>
+						<Select
+							id="draft-purpose-filter"
+							aria-label="Show purpose"
+							value={purposeFilter}
+							disabled={bulkBusy}
+							onChange={event => {
+								setPurposeFilter(event.target.value)
+								selection.clear()
+								setAction(null)
+							}}
+						>
+							<option value="all">All purposes</option>
+							{PUZZLE_GROUP_PURPOSES.map(purpose => (
+								<option key={purpose} value={purpose}>
+									{puzzleGroupPurposeLabels[purpose]}
+								</option>
+							))}
+						</Select>
+						<Select
+							id="draft-group-filter"
+							aria-label="Show group"
+							value={shownGroup}
+							disabled={bulkBusy}
+							onChange={event => {
+								setGroupChoice(event.target.value)
+								selection.clear()
+								setAction(null)
+							}}
+						>
+							<option value="all">All groups</option>
+							{catalogStatus !== 'assigned' && (
+								<option value="none">No group</option>
+							)}
+							{groupOptions.map(([id, name]) => (
+								<option key={id} value={id}>
+									{name}
+								</option>
+							))}
+						</Select>
+					</>
 				)}
 			</AdminSectionHeading>
 			<AdminFeedback
@@ -422,23 +477,23 @@ export default function PuzzleDraftLibrary({
 					>
 						<AdminIconButton
 							icon={faLayerGroup}
-							label="Assign to set"
+							label="Assign to group"
 							title={
 								canAssign
 									? undefined
-									: 'Only unassigned Set/pack drafts of one shape can be assigned to a set.'
+									: 'Only unassigned drafts can be assigned to a group.'
 							}
 							disabled={bulkBusy || !canAssign}
-							onClick={() => startAction('set', selection.ids)}
+							onClick={() => startAction('group', selection.ids)}
 						/>
 						{catalogStatus !== 'drafts' && (
 							<AdminIconButton
 								icon={faLinkSlash}
-								label="Unassign from sets"
+								label="Unassign from groups"
 								title={
 									canUnassign
 										? undefined
-										: 'Only drafts in a set can be unassigned.'
+										: 'Only drafts in a group can be unassigned.'
 								}
 								disabled={bulkBusy || !canUnassign}
 								onClick={() =>
@@ -470,8 +525,8 @@ export default function PuzzleDraftLibrary({
 						<ConfirmDialog
 							{...actionModal}
 							title={
-								action.kind === 'set'
-									? 'Assign selected puzzles to set'
+								action.kind === 'group'
+									? 'Assign selected puzzles to group'
 									: action.kind === 'unassign'
 										? 'Unassign selected puzzles'
 										: action.kind === 'delete'
@@ -481,7 +536,7 @@ export default function PuzzleDraftLibrary({
 							closeLabel="Close puzzle action"
 							destructive={action.kind === 'delete'}
 							confirmLabel={
-								action.kind === 'set'
+								action.kind === 'group'
 									? 'Assign puzzles'
 									: action.kind === 'unassign'
 										? 'Unassign puzzles'
@@ -493,21 +548,21 @@ export default function PuzzleDraftLibrary({
 								bulkBusy
 									? action.kind === 'delete'
 										? 'Deleting puzzle drafts…'
-										: action.kind === 'set'
-											? 'Assigning puzzles to set…'
+										: action.kind === 'group'
+											? 'Assigning puzzles to group…'
 											: action.kind === 'unassign'
 												? 'Unassigning puzzles…'
 												: 'Updating puzzle palettes…'
 									: null
 							}
-							error={actionError || setsError}
+							error={actionError || groupsError}
 							confirmDisabled={
 								(action.kind === 'palette' &&
 									(!bulkPaletteId ||
 										palettesLoading ||
 										palettesError)) ||
-								(action.kind === 'set' &&
-									(setsLoading || !bulkSetId))
+								(action.kind === 'group' &&
+									(groupsLoading || !bulkGroupId))
 							}
 							onConfirm={() => {
 								void applyAction()
@@ -515,10 +570,10 @@ export default function PuzzleDraftLibrary({
 							onCancel={() => setAction(null)}
 						>
 							<p>
-								{action.kind === 'set'
-									? `Assign ${action.ids.length} drafts to a set?`
+								{action.kind === 'group'
+									? `Assign ${action.ids.length} drafts to a group?`
 									: action.kind === 'unassign'
-										? `Remove ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'} from their sets? Designs are unchanged.`
+										? `Remove ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'} from their groups? Designs are unchanged.`
 										: action.kind === 'delete'
 											? `Permanently delete ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'}?`
 											: `Change palette for ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'}?`}
@@ -534,49 +589,53 @@ export default function PuzzleDraftLibrary({
 										</li>
 									))}
 							</ul>
-							{action.kind === 'set' &&
-								(setsLoading ? (
-									<Loading label="Loading draft sets..." />
+							{action.kind === 'group' &&
+								(groupsLoading ? (
+									<Loading label="Loading draft groups..." />
 								) : (
 									<>
-										<label htmlFor="bulk-set">
-											Draft set
+										<label htmlFor="bulk-group">
+											Draft group
 										</label>
 										<Select
-											id="bulk-set"
-											value={bulkSetId}
+											id="bulk-group"
+											value={bulkGroupId}
 											disabled={bulkBusy}
 											onChange={event =>
-												setBulkSetId(event.target.value)
+												setBulkGroupId(
+													event.target.value,
+												)
 											}
 										>
 											<option value="">
-												Choose a set
+												Choose a group
 											</option>
-											{assignableSets.map(set => (
+											{assignableGroups.map(group => (
 												<option
-													key={set.row.id}
-													value={set.row.id}
+													key={group.row.id}
+													value={group.row.id}
 												>
-													{set.row.name} (
-													{set.row.kind},{' '}
-													{set.members.length}{' '}
+													{group.row.name} (
+													{
+														puzzleGroupPurposeLabels[
+															group.purpose
+														]
+													}
+													, {group.members.length}{' '}
 													puzzles)
 												</option>
 											))}
 										</Select>
-										{!assignableSets.length &&
+										{!assignableGroups.length &&
 											!actionError &&
-											!setsError &&
-											assignShape && (
+											!groupsError && (
 												<p>
-													Create a{' '}
-													{PUZZLE_SHAPE_LABELS[
-														assignShape
-													].toLowerCase()}{' '}
-													draft set using Manage sets,
-													then select puzzles to
-													assign.
+													No draft group accepts all
+													of these puzzles. Create a
+													group with a matching shape
+													and track, or a daily group,
+													then select the puzzles
+													again.
 												</p>
 											)}
 									</>
@@ -606,18 +665,18 @@ export default function PuzzleDraftLibrary({
 									/>
 								</PaletteFieldset>
 							)}
-							{action.kind === 'set' && setsError && (
+							{action.kind === 'group' && groupsError && (
 								<Button
-									disabled={setsLoading || bulkBusy}
+									disabled={groupsLoading || bulkBusy}
 									onClick={() => {
 										setActionError('')
-										setBulkSetId('')
-										void setCatalog
+										setBulkGroupId('')
+										void groupCatalog
 											.refresh()
 											.catch(() => {})
 									}}
 								>
-									Retry loading sets
+									Retry loading groups
 								</Button>
 							)}
 						</ConfirmDialog>
@@ -702,19 +761,10 @@ export default function PuzzleDraftLibrary({
 										· {draft.puzzle.recipe.label}
 									</span>
 									<span>
-										{draft.row.usage === 'daily'
-											? 'Daily'
-											: draft.collectionKind === 'core'
-												? 'Core'
-												: draft.collectionKind ===
-													  'reward'
-													? 'Reward'
-													: draft.collectionKind ===
-														  'paid'
-														? 'Pack'
-														: 'Set/pack'}{' '}
-										·{' '}
-										{draft.collectionName ??
+										{draft.groupPurpose
+											? `${puzzleGroupPurposeLabels[draft.groupPurpose]} · `
+											: ''}
+										{draft.groupName ??
 											(draft.assigned
 												? 'Assigned'
 												: 'Unassigned')}

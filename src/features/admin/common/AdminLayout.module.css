@@ -30,7 +30,7 @@
 	grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
 }
 
-.sets {
+.groups {
 	grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
@@ -118,14 +118,14 @@
 	list-style: none;
 }
 
-.setCard {
+.groupCard {
 	display: grid;
 	grid-template-columns: minmax(5rem, 8rem) minmax(0, 1fr);
 	grid-template-rows: 1fr auto;
 	gap: 0.375rem 0.75rem;
 }
 
-.setDetails {
+.groupDetails {
 	display: grid;
 	align-content: start;
 	gap: 0.375rem;
@@ -135,7 +135,7 @@
 	overflow-wrap: anywhere;
 }
 
-.setCardActions {
+.groupCardActions {
 	display: flex;
 	grid-column: 2;
 	grid-row: 2;
@@ -144,7 +144,7 @@
 	gap: 0.375rem;
 }
 
-.setThumbnail {
+.groupThumbnail {
 	grid-column: 1;
 	grid-row: 1 / 3;
 	width: 100%;
@@ -156,12 +156,12 @@
 	font-size: 0.8125rem;
 }
 
-.setForm {
+.groupForm {
 	display: grid;
 	gap: 0.5rem;
 }
 
-.setForm button {
+.groupForm button {
 	margin-block: 0;
 }
 
@@ -177,7 +177,7 @@
 }
 
 @media (min-width: 640px) {
-	.setForm {
+	.groupForm {
 		grid-template-columns: minmax(0, 1fr) auto auto;
 		align-items: end;
 	}
@@ -204,7 +204,7 @@
 }
 
 @media (max-width: 640px) {
-	.sets {
+	.groups {
 		grid-template-columns: minmax(0, 1fr);
 	}
 }

@@ -35,7 +35,7 @@ describe('admin presentation', () => {
 		expect(screen.getByRole('status')).toHaveTextContent('Palette loaded.')
 	})
 
-	it.each(['puzzles', 'palettes', 'sets'] as const)(
+	it.each(['puzzles', 'palettes', 'groups'] as const)(
 		'frames a %s gallery without replacing domain card markup',
 		layout => {
 			render(

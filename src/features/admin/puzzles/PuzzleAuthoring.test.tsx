@@ -38,7 +38,7 @@ const mocks = vi.hoisted(() => ({
 	from: vi.fn(),
 	rpc: vi.fn(),
 	seeds: vi.fn(),
-	paletteSets: vi.fn(),
+	paletteGroups: vi.fn(),
 	drafts: vi.fn(),
 }))
 vi.mock('@/lib/supabase/supabaseClient', () => ({
@@ -47,10 +47,10 @@ vi.mock('@/lib/supabase/supabaseClient', () => ({
 vi.mock('@/features/admin/services/puzzleLibrary', () => ({
 	loadPuzzleDrafts: async () => mocks.drafts(),
 }))
-vi.mock('@/features/admin/services/paletteSets', () => ({
-	loadPaletteSets: () => mocks.paletteSets(),
-	managePaletteSet: vi.fn(),
-	paletteSetLabels: {
+vi.mock('@/features/admin/services/paletteGroups', () => ({
+	loadPaletteGroups: () => mocks.paletteGroups(),
+	managePaletteGroup: vi.fn(),
+	paletteGroupPurposeLabels: {
 		undecided: 'Undecided',
 		core: 'Core',
 		reward: 'Reward',
@@ -67,7 +67,7 @@ const originalCapture = Object.getOwnPropertyDescriptor(
 	'setPointerCapture',
 )
 beforeEach(() => {
-	mocks.paletteSets.mockReset().mockResolvedValue([])
+	mocks.paletteGroups.mockReset().mockResolvedValue([])
 	mocks.drafts.mockReset().mockReturnValue([])
 })
 afterEach(() => {
@@ -124,13 +124,7 @@ function setup(
 	mocks.from.mockReset().mockImplementation((table: string) => {
 		if (table === 'palettes')
 			return { select: () => ({ order: () => ({ range: order }) }) }
-		if (
-			[
-				'starter_palettes',
-				'palette_grants',
-				'palette_corrections',
-			].includes(table)
-		)
+		if (['palette_grants', 'palette_corrections'].includes(table))
 			return {
 				select: () => ({
 					eq: () => Promise.resolve({ count: 0, error: null }),
@@ -428,7 +422,7 @@ describe('admin puzzle lab', () => {
 		})
 		expect(
 			metadataForm.querySelector(`.${styles.metadataForm}`)?.children,
-		).toHaveLength(2)
+		).toHaveLength(1)
 		expect(document.querySelectorAll('form')).toHaveLength(1)
 		expect(screen.getByLabelText('Puzzle name').parentElement).toHaveClass(
 			fieldStyles.field,
@@ -499,52 +493,42 @@ describe('admin puzzle lab', () => {
 		expect(screen.getByText(/Saved "Save feedback"/)).toBeInTheDocument()
 	})
 
-	it.each(['collection', 'daily'] as const)(
-		'saves the exact preview as an unpublished %s draft without saving playtest placements',
-		async usage => {
-			setup()
-			await screen.findByLabelText('Recipe')
-			await randomize()
-			fireEvent.change(screen.getByLabelText('Puzzle name'), {
-				target: { value: '  Sunset  ' },
-			})
-			fireEvent.change(screen.getByLabelText('Intended use'), {
-				target: { value: usage },
-			})
-			fireEvent.click(
-				screen.getByRole('button', { name: /^Select piece 1,/ }),
-			)
-			fireEvent.click(screen.getByRole('button', { name: /save draft/i }))
-			await screen.findByText(/Saved "Sunset"/)
-			const puzzle = generateAuthoredPuzzle(
-				seed,
-				palette.id,
-				PUZZLE_RECIPES[0],
-				'hexagon',
-			)
-			expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith(
-				'save_puzzle_draft',
-				{
-					p_id: expect.any(String),
-					p_name: 'Sunset',
-					p_usage: usage,
-					p_shape_id: 'hexagon',
-					p_palette_id: palette.id,
-					p_board_size: 'sm',
-					p_rotation_allowed: false,
-					p_difficulty: 'easy',
-					p_definition: puzzle.definition,
-					p_seed: seed,
-					p_generator_version: 'hexagon-v2',
-					p_known_solution: puzzle.knownSolution,
-				},
-			)
-			expect(
-				screen.getByRole('button', { name: /save draft/i }),
-			).toBeDisabled()
-			expect(screen.getByLabelText('Puzzle name')).toBeEnabled()
-		},
-	)
+	it('saves the exact preview as an unpublished draft without saving playtest placements', async () => {
+		setup()
+		await screen.findByLabelText('Recipe')
+		await randomize()
+		fireEvent.change(screen.getByLabelText('Puzzle name'), {
+			target: { value: '  Sunset  ' },
+		})
+		fireEvent.click(
+			screen.getByRole('button', { name: /^Select piece 1,/ }),
+		)
+		fireEvent.click(screen.getByRole('button', { name: /save draft/i }))
+		await screen.findByText(/Saved "Sunset"/)
+		const puzzle = generateAuthoredPuzzle(
+			seed,
+			palette.id,
+			PUZZLE_RECIPES[0],
+			'hexagon',
+		)
+		expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith('save_puzzle_draft', {
+			p_id: expect.any(String),
+			p_name: 'Sunset',
+			p_shape_id: 'hexagon',
+			p_palette_id: palette.id,
+			p_board_size: 'sm',
+			p_rotation_allowed: false,
+			p_difficulty: 'easy',
+			p_definition: puzzle.definition,
+			p_seed: seed,
+			p_generator_version: 'hexagon-v2',
+			p_known_solution: puzzle.knownSolution,
+		})
+		expect(
+			screen.getByRole('button', { name: /save draft/i }),
+		).toBeDisabled()
+		expect(screen.getByLabelText('Puzzle name')).toBeEnabled()
+	})
 
 	it('authors and saves a triangle puzzle from the shape picker', async () => {
 		setup()
@@ -594,20 +578,19 @@ describe('admin puzzle lab', () => {
 		expect(puzzle.definition.geometry).toEqual({ size: 4 })
 	})
 
-	it('creates a puzzle inside the filtered set with its shape and appends it after saving', async () => {
+	it('creates a puzzle inside the filtered group with its shape and appends it after saving', async () => {
 		const member = generateAuthoredPuzzle(
 			seed,
 			palette.id,
 			PUZZLE_RECIPES[0],
 			'triangle',
 		)
-		const args = puzzleDraftArgs('member', 'Member', 'collection', member)
+		const args = puzzleDraftArgs('member', 'Member', member)
 		mocks.drafts.mockReturnValue([
 			{
 				row: {
 					id: 'member',
 					name: 'Member',
-					usage: 'collection',
 					shape_id: 'triangle',
 					palette_id: palette.id,
 					board_size: args.p_board_size,
@@ -618,42 +601,42 @@ describe('admin puzzle lab', () => {
 					release_at: null,
 				},
 				assigned: true,
-				collectionId: 'set-t',
-				collectionName: 'Triangles',
-				collectionPosition: 1,
-				collectionKind: 'core',
+				groupId: 'group-t',
+				groupName: 'Triangles',
+				groupPosition: 1,
+				groupPurpose: 'core',
+				groupTrack: 'basic',
 				puzzle: member,
 			},
 		])
 		setup(undefined, false)
 		const baseFrom = mocks.from.getMockImplementation()!
-		const setRow = {
-			id: 'set-t',
+		const groupRow = {
+			id: 'group-t',
 			name: 'Triangles',
-			kind: 'core',
+			purpose: 'core',
+			track: 'basic',
 			shape_id: 'triangle',
 			selection_mode: 'any',
 			published_at: null,
 			release_at: null,
 		}
 		mocks.from.mockImplementation((table: string) => {
-			if (table === 'puzzle_collections')
+			if (table === 'puzzle_groups')
 				return {
 					select: () => ({
-						in: () => ({
-							is: () => ({
-								order: () => ({
-									range: () =>
-										Promise.resolve({
-											data: [setRow],
-											error: null,
-										}),
-								}),
+						is: () => ({
+							order: () => ({
+								range: () =>
+									Promise.resolve({
+										data: [groupRow],
+										error: null,
+									}),
 							}),
 						}),
 					}),
 				}
-			if (table === 'collection_puzzles')
+			if (table === 'puzzle_group_members')
 				return {
 					select: () => ({
 						in: () => ({
@@ -682,8 +665,8 @@ describe('admin puzzle lab', () => {
 		expect(
 			screen.queryByRole('button', { name: 'New puzzle' }),
 		).not.toBeInTheDocument()
-		fireEvent.change(screen.getByLabelText('Show set'), {
-			target: { value: 'set-t' },
+		fireEvent.change(screen.getByLabelText('Show group'), {
+			target: { value: 'group-t' },
 		})
 		fireEvent.click(
 			await screen.findByRole('button', { name: 'New puzzle' }),
@@ -693,9 +676,15 @@ describe('admin puzzle lab', () => {
 		).toBeInTheDocument()
 		expect(screen.getByLabelText('Shape')).toHaveValue('triangle')
 		expect(screen.getByLabelText('Shape')).toBeDisabled()
-		expect(screen.getByLabelText('Intended use')).toBeDisabled()
+		expect(
+			within(screen.getByLabelText('Recipe'))
+				.getAllByRole('option')
+				.map(option => option.textContent),
+		).toEqual(PUZZLE_RECIPES.filter(r => !r.rotation).map(r => r.label))
 		fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
-		expect(await screen.findByLabelText('Show set')).toHaveValue('set-t')
+		expect(await screen.findByLabelText('Show group')).toHaveValue(
+			'group-t',
+		)
 		fireEvent.click(
 			await screen.findByRole('button', { name: 'New puzzle' }),
 		)
@@ -713,12 +702,10 @@ describe('admin puzzle lab', () => {
 		const saved = mocks.rpc.mock.calls.find(
 			([name]) => name === 'save_puzzle_draft',
 		)![1]
-		expect(saved).toMatchObject({
-			p_shape_id: 'triangle',
-			p_usage: 'collection',
-		})
-		expect(mocks.rpc).toHaveBeenCalledWith('manage_draft_set', {
-			p_id: 'set-t',
+		expect(saved).toMatchObject({ p_shape_id: 'triangle' })
+		expect(saved).not.toHaveProperty('p_usage')
+		expect(mocks.rpc).toHaveBeenCalledWith('manage_puzzle_group', {
+			p_id: 'group-t',
 			p_action: 'append',
 			p_puzzle_ids: [saved.p_id],
 		})
@@ -863,7 +850,8 @@ describe('admin puzzle lab', () => {
 		const name = screen.getByLabelText('Puzzle name')
 		const save = screen.getByRole('button', { name: /save draft/i })
 		expect(name).toBeVisible()
-		expect(screen.getByLabelText('Intended use')).toBeVisible()
+		expect(screen.getByLabelText('Shape')).toBeVisible()
+		expect(screen.queryByLabelText('Intended use')).not.toBeInTheDocument()
 		expect(save).toBeDisabled()
 		fireEvent.change(name, { target: { value: 'Named before generation' } })
 		expect(save).toBeDisabled()
@@ -874,21 +862,21 @@ describe('admin puzzle lab', () => {
 		expect(save).toBeDisabled()
 	})
 
-	it('orders palettes by set and position, then unassigned palettes by name, and selects the first', async () => {
+	it('orders palettes by group and position, then unassigned palettes by name, and selects the first', async () => {
 		const named = (id: string, name: string) => ({
 			...palette,
 			id,
 			name,
 			colors: [...palette.colors],
 		})
-		const set = (name: string, ids: string[]) => ({
+		const group = (name: string, ids: string[]) => ({
 			row: { id: name, name },
-			kind: 'core',
+			purpose: 'core',
 			members: ids.map(id => ({ id, name: id, colors: [] })),
 		})
-		mocks.paletteSets.mockResolvedValue([
-			set('Second set', ['zed', 'alpha']),
-			set('First set', ['beta']),
+		mocks.paletteGroups.mockResolvedValue([
+			group('Second group', ['zed', 'alpha']),
+			group('First group', ['beta']),
 		])
 		setup({
 			data: [

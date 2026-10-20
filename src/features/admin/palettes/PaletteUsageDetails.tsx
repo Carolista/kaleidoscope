@@ -13,12 +13,11 @@ export default function PaletteUsageDetails({
 	if (!paletteIsUsed(usage)) return <p>Not used anywhere.</p>
 	return (
 		<>
-			{usage.starters > 0 && <p>Included in starter offerings.</p>}
-			{usage.packs.length > 0 && (
+			{usage.groups.length > 0 && (
 				<>
-					<h4>Palette sets</h4>
+					<h4>Palette groups</h4>
 					<ul>
-						{usage.packs.map((name, index) => (
+						{usage.groups.map((name, index) => (
 							<li key={index}>{name}</li>
 						))}
 					</ul>
@@ -26,7 +25,7 @@ export default function PaletteUsageDetails({
 			)}
 			{usage.rewards.length > 0 && (
 				<>
-					<h4>Puzzle rewards</h4>
+					<h4>Reward for completing</h4>
 					<ul>
 						{usage.rewards.map((name, index) => (
 							<li key={index}>{name}</li>

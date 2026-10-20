@@ -1,13 +1,16 @@
 import { faRotate, faWandMagicSparkles } from '@fortawesome/pro-solid-svg-icons'
 import type { SubmitEvent } from 'react'
-import type { AuthoringPalette, PuzzleShapeId } from '@/domain/puzzles'
+import type {
+	AuthoringPalette,
+	PuzzleRecipe,
+	PuzzleShapeId,
+} from '@/domain/puzzles'
 import {
 	isPuzzleShapeId,
 	PUZZLE_RECIPES,
 	PUZZLE_SHAPE_IDS,
 	PUZZLE_SHAPE_LABELS,
 } from '@/domain/puzzles'
-import type { PuzzleUsage } from '@/features/admin/services'
 import { AdminIconButton, AdminForm } from '@/features/admin/common'
 import {
 	Button,
@@ -23,11 +26,8 @@ import styles from './PuzzleDraftForm.module.css'
 
 interface DraftMetadata {
 	readonly name: string
-	readonly usage: PuzzleUsage
 	readonly onNameChange: (name: string) => void
-	readonly onUsageChange: (usage: PuzzleUsage) => void
 	readonly locked?: boolean
-	readonly assigned?: boolean
 	readonly submitDisabled?: boolean
 }
 
@@ -35,6 +35,8 @@ interface DraftGeneration {
 	// Without a change handler the shape is shown but fixed.
 	readonly shape: PuzzleShapeId
 	readonly onShapeChange?: (shape: PuzzleShapeId) => void
+	// Limits the recipes, for example to a group's track; defaults to every recipe.
+	readonly recipes?: readonly PuzzleRecipe[]
 	readonly recipeId: string
 	readonly onRecipeChange: (recipeId: string) => void
 	readonly onGenerate: () => void
@@ -178,14 +180,16 @@ export default function PuzzleDraftForm({
 										)
 									}
 								>
-									{PUZZLE_RECIPES.map(recipe => (
-										<option
-											key={recipe.id}
-											value={recipe.id}
-										>
-											{recipe.label}
-										</option>
-									))}
+									{(generation.recipes ?? PUZZLE_RECIPES).map(
+										recipe => (
+											<option
+												key={recipe.id}
+												value={recipe.id}
+											>
+												{recipe.label}
+											</option>
+										),
+									)}
 								</Select>
 							)}
 						</FormField>
@@ -202,30 +206,6 @@ export default function PuzzleDraftForm({
 						/>
 					</div>
 					<div className={styles.metadataForm}>
-						<FormField label="Intended use">
-							{field => (
-								<Select
-									{...field}
-									value={metadata.usage}
-									disabled={
-										busy ||
-										metadata.locked ||
-										metadata.assigned
-									}
-									onChange={event => {
-										const value = event.target.value
-										if (
-											value === 'collection' ||
-											value === 'daily'
-										)
-											metadata.onUsageChange(value)
-									}}
-								>
-									<option value="collection">Set/pack</option>
-									<option value="daily">Daily</option>
-								</Select>
-							)}
-						</FormField>
 						<div className={styles.actions}>
 							<Button
 								disabled={busy}

@@ -22,10 +22,9 @@ describe('puzzle draft requests', () => {
 				recipe,
 				'hexagon',
 			)
-			const args = puzzleDraftArgs('id', '  Draft  ', 'daily', puzzle)
+			const args = puzzleDraftArgs('id', '  Draft  ', puzzle)
 			expect(args).toMatchObject({
 				p_name: 'Draft',
-				p_usage: 'daily',
 				p_board_size: recipe.size,
 				p_rotation_allowed: recipe.rotation,
 				p_difficulty: recipe.difficulty,
@@ -40,7 +39,7 @@ describe('puzzle draft requests', () => {
 		},
 	)
 
-	it('paginates saved seeds and scopes exclusions to shape and exact recipe, not palette or intended use', async () => {
+	it('paginates saved seeds and scopes exclusions to shape and exact recipe, not palette', async () => {
 		const range = vi
 			.fn()
 			.mockResolvedValueOnce({
@@ -93,7 +92,6 @@ describe('puzzle draft requests', () => {
 		const args = puzzleDraftArgs(
 			'id',
 			'Draft',
-			'collection',
 			generateAuthoredPuzzle(
 				'seed',
 				'palette',

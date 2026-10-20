@@ -1,6 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase'
 import { isPuzzleShapeId, readPuzzleTarget } from '@/domain/puzzles'
+import {
+	isPaletteGroupPurpose,
+	isPuzzleGroupPurpose,
+	paletteGroupPurposeLabels,
+	puzzleGroupPurposeLabels,
+} from './groupDetails'
 
 export interface PaletteUsage {
 	readonly puzzles: readonly {
@@ -10,9 +16,8 @@ export interface PaletteUsage {
 		readonly preview: ReturnType<typeof readPuzzleTarget> | null
 	}[]
 	readonly rewards: readonly string[]
-	readonly packs: readonly string[]
-	readonly preparedPacks?: number
-	readonly starters: number
+	readonly groups: readonly string[]
+	readonly preparedGroups?: number
 	readonly grants: number
 	readonly corrections: number
 }
@@ -21,8 +26,7 @@ export function paletteIsUsed(usage: PaletteUsage): boolean {
 	return !!(
 		usage.puzzles.length ||
 		usage.rewards.length ||
-		(usage.preparedPacks ?? usage.packs.length) ||
-		usage.starters ||
+		(usage.preparedGroups ?? usage.groups.length) ||
 		usage.grants ||
 		usage.corrections
 	)
@@ -37,7 +41,7 @@ export async function loadPaletteUsage(
 		const { data, error } = await client
 			.from('puzzles')
 			.select(
-				'id, name, usage, shape_id, definition, collection_puzzles(puzzle_collections(name))',
+				'id, name, shape_id, definition, puzzle_group_members(puzzle_groups(name, purpose))',
 			)
 			.eq('palette_id', id)
 			.order('id')
@@ -46,20 +50,19 @@ export async function loadPaletteUsage(
 			throw new Error(`Unable to load palette puzzles: ${error.message}`)
 		if (!data) throw new Error('The palette puzzle query returned no data.')
 		for (const row of data) {
-			const sets = row.collection_puzzles.map(member => {
-				if (!member.puzzle_collections)
-					throw new Error(
-						'A linked puzzle set could not be resolved. Refresh the catalog.',
-					)
-				return member.puzzle_collections.name
-			})
+			const group = row.puzzle_group_members
+			if (group && !group.puzzle_groups)
+				throw new Error(
+					'A linked puzzle group could not be resolved. Refresh the catalog.',
+				)
+			const purpose = group?.puzzle_groups?.purpose
 			puzzles.push({
 				id: row.id,
 				name: row.name,
 				context:
-					row.usage === 'daily'
-						? 'Daily'
-						: sets.join(', ') || 'Unassigned Set/pack',
+					group?.puzzle_groups && purpose
+						? `${isPuzzleGroupPurpose(purpose) ? puzzleGroupPurposeLabels[purpose] : purpose} · ${group.puzzle_groups.name}`
+						: 'Unassigned',
 				preview: isPuzzleShapeId(row.shape_id)
 					? readPuzzleTarget(row.shape_id, row.definition)
 					: null,
@@ -71,9 +74,7 @@ export async function loadPaletteUsage(
 	for (let offset = 0; ; offset += 1000) {
 		const { data, error } = await client
 			.from('reward_palettes')
-			.select(
-				'reward_rule_id, reward_rules(puzzle_collections!reward_rules_collection_id_fkey(name), completion_routes!reward_rules_route_id_collection_id_fkey(name))',
-			)
+			.select('reward_rule_id, reward_rules(puzzle_groups(name))')
 			.eq('palette_id', id)
 			.order('reward_rule_id')
 			.range(offset, offset + 999)
@@ -82,42 +83,42 @@ export async function loadPaletteUsage(
 		if (!data) throw new Error('The palette reward query returned no data.')
 		for (const row of data) {
 			const rule = row.reward_rules
-			if (!rule?.puzzle_collections)
+			if (!rule?.puzzle_groups)
 				throw new Error(
-					'A palette reward set could not be resolved. Refresh the catalog.',
+					'A palette reward group could not be resolved. Refresh the catalog.',
 				)
-			rewards.push(
-				`${rule.puzzle_collections.name}${rule.completion_routes ? ` / ${rule.completion_routes.name}` : ' / Any qualifying route'}`,
-			)
+			rewards.push(rule.puzzle_groups.name)
 		}
 		if (data.length < 1000) break
 	}
-	const packs: string[] = []
-	let preparedPacks = 0
+	const groups: string[] = []
+	let preparedGroups = 0
 	for (let offset = 0; ; offset += 1000) {
 		const { data, error } = await client
-			.from('palette_pack_palettes')
-			.select('pack_id, palette_packs(name, published_at, release_at)')
+			.from('palette_group_members')
+			.select(
+				'group_id, palette_groups(name, purpose, published_at, release_at)',
+			)
 			.eq('palette_id', id)
-			.order('pack_id')
+			.order('group_id')
 			.range(offset, offset + 999)
 		if (error)
-			throw new Error(`Unable to load palette packs: ${error.message}`)
-		if (!data) throw new Error('The palette pack query returned no data.')
+			throw new Error(`Unable to load palette groups: ${error.message}`)
+		if (!data) throw new Error('The palette group query returned no data.')
 		for (const row of data) {
-			if (!row.palette_packs)
+			const group = row.palette_groups
+			if (!group)
 				throw new Error(
-					'A palette pack could not be resolved. Refresh the catalog.',
+					'A palette group could not be resolved. Refresh the catalog.',
 				)
-			packs.push(row.palette_packs.name)
-			if (row.palette_packs.published_at || row.palette_packs.release_at)
-				preparedPacks++
+			groups.push(
+				`${group.name} · ${isPaletteGroupPurpose(group.purpose) ? paletteGroupPurposeLabels[group.purpose] : group.purpose}`,
+			)
+			if (group.published_at || group.release_at) preparedGroups++
 		}
 		if (data.length < 1000) break
 	}
-	async function count(
-		table: 'starter_palettes' | 'palette_grants' | 'palette_corrections',
-	) {
+	async function count(table: 'palette_grants' | 'palette_corrections') {
 		const { count, error } = await client
 			.from(table)
 			.select('palette_id', { count: 'exact', head: true })
@@ -128,17 +129,15 @@ export async function loadPaletteUsage(
 			throw new Error('The palette usage count was not returned.')
 		return count
 	}
-	const [starters, grants, corrections] = await Promise.all([
-		count('starter_palettes'),
+	const [grants, corrections] = await Promise.all([
 		count('palette_grants'),
 		count('palette_corrections'),
 	])
 	return {
 		puzzles,
 		rewards,
-		packs,
-		preparedPacks,
-		starters,
+		groups,
+		preparedGroups,
 		grants,
 		corrections,
 	}

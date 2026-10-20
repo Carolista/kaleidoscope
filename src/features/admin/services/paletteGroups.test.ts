@@ -2,15 +2,15 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { describe, expect, it, vi } from 'vitest'
 import type { Database } from '@/lib/supabase'
 import {
-	loadPaletteSets,
-	managePaletteSet,
-	type PaletteSetAction,
-} from './paletteSets'
+	loadPaletteGroups,
+	managePaletteGroup,
+	type PaletteGroupAction,
+} from './paletteGroups'
 
 const row = {
-	id: 'set-one',
+	id: 'group-one',
 	name: 'Colors',
-	kind: 'undecided',
+	purpose: 'undecided',
 	published_at: null,
 	release_at: null,
 }
@@ -23,9 +23,9 @@ function clientFrom(value: object) {
 	return value as SupabaseClient<Database>
 }
 function setup() {
-	const sets = vi.fn().mockResolvedValue({ data: [row], error: null })
+	const groups = vi.fn().mockResolvedValue({ data: [row], error: null })
 	const members = vi.fn().mockResolvedValue({
-		data: [{ pack_id: row.id, position: 1, palettes: palette }],
+		data: [{ group_id: row.id, position: 1, palettes: palette }],
 		error: null,
 	})
 	const selects = vi.fn()
@@ -46,52 +46,55 @@ function setup() {
 					filters(table, column, value)
 					return query
 				},
-				range: table === 'palette_packs' ? sets : members,
+				range: table === 'palette_groups' ? groups : members,
 			}
 			return query
 		},
 	})
-	return { client, sets, members, selects, orders, filters }
+	return { client, groups, members, selects, orders, filters }
 }
 
-describe('palette set catalog', () => {
-	it('loads ordered palette swatches for every set in one membership query', async () => {
+describe('palette group catalog', () => {
+	it('loads ordered palette swatches for every group in one membership query', async () => {
 		const { client, selects, orders, filters, members } = setup()
-		expect(await loadPaletteSets(client)).toEqual([
-			{ row, kind: 'undecided', members: [palette] },
+		expect(await loadPaletteGroups(client)).toEqual([
+			{ row, purpose: 'undecided', members: [palette] },
 		])
 		expect(selects).toHaveBeenCalledWith(
-			'palette_pack_palettes',
-			'pack_id, position, palettes(id, name, colors)',
+			'palette_group_members',
+			'group_id, position, palettes(id, name, colors)',
 		)
-		expect(orders).toHaveBeenCalledWith('palette_pack_palettes', 'pack_id')
-		expect(orders).toHaveBeenCalledWith('palette_pack_palettes', 'position')
+		expect(orders).toHaveBeenCalledWith('palette_group_members', 'group_id')
+		expect(orders).toHaveBeenCalledWith('palette_group_members', 'position')
 		expect(filters).not.toHaveBeenCalled()
 		expect(members).toHaveBeenCalledOnce()
 	})
 
-	it('skips membership reads when there are no palette sets', async () => {
-		const { client, sets, members } = setup()
-		sets.mockResolvedValueOnce({ data: [], error: null })
-		expect(await loadPaletteSets(client)).toEqual([])
+	it('skips membership reads when there are no palette groups', async () => {
+		const { client, groups, members } = setup()
+		groups.mockResolvedValueOnce({ data: [], error: null })
+		expect(await loadPaletteGroups(client)).toEqual([])
 		expect(members).not.toHaveBeenCalled()
 	})
 
-	it('paginates both set records and membership without truncating', async () => {
-		const { client, sets, members } = setup()
-		sets.mockResolvedValueOnce({ data: Array(1000).fill(row), error: null })
+	it('paginates both group records and membership without truncating', async () => {
+		const { client, groups, members } = setup()
+		groups.mockResolvedValueOnce({
+			data: Array(1000).fill(row),
+			error: null,
+		})
 		members.mockResolvedValueOnce({
 			data: Array(1000).fill({
-				pack_id: row.id,
+				group_id: row.id,
 				position: 1,
 				palettes: palette,
 			}),
 			error: null,
 		})
-		const result = await loadPaletteSets(client)
+		const result = await loadPaletteGroups(client)
 		expect(result).toHaveLength(1001)
 		expect(result[0].members).toHaveLength(1001)
-		expect(sets.mock.calls).toEqual([
+		expect(groups.mock.calls).toEqual([
 			[0, 999],
 			[1000, 1999],
 		])
@@ -101,7 +104,7 @@ describe('palette set catalog', () => {
 		])
 	})
 
-	it.each(['sets', 'members'] as const)(
+	it.each(['groups', 'members'] as const)(
 		'reports %s read errors and missing data explicitly',
 		async key => {
 			const setupResult = setup()
@@ -109,53 +112,56 @@ describe('palette set catalog', () => {
 				data: null,
 				error: { message: 'Offline' },
 			})
-			await expect(loadPaletteSets(setupResult.client)).rejects.toThrow(
+			await expect(loadPaletteGroups(setupResult.client)).rejects.toThrow(
 				'Offline',
 			)
 			setupResult[key].mockResolvedValueOnce({ data: null, error: null })
-			await expect(loadPaletteSets(setupResult.client)).rejects.toThrow(
+			await expect(loadPaletteGroups(setupResult.client)).rejects.toThrow(
 				'returned no data',
 			)
 		},
 	)
 
-	it('rejects unsupported labels, unresolved members and malformed colors', async () => {
-		const { client, sets, members } = setup()
-		sets.mockResolvedValueOnce({
-			data: [{ ...row, kind: 'free' }],
+	it('rejects unsupported purposes, unresolved members and malformed colors', async () => {
+		const { client, groups, members } = setup()
+		groups.mockResolvedValueOnce({
+			data: [{ ...row, purpose: 'paid' }],
 			error: null,
 		})
-		await expect(loadPaletteSets(client)).rejects.toThrow(
-			'unsupported label',
+		await expect(loadPaletteGroups(client)).rejects.toThrow(
+			'unsupported purpose',
 		)
 		members.mockResolvedValueOnce({
-			data: [{ pack_id: row.id, palettes: null }],
+			data: [{ group_id: row.id, palettes: null }],
 			error: null,
 		})
-		await expect(loadPaletteSets(client)).rejects.toThrow(
+		await expect(loadPaletteGroups(client)).rejects.toThrow(
 			'could not be resolved',
 		)
 		members.mockResolvedValueOnce({
 			data: [
-				{ pack_id: row.id, palettes: { ...palette, colors: ['#bad'] } },
+				{
+					group_id: row.id,
+					palettes: { ...palette, colors: ['#bad'] },
+				},
 			],
 			error: null,
 		})
-		await expect(loadPaletteSets(client)).rejects.toThrow(
+		await expect(loadPaletteGroups(client)).rejects.toThrow(
 			'five six-digit hex colors',
 		)
 	})
 })
 
-describe('palette set operations', () => {
+describe('palette group operations', () => {
 	it.each([
 		[
-			{ kind: 'create', name: ' New ', role: 'undecided' },
-			{ p_name: 'New', p_kind: 'undecided' },
+			{ kind: 'create', name: ' New ', purpose: 'undecided' },
+			{ p_name: 'New', p_purpose: 'undecided' },
 		],
 		[
-			{ kind: 'update', name: ' Renamed ', role: 'reward' },
-			{ p_name: 'Renamed', p_kind: 'reward' },
+			{ kind: 'update', name: ' Renamed ', purpose: 'reward' },
+			{ p_name: 'Renamed', p_purpose: 'reward' },
 		],
 		[
 			{ kind: 'assign', paletteIds: ['a', 'b'] },
@@ -167,16 +173,19 @@ describe('palette set operations', () => {
 			{ p_palette_ids: ['b', 'a'] },
 		],
 		[{ kind: 'delete' }, {}],
-	] satisfies [PaletteSetAction, object][])(
+	] satisfies [PaletteGroupAction, object][])(
 		'confirms one %j request',
 		async (action, args) => {
 			const rpc = vi.fn().mockResolvedValue({ data: row.id, error: null })
-			await managePaletteSet(clientFrom({ rpc }), row.id, action)
-			expect(rpc).toHaveBeenCalledExactlyOnceWith('manage_palette_set', {
-				p_id: row.id,
-				p_action: action.kind,
-				...args,
-			})
+			await managePaletteGroup(clientFrom({ rpc }), row.id, action)
+			expect(rpc).toHaveBeenCalledExactlyOnceWith(
+				'manage_palette_group',
+				{
+					p_id: row.id,
+					p_action: action.kind,
+					...args,
+				},
+			)
 		},
 	)
 
@@ -187,15 +196,15 @@ describe('palette set operations', () => {
 		})
 		const client = clientFrom({ rpc })
 		await expect(
-			managePaletteSet(client, row.id, {
+			managePaletteGroup(client, row.id, {
 				kind: 'assign',
 				paletteIds: ['art'],
 			}),
 		).rejects.toThrow('Cannot move published membership')
-		for (const data of [null, 'another-set']) {
+		for (const data of [null, 'another-group']) {
 			rpc.mockResolvedValue({ data, error: null })
 			await expect(
-				managePaletteSet(client, row.id, { kind: 'delete' }),
+				managePaletteGroup(client, row.id, { kind: 'delete' }),
 			).rejects.toThrow('not confirmed')
 		}
 	})

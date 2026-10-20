@@ -1,5 +1,5 @@
-export interface SetOrderKey {
-	readonly setName: string | null
+export interface GroupOrderKey {
+	readonly groupName: string | null
 	readonly position: number | null
 	readonly name: string
 }
@@ -9,27 +9,27 @@ interface OrderedSet {
 	readonly members: readonly { readonly id: string }[]
 }
 
-// Locates an item in its set, if any, for compareSetOrder.
-export function memberSetOrderKey(
+// Locates an item in its set, if any, for compareGroupOrder.
+export function memberGroupOrderKey(
 	item: { readonly id: string; readonly name: string },
 	sets: readonly OrderedSet[],
-): SetOrderKey {
+): GroupOrderKey {
 	for (const set of sets) {
 		const position = set.members.findIndex(member => member.id === item.id)
 		if (position >= 0)
-			return { setName: set.row.name, position, name: item.name }
+			return { groupName: set.row.name, position, name: item.name }
 	}
-	return { setName: null, position: null, name: item.name }
+	return { groupName: null, position: null, name: item.name }
 }
 
 // Items in sets sort by set name, then set position; items without a set follow by name.
-export function compareSetOrder(a: SetOrderKey, b: SetOrderKey): number {
-	if (a.setName === null || b.setName === null) {
-		if (a.setName !== b.setName) return a.setName === null ? 1 : -1
+export function compareGroupOrder(a: GroupOrderKey, b: GroupOrderKey): number {
+	if (a.groupName === null || b.groupName === null) {
+		if (a.groupName !== b.groupName) return a.groupName === null ? 1 : -1
 		return a.name.localeCompare(b.name)
 	}
 	return (
-		a.setName.localeCompare(b.setName) ||
+		a.groupName.localeCompare(b.groupName) ||
 		(a.position ?? 0) - (b.position ?? 0) ||
 		a.name.localeCompare(b.name)
 	)

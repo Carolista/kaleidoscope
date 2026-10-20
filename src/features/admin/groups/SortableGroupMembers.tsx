@@ -5,7 +5,7 @@ import {
 	AdminMemberList,
 	AdminMemberRow,
 } from '@/features/admin/common'
-import styles from './SortableSetMembers.module.css'
+import styles from './SortableGroupMembers.module.css'
 
 export interface SortableMember {
 	readonly id: string
@@ -13,7 +13,7 @@ export interface SortableMember {
 }
 
 // Staged drag/keyboard ordering; the owner saves the order explicitly.
-export default function SortableSetMembers<T extends SortableMember>({
+export default function SortableGroupMembers<T extends SortableMember>({
 	members,
 	noun,
 	disabled,
@@ -167,7 +167,7 @@ export default function SortableSetMembers<T extends SortableMember>({
 								<AdminIconButton
 									icon={faSquareMinus}
 									tone="delete"
-									label={`Remove ${member.name} from set`}
+									label={`Remove ${member.name} from group`}
 									disabled={disabled || dragging !== null}
 									onClick={() => onRemove(member.id)}
 								/>

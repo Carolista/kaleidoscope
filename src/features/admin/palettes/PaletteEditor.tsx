@@ -3,12 +3,12 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase'
 import {
 	managePalette,
-	managePaletteSet,
+	managePaletteGroup,
 	readPalette,
 	type CatalogPalette,
 	loadPaletteUsage,
 	type PaletteUsage,
-	type PaletteSet,
+	type PaletteGroup,
 } from '@/features/admin/services'
 import PaletteUsageDetails from './PaletteUsageDetails'
 import {
@@ -29,15 +29,15 @@ export default function PaletteEditor({
 	client,
 	initial,
 	startingColors,
-	targetSet,
+	targetGroup,
 	onSaved,
 	onCancel,
 }: {
 	readonly client: SupabaseClient<Database>
 	readonly initial: CatalogPalette | null
 	readonly startingColors: readonly string[]
-	// New palettes are added to this draft set as they are created.
-	readonly targetSet?: PaletteSet['row']
+	// New palettes are added to this draft group as they are created.
+	readonly targetGroup?: PaletteGroup['row']
 	readonly onSaved: (message: string) => void
 	readonly onCancel: () => void
 }) {
@@ -108,14 +108,14 @@ export default function PaletteEditor({
 					id: createRequest.current.id,
 					palette,
 				})
-				if (targetSet)
-					await managePaletteSet(client, targetSet.id, {
+				if (targetGroup)
+					await managePaletteGroup(client, targetGroup.id, {
 						kind: 'assign',
 						paletteIds: [createRequest.current.id],
 					})
 			}
 			onSaved(
-				`Saved "${palette.name}" as a draft palette${!initial && targetSet ? ` in "${targetSet.name}"` : ''}.`,
+				`Saved "${palette.name}" as a draft palette${!initial && targetGroup ? ` in "${targetGroup.name}"` : ''}.`,
 			)
 		} catch (cause) {
 			setError(errorMessage(cause, fallbackError))
@@ -131,8 +131,8 @@ export default function PaletteEditor({
 					? `${readOnly ? 'View' : 'Edit'} palette`
 					: 'New palette'}
 			</h2>
-			{!initial && targetSet && (
-				<p>This palette will be added to "{targetSet.name}".</p>
+			{!initial && targetGroup && (
+				<p>This palette will be added to "{targetGroup.name}".</p>
 			)}
 			{readOnly && (
 				<p>{initial && releaseState(initial)} palette (read-only).</p>

@@ -9,7 +9,7 @@ import type { Database } from '@/lib/supabase'
 import type {
 	CatalogPalette,
 	LibraryDraft,
-	DraftSet,
+	PuzzleGroup,
 } from '@/features/admin/services'
 import { generateAuthoredPuzzle, PUZZLE_RECIPES } from '@/domain/puzzles'
 import { puzzleDraftArgs } from '@/features/admin/services'
@@ -17,10 +17,10 @@ import AdminWorkspace from './AdminWorkspace'
 
 const mocks = vi.hoisted(() => ({
 	puzzles: vi.fn(),
-	puzzleSets: vi.fn(),
+	puzzleGroups: vi.fn(),
 	palettes: vi.fn(),
-	paletteSets: vi.fn(),
-	manageSet: vi.fn(),
+	paletteGroups: vi.fn(),
+	manageGroup: vi.fn(),
 }))
 vi.mock('@/features/admin/services/puzzleLibrary', async importOriginal => ({
 	...(await importOriginal<
@@ -28,12 +28,12 @@ vi.mock('@/features/admin/services/puzzleLibrary', async importOriginal => ({
 	>()),
 	loadPuzzleDrafts: (...args: unknown[]) => mocks.puzzles(...args),
 }))
-vi.mock('@/features/admin/services/puzzleSets', async importOriginal => ({
+vi.mock('@/features/admin/services/puzzleGroups', async importOriginal => ({
 	...(await importOriginal<
-		typeof import('@/features/admin/services/puzzleSets')
+		typeof import('@/features/admin/services/puzzleGroups')
 	>()),
-	loadDraftSets: (...args: unknown[]) => mocks.puzzleSets(...args),
-	manageDraftSet: (...args: unknown[]) => mocks.manageSet(...args),
+	loadPuzzleGroups: (...args: unknown[]) => mocks.puzzleGroups(...args),
+	managePuzzleGroup: (...args: unknown[]) => mocks.manageGroup(...args),
 }))
 vi.mock('@/features/admin/services/palettes', async importOriginal => ({
 	...(await importOriginal<
@@ -41,11 +41,11 @@ vi.mock('@/features/admin/services/palettes', async importOriginal => ({
 	>()),
 	loadPalettes: (...args: unknown[]) => mocks.palettes(...args),
 }))
-vi.mock('@/features/admin/services/paletteSets', async importOriginal => ({
+vi.mock('@/features/admin/services/paletteGroups', async importOriginal => ({
 	...(await importOriginal<
-		typeof import('@/features/admin/services/paletteSets')
+		typeof import('@/features/admin/services/paletteGroups')
 	>()),
-	loadPaletteSets: (...args: unknown[]) => mocks.paletteSets(...args),
+	loadPaletteGroups: (...args: unknown[]) => mocks.paletteGroups(...args),
 }))
 
 const client = {} as SupabaseClient<Database>
@@ -63,17 +63,11 @@ const puzzle = generateAuthoredPuzzle(
 	PUZZLE_RECIPES[0],
 	'hexagon',
 )
-const args = puzzleDraftArgs(
-	'puzzle',
-	'Unassigned design',
-	'collection',
-	puzzle,
-)
+const args = puzzleDraftArgs('puzzle', 'Unassigned design', puzzle)
 const draft: LibraryDraft = {
 	row: {
 		id: args.p_id,
 		name: args.p_name,
-		usage: args.p_usage,
 		shape_id: 'hexagon',
 		palette_id: palette.id,
 		board_size: args.p_board_size,
@@ -84,22 +78,26 @@ const draft: LibraryDraft = {
 		release_at: null,
 	},
 	assigned: false,
-	collectionId: null,
-	collectionName: null,
-	collectionPosition: null,
-	collectionKind: null,
+	groupId: null,
+	groupName: null,
+	groupPosition: null,
+	groupPurpose: null,
+	groupTrack: null,
 	puzzle,
 }
-const set: DraftSet = {
+const group: PuzzleGroup = {
 	row: {
-		id: 'set',
+		id: 'group',
 		name: 'Design collection',
-		kind: 'core',
+		purpose: 'core',
+		track: 'basic',
 		shape_id: 'hexagon',
 		selection_mode: 'any',
 		published_at: null,
 		release_at: null,
 	},
+	purpose: 'core',
+	track: 'basic',
 	preview: null,
 	members: [
 		{ puzzleId: 'a', name: 'First member', position: 1, preview: null },
@@ -109,15 +107,17 @@ const set: DraftSet = {
 
 beforeEach(() => {
 	vi.resetAllMocks()
-	mocks.puzzleSets.mockResolvedValue([set])
+	mocks.puzzleGroups.mockResolvedValue([group])
 	mocks.puzzles.mockResolvedValue([
 		draft,
 		{
 			...draft,
 			row: { ...draft.row, id: 'assigned', name: 'Assigned design' },
 			assigned: true,
-			collectionName: set.row.name,
-			collectionKind: 'core',
+			groupId: group.row.id,
+			groupName: group.row.name,
+			groupPurpose: 'core',
+			groupTrack: 'basic',
 		},
 		{
 			...draft,
@@ -151,16 +151,16 @@ beforeEach(() => {
 			published_at: '2026-01-01',
 		},
 	])
-	mocks.paletteSets.mockResolvedValue([
+	mocks.paletteGroups.mockResolvedValue([
 		{
 			row: {
 				id: 'colors',
 				name: 'Color collection',
-				kind: 'core',
+				purpose: 'core',
 				published_at: null,
 				release_at: null,
 			},
-			kind: 'core',
+			purpose: 'core',
 			members: [assignedPalette],
 		},
 	])
@@ -176,17 +176,17 @@ function choose(menu: string, label: string) {
 }
 
 describe('admin workspace navigation', () => {
-	it('defaults to puzzle sets and makes palettes a peer with their own sets default', async () => {
+	it('defaults to puzzle groups and makes palettes a peer with their own groups default', async () => {
 		render(<AdminWorkspace client={client} />)
 		expect(
 			await screen.findByRole('button', {
-				name: 'Edit set Design collection',
+				name: 'Edit group Design collection',
 			}),
 		).toBeInTheDocument()
 		expect(
 			within(
 				screen.getByRole('navigation', { name: 'Puzzles views' }),
-			).getByRole('button', { name: 'Sets' }),
+			).getByRole('button', { name: 'Groups' }),
 		).toHaveAttribute('aria-current', 'page')
 		expect(mocks.palettes).not.toHaveBeenCalled()
 		expect(
@@ -198,13 +198,13 @@ describe('admin workspace navigation', () => {
 		choose('Admin sections', 'Palettes')
 		expect(
 			await screen.findByRole('button', {
-				name: 'Edit set Color collection',
+				name: 'Edit group Color collection',
 			}),
 		).toBeInTheDocument()
 		expect(
 			within(
 				screen.getByRole('navigation', { name: 'Palettes views' }),
-			).getByRole('button', { name: 'Sets' }),
+			).getByRole('button', { name: 'Groups' }),
 		).toHaveAttribute('aria-current', 'page')
 		choose('Admin sections', 'Shapes')
 		expect(
@@ -216,7 +216,7 @@ describe('admin workspace navigation', () => {
 		choose('Admin sections', 'Puzzles')
 		expect(
 			await screen.findByRole('button', {
-				name: 'Edit set Design collection',
+				name: 'Edit group Design collection',
 			}),
 		).toBeInTheDocument()
 	})
@@ -267,7 +267,7 @@ describe('admin workspace navigation', () => {
 		).toBeInTheDocument()
 	})
 
-	it('separates palette drafts and set assignments without leaking scheduled or published palettes', async () => {
+	it('separates palette drafts and group assignments without leaking scheduled or published palettes', async () => {
 		render(<AdminWorkspace client={client} />)
 		choose('Admin sections', 'Palettes')
 		choose('Palettes views', 'Palettes')
@@ -294,10 +294,10 @@ describe('admin workspace navigation', () => {
 				screen.getByRole('heading', { name: `${label} palettes` }),
 			).toBeInTheDocument()
 		}
-		choose('Palettes views', 'Sets')
+		choose('Palettes views', 'Groups')
 		expect(
 			await screen.findByRole('button', {
-				name: 'Edit set Color collection',
+				name: 'Edit group Color collection',
 			}),
 		).toBeInTheDocument()
 		choose('Palettes views', 'Palettes')
@@ -308,11 +308,11 @@ describe('admin workspace navigation', () => {
 		).toBeInTheDocument()
 	})
 
-	it('guards top-level navigation with a staged set order and keeps the editor mounted when canceled', async () => {
+	it('guards top-level navigation with a staged group order and keeps the editor mounted when canceled', async () => {
 		render(<AdminWorkspace client={client} />)
 		fireEvent.click(
 			await screen.findByRole('button', {
-				name: 'Edit set Design collection',
+				name: 'Edit group Design collection',
 			}),
 		)
 		fireEvent.keyDown(
@@ -330,10 +330,10 @@ describe('admin workspace navigation', () => {
 		expect(
 			await screen.findByRole('heading', { name: 'Puzzle drafts' }),
 		).toBeInTheDocument()
-		expect(mocks.manageSet).not.toHaveBeenCalled()
+		expect(mocks.manageGroup).not.toHaveBeenCalled()
 	})
 
-	it('guards status changes from an unsaved palette and blocks section changes during set saves', async () => {
+	it('guards status changes from an unsaved palette and blocks section changes during group saves', async () => {
 		render(<AdminWorkspace client={client} />)
 		choose('Admin sections', 'Palettes')
 		choose('Palettes views', 'Palettes')
@@ -350,16 +350,16 @@ describe('admin workspace navigation', () => {
 		fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }))
 		fireEvent.click(
 			await screen.findByRole('button', {
-				name: 'Edit set Design collection',
+				name: 'Edit group Design collection',
 			}),
 		)
 		let finish!: () => void
-		mocks.manageSet.mockReturnValueOnce(
+		mocks.manageGroup.mockReturnValueOnce(
 			new Promise<void>(resolve => {
 				finish = resolve
 			}),
 		)
-		fireEvent.change(screen.getByLabelText('Set name'), {
+		fireEvent.change(screen.getByLabelText('Group name'), {
 			target: { value: 'Renamed collection' },
 		})
 		fireEvent.click(screen.getByRole('button', { name: 'Save' }))
@@ -379,17 +379,17 @@ describe('admin workspace navigation', () => {
 		render(<AdminWorkspace client={client} />)
 		fireEvent.click(
 			await screen.findByRole('button', {
-				name: 'Edit set Design collection',
+				name: 'Edit group Design collection',
 			}),
 		)
-		expect(screen.getByLabelText('Set name')).toBeInTheDocument()
-		choose('Puzzles views', 'Sets')
+		expect(screen.getByLabelText('Group name')).toBeInTheDocument()
+		choose('Puzzles views', 'Groups')
 		expect(
 			await screen.findByRole('button', {
-				name: 'Edit set Design collection',
+				name: 'Edit group Design collection',
 			}),
 		).toBeInTheDocument()
-		expect(screen.queryByLabelText('Set name')).not.toBeInTheDocument()
+		expect(screen.queryByLabelText('Group name')).not.toBeInTheDocument()
 		choose('Puzzles views', 'Puzzles')
 		fireEvent.click(
 			await screen.findByRole('button', {
@@ -421,7 +421,7 @@ describe('admin workspace navigation', () => {
 	it('reuses cached catalogs across navigation and refetches only on request', async () => {
 		render(<AdminWorkspace client={client} />)
 		await screen.findByRole('button', {
-			name: 'Edit set Design collection',
+			name: 'Edit group Design collection',
 		})
 		choose('Puzzles views', 'Puzzles')
 		await screen.findByRole('button', {
@@ -429,13 +429,15 @@ describe('admin workspace navigation', () => {
 		})
 		choose('Puzzles status', 'Assigned')
 		choose('Puzzles status', 'Unassigned')
-		choose('Puzzles views', 'Sets')
+		choose('Puzzles views', 'Groups')
 		expect(
-			screen.getByRole('button', { name: 'Edit set Design collection' }),
+			screen.getByRole('button', {
+				name: 'Edit group Design collection',
+			}),
 		).toBeInTheDocument()
 		choose('Admin sections', 'Palettes')
 		await screen.findByRole('button', {
-			name: 'Edit set Color collection',
+			name: 'Edit group Color collection',
 		})
 		choose('Palettes views', 'Palettes')
 		expect(
@@ -443,17 +445,19 @@ describe('admin workspace navigation', () => {
 		).toBeInTheDocument()
 		choose('Admin sections', 'Puzzles')
 		expect(
-			screen.getByRole('button', { name: 'Edit set Design collection' }),
+			screen.getByRole('button', {
+				name: 'Edit group Design collection',
+			}),
 		).toBeInTheDocument()
-		expect(mocks.puzzleSets).toHaveBeenCalledOnce()
+		expect(mocks.puzzleGroups).toHaveBeenCalledOnce()
 		expect(mocks.puzzles).toHaveBeenCalledOnce()
 		expect(mocks.palettes).toHaveBeenCalledOnce()
-		expect(mocks.paletteSets).toHaveBeenCalledOnce()
-		fireEvent.click(screen.getByRole('button', { name: 'Refresh sets' }))
+		expect(mocks.paletteGroups).toHaveBeenCalledOnce()
+		fireEvent.click(screen.getByRole('button', { name: 'Refresh groups' }))
 		await screen.findByRole('button', {
-			name: 'Edit set Design collection',
+			name: 'Edit group Design collection',
 		})
-		expect(mocks.puzzleSets).toHaveBeenCalledTimes(2)
+		expect(mocks.puzzleGroups).toHaveBeenCalledTimes(2)
 		expect(mocks.puzzles).toHaveBeenCalledOnce()
 	})
 })

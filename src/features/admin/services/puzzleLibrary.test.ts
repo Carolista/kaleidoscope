@@ -34,13 +34,12 @@ function fixture(
 		recipe,
 		shape,
 	)
-	const args = puzzleDraftArgs('id', 'Draft', 'collection', original)
+	const args = puzzleDraftArgs('id', 'Draft', original)
 	const row: Tables<'puzzles'> = {
 		id: 'id',
 		name: 'Draft',
 		shape_id: args.p_shape_id,
 		palette_id: palette.id,
-		usage: 'collection',
 		board_size: recipe.size,
 		difficulty: recipe.difficulty,
 		rotation_allowed: recipe.rotation,
@@ -154,35 +153,22 @@ describe('draft library database requests', () => {
 			mockClient({ rpc }),
 			'id',
 			' Replacement ',
-			'daily',
 			original,
 		)
 		expect(rpc).toHaveBeenCalledExactlyOnceWith(
 			'replace_puzzle_draft',
-			puzzleDraftArgs('id', 'Replacement', 'daily', original),
+			puzzleDraftArgs('id', 'Replacement', original),
 		)
 		rpc.mockResolvedValue({ data: 'wrong-id', error: null })
 		await expect(
-			replacePuzzleDraft(
-				mockClient({ rpc }),
-				'id',
-				'Name',
-				'daily',
-				original,
-			),
+			replacePuzzleDraft(mockClient({ rpc }), 'id', 'Name', original),
 		).rejects.toThrow('not confirmed')
 		rpc.mockResolvedValue({
 			data: null,
 			error: { message: 'Unassign the puzzle' },
 		})
 		await expect(
-			replacePuzzleDraft(
-				mockClient({ rpc }),
-				'id',
-				'Name',
-				'daily',
-				original,
-			),
+			replacePuzzleDraft(mockClient({ rpc }), 'id', 'Name', original),
 		).rejects.toThrow('Unassign the puzzle')
 	})
 	it('sends one atomic bulk request and requires confirmation of every selected ID', async () => {
@@ -227,8 +213,8 @@ describe('draft library database requests', () => {
 		const base = {
 			...row,
 			puzzle_authoring: authoring,
-			collection_puzzles: [],
-			daily_puzzles: [],
+			puzzle_group_members: null,
+			daily_puzzles: null,
 		}
 		const range = vi
 			.fn()
@@ -243,22 +229,22 @@ describe('draft library database requests', () => {
 				data: [
 					{
 						...base,
-						id: 'set',
-						collection_puzzles: [
-							{
-								puzzle_id: 'set',
-								position: 3,
-								puzzle_collections: {
-									name: 'First set',
-									kind: 'core',
-								},
+						id: 'grouped',
+						puzzle_group_members: {
+							puzzle_id: 'grouped',
+							group_id: 'group',
+							position: 3,
+							puzzle_groups: {
+								name: 'First group',
+								purpose: 'core',
+								track: 'basic',
 							},
-						],
+						},
 					},
 					{
 						...base,
 						id: 'daily',
-						daily_puzzles: [{ id: 'assignment' }],
+						daily_puzzles: { id: 'assignment' },
 					},
 				],
 				error: null,
@@ -275,20 +261,15 @@ describe('draft library database requests', () => {
 		expect(drafts.find(value => value.row.id === 'id-0')?.assigned).toBe(
 			false,
 		)
-		expect(drafts.find(value => value.row.id === 'set')?.assigned).toBe(
-			true,
-		)
+		const grouped = drafts.find(value => value.row.id === 'grouped')
+		expect(grouped?.assigned).toBe(true)
+		expect(grouped?.groupId).toBe('group')
+		expect(grouped?.groupName).toBe('First group')
+		expect(grouped?.groupPurpose).toBe('core')
+		expect(grouped?.groupTrack).toBe('basic')
+		expect(grouped?.groupPosition).toBe(3)
 		expect(
-			drafts.find(value => value.row.id === 'set')?.collectionName,
-		).toBe('First set')
-		expect(
-			drafts.find(value => value.row.id === 'set')?.collectionKind,
-		).toBe('core')
-		expect(
-			drafts.find(value => value.row.id === 'set')?.collectionPosition,
-		).toBe(3)
-		expect(
-			drafts.find(value => value.row.id === 'id-0')?.collectionKind,
+			drafts.find(value => value.row.id === 'id-0')?.groupPurpose,
 		).toBeNull()
 		expect(drafts.find(value => value.row.id === 'daily')?.assigned).toBe(
 			true,
@@ -317,19 +298,12 @@ describe('draft library database requests', () => {
 		).rejects.toThrow('Offline')
 		const rpc = vi.fn().mockResolvedValue({ data: null, error: null })
 		await expect(
-			editPuzzleDraft(
-				mockClient({ rpc }),
-				'id',
-				' Name ',
-				'palette',
-				'daily',
-			),
+			editPuzzleDraft(mockClient({ rpc }), 'id', ' Name ', 'palette'),
 		).rejects.toThrow('not confirmed')
 		expect(rpc).toHaveBeenCalledWith('edit_puzzle_draft', {
 			p_id: 'id',
 			p_name: 'Name',
 			p_palette_id: 'palette',
-			p_usage: 'daily',
 		})
 		rpc.mockResolvedValue({ data: null, error: { message: 'Assigned' } })
 		await expect(

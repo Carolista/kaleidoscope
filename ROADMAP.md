@@ -73,7 +73,7 @@ Target layout:
 ```
 src/
   app/        entry, routing, navigation guard, global CSS
-  features/   zen/, puzzle/, admin/{shell,catalog,common,sets,puzzles,puzzle-sets,palettes,palette-sets,services}/
+  features/   zen/, puzzle/, admin/{shell,catalog,common,groups,puzzles,puzzle-groups,palettes,palette-groups,services}/
               (later account/, store/, daily/)
   domain/     React-free: shapes/<shape>/ + registry, puzzles/, palettes/
   ui/         shared components and hooks, grid rendering, shared puzzle board
@@ -109,14 +109,14 @@ Rules:
 - ✅ Admin sign-in, server-checked admin role, generated database types.
 - ✅ Edit scheduled content until its release time, then lock it (migration `010000`).
 - ✅ Hexagon engine with all six recipes (sizes S/M/L, with and without rotation) and an isolated playtest that never writes player progress.
-- ✅ Shape-neutral puzzle engine, board, and authoring RPCs (migration `20261019030000`); puzzles and sets in all six shapes with the same six recipes.
-- ✅ Puzzle-creator palette pickers ordered by palette set and position.
+- ✅ Shape-neutral puzzle engine, board, and authoring RPCs (migration `20261019030000`); puzzles and groups in all six shapes with the same six recipes.
+- ✅ Puzzle-creator palette pickers ordered by palette group and position.
 - ✅ Puzzle drafts: save, library, edit, delete, bulk palette and bulk delete, replace the design.
 - ✅ Regenerate assigned or scheduled puzzles until they go live (migration `20261019020000`).
-- ✅ Puzzle sets: create (Core/Reward/Paid), add members, drag to reorder, remove, delete.
+- ✅ Puzzle groups: create with a purpose (Undecided/Core/Reward/Daily/Pack), shape, and track, edit them while unpublished, add members, drag to reorder, remove, delete (migration `20261020000000`).
 - ✅ Palettes: create, edit, duplicate, sandbox preview, usage details, single and bulk delete.
-- ✅ Palette sets (`palette_packs` table, kinds Undecided/Core/Reward/Paid): create, assign, reorder, delete.
-- ✅ Navigation: Puzzles | Palettes | Shapes, then Sets | Items, then Unassigned | Assigned | Scheduled | Published.
+- ✅ Palette groups (`palette_groups` table, purposes Undecided/Core/Reward/Pack): create, assign, reorder, delete.
+- ✅ Navigation: Puzzles | Palettes | Shapes, then Groups | Items, then Unassigned | Assigned | Scheduled | Published. Group lists filter by purpose (and shape and track for puzzles); puzzle items filter by shape and track, and the Assigned view by purpose and group.
 - ✅ UI audit parts 1–6 (shared controls, loading, dialogs, unsaved-work guard, palette and layout components, CSS cleanup).
 
 ## Admin portal: what's left for 2A (suggested order)
@@ -127,12 +127,15 @@ Rules:
 2. ⬜ **Publish and schedule (release tools).** Approve content with a release
    date, reschedule or cancel before release, and show missing dependencies.
    Live content stays locked.
-3. ⬜ **Starter offerings.** Choose starter palettes and palette sets.
-   Hexagon is already the only starter shape.
-4. ⬜ **Qualifying routes inside sets.** Define which puzzles in a 24-puzzle set
-   make up each route, such as an easier route and a harder route.
-5. ⬜ **Core sequence.** The linear order of core sets, and which milestones unlock new shapes.
-6. ⬜ **Rewards.** Palettes, palette sets, or reward puzzle sets, tied to any route or to a specific harder route.
+3. ⬜ **Progression screen.** Order the shapes (stored in `shape_progression`) and choose each
+   shape's two core groups (basic and rotation). Either one, once solved, unlocks the next shape.
+   Core palette groups are the Zen starters; Hexagon is the first shape.
+4. ⬜ **Rewards screen.** Per group completion, pick exact palettes and/or bonus puzzle groups,
+   guided by the pattern below, with a checker that warns when a shape does not follow it.
+5. ⬜ **Daily groups and scheduling.** Daily groups organize puzzles (for example by month); scheduling
+   one per day moves to 2B.
+6. ⬜ **Publish checks for palettes.** Warn when a puzzle's palette is not sold in any pack or free through a
+   core or reward group, since the store will offer it.
 7. ⬜ **Shapes section.** Catalog settings only. New shape geometry still needs app code.
 8. ⬜ **Exceptional palette correction** for live palettes, keeping the revision and audit history.
 9. ⬜ **End-to-end admin check** in the hosted project.
@@ -142,8 +145,8 @@ screens (part of B2).
 
 Not planned: a manual target or piece editor and multiple admins.
 
-**Content work (yours, alongside the tools):** finish the paid palette sets,
-then choose palette sets for rewards and the starter. Author 24-puzzle sets for
+**Content work (yours, alongside the tools):** finish the pack palette groups,
+then choose the core palette group (Zen starters) and the reward palettes. Author 24-puzzle groups for
 the core sequence and rewards.
 
 ---
@@ -165,8 +168,8 @@ the core sequence and rewards.
   in both Puzzle Mode and Zen Mode.
 - Replace player-side random puzzle generation with published puzzles.
 - The first introductory sequence is fixed. After that, every puzzle in an unlocked set is selectable.
-- Finishing either route unlocks the next set. Harder-route rewards can be earned later, without duplicate rewards.
-- Grant the Zen randomizer permanently after one route in every core set.
+- Solving either core group of a shape (basic or rotation) unlocks the next shape and its two core groups; reward palettes and bonus groups come from completing groups, without duplicate rewards.
+- Grant the Zen randomizer permanently after all 12 core and 12 bonus groups are solved.
 - Validate completions and grant rewards on the server, idempotently.
 - Migrate existing Zen saves from hex colors to palette slots.
 
@@ -193,7 +196,7 @@ the core sequence and rewards.
 
 **B2–B3: Store**
 
-- Store UI, listings for puzzle packs and palette sets, and combo deals (bundles).
+- Store UI, listings for puzzle packs and palette packs, and combo deals (bundles).
 - Purchases require an account. A paid puzzle pack requires owning its shape and grants only its puzzles.
 - Verified server-side fulfillment and idempotent grants. Never trust the
   browser's return URL. Handle refunds and chargebacks.
@@ -209,9 +212,12 @@ the core sequence and rewards.
 
 ## Key product rules (settled)
 
-- **Terminology:** free **puzzle sets** versus paid **puzzle packs**. Difficulty
+- **Terminology:** admin and database data structures are **groups**, each with a **purpose** (core, reward, daily, pack, or undecided). Players see free **puzzle sets** (core) versus paid **puzzle packs**; "group" never appears in the player UI. Difficulty
   labels are Easy, Moderate, Hard, and Challenging (stored as `super_hard`).
-- **Sizes:** puzzle sets have **24 puzzles**. Palette sets have **6 palettes**.
+- **Tracks:** core and reward puzzle groups are **basic** (no rotation: Easy/Moderate/Hard) or **rotation** (Moderate/Hard/Challenging). Packs may also be mixed; daily groups have no track.
+- **Progression:** each of the six shapes has two core groups (basic, rotation). Solving either unlocks the next shape. Completing the basic core group awards one palette; completing the rotation core group awards one palette plus two bonus groups (one basic, one rotation); each bonus group awards one palette. The Zen randomizer needs all 12 core and 12 bonus groups.
+- **Palettes:** a puzzle stores its palette. Bought puzzle packs do not grant palettes; palette packs (or a discounted combo) do.
+- **Sizes:** puzzle groups have **24 puzzles**. Palette groups have **6 palettes**.
 - **Six recipes for every puzzle shape:** Easy = S; Moderate = M, or S + rotation; Hard = L, or M + rotation; Challenging = L + rotation.
   The admin picks the shape and exact recipe.
 - **Guests:** Hexagon Zen, the initial set, and locally earned palettes (plus daily puzzles once 2B adds them).
@@ -221,8 +227,8 @@ the core sequence and rewards.
   stays editable until its release instant. The one exception is a palette
   color correction, which updates all rendering through stable palette IDs and color slots.
 - **Admin is not a player.** Previews and playtests never record progress or rewards.
-- **Each set or pack uses one shape.** Palettes can vary from puzzle to puzzle.
-  A puzzle belongs to one collection at most.
+- **Each puzzle group uses one shape, except daily groups, which can mix shapes.** Palettes can vary from puzzle to puzzle.
+  A puzzle belongs to one group at most.
 - **Playing a puzzle in a palette doesn't grant that palette in Zen.**
 - **No hints or cloud design collections yet.** Cloud design collections wait for Phase 4.
 
@@ -230,10 +236,9 @@ the core sequence and rewards.
 
 ## Open decisions ❓
 
-- Route makeup inside a 24-puzzle set: how many puzzles of each difficulty, and
-  which puzzles each route requires.
+- Difficulty split inside a 24-puzzle core or bonus group (counts are not enforced yet).
 - Whether publishing should enforce exactly 24 puzzles and 6 palettes, or only warn.
-- Starter and reward palette-set lineups (after the paid palette sets are done).
+- Starter and reward palette group lineups (after the pack palette groups are done).
 - What happens to existing visitors' saved designs that use shapes or palettes
   that become locked, and how to migrate legacy hex saves with duplicate colors.
 - Offline unlock policy: how long cached access lasts, and whether unlocks can be used before the server confirms them.

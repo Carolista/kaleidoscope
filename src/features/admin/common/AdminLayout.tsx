@@ -43,13 +43,13 @@ export function AdminGallery({
 	layout,
 	children,
 }: {
-	readonly layout: 'puzzles' | 'palettes' | 'sets'
+	readonly layout: 'puzzles' | 'palettes' | 'groups'
 	readonly children: ReactNode
 }) {
 	return <ul className={`${styles.gallery} ${styles[layout]}`}>{children}</ul>
 }
 
-export function AdminSetCard({
+export function AdminGroupCard({
 	label,
 	thumbnail,
 	children,
@@ -61,12 +61,12 @@ export function AdminSetCard({
 	readonly actions: ReactNode
 }) {
 	return (
-		<li className={styles.setCard} aria-label={label}>
-			<div className={styles.setThumbnail} aria-hidden="true">
+		<li className={styles.groupCard} aria-label={label}>
+			<div className={styles.groupThumbnail} aria-hidden="true">
 				{thumbnail}
 			</div>
-			<div className={styles.setDetails}>{children}</div>
-			<div className={styles.setCardActions}>{actions}</div>
+			<div className={styles.groupDetails}>{children}</div>
+			<div className={styles.groupCardActions}>{actions}</div>
 		</li>
 	)
 }
@@ -164,8 +164,8 @@ export function AdminSelectionBar({
 	)
 }
 
-// Set name, an optional role/label control, and one Save for all staged edits.
-export function AdminSetForm({
+// Group name, optional purpose/shape/track controls, and one Save for all staged edits.
+export function AdminGroupForm({
 	label,
 	nameId,
 	name,
@@ -188,14 +188,14 @@ export function AdminSetForm({
 }) {
 	return (
 		<form
-			className={styles.setForm}
+			className={styles.groupForm}
 			aria-label={label}
 			onSubmit={(event: SubmitEvent<HTMLFormElement>) => {
 				event.preventDefault()
 				if (!readOnly) onSave()
 			}}
 		>
-			<FormField id={nameId} label="Set name">
+			<FormField id={nameId} label="Group name">
 				{field => (
 					<Input
 						{...field}

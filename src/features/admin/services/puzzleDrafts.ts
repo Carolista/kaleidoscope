@@ -7,20 +7,17 @@ import {
 import type { PuzzleRecipe, PuzzleShapeId } from '@/domain/puzzles'
 import type { Database } from '@/lib/supabase'
 
-export type PuzzleUsage = 'collection' | 'daily'
 export type DraftArgs =
 	Database['public']['Functions']['save_puzzle_draft']['Args']
 
 export function puzzleDraftArgs(
 	id: string,
 	name: string,
-	usage: PuzzleUsage,
 	puzzle: AuthoredPuzzle,
 ): DraftArgs {
 	return {
 		p_id: id,
 		p_name: name.trim(),
-		p_usage: usage,
 		p_shape_id: puzzle.shape,
 		p_palette_id: puzzle.paletteId,
 		p_board_size: puzzle.recipe.size,

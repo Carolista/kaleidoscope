@@ -4,7 +4,7 @@ import type { Database } from '@/lib/supabase'
 import { AdminCatalogProvider } from '@/features/admin/catalog'
 import AdminNavigation from './AdminNavigation'
 import { PuzzleAuthoring } from '@/features/admin/puzzles'
-import { PuzzleSetLibrary } from '@/features/admin/puzzle-sets'
+import { PuzzleGroupLibrary } from '@/features/admin/puzzle-groups'
 import { PaletteLibrary } from '@/features/admin/palettes'
 import { useNavigationGuard } from '@/ui/navigation'
 
@@ -25,7 +25,7 @@ export default function AdminWorkspace({
 	const [section, setSection] = useState<'puzzles' | 'palettes' | 'shapes'>(
 		'puzzles',
 	)
-	const [view, setView] = useState<'sets' | 'items'>('sets')
+	const [view, setView] = useState<'groups' | 'items'>('groups')
 	const [status, setStatus] = useState<CatalogStatus>('drafts')
 	// Choosing any tab, including the current one, returns to that view's list.
 	const [visit, setVisit] = useState(0)
@@ -47,7 +47,7 @@ export default function AdminWorkspace({
 				onChange={next =>
 					requestNavigation(() => {
 						setSection(next)
-						setView('sets')
+						setView('groups')
 						setStatus('drafts')
 						setVisit(value => value + 1)
 					})
@@ -63,7 +63,7 @@ export default function AdminWorkspace({
 					<AdminNavigation
 						label={`${itemLabel} views`}
 						items={[
-							{ value: 'sets', label: 'Sets' },
+							{ value: 'groups', label: 'Groups' },
 							{ value: 'items', label: itemLabel },
 						]}
 						value={view}
@@ -105,13 +105,13 @@ export default function AdminWorkspace({
 						<PaletteLibrary
 							key={`${view}-${status}-${visit}`}
 							client={client}
-							view={view === 'sets' ? 'sets' : 'palettes'}
+							view={view === 'groups' ? 'groups' : 'palettes'}
 							catalogStatus={
 								status === 'assigned' ? 'assigned' : 'drafts'
 							}
 						/>
-					) : view === 'sets' ? (
-						<PuzzleSetLibrary key={visit} client={client} />
+					) : view === 'groups' ? (
+						<PuzzleGroupLibrary key={visit} client={client} />
 					) : (
 						<PuzzleAuthoring
 							key={`${status}-${visit}`}
