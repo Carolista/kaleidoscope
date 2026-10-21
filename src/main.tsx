@@ -8,8 +8,8 @@ import '@fontsource/urbanist/400-italic.css'
 import '@fontsource/urbanist/700.css'
 import '@fontsource/mr-dafoe/400.css'
 import '@fontsource/righteous/400.css'
-import './index.css'
-import AppEntry from './AppEntry.tsx'
+import '@/app/index.css'
+import AppEntry from '@/app/AppEntry'
 
 // Icons are rendered via <FontAwesomeIcon>, which injects its own <svg>
 // elements directly — importing the CSS above and disabling the library's

@@ -1,0 +1,6 @@
+.adminLoading {
+	--accent: #ffffff;
+
+	min-height: 100dvh;
+	background-color: #222222;
+}

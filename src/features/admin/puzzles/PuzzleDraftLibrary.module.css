@@ -1,0 +1,7 @@
+.thumbnail {
+	display: block;
+	width: 100%;
+	max-width: 12rem;
+	margin-inline: auto;
+	aspect-ratio: 1;
+}

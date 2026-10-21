@@ -1,0 +1,24 @@
+.strip {
+	display: flex;
+	flex-shrink: 0;
+}
+
+.swatches > span {
+	display: inline-block;
+	width: 30px;
+	height: 30px;
+	margin: 0 2px;
+	border: 1px solid #bbb;
+	border-radius: 2px;
+}
+
+.continuous {
+	width: 100%;
+	height: 2rem;
+	border-radius: 0.25rem;
+	overflow: hidden;
+}
+
+.continuous > span {
+	flex: 1;
+}

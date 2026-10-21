@@ -1,0 +1,115 @@
+import type { AxialCoord, HexagonCell } from './hexagonTypes'
+import type { GridSize } from '@/domain/shapes/sizes'
+import { groupCells } from '@/domain/geometry'
+import { axialToPixel, boundingBox } from './hexagonLayout'
+import type { HexagonLayout } from './hexagonLayout'
+
+export const HEXAGON_GRID_RADII: Record<GridSize, number> = {
+	sm: 3,
+	md: 4,
+	lg: 6,
+}
+export const HEXAGON_GRID_RADIUS = HEXAGON_GRID_RADII.md
+
+interface CubeCoord {
+	readonly q: number
+	readonly r: number
+	readonly s: number
+}
+
+function toCube({ q, r }: AxialCoord): CubeCoord {
+	return { q, r, s: -q - r }
+}
+
+function cubeDistance(c: CubeCoord): number {
+	return Math.max(Math.abs(c.q), Math.abs(c.r), Math.abs(c.s))
+}
+
+function rotate60(c: CubeCoord): CubeCoord {
+	return { q: -c.r, r: -c.s, s: -c.q }
+}
+
+function reflect(c: CubeCoord): CubeCoord {
+	return { q: c.q, r: c.s, s: c.r }
+}
+
+// All images of a coordinate under the kaleidoscope's symmetry group: the
+// 6 rotations of the hexagon, each with and without a mirror reflection
+// (dihedral group D6, order 12). Duplicate images collapse naturally, so
+// orbit size is 12 for a generic cell, 6 for a cell that sits on one of
+// the 6 mirror axes, and 1 for the center cell.
+function symmetryOrbit(coord: AxialCoord): CubeCoord[] {
+	const images = new Map<string, CubeCoord>()
+	let current = toCube(coord)
+	for (let i = 0; i < 6; i++) {
+		for (const candidate of [current, reflect(current)]) {
+			images.set(`${candidate.q},${candidate.r}`, candidate)
+		}
+		current = rotate60(current)
+	}
+	return [...images.values()]
+}
+
+// Deterministic id for a coordinate's symmetry group: the
+// lexicographically-smallest (q, r) coordinate in its orbit, rotated one
+// more 60-degree step. The un-rotated lexicographic minimum lands the
+// clickable wedge at the 9-10 o'clock position; rotating it once moves
+// the wedge to 11-12 o'clock, where the controls above the grid are
+// positioned, without disturbing the underlying symmetry math. Every cell
+// in the same mirror group resolves to the same id.
+function groupIdFor(coord: AxialCoord): string {
+	const lexMin = symmetryOrbit(coord).reduce((min, c) =>
+		c.q < min.q || (c.q === min.q && c.r < min.r) ? c : min,
+	)
+	const canonical = rotate60(lexMin)
+	return `${canonical.q},${canonical.r}`
+}
+
+// Generates every hex cell in the kaleidoscope: a filled hexagon of the
+// given radius, each cell tagged with its mirror-symmetry group id and
+// whether it's the clickable representative for that group (see
+// `groupIdFor` — thanks to the symmetry, the representative always lands
+// in the same contiguous 30-degree wedge of the grid, just like the
+// "editable slice" in the original app).
+export function generateHexagonCells(
+	radius: number = HEXAGON_GRID_RADIUS,
+): HexagonCell[] {
+	const cells: HexagonCell[] = []
+	for (let q = -radius; q <= radius; q++) {
+		for (let r = -radius; r <= radius; r++) {
+			const cube = toCube({ q, r })
+			if (cubeDistance(cube) > radius) continue
+			const groupId = groupIdFor({ q, r })
+			cells.push({ q, r, groupId, isClickable: groupId === `${q},${r}` })
+		}
+	}
+	return cells
+}
+
+// Preserves insertion order (a plain `Map` does), since iteration order of
+// the groups matters for the clickable wedge's visual sequence.
+export function groupHexagonCells(
+	cells: readonly HexagonCell[],
+): Map<string, HexagonCell[]> {
+	return groupCells(cells)
+}
+
+// Every distinct mirror-symmetry group id in the grid (9 at the default
+// radius, one per clickable tile) — lets callers (e.g. the design
+// randomizer) know which groups exist without needing the full cell list.
+export function getGroupIds(radius: number = HEXAGON_GRID_RADIUS): string[] {
+	return [...groupHexagonCells(generateHexagonCells(radius)).keys()]
+}
+
+// The grid's overall (width / height) ratio, independent of `hexSize` — a
+// uniform scale factor cancels out of the ratio — so this reflects the
+// same shape HexagonGrid renders (and the export service rasterizes from)
+// without needing a live DOM/SVG element to measure.
+export function computeGridAspectRatio(radius: number = HEXAGON_GRID_RADIUS) {
+	const layout: HexagonLayout = { orientation: 'flat', size: 1 }
+	const centers = generateHexagonCells(radius).map(cell =>
+		axialToPixel(cell, layout),
+	)
+	const { minX, minY, maxX, maxY } = boundingBox(centers, layout)
+	return (maxX - minX) / (maxY - minY)
+}

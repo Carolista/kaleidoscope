@@ -1,0 +1,9 @@
+.playtest {
+	margin-block: 0.75rem;
+}
+
+.actions {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}

@@ -1,0 +1,68 @@
+.gridGraphic {
+	display: block;
+	width: 90%;
+	margin: auto;
+	overflow: visible;
+}
+
+.targetCell,
+.mirrorCell,
+.wedgeCell,
+.pieceTile {
+	stroke: var(--accent);
+	stroke-width: 0.6;
+	stroke-linejoin: round;
+}
+
+.mutedMirrorCell {
+	opacity: 0.25;
+}
+
+.pieceOutline,
+.selectedOutline {
+	fill: none;
+	pointer-events: none;
+	stroke-linejoin: round;
+	stroke-linecap: round;
+}
+
+.outlineHalo {
+	stroke: var(--base);
+	stroke-width: 4;
+}
+
+.outlineEdge {
+	stroke: var(--accent);
+	stroke-width: 1.5;
+}
+
+.selectedOutline .outlineEdge {
+	stroke-width: 2.5;
+	stroke-dasharray: 3 2;
+}
+
+.wedgeCell {
+	stroke-width: 1.5;
+	cursor: pointer;
+	touch-action: none;
+}
+
+.wedgeCell:hover {
+	fill: #808080;
+}
+
+.wedgeCell:focus:not(:focus-visible) {
+	outline: none;
+}
+
+.wedgeCell:focus-visible {
+	outline: 3px solid var(--accent);
+	outline-offset: -2px;
+}
+
+.draggedPiece {
+	position: fixed;
+	z-index: 10;
+	pointer-events: none;
+	overflow: visible;
+}

@@ -21,7 +21,7 @@ payment integration, or player progress/sync operations are included.
    a server-side SPA rewrite on GitHub Pages.
 5. Sign in with the Auth email/password used to bootstrap your admin assignment.
    The page verifies the current account against the RLS-protected `admin_account`
-   table before showing the hexagon puzzle lab. A normal account receives an
+   table before showing the puzzle lab. A normal account receives an
    explicit access-denied message.
 
 Use only the publishable key. Vite embeds `VITE_` variables in browser assets;
@@ -35,24 +35,33 @@ and refreshed/replaced identities are rechecked. Auth storage is separate from
 the design save. Sign-out affects this device, not all other sessions. Browser
 storage holds a session token: sign out on shared devices.
 
-### Admin hexagon puzzle lab
+### Admin puzzle lab
 
 After sign-in, choose a palette from the visual Supabase swatch picker (including
-drafts), choose an exact recipe, and press **Randomize puzzle** as often as you
-like. Selecting another palette also recolors the current playtest without
+drafts), choose any of the six shapes and an exact recipe, and press
+**Randomize puzzle** as often as you like. A puzzle's shape is fixed once saved. Selecting another palette also recolors the current playtest without
 changing its seed, layout, or placements.
 
 | Difficulty | Board | Rotation |
 | --- | --- | --- |
-| Easy | Small (6 wedge tiles) | No |
-| Moderate | Medium (9 wedge tiles) | No |
-| Moderate | Small (6 wedge tiles) | Yes |
-| Hard | Large (16 wedge tiles) | No |
-| Hard | Medium (9 wedge tiles) | Yes |
-| Super hard | Large (16 wedge tiles) | Yes |
+| Easy | Small | No |
+| Moderate | Medium | No |
+| Moderate | Small | Yes |
+| Hard | Large | No |
+| Hard | Medium | Yes |
+| Challenging | Large | Yes |
 
-Seeds are generated automatically using browser cryptographic randomness; the
-current seed remains visible for reference, not as a required text input.
+| Shape | Small | Medium | Large | Rotation step |
+| --- | --- | --- | --- | --- |
+| Hexagon | 6 wedge tiles | 9 | 16 | 60° |
+| Triangle | 5 wedge tiles | 12 | 22 | 60° (flips each tile up/down) |
+| Diamond star | 6 | 10 | 15 | 180° |
+| Hexagram | 6 | 12 | 20 | 60° (flips each tile up/down) |
+| Circle rings | 6 | 9 | 16 | 60° |
+| Pinwheel | 4 | 6 | 9 | 180° |
+
+Seeds are generated automatically using browser cryptographic randomness and are
+not displayed or entered manually.
 Already-previewed seeds are skipped per shape/exact recipe for this mounted lab
 session, even when switching palettes or recipes and back. Leaving/reloading the
 lab clears that history. Each randomization starts a fresh playtest.
@@ -69,8 +78,8 @@ Double-click/double-tap an occupied board piece, or drag it back to the tray, to
 return it without losing orientation. Keyboard users activate a tray piece with
 Enter/Space to rotate/select, then activate a wedge tile to place; Delete/Backspace
 on an occupied board tile returns its piece. There are no rotation/return buttons.
-Invalid placements leave the board unchanged and show a message. **Restart**
-clears only the playtest. Square tray containers keep all six orientations at
+Invalid placements leave the board unchanged; playtest feedback is announced to
+screen readers only. **Restart** (beside the pieces) clears only the playtest. Square tray containers keep all six orientations at
 the same tile scale without changing size; selection has one subtle border.
 The first-rotation player-set tutorial is planned for later.
 
@@ -79,27 +88,136 @@ their stable palette ID and ordered color slots against that result, so correcti
 update targets and pieces together without changing placement/layout. Failed reads
 show an error instead of silently falling back to the local player catalog.
 
-This milestone is an in-memory lab, not a saved draft library. Reloading or signing
-out discards generated puzzles and playtests. No database writes, player attempts,
-completions, reward grants, guest imports, or Zen autosaves occur. Atomic draft
-save/library/set/reward tools are the next authoring milestone.
+After generating, enter a **Puzzle name** and press **Save draft**. Apply the
+draft-saving migration below first. The save atomically creates an unpublished,
+unassigned puzzle and its private authoring record, with its palette stored on the
+puzzle; it does not save playtest placements. A successful save locks saving until
+the next randomization. Name, palette, and recipe
+stay available for the next generation without changing the saved puzzle. A revised
+name carries into the next randomization; an unchanged saved name is cleared.
+Leaving with a revised next-puzzle name warns before discarding it. Repeated clicks are
+blocked while saving, and retrying an unchanged failed request reuses its ID.
+Errors preserve the preview and form values.
 
-When draft saving is added, saved puzzle/authoring records will also supply the
-persistent excluded seeds keyed by shape and exact size/rotation recipe,
-independent of palette. No separate blacklist table is planned: saving reserves
-the seed, and deleting an unused draft frees it (unless another saved puzzle
-still uses that seed/recipe). Persistent exclusions are not implemented in this
-memory-only milestone.
+Every randomization checks saved puzzle/authoring rows for excluded seeds keyed
+by shape and exact size/rotation recipe, independent of palette.
+No separate blacklist table is used. Deleting the last unused saved puzzle for a
+seed/recipe removes its persistent exclusion; mounted-session preview history
+still applies until leaving/reloading the lab. A failed seed read blocks
+randomization with an error rather than silently ignoring saved puzzles.
+
+Saved drafts survive reload/sign-out, but unsaved previews and playtest placements
+do not. The admin workspace opens in the **Puzzle drafts** library, showing
+unpublished drafts of every shape with target thumbnails, shape/recipe labels, and
+group assignment. Filter by shape and track (and, in the Assigned view, purpose and group);
+refresh to pick up changes from another tab. **New puzzle** opens the creation workspace; choosing the **Drafts** tab
+returns to browsing (with the usual unsaved-changes prompt).
+
+Cards are not navigation links. Each shows a centered thumbnail and details,
+with a bottom row holding the custom selection checkbox at left and square
+icon-only actions at right: a blue classic Edit icon and, only for unassigned
+drafts, a red classic Delete icon. Selected cards are highlighted blue. Use **Edit** to playtest the stored definition (not a regenerated seed).
+Edit its name or visual palette selection and press **Save Changes**.
+For an unassigned draft, the recipe selector and wand **Randomize puzzle** button
+can preview a replacement without deleting the puzzle. Name and palette
+are retained; each randomization resets playtest placements. **Save Changes**
+atomically replaces the design, recipe, seed, and private solution under the same
+puzzle ID, then returns to the library. Changing the recipe selector alone does
+not change the preview. Leaving without saving keeps the original stored design.
+Assigned drafts can also replace their design (including scheduled ones, until release),
+but the new recipe must fit the group's track (basic or rotation). Apply the replacement migration below first.
+Palette selection recolors without resetting playtest state. Changes remain local
+until saved; leaving an unsaved workspace warns before discarding edits.
+**Delete draft** requires explicit confirmation and is only available for unassigned drafts. The database rechecks these rules at write time,
+including content that was assigned or scheduled after the library loaded.
+
+Scheduled/live puzzles are excluded from this draft library and cannot be edited
+or deleted through its RPCs. Draft group assembly is available under **Puzzles > Groups**:
+create a named group with a purpose (Undecided, Core, Reward, Daily, or Pack), a shape
+(not for Daily, which mixes shapes), and a track (Basic or Rotation for Core and Reward; also
+Mixed for Pack; none for Undecided and Daily), then use
+**Puzzles > Puzzles** gallery selection and **Assign to group** to append unassigned drafts that
+the group accepts (matching shape and track).
+No puzzle count is enforced; 12, 18, or other counts remain possible. Cards show
+the assigned group's purpose and name (unassigned puzzles show Unassigned). In the group workspace, edit
+the name, purpose, shape, and track (the database rejects a change the members violate),
+drag members into a new order, or remove them without deleting their saved designs.
+Each member shows its saved target thumbnail beside its name and drag handle
+(keyboard: Up/Down/Home/End on a focused handle); the square-minus icon removes it
+from the group only. One blue **Save** beside the name writes the details and staged order together;
+removal saves immediately. Unsaved edits and staged order are guarded on exit.
+Group lists filter by purpose, shape, and track.
+Draft groups use landscape cards: the first ordered member's saved-design thumbnail
+spans the left column, with name, purpose, shape, track, and member count aligned
+top right and square Edit/Delete icons at the bottom right. Empty groups show a placeholder. Thumbnails
+resolve current Supabase palette colors without regenerating designs.
+The large **New group** plus opens creation. Deleting a group requires confirmation
+and unassigns its puzzles without deleting their designs or private solutions.
+Pricing/shop products, selection rules, scheduling, and publishing tools follow
+separately (shape order and rewards are under **Progression**).
+No player attempts, completions, reward grants, guest imports,
+or Zen autosaves are written.
+
+Select card checkboxes for **Change palette** or **Delete selected** (shown only
+when every selected draft is unassigned). **Show group** narrows the gallery to one
+group's members. **Select all** affects the current filters only, with a mixed state for partial selection;
+changing a filter or explicitly refreshing clears selection. Bulk palette changes
+use visual swatches and an explicit **Apply palette** action. Card and bulk deletion
+require a confirmation listing the count and names. Assigned drafts cannot be
+deleted, but can receive a palette change while unpublished. Apply the bulk-action
+migration below before using gallery deletion or bulk actions.
+
+Each bulk operation is one all-or-nothing database transaction. Missing, assigned
+(for deletion), or scheduled/live puzzles reject the batch. The database rechecks
+these rules even if the library view has become stale. Errors preserve selection
+and the pending action; successful operations clear selection and reload the list.
 
 The authoring model separates the version-2 slot-based public definition
 (`version`, `geometry`, `target`, `pieces`) from palette/recipe metadata and private
-seed, generator version, and known solution. Persist the full definition when
-saving is added, not just its seed. The legacy player POC's default easy recipe
+seed, generator version, and known solution. Saving persists the full definition,
+not just its seed. The legacy player POC's default easy recipe
 and rendering adapter remain compatible; it is not switched to live content yet.
 
 The lazy-loaded admin route does not initialize Supabase for normal player
 visits. Missing configuration shows a setup error on the admin page without
 breaking the existing Zen/Puzzle app. The UI check is not a replacement for RLS.
+
+### Admin palette library
+
+Open **Palettes > Palettes** in the admin navigation. The catalog reads all
+Supabase palettes with pagination; the original 19 already exist as drafts from
+the initial migration. Zen still uses its local array and is unchanged.
+
+- **New palette** starts with a blank name and the first catalog palette's colors
+  (white slots if empty). **Duplicate** starts with a blank name and the selected
+  palette's ordered colors. It creates a new record, not a reference or copy of
+  release state, rewards, pack membership, or grants.
+- **Edit** changes a draft name and its five ordered six-digit hex colors using
+  text fields or native color inputs. Duplicate colors are valid. The three
+  field columns have equal widths.
+- The **Sandbox** uses a medium hexagon and a local **Randomize** button: each
+  palette slot has a 20% chance, with no base color. It is not puzzle generation
+  and does not permit painting. Color/name/theme edits do not rerandomize it.
+  Invalid hex text remains visible and blocks saving/preview until corrected.
+- **Usage** reads stored puzzle target slots for thumbnails, group context,
+  reward and palette group references, and grant/correction counts. It does not load
+  private solutions or account identities. Refresh usage explicitly if needed.
+- **Delete** requires confirmation naming the palette and no saved references.
+  Failure to load usage disables deletion; write-time database checks remain
+  authoritative if the view becomes stale.
+- **Delete selected** appears in the selection bar only when every checked palette
+  is an unassigned draft (in no palette group and unreferenced). It confirms the
+  names and deletes them in one all-or-nothing request; apply the
+  [bulk palette deletion migration](#apply-bulk-palette-deletion) first.
+- Scheduled/live palettes are read-only here, but can be duplicated. Publishing,
+  release scheduling, exceptional published color corrections, starter selection,
+  pack organization, and reward mapping are separate later tools.
+
+Save returns to the palette library and refreshes it, along with the cached
+catalog used by puzzle authoring selectors and group previews; saved puzzle
+definitions, seeds, and solutions do not change. Unsaved edits are guarded on tab changes, sign-out, route exit, and reload.
+Failed writes preserve inputs; a conflict requires refreshing/reviewing the
+catalog rather than silently replacing newer data.
 
 ### Database TypeScript types
 
@@ -113,6 +231,31 @@ may appear in the export; application queries default to `public`.
 This step needs no CLI or schema change. Deployment environment configuration is
 separate from local `.env.local`; add these same public build variables to the
 deployment build when admin access is ready to deploy.
+
+## Palette draft management migration
+
+After applying the preceding migrations through
+[draft-set deletion](./migrations/20261018070000_delete_draft_set.sql), run
+[20261018080000_manage_palette_drafts.sql](./migrations/20261018080000_manage_palette_drafts.sql)
+once in the Dashboard SQL Editor as database owner, including its transaction.
+Then run [the palette assertions](./tests/manage_palette_drafts.sql) separately.
+All 54 assertions must pass; fixtures roll back. On error, stop and run
+`rollback;` before continuing. Do not rerun migrations already applied.
+
+This adds `manage_palette_draft` for create/update/delete only, with caller RLS,
+an explicit admin check, READ COMMITTED isolation, and the shared catalog lock.
+Updates/deletes compare the loaded name, colors, and revision; name-only edits
+are protected even though only color changes increment revision. Identical
+create/update retries confirm the expected result without duplicating records or
+incrementing revisions again. Missing records and stale content fail explicitly.
+Scheduled/live palettes are rejected by this draft-only RPC.
+
+Deletion rejects references from puzzles, starters, reward mappings, palette packs,
+grants, or correction history; nothing is silently detached. Existing constraints
+validate names and exactly five ordered hex colors. The RPC never accepts release
+metadata or a new revision from the client. It adds no player write permissions.
+The hosted migration and rollback-only assertions have been confirmed successful
+by the owner.
 
 ## Apply using the Dashboard
 
@@ -217,6 +360,337 @@ Keep authoring transactions short and surface database failures in the portal.
 The deferred global dependency checks prioritize consistency over bulk-write
 throughput; revisit only if real catalog size makes authoring slow.
 
+## Apply atomic draft saving
+
+For projects that already applied both existing migrations:
+
+1. Open a new Supabase **SQL Editor** query.
+2. Paste the complete contents of
+   [20261018020000_save_puzzle_draft.sql](./migrations/20261018020000_save_puzzle_draft.sql)
+   and run once as the database owner (`postgres`). Do not rerun the initial
+   schema or pre-release editing migration.
+3. In another query, run
+   [save_puzzle_draft.sql](./tests/save_puzzle_draft.sql) as the database owner,
+   without an automatic RLS-role wrapper. It creates rollback-only fixtures and
+   explicitly switches to `anon`/`authenticated` to check access. All 12 assertions
+   should return `PASS`; the final `rollback` removes the fixtures.
+4. In the admin lab, randomize, name a puzzle, select its intended use, and save.
+   Confirm the unpublished-draft success message. Saved rows appear in the draft
+   library and Dashboard Table Editor under `puzzles` and `puzzle_authoring`.
+
+This migration adds one `save_hex_puzzle_draft` RPC, no tables or player write
+permissions. It uses caller RLS plus an explicit admin check, the existing catalog
+transaction lock, and one transaction for both rows. Identical retries return the
+same ID; a different payload cannot overwrite an existing ID. Updated TypeScript
+types include the RPC signature.
+
+## Apply draft library editing/deletion
+
+After the atomic draft-saving migration:
+
+1. Run the complete
+   [20261018030000_manage_puzzle_drafts.sql](./migrations/20261018030000_manage_puzzle_drafts.sql)
+   once in SQL Editor as `postgres`. Do not rerun the earlier migrations.
+2. Run [manage_puzzle_drafts.sql](./tests/manage_puzzle_drafts.sql) in another query
+   as `postgres`, without an automatic RLS wrapper. Expect **21 PASS results**;
+   its fixtures roll back.
+3. Refresh the admin draft library, open a saved puzzle, change its name/palette
+   or intended use, save, and reopen to verify. Use an unwanted draft to test
+   deletion and its confirmation.
+
+The migration adds `edit_puzzle_draft` and `delete_puzzle_draft` RPCs with caller
+RLS, explicit admin checks, and the existing catalog lock. Metadata edits do not
+rewrite definitions or private provenance. Assigned drafts cannot switch use or
+be deleted, and scheduled/live content is rejected. Deletion cascades to the
+private authoring row, removing that row's persistent saved-seed exclusion.
+Other saved uses of the same seed/recipe and current session preview history
+still exclude it.
+
+## Apply draft design replacement
+
+After the bulk-action migration:
+
+1. Run the complete
+   [20261018050000_replace_puzzle_draft.sql](./migrations/20261018050000_replace_puzzle_draft.sql)
+   once in SQL Editor as `postgres`. Do not rerun earlier migrations.
+2. Run [replace_puzzle_draft.sql](./tests/replace_puzzle_draft.sql) as `postgres`,
+   without an automatic RLS wrapper. Expect **18 PASS results**; fixtures roll back.
+3. Open an unassigned draft, randomize a replacement, and save. Reopen it to verify
+   the saved design. Also try leaving a replacement without saving to verify that
+   the original remains unchanged.
+
+The new `replace_hex_puzzle_draft` RPC uses caller RLS, an explicit admin check,
+READ COMMITTED isolation, and the existing catalog lock. It rechecks existence,
+hexagon shape, unpublished status, and collection/daily references at write time.
+Public metadata/definition and private provenance/solution update in one transaction;
+failure in either write rolls back both. The puzzle ID is never deleted/recreated.
+Identical retries reapply the same content without creating a second puzzle.
+Metadata-only edits still use the existing RPC, preserving assigned-draft behavior.
+Replacement uses the same saved-seed exclusions as creation; its mounted editor also
+excludes the original seed and any replacement seeds already previewed per recipe.
+Replacing a design removes its old persistent seed exclusion unless another saved
+puzzle still uses it; mounted preview history continues to exclude it until leaving.
+
+## Apply draft set assembly
+
+After the design-replacement migration:
+
+1. Run the complete
+   [20261018060000_assemble_puzzle_sets.sql](./migrations/20261018060000_assemble_puzzle_sets.sql)
+   once in SQL Editor as `postgres`. Do not rerun earlier migrations.
+2. Run [assemble_puzzle_sets.sql](./tests/assemble_puzzle_sets.sql) as `postgres`,
+   without an automatic RLS wrapper. Expect **36 PASS results**; fixtures roll back.
+3. Open **Puzzles > Sets**, create a set, switch to **Puzzles > Puzzles**, select
+   unassigned Set/pack drafts, and use **Assign to set**. Open the set to check
+   membership, rename and drag to reorder, then **Save**, and remove a puzzle. Confirm removal leaves the puzzle in the
+   gallery and restores its unassigned edit/replacement/deletion controls.
+
+The `manage_draft_set` RPC creates/renames draft hexagon sets or atomically appends,
+removes, and reorders memberships under caller RLS, explicit admin authorization,
+READ COMMITTED isolation, and the catalog lock. Set roles use the existing
+Core/Reward/Paid schema; no tables or fixed-size constraints are added. Selection
+mode retains its existing `any` default; catalog ordering does not enforce a player
+completion order. Price/product and route configuration are not changed here.
+
+Only unpublished sets are managed. Appending requires unassigned, unpublished,
+same-shape Set/pack puzzles; daily drafts are ineligible. Puzzle membership remains
+exclusive across sets. Stale or invalid IDs and write failures reject the whole
+batch. Removal refuses prepared puzzles or qualifying-route dependencies rather
+than silently deleting references. Reordering preserves existing routes and
+requires the exact current membership; removals compact positions without deleting
+puzzles or authoring records. Set and membership reads paginate rather than
+silently truncating after 1000 rows.
+
+## Apply draft set deletion
+
+After the set-assembly migration:
+
+1. Run the complete
+   [20261018070000_delete_draft_set.sql](./migrations/20261018070000_delete_draft_set.sql)
+   once as `postgres`. Do not rerun earlier migrations.
+2. Run [delete_draft_set.sql](./tests/delete_draft_set.sql) as `postgres`, without
+   an automatic RLS wrapper. Expect **15 PASS results**; fixtures roll back.
+3. In **Puzzles > Sets**, use a card's trash icon. Cancel first to verify no change;
+   then confirm deletion of an expendable set. The cached puzzle drafts reload
+   assignments: all former members remain available as unassigned puzzles.
+
+`delete_draft_set` requires admin authorization and caller RLS, READ COMMITTED
+isolation, and the catalog lock. It atomically removes memberships and the set
+only; all puzzle/authoring rows remain intact. Scheduled/live sets, prepared member
+puzzles, progression steps, qualifying routes, reward rules/targets, qualifications,
+and grants block deletion. Meaningful dependent configuration is not silently
+cascaded away. Failures retain the UI confirmation for retry.
+
+## Apply gallery bulk actions
+
+After the draft-library migration:
+
+1. Run
+   [20261018040000_bulk_puzzle_drafts.sql](./migrations/20261018040000_bulk_puzzle_drafts.sql)
+   once in SQL Editor as `postgres`. Do not rerun earlier migrations.
+2. Run [bulk_puzzle_drafts.sql](./tests/bulk_puzzle_drafts.sql) as `postgres`,
+   without an automatic RLS wrapper. Expect **26 PASS results**; fixtures roll back.
+3. Refresh the gallery, select a few drafts, apply a palette, and verify their
+   thumbnails. Test card deletion and bulk deletion only on unwanted drafts.
+
+The `bulk_puzzle_drafts` RPC uses caller RLS, an explicit admin check, the existing
+catalog lock, and per-row release/reference validation. It accepts distinct,
+nonempty IDs and either `palette` (requiring a palette ID) or `delete`. Definitions,
+recipes, intended uses, and private provenance are unchanged by palette updates.
+Deletion cascades to private authoring, as with individual draft deletion. No
+player permissions are added.
+
+## Apply bulk palette deletion
+
+After the palette draft management migration:
+
+1. Run
+   [20261019010000_bulk_delete_palette_drafts.sql](./migrations/20261019010000_bulk_delete_palette_drafts.sql)
+   once in SQL Editor as `postgres`. Do not rerun earlier migrations.
+2. Run [bulk_delete_palette_drafts.sql](./tests/bulk_delete_palette_drafts.sql) as
+   `postgres`, without an automatic RLS wrapper. Expect **14 PASS results**;
+   fixtures roll back.
+
+`bulk_delete_palette_drafts(p_ids)` uses caller RLS, an explicit admin check,
+READ COMMITTED isolation, and the shared catalog lock. It accepts distinct,
+nonempty IDs and locks rows in ID order. Missing palettes, scheduled/live
+palettes, palette-set membership, or references from puzzles, starters, reward
+mappings, grants, or correction history reject the whole batch. Unlike single
+draft deletion, set membership is never removed silently. It returns the deleted
+IDs, which the client verifies. The hosted migration and assertions have been
+confirmed successful by the owner.
+
+## Apply pre-release puzzle editing
+
+After the bulk palette deletion migration:
+
+1. Run
+   [20261019020000_edit_prerelease_puzzles.sql](./migrations/20261019020000_edit_prerelease_puzzles.sql)
+   once in SQL Editor as `postgres`. Do not rerun earlier migrations.
+2. Run [edit_prerelease_puzzles.sql](./tests/edit_prerelease_puzzles.sql) as
+   `postgres`, without an automatic RLS wrapper. Expect **13 PASS results**;
+   fixtures roll back.
+
+`replace_hex_puzzle_draft` and `edit_puzzle_draft` now reject only live puzzles
+(published with `release_at` passed), so assigned and scheduled puzzles can be
+renamed, repaletted, and regenerated until release. Set membership, daily
+assignments, and release schedules are preserved; assigned puzzles still cannot
+change intended use, and deletion remains limited to unassigned drafts. Deferred
+release-dependency checks still apply. After this migration, the older
+[replace_puzzle_draft.sql](./tests/replace_puzzle_draft.sql) cases for assigned and
+scheduled replacement, and the scheduled-edit case in
+[manage_puzzle_drafts.sql](./tests/manage_puzzle_drafts.sql), are superseded and
+expected to fail. The hosted migration and assertions have been confirmed
+successful by the owner.
+
+## Apply shape-neutral puzzle authoring
+
+After the pre-release puzzle editing migration:
+
+1. Run
+   [20261019030000_shape_neutral_puzzle_authoring.sql](./migrations/20261019030000_shape_neutral_puzzle_authoring.sql)
+   once in SQL Editor as `postgres`. Do not rerun earlier migrations.
+2. Run [shape_neutral_puzzle_authoring.sql](./tests/shape_neutral_puzzle_authoring.sql)
+   as `postgres`, without an automatic RLS wrapper. Expect **23 PASS results**;
+   fixtures (including their own draft palette) roll back.
+3. Regenerate the database types, then deploy the app. The previously deployed
+   admin cannot save or replace puzzles between steps 1 and 3.
+
+`save_hex_puzzle_draft` and `replace_hex_puzzle_draft` are replaced by
+`save_puzzle_draft` and `replace_puzzle_draft`, which take `p_shape_id`.
+`manage_draft_set` gains `p_shape_id`, required on create and rejected for other
+actions. Any shape in the `shapes` table is accepted, so later puzzle shapes need
+no migration; the app decides which shapes it can author. Replacement rejects a
+shape change, and set assembly still requires members to match the set's shape.
+Generator versions are `hexagon-v2` and `<shape>-v1` for the other five shapes
+(`triangle`, `diamondStar`, `hexagram`, `circleRings`, `pinwheel`).
+
+The earlier suites that call the removed function names
+([save_puzzle_draft.sql](./tests/save_puzzle_draft.sql),
+[replace_puzzle_draft.sql](./tests/replace_puzzle_draft.sql),
+[manage_puzzle_drafts.sql](./tests/manage_puzzle_drafts.sql),
+[bulk_puzzle_drafts.sql](./tests/bulk_puzzle_drafts.sql),
+[assemble_puzzle_sets.sql](./tests/assemble_puzzle_sets.sql),
+[delete_draft_set.sql](./tests/delete_draft_set.sql), and
+[edit_prerelease_puzzles.sql](./tests/edit_prerelease_puzzles.sql)) are superseded
+after this migration. Before release, they were also run against it with local
+wrappers for the old names and kept their original pass counts. The hosted
+migration and assertions have been confirmed successful by the owner.
+
+## Apply groups and purposes
+
+After the shape-neutral puzzle authoring migration:
+
+1. Run
+   [20261020000000_groups_and_purpose.sql](./migrations/20261020000000_groups_and_purpose.sql)
+   once in SQL Editor as `postgres`. It runs in one transaction and preserves data.
+   Do not rerun earlier migrations.
+2. Run [groups_and_purpose.sql](./tests/groups_and_purpose.sql) as `postgres`, without
+   an automatic RLS wrapper. Expect **76 PASS results**; fixtures roll back.
+3. Regenerate the database types (`src/lib/supabase/database.ts`), then deploy the app.
+   The previously deployed admin cannot manage groups between steps 1 and 3. The types
+   currently in the repository were updated by hand to match this migration, so
+   regenerating should produce no functional change.
+
+A **group** is any ordered collection of puzzles or palettes; its **purpose** says how it
+is used (core, reward, daily, pack, or undecided). The migration:
+
+- Renames `puzzle_collections` to `puzzle_groups` (`kind` becomes `purpose`, `paid`
+  becomes `pack`, plus `undecided`, `daily`, and a new `track`), `collection_puzzles`
+  to `puzzle_group_members`, `palette_packs` to `palette_groups`,
+  `palette_pack_palettes` to `palette_group_members`, `reward_sets` to
+  `reward_puzzle_groups`, and `collection_grants` to `puzzle_group_grants`.
+- Derives each existing core/reward group's track from its puzzles (all without rotation:
+  basic; all with rotation: rotation). Groups that were empty or mixed become undecided;
+  pack groups become basic, rotation, or mixed.
+- Drops `puzzles.usage`. Puzzles that were meant for the daily feature move into a new
+  "Daily drafts" daily group. `puzzles.palette_id` is unchanged and stays required.
+- Drops the routes, route puzzles, set qualifications, core progression and steps,
+  `reward_shapes`, and the starter tables. It adds `shape_progression` (default order
+  Hexagon, Triangle, Diamond Star, Hexagram, Circle Rings, Pinwheel) and
+  `group_completions`.
+- Replaces `manage_draft_set`/`delete_draft_set` with `manage_puzzle_group` (create, update,
+  delete, append, remove, reorder), `manage_palette_set` with `manage_palette_group`, and
+  drops the intended-use argument from `save_puzzle_draft`, `replace_puzzle_draft`, and
+  `edit_puzzle_draft`.
+
+Rules enforced by the database:
+
+- Puzzle group `purpose` is `undecided`, `core`, `reward`, `daily`, or `pack`; palette
+  groups have no `daily`. Only daily groups have no shape. Core and reward groups have a
+  `basic` or `rotation` track, packs may also be `mixed`, and undecided and daily groups
+  have none. Members must match the shape (except daily) and track, including when a
+  member's recipe is replaced. Undecided groups cannot be published.
+- Shape access: the first `shape_progression` shape is open to everyone; a later shape
+  opens once the account has a `group_completions` row for a core group of the previous
+  shape (or an admin grant). Core groups are playable with the shape; reward and pack
+  groups also need a group grant.
+- A daily assignment requires a published puzzle that belongs to a daily group.
+
+Older SQL suites target the schema at the time of their migration; run each one right
+after its own migration, not after this one. A local harness that applies the
+migrations to PGlite and then runs the new suite is a convenient pre-flight check.
+
+## Apply progression tools
+
+After the groups and purposes migration:
+
+1. Run
+   [20261021000000_progression_tools.sql](./migrations/20261021000000_progression_tools.sql)
+   once in SQL Editor as `postgres`. It stops with a clear message, changing nothing, if a
+   shape already has two core groups on the same track; change all but one to another
+   purpose (Puzzles > Groups) and run it again.
+2. Run [progression_tools.sql](./tests/progression_tools.sql) as `postgres`, without an
+   automatic RLS wrapper. Expect **43 PASS results**; fixtures roll back.
+3. Regenerate the database types, then deploy the app. The types in the repository were
+   updated by hand to match, so regenerating should change nothing functional.
+
+This adds a unique rule of one `core` puzzle group per shape and track (with a friendlier
+error from a trigger), one reward rule per group, `manage_shape_progression` (reorder all
+shapes in one transaction), and `manage_group_reward` (replaced by the slots migration below; it replaced a group's palettes and bonus
+groups in one transaction; palettes must be in a palette group with the reward purpose, and
+bonus groups must be reward groups). A trigger on `shape_progression` rejects any change once a
+core group is published.
+
+The previous suite ([groups_and_purpose.sql](./tests/groups_and_purpose.sql)) belongs to the
+migration before this one: run it before applying this migration, not after, because its
+fixtures create core groups that the new rule rejects.
+
+## Apply progression slots
+
+After the progression tools migration:
+
+1. Run
+   [20261022000000_progression_slots.sql](./migrations/20261022000000_progression_slots.sql)
+   once in SQL Editor as `postgres`. It stops with a clear message, changing nothing, if a shape
+   already has two reward groups on the same track; change all but one to another purpose
+   (Puzzles > Groups) and run it again.
+2. Run [progression_slots.sql](./tests/progression_slots.sql) as `postgres`, without an automatic RLS
+   wrapper. Expect **35 PASS results**; fixtures roll back (existing core and reward groups are set aside
+   inside the test transaction only).
+3. Regenerate the database types, then deploy the app.
+
+Each shape has four slots: a basic and a rotation core group, and a basic and a rotation bonus
+(reward) group. This migration:
+
+- Allows at most one `reward` puzzle group per shape and track, like core groups (the friendlier
+  error comes from the same trigger).
+- Links the bonus groups of a shape to its rotation core group automatically: a trigger on
+  `puzzle_groups` keeps `reward_puzzle_groups` equal to the shape's reward groups, and the
+  migration rebuilds those links once for existing data (hand-picked links are replaced).
+- Replaces `manage_group_reward` with `manage_progression_slot(shape, purpose, track, group, palettes)`,
+  which atomically fills a slot with a group (setting its purpose, shape, and track), turns the
+  previous occupant into an Undecided group with no reward, and sets the one reward palette
+  (which must be in a reward palette group). A null group empties the slot. Published groups are
+  rejected, and a group that already fills another slot must be emptied there first.
+- A group with automatic links (the rotation core group, or a bonus group) is changed through its
+  slot; deleting it or changing its purpose in Puzzles > Groups is refused until the slot is emptied.
+
+The earlier suites belong to their own migrations: run
+[groups_and_purpose.sql](./tests/groups_and_purpose.sql) and
+[progression_tools.sql](./tests/progression_tools.sql) right after their migrations, not after
+this one (`progression_tools.sql` calls the removed `manage_group_reward`).
+
 ## Bootstrap the one admin
 
 An ordinary app user cannot make themselves an admin. There is no public
@@ -279,29 +753,23 @@ knowing those values does not grant access to gated puzzle definitions.
 | `palettes` | Catalog read | Catalog read |
 | `palette_corrections` | None | None |
 | `shapes` | Catalog read | Catalog read |
-| `puzzle_collections` | Catalog read | Catalog read |
+| `puzzle_groups` | Catalog read | Catalog read |
 | `puzzles` | Initial core set and current daily definitions only | Authorized definitions only |
 | `puzzle_authoring` | None | None |
-| `collection_puzzles` | Released collection memberships | Same |
-| `completion_routes` | Released collection routes | Same |
-| `route_puzzles` | Released collection route memberships | Same |
-| `core_progression` | Released core metadata | Same |
-| `core_steps` | Released steps of the released core | Same |
-| `reward_rules` | Released collection reward rules | Same |
+| `puzzle_group_members` | Released group memberships | Same |
+| `shape_progression` | Order of released shapes | Same |
+| `reward_rules` | Released group reward rules | Same |
 | `reward_palettes` | Released rules and released target palettes | Same |
-| `reward_sets` | Released rules and released target sets | Same |
-| `reward_shapes` | Released rules and released target shapes | Same |
-| `starter_palettes` | Released starter palette IDs | Same |
-| `starter_shapes` | Released starter shape IDs | Same |
-| `palette_packs` | Catalog read | Catalog read |
-| `palette_pack_palettes` | Released packs and palettes | Same |
+| `reward_puzzle_groups` | Released rules and released target groups | Same |
+| `palette_groups` | Catalog read | Catalog read |
+| `palette_group_members` | Released groups and palettes | Same |
 | `daily_schedule` | Global rollover time | Same |
 | `daily_puzzles` | Current five-day assignments | Same |
 | `puzzle_completions` | None | Read own rows only |
-| `set_qualifications` | None | Read own rows only |
+| `group_completions` | None | Read own rows only |
 | `palette_grants` | None | Read own rows only |
 | `shape_grants` | None | Read own rows only |
-| `collection_grants` | None | Read own rows only |
+| `puzzle_group_grants` | None | Read own rows only |
 | `feature_grants` | None | Read own rows only |
 | `puzzle_attempts` | None | Read own rows only |
 | `daily_play_sessions` | None | Read own rows only |
@@ -336,33 +804,39 @@ identity and do not accept an arbitrary user ID.
   are constrained. Seeds and known solutions live in admin-only `puzzle_authoring`.
 - **Definitions:** the initial format uses `geometry`, a `target` map from cell key
   to color slot, and `pieces` containing unique IDs and `tiles` with integer
-  `q`/`r` offsets and `color_slot`. This prepares hexagon authoring; it is **not**
+  `q`/`r` offsets and `color_slot`. Hexagon definitions use `geometry.radius` and
+  axial cell coordinates; the other shapes use `geometry.size` (pinwheel: tiles
+  per spoke). Triangle and hexagram tiles use 3x-scaled axial centroid
+  coordinates, circle rings use the hex cell at the same ring position, and
+  diamond star and pinwheel use (row, col) within the top point or spoke. This format is **not**
   a conversion of the current version-1 POC. Structural checks are not a solver,
   geometry validator, difficulty certification, or uniqueness guarantee.
-- **Collections:** `kind` distinguishes `core`, `reward`, and `paid`. Membership
-  enforces one collection per puzzle, matching shapes, and distinct positive
-  positions. Daily puzzles cannot be members. `selection_mode` records fixed
+- **Groups:** `puzzle_groups.purpose` distinguishes `undecided`, `core`, `reward`, `daily`, and
+  `pack`; `track` is `basic`, `rotation`, or `mixed`. Membership enforces one group
+  per puzzle, distinct positive positions, and the group's shape (except daily) and
+  track. A daily group has no shape, so it can mix shapes. `selection_mode` records fixed
   versus freely selectable order. For unauthenticated guest play the intro
   sequence is necessarily enforced locally; guests have no server progress
   identity. Do not describe that UX ordering as proof of completion.
-- **Core:** one `core_progression` row and contiguous `core_steps` established
-  before launch. Publishing locks the sequence. Step 1 is the guest offering.
-  Later core definitions require a registered identity, the shape, and recorded
-  qualification in all preceding core steps.
-- **Routes:** each route requires its listed member puzzles; any completed route
-  can qualify a core set. A qualification records one successful route, while
-  individual completions preserve evidence for later harder-route rewards.
-- **Rewards:** a rule applies to any qualifying route when `route_id` is null,
-  or to that specific route otherwise. Child tables award one/multiple palettes,
-  optional reward sets, or shapes. The final randomizer is represented by a
-  `feature_grants` row with source `core_progression`; no hint economy is included.
-- **Access:** palette/shape/collection grants preserve distinct rule sources.
+  A puzzle stores its own `palette_id`; the store will look up which palette
+  groups sell it, and puzzle completion never grants a palette.
+- **Progression:** `shape_progression` orders the shapes (position 1 is the starter).
+  Each shape has two core groups, basic and rotation; completing either (every
+  puzzle solved, recorded in `group_completions`) opens the next shape.
+- **Rewards:** a `reward_rules` row applies when its group is completed. Child tables
+  award exact palettes and/or bonus puzzle groups (which must have the `reward`
+  purpose). The intended pattern per shape is: basic core awards one palette,
+  rotation core awards one palette plus two bonus groups (one basic, one rotation),
+  and each bonus awards one palette. The rules stay flexible; a later admin screen
+  will check them. The final randomizer is a `feature_grants` row with source
+  `progression`, earned after all core and bonus groups; no hint economy is included.
+- **Access:** palette/shape/group grants preserve distinct rule sources.
   Current grant sources are `reward` and `admin`; payment-origin grants and
   revocation references will arrive with commerce, not unverified purchase flags.
-  Reward and paid puzzle definitions require both a collection grant and shape
+  Reward and pack puzzle definitions require both a group grant and shape
   ownership. Puzzle palette ownership is never required.
-- **Starters:** initial shape availability is seeded as Hexagon only. Choose
-  starter palettes explicitly; no palette is silently made free.
+- **Starters:** the first progression shape is the starter. Starter palettes are
+  the members of core palette groups; no palette is silently made free.
 - **Daily:** an assignment lasts exactly 120 hours, at global absolute timestamps.
   Choose `daily_schedule.rollover_time_utc` before scheduling entries; no hour is
   silently selected. Assignments must match that time, and distinct release
@@ -387,13 +861,12 @@ Author in this order:
 
 1. Prepare/publish palettes and supported shapes.
 2. Save a puzzle draft and its authoring provenance/known solution, then publish.
-3. Assemble collection membership, routes, and reward rules, then publish the set.
-4. Fill the complete core sequence, then publish the core progression for launch.
-5. Set the global UTC rollover time, then schedule published daily definitions
-   using `daily_puzzles`.
+3. Assemble group membership and reward rules, then publish the group (it needs a purpose).
+4. Fill the shape progression with published core groups ready by launch.
+5. Set the global UTC rollover time, then schedule published puzzles from daily
+   groups using `daily_puzzles`.
 
-Puzzle and collection publication checks dependency release dates. Core
-publication checks contiguous steps and that its sets are published by launch.
+Puzzle and group publication checks dependency release dates, and groups need a purpose other than undecided.
 The migration does not publish incomplete example puzzles or invent content
 choices.
 
@@ -411,9 +884,9 @@ migration, and rendering consistency are application work, not performed here.
 ## Seeded data
 
 - Six supported shapes, with released catalog metadata.
-- Hexagon as the sole starter shape.
+- The default shape progression, with Hexagon first (the only starter shape).
 - All 19 current palettes copied exactly from the app catalog, as **drafts**.
-- No starter palettes, puzzles, sets, daily schedule setting, purchases, admin assignment,
+- No starter palettes, puzzles, groups, daily schedule setting, purchases, admin assignment,
   or player data.
 
 The app continues behaving exactly as before until intentionally integrated.
@@ -422,8 +895,9 @@ The app continues behaving exactly as before until intentionally integrated.
 
 - Player Auth/registration flows, explicit guest import, and the rest of the admin
   authoring workspace. Admin sign-in, generated types, and six-recipe isolated
-  playtesting are available; atomic draft saving/library, starter selection,
-  set/routes/core/reward/release tools are still pending.
+  playtesting, atomic draft saving/library, draft group assembly/deletion,
+  draft palette management, and the progression and reward screens are available; the
+  release tools remain pending.
 - Server-side structural/geometric authoring validation and slot-based saved-content
   integration into player mode. The admin engine and palette-slot rendering adapter
   exist; the player POC remains local. Regenerate types when public schema changes.

@@ -1,7 +1,12 @@
 # Kaleidoscope: Project Context
 
 Current behavior, architecture, and working standards. For rationale, see
-[DECISIONS.md](./DECISIONS.md).
+[DECISIONS.md](./DECISIONS.md). For where the project is going and what comes
+next, see [ROADMAP.md](./ROADMAP.md).
+
+For the UI consistency/reuse audit, implementation status, and reuse index, see
+[UI_AUDIT.md](./UI_AUDIT.md). Its progress section distinguishes implemented
+foundations from remaining recommendations.
 
 ## App
 
@@ -14,6 +19,187 @@ prototype. Puzzle Mode uses the small hexagon, Cabo palette, and connected
 1/2/3-tile pieces placed in the six-tile symmetry wedge. Its independent local
 React state survives mode switches but not reloads; it never persists over Zen
 designs. See [README.md](./README.md#puzzle-mode-prototype) for scope.
+
+The separate `#/admin` portal uses Supabase password Auth, generated database
+types, and a database-backed singleton admin check. Its puzzle lab authors
+puzzles in all six shapes with all six size/rotation recipes, visual Supabase palettes (including
+drafts), and one-click randomization. Version-2 definitions use ordered palette
+slots, with private seed/generator/solution data kept separate. Playtests are
+memory-only, while named drafts save atomically to Supabase; a puzzle's purpose comes from its group.
+No player progress writes or Zen autosaves occur.
+See [Supabase instructions](./supabase/README.md) for current scope.
+
+The shared New/Edit form uses two columns from 640px: palette refresh/picker on the
+left; name, shape, recipe/wand randomizer, and save rows on the right. Creating a
+puzzle inside a filtered group fixes its shape (unless the group is daily) and limits
+the recipes to the group's track.
+Shape, like recipe, applies at the next randomization; Edit shows it but fixed.
+Puzzle-creator palette pickers (New, Edit, bulk) list palettes by palette group and
+position, then unassigned palettes by name, falling back to names without group data.
+Narrower screens stack the columns. New-puzzle fields are visible before generation;
+saving requires a named preview. The preview omits repeated palette labels and the
+seed. Save/load status sits below the form content so it never shifts the layout.
+The compact header groups account, sign-out, and theme controls at the right,
+with favicon navigation at the left. Admin defaults to dark mode using the shared
+neutral charcoal/white theme helper, without initializing player state.
+
+Admin navigation has peer sections: **Puzzles | Palettes | Shapes | Progression**. Puzzles and
+Palettes each offer **Groups** (default) | items; items filter by **Unassigned**
+(default) | **Assigned** | **Scheduled** | **Published**. Scheduled and
+Published are placeholders. Everything stays a draft until published; the first
+tab names the unassigned stage. Assigned lists sort by group name, then group position
+([groupOrder](./src/features/admin/groups/groupOrder.ts)); puzzles without a group follow by name. A future top-level orchestration view will map how
+groups, rewards, and packs connect and roll out. Group lists filter by purpose (puzzle groups also by
+shape and track); puzzle items filter by shape and track, and the Assigned view by purpose and group. Section/view changes use the
+navigation guard and reset lower choices to their defaults.
+
+**Shapes** is a workbench for the grid sizes (n) and piece mixes behind both
+player modes ([ShapesWorkspace](./src/features/admin/shapes/ShapesWorkspace.tsx)). Each shape's card has a
+Grid sizes table (Size, n, Wedge, Total) and a Recipes table (Preview eye button, Difficulty (Size),
+Pieces, Distribution) above a centered, playable sample with Restart and Randomize buttons. A shape that
+already has puzzles (drafts included, counted by `loadShapePuzzleCounts`) is locked and read-only. For
+other shapes n and each recipe's distribution can be edited to try values out: it checks that the pieces
+add up to the wedge, marks every changed value ("Changed", with the shipped value shown), and builds
+the sample with `generatePuzzle`'s `tuning` argument. Nothing is saved: settled values are copied into
+the code ([sizes and piece mixes](./src/domain/puzzles/puzzleShapes.ts), the per-shape `*_GRID_SIZES`).
+The pinwheel is the special case, edited as rows x columns of steps.
+
+**Progression** has two views and opens on Puzzles and Rewards. **Order** is strictly the shape order: drag the six shapes, each
+shown with the same preview icon as the Zen shape picker
+([GridShapeIcon](./src/ui/components/GridShapeIcon.tsx)), into
+unlock order (one **Save order**; read-only once any core group is published). **Puzzles and
+Rewards** shows each shape as a box holding two nested boxes: the core groups (Basic, Rotation) and
+the bonus groups (Bonus Basic, Bonus Rotation), which drops below on narrow screens. Each slot shows
+its puzzle group, a small gridline-free thumbnail of the group's first puzzle, and the palette it
+awards; its edit icon opens a dialog to pick the puzzle group for the slot (any unassigned group that
+fits the shape and track, or Not assigned). Below that the dialog shows the current reward palette (with a
+reset button) and one fieldset per reward palette group, so the palette is chosen visually from reward
+palette groups only, with palettes another group already awards shown in greyscale (names kept) and
+disabled. Published groups are not editable. The same page warns under each shape
+about pattern problems (general warnings sit above the shapes) and lists palettes of grouped puzzles
+that are in no core, reward, or pack palette group; warnings never block anything. The views share the `progression` catalog
+([progression.ts](./src/features/admin/services/progression.ts)), and the pattern rules live in
+[rewardPattern.ts](./src/features/admin/services/rewardPattern.ts).
+
+[AdminCatalogProvider](./src/features/admin/catalog/AdminCatalog.tsx) caches puzzle
+groups, puzzle drafts, palettes, and palette groups for the signed-in session.
+Views read them through [useCatalog](./src/features/admin/catalog/useAdminCatalog.ts),
+so navigation shows cached data instantly. Data reloads only on explicit Refresh
+or after the admin's own saves: local edits update the cache in place, and saves
+affecting another catalog invalidate only catalogs already loaded. Changes made
+elsewhere (another tab or the database) need Refresh. Group loaders batch member
+and preview reads (`.in()` chunks of 100, paginated) rather than querying per group.
+
+The Puzzles item view opens the draft gallery; New puzzle and Edit open dedicated views.
+Saved definitions reopen without regeneration. Creation stays open after saving,
+with name/palette/recipe choices available for the next generation without changing
+the saved preview. A revised name carries forward; an exactly unchanged saved name
+clears on successful randomization. Leaving with a revised name warns too.
+Leaving unsaved work warns before discarding.
+Application-owned navigation uses one shared admin discard modal: section/view tabs
+(which also exit editors), Home, hash/history navigation, and sign-out keep the current view mounted until
+the decision. Keep editing (including X/Escape/backdrop) preserves data and URL;
+Discard changes executes the first requested destination once after the dialog
+closes. Further attempts are ignored until that decision finishes.
+In-flight operations are separate from unsaved edits: navigation is blocked
+with an explanation, never offered as a way to cancel a request already sent.
+Retry navigation after the operation finishes. Sign-out keeps the editor mounted
+and inert while pending; failure restores editing without losing values/previews.
+Token refreshes never unmount the workspace: the admin-role check is keyed to the
+user ID, not the access token.
+Unsaved edits in the new-puzzle, puzzle-draft, and palette editors are also
+autosaved to localStorage (`features/admin/drafts`), scoped to the signed-in user and
+expiring after 7 days. After a reload the editor offers Restore or Discard; nothing
+is applied silently. Puzzle previews store only their seed (never the solution).
+Saving, deleting, cancelling, confirming Discard changes, and signing out clear the
+saved copy; an expired session keeps it. Other admin forms don't persist yet.
+
+Drafts, including assigned and scheduled ones, can randomize replacement previews
+and change recipe locally until release.
+Saving atomically replaces public design/recipe and private provenance/solution
+under the existing ID, then returns to the library. Discard keeps the original;
+failed reads/saves preserve the preview. Changing the recipe alone does not generate.
+Assigned drafts keep group membership on replacement (the new recipe must fit the
+group's track) but cannot be deleted. Only live puzzles are frozen. The replacement RPC rechecks
+existence, shape, release and references under the catalog lock.
+Hosted replacement functionality has been confirmed by the user.
+
+Gallery cards ([AdminItemCard](./src/features/admin/common/AdminLayout.tsx)) are not
+links: a centered thumbnail and details sit above a bottom row with the custom
+checkbox at left and square blue Edit/red Delete icons at right; selected cards
+are highlighted blue. Delete appears only for unassigned drafts, and bulk Delete
+only when every checked draft qualifies. Select all supports a mixed state; the
+shape, track, purpose, and group filters and explicit refresh clear selection. Bulk palette changes require
+swatch selection and Apply; card/bulk deletion confirms count and names.
+Admin-only RPCs apply batches atomically under the catalog lock, rechecking release
+and references. Assigned drafts cannot be deleted; scheduled/live rows
+are excluded. Saved seed exclusions derive from surviving authoring records.
+Puzzles > Groups creates and edits draft groups with a purpose (Undecided, Core,
+Reward, Daily, or Pack), a shape (not for Daily, which mixes shapes), and a track
+(Basic or Rotation for Core and Reward; also Mixed for Pack; none otherwise), with
+flexible member counts. Purpose, shape, and track stay editable until publication,
+and the database rejects members that do not match. Gallery **Assign to group**
+appends unassigned drafts to a group that accepts every selected puzzle (shape and
+track); a daily group accepts any shape. Membership is exclusive. Puzzle and group
+cards show purpose, shape, and track; assigned puzzle cards also show the group name.
+New puzzle groups and palette groups use the shared group-creation form in a modal
+over their lists. Success closes the modal, refreshes the list, and focuses Add for
+another creation; it does not enter the new group's editor. Failed saves retain
+the name, purpose, and error in the modal, with retry-stable IDs. Existing group
+metadata/member editing remains a separate workspace. Palette groups have no Daily
+purpose.
+Group cards use two equal columns above 640px, one at/below, with left thumbnails,
+details top right, and actions bottom right. The editor shows each member's stored-design
+thumbnail in current Supabase palette colors beside a grip handle and square-minus
+removal control. Pointer drag (or Up/Down/Home/End on a focused handle; Escape
+cancels a drag) stages a local order. One blue **Save** beside the name writes
+name and order together, and staged order is guarded like other unsaved edits.
+Removal saves immediately. Keyboard instructions are visually hidden. Palette groups share the same staged drag ordering.
+Confirmed group deletion unassigns members but preserves puzzles/private solutions.
+Admin/invoker-RLS RPCs recheck release/reference state under the catalog lock;
+scheduled/live groups, prepared members, and dependent rewards, completions or
+grants block deletion. Membership reads paginate.
+Publishing and release tools remain deferred; shape order and rewards are managed under
+**Progression**, and the database also holds `group_completions` for later player progress.
+
+**Palettes** opens palette groups by default; its Palettes view is a database-backed
+catalog sharing the puzzle card layout, selection bar, and blue selected state,
+with swatches, release state, **Assign to group**, and Duplicate/Edit/Delete.
+Bulk delete appears only when every checked palette is an unassigned draft;
+the batch RPC rejects group members, references, and scheduled/live palettes. New palettes have blank names; Duplicate
+starts with the chosen palette's five ordered colors and creates a new ID on save.
+The editor pairs hex text and native color inputs in three equal-width columns.
+Its medium hexagon sandbox randomizes only palette slots, each with a 20% chance;
+no base color, painting, puzzle generation, or player writes are involved.
+Color edits recolor the same pattern, including when slots have duplicate colors;
+invalid input blocks saving/preview until corrected without losing the pattern.
+
+Only unpublished palette drafts can be edited/deleted here. Scheduled/live
+palettes are read-only but can be duplicated. Save returns to the palette library;
+saves also refresh the shared catalog used by puzzle authoring and set previews.
+The editor's blue Save sits beside the palette name; deletion happens only from
+the library. Usage loads once and lists only real references (linked stored-design
+thumbnails, palette groups, rewards, grants, corrections), or "Not used anywhere."
+No private solutions or account identities are shown. Library trash opens a named
+deletion modal directly over the catalog.
+Deletion requires verified usage and no blocking references; draft-only group
+membership is removed on deletion. Failed usage reads offer retry and block
+deletion. The database rechecks under the catalog lock.
+Writes use loaded name/colors/revision conflict checks and retry-stable IDs.
+Unsaved palette edits use the same admin navigation/sign-out/reload guards.
+The initial migration already seeded all 19 original palettes as database drafts;
+Zen still uses its local catalog unchanged. Palette distribution and release
+tools remain deferred.
+
+In rotation-enabled playtests, click/tap a tray piece to rotate 60 degrees
+(180 for diamond star and pinwheel, whose tiles only realign after a half turn;
+triangle and hexagram tiles flip between pointing up and down);
+dragging moves it without rotating. Double-click/double-tap a board piece or drag
+it back to return it to the tray, preserving orientation. Keyboard: Enter/Space
+rotates/selects in tray, board activation places, Delete/Backspace on an occupied
+tile returns its piece. Rotation happens only in the tray. Containers stay square
+across all orientations, with one subtle selected/focus border and normal disabled
+cursor. A first-rotation player-set tutorial is planned, not implemented.
 
 Live: https://codewithcarrie.com/kaleidoscope/
 
@@ -103,9 +289,13 @@ nonvisual status region rather than visible instruction/status blocks.
 
 `LogoStar` lives in `components/shared` with `arrive` (default) and `pulse`
 animation modes; wordmark sizing and optical spacing stay in `Header`.
-The shared `Spinner` uses the pulse mode above the Save Image modal's
-"Generating image…" status. It alternates a half-turn and scale from 0.05 to 1
-over 1.2 seconds per direction. Reduced-motion users see a static star.
+Use shared `Loading` for pending feedback: a required readable label and one
+live status compose the decorative `Spinner`. Compact is the default for admin
+reads/writes; section is used for Save Image generation and lazy admin entry.
+It works without player state; entry styles load before the admin chunk.
+Success messages and gameplay announcements remain plain status text.
+The star alternates a half-turn and scale from 0.05 to 1 over 1.2 seconds per
+direction. Reduced-motion users see a static star with the same readable label.
 
 [public/logo-black.svg](./public/logo-black.svg) and
 [public/logo-white.svg](./public/logo-white.svg) are transparent, standalone
@@ -121,20 +311,61 @@ changes should be applied to all four SVG assets.
 - TypeScript; Prettier tabs, single quotes, no semicolons, trailing commas.
 - Short plain comments only for non-obvious logic. No JSDoc.
 - CSS Modules for component styles; plain CSS for global rules. No Tailwind or CSS-in-JS.
-- **Scheme** in code/file names; **palette** in user-facing text.
+  Each component imports only its own `X.module.css`, next to `X.tsx`. When several
+  components need the same styling, make it a small component (for example
+  `AdminForm`, `PaletteFieldset`, `AdminIconButton tone`) rather than sharing a
+  stylesheet. Admin theme tokens live on the portal page in
+  [AdminPortal.module.css](./src/features/admin/shell/AdminPortal.module.css).
+- Import across folders through barrels (`@/features/admin/common`,
+  `@/domain/shapes`); inside a folder use `./`. Test mocks target the exact
+  module file (`vi.mock('@/features/admin/services/puzzleSets')`). The admin
+  barrel's default export is the portal, which `AppEntry` lazy-loads.
+- **Palette** in code, file names, and user-facing text. The only exception is the
+  persisted design record's `schemeName` key, kept so existing saves still load.
   **Theme** refers to dark/light mode, not palettes.
-- Keep persisted shape IDs stable. Keep aliases aligned between
-  [Vite](./vite.config.ts) and [TypeScript](./tsconfig.app.json).
+- Keep persisted shape IDs stable. Import across folders with the single `@/`
+  alias for `src/` (kept aligned in [Vite](./vite.config.ts) and
+  [TypeScript](./tsconfig.app.json)); use `./` only within the same folder.
 - Import individual Font Awesome definitions and render `FontAwesomeIcon` SVGs.
   [main.tsx](./src/main.tsx) imports core CSS and disables automatic CSS injection.
   No Kit script or Kit dependency.
-- Self-hosted fonts: Righteous 400 (header, buttons, modal titles); Mr Dafoe 400
+- Self-hosted fonts: Righteous 400 (player header, text buttons, modal titles); Mr Dafoe 400
   (intro Welcome/Congratulations headings); Urbanist 200, 400, 400 italic, and 700
   (body text and default bold headings).
 - Icon buttons use accessible labels and tooltips. Toggle labels/icons describe
-  the destination. Standard boxes are 2.5rem; undo/redo use 1.875rem.
-- Shared controls are **app-shared**, not provider-independent primitives:
-  icon tinting intentionally reads app state.
+  the destination. Player boxes are 2.5rem; undo/redo and admin use 1.875rem.
+- Reuse shared `Button`, `Input`, `Select`, and `IconButton` for ordinary controls.
+  They forward native props/refs; `Button` defaults to `type="button"` and forms
+  explicitly request `type="submit"`. Keep visual swatches and gameplay pieces
+  specialized rather than applying command-button styling to them.
+- Use [FormField](./src/ui/components/FormField.tsx) for ordinary stacked
+  label/control rows. Its render function supplies the control ID and optional
+  help/error associations; spread those onto the native Input/Select, retaining
+  native required, disabled, ref, and submit behavior. Specialized paired
+  hex/native-color inputs and inline filter controls keep their own layouts.
+- [PaletteStrip](./src/ui/components/PaletteStrip.tsx) owns decorative ordered
+  colors: square swatches for choices, continuous strips for catalog/group previews.
+  [PaletteChoices](./src/ui/components/PaletteChoices.tsx) owns controlled,
+  labelled palette buttons keyed/selected by ID, with optional visible names.
+  Player PalettePicker adapts its local name-based catalog and applies/closes
+  immediately; admin owns catalog IDs and bulk selection still requires Apply.
+  Keep duplicate colors in their original slots. Interactive painting color
+  buttons remain the separate ColorSwatches component.
+- [AdminLayout](./src/features/admin/common/AdminLayout.tsx) supplies section
+  headings/actions, feedback, gallery framing, and ordered member rows. Puzzle,
+  palette, and landscape-group cards retain their domain content/layouts; don't
+  create another generic gallery or member-action shell for the same pattern.
+  Loading, empty-data decisions, retries, and writes stay with their owners.
+- `IconButton`, `CloseButton`, and `ModalHeader` do not require player state.
+  Player palette-aware actions use `PlayerIconButton`; admin's `AdminIconButton`
+  supplies the compact size to the same renderer.
+- Global CSS owns basic normalization and `--font-body`. Shared component styles
+  own control behavior, with inherited `--control-*`, `--button-*`, and
+  `--icon-glyph-size` overrides scoped to admin. Admin retains Urbanist text,
+  compact controls, and blue/red actions; do not restore blanket page button rules.
+  `Button` variants are `solid`, `outline`, `primary`, `danger`, and `link`.
+  Palette-choice sizing and selected/hover colors similarly inherit scoped
+  `--palette-choice-*` tokens; admin must not import the player picker's CSS.
 - Shared `Checkbox` keeps a native, labelled input beneath a custom box, with
   visible keyboard focus and a checked duotone icon tinted by the active palette.
   Confirmation preferences and the save-image grid-line option use it.
@@ -142,25 +373,75 @@ changes should be applied to all four SVG assets.
 - CSS Module class names are camelCase so they can be read as `styles.itemTitle`
   rather than `styles['item-title']`. Custom properties, element ids, and data
   attributes stay kebab-case.
+- Use global `.visually-hidden` from [index.css](./src/app/index.css) for accessible
+  instructions/live announcements that should not occupy visual layout.
+  Do not replace it with `display: none`, `hidden`, or `aria-hidden`.
+  Admin playtest status is also visually hidden; the board shows the solved state.
+- Polygon and circle painting cells share grout, transitions, dimming, hover,
+  and focus rules in [Cell.module.css](./src/features/zen/grid/Cell.module.css).
+  Polygon-only joins stay local. Puzzle board/piece interaction is different;
+  do not merge it with painting-cell styles.
+
+### UI reuse quick reference
+
+| Need | Use / precedent |
+| --- | --- |
+| Ordinary command / submit | [Button](./src/ui/components/Button.tsx); explicit `type="submit"` for forms |
+| Labelled native field | [FormField](./src/ui/components/FormField.tsx) with [Input/Select](./src/ui/components/FormControl.tsx), including admin sign-in |
+| Player / admin icon action | [PlayerIconButton](./src/ui/components/PlayerIconButton.tsx) / [AdminIconButton](./src/features/admin/common/AdminIconButton.tsx); generic renderer is [IconButton](./src/ui/components/IconButton.tsx) |
+| Edit / delete / new / refresh | Admin icon action with `faPenToSquare` / `faTrashCan` / `faPlusLarge` / `faRotate`; item-specific label and title; `tone="edit"` (blue) or `tone="delete"` (red) for edit and removal actions |
+| Reorder / unassign | Staged `faGripVertical` drag handle + the group's single Save ([SortableGroupMembers](./src/features/admin/groups/SortableGroupMembers.tsx)), shared by puzzle and palette groups; `faSquareMinus` unassign preserves the member |
+| Admin catalog data | [useCatalog](./src/features/admin/catalog/useAdminCatalog.ts) / `useCatalogInvalidation`; update locally after writes, invalidate other affected catalogs |
+| Section / view tabs | [AdminNavigation](./src/features/admin/shell/AdminNavigation.tsx); wrap changes in `requestNavigation` |
+| Pending feedback | [Loading](./src/ui/components/Loading.tsx); readable request-specific label, not a success spinner |
+| Confirmation / rich action form | [ConfirmDialog](./src/ui/components/ConfirmDialog.tsx) on [Modal](./src/ui/components/Modal.tsx); errors/pending stay inside |
+| Group creation | [GroupCreationDialog](./src/features/admin/groups/GroupCreationDialog.tsx) with [GroupDetailsFields](./src/features/admin/groups/GroupDetailsFields.tsx) (purpose, shape, track; shared with group editing); close/refresh/focus Add on success |
+| Retain action content during exit | [useModalState](./src/ui/hooks/useModalState.ts); defer destructive view changes until after close |
+| Guard edited/pending navigation | [useUnsavedDraft](./src/ui/navigation/useUnsavedDraft.ts) with [useNavigationGuard](./src/ui/navigation/useNavigationGuard.ts); first destination wins |
+| Decorative palette / palette selection | [PaletteStrip](./src/ui/components/PaletteStrip.tsx) / [PaletteChoices](./src/ui/components/PaletteChoices.tsx); not painting buttons |
+| Section / gallery / ordered members | [AdminLayout](./src/features/admin/common/AdminLayout.tsx); retain domain card layouts and local async ownership |
+| Error text from a caught value | [errorMessage](./src/features/admin/common/errorMessage.ts)`(cause, fallback)`; one `fallbackError` constant per library |
+| Admin editor vs library | Editors live in their own files (`PuzzleDraftEditor`, `PaletteEditor`) next to the library that opens them |
+
+Native mode/shape/color choice buttons, painting SVG cells, puzzle pieces, and
+the transparent native checkbox input are intentional specialized controls,
+not missed command-button migrations.
 
 ## Architecture
 
+`src/` holds the Vite entry [main.tsx](./src/main.tsx) and six folders. Dependencies
+point downward: `app` → `features` → `ui` → `domain`/`lib`. Features never import
+each other, and `domain` never imports React.
+
+`npm run lint` enforces this with the local rules in
+[eslint-rules/architecture.js](./eslint-rules/architecture.js) (tested alongside it):
+
+- `architecture/layers`: the dependency direction above.
+- `architecture/no-react-in-domain`: no React or stylesheets in `domain/`.
+- `architecture/use-barrels`: import a folder's `index.ts`, not a file inside it,
+  unless the importer is inside that folder.
+- `architecture/colocated-styles`: CSS Modules only from the importer's own folder;
+  no `../` imports.
+
+Test files and `src/test/` are exempt so tests can reach internals and mock exact files.
+
 | Location | Responsibility |
 | --- | --- |
-| [components/layout/](./src/components/layout/) | Header and footer |
-| [components/grid/](./src/components/grid/) | Shape adapters, shared `GridView`, polygon/circle cells |
-| [components/controls/](./src/components/controls/) | Toolbar, pickers, and modal content |
-| [components/intro/](./src/components/intro/) | First-visit learn-by-doing sequence |
-| [components/shared/](./src/components/shared/) | Buttons, palette-aware `Checkbox`, native `Modal`, `ModalHeader`, `ConfirmDialog` |
-| [shape-geometry/](./src/shape-geometry/) | Shape-specific generation and layout (`@geometry`) |
-| [utils/](./src/utils/) | Shared math, symmetry, randomization, and geometry dispatch |
-| [state/](./src/state/) | App reducer, history wrapper, and Context |
-| [services/](./src/services/) | Persistence, confirmation/export preferences, PNG export |
-| [hooks/](./src/hooks/) | React lifecycle and interaction logic |
-| [puzzles/](./src/puzzles/) | Pure seeded puzzle generation, placement validation, and completion |
-| [components/puzzle/](./src/components/puzzle/) | Puzzle target, board, tray, and pointer/keyboard interaction |
-| [data/](./src/data/) | Palettes and supported-shape definitions |
-| [types/](./src/types/) | Domain types, imported from individual modules |
+| [app/](./src/app/) | `AppEntry` (player/admin routing, navigation guard), `PlayerApp` (page, entrance animation, header, mode switch, footer), `useAdminRoute`, [layout/](./src/app/layout/) (Header, Footer), global [index.css](./src/app/index.css) |
+| [features/zen/](./src/features/zen/) | Zen Mode: `ZenMode`, [state/](./src/features/zen/state/) (reducer, history, Context, localStorage persistence, design randomization), [controls/](./src/features/zen/controls/) (toolbar, palette and shape pickers), [grid/](./src/features/zen/grid/) (shape adapters, `ShapeGrid`, `GridView`, cells), [export/](./src/features/zen/export/) (Save Image), [intro/](./src/features/zen/intro/) |
+| [features/puzzle/](./src/features/puzzle/) | Player Puzzle Mode: seeded puzzles, Restart/Next, congratulations |
+| [features/admin/](./src/features/admin/) | Lazy-loaded admin portal. `shell/` (portal, workspace, navigation), `catalog/` (session cache), `common/` (layout, icon button, form), `groups/` (shared group editing), one folder per content area (`puzzles/`, `puzzle-groups/`, `palettes/`, `palette-groups/`), `services/` (Supabase reads/writes), `testing/` |
+| [ui/components/](./src/ui/components/) | Shared controls: buttons, `DarkModeToggle`, palette-tinted `Checkbox`, native `Modal`, `ModalHeader`, `ConfirmDialog` and its dismissal preferences, form fields, loading, palette strips/choices |
+| [ui/theme/](./src/ui/theme/) | `PlayerThemeContext` (dark mode, active palette, toggle) and `useDuotoneIconTint` |
+| [ui/hooks/](./src/ui/hooks/) | `useModalState`, `useIsTouchDevice` |
+| [ui/navigation/](./src/ui/navigation/) | App-wide unsaved-work navigation guard |
+| [ui/puzzle/](./src/ui/puzzle/) | Shared `PuzzlePlay` (target, tray, board, pointer/keyboard interaction) and shape-neutral `PuzzleBoard` |
+| [domain/shapes/](./src/domain/shapes/) | React-free shape catalog, sizes, registry, and one folder per shape (grid, layout, types) |
+| [domain/geometry/](./src/domain/geometry/) | `Point`, shared geometry math, symmetry engine, cell grouping, SVG points |
+| [domain/puzzles/](./src/domain/puzzles/) | Pure seeded puzzle generation, authoring, stored-definition readers, placement validation, and completion; per-shape adapters in `puzzleShapes.ts` |
+| [domain/palettes/](./src/domain/palettes/) | Local palette catalog, palette type, color math, light/dark theme colors |
+| [lib/supabase/](./src/lib/supabase/) | Supabase browser client and generated database types |
+| [test/](./src/test/) | Vitest setup and shared render/interaction helpers |
 
 Shape adapters supply geometry to `GridView`; it owns numbering, painting,
 highlighting, announcements, and SVG references. An optional `interaction`
@@ -168,24 +449,28 @@ prop (supported by `TriangleGrid`) replaces app-state paint colors, paint handli
 paintable groups, and highlighting; the intro uses it for its local design. Helpers preserve generated
 cell/group ordering. `averagePoint` is a vertex average, not an area-weighted centroid.
 
-[gridShapes.ts](./src/data/gridShapes.ts) defines supported IDs, labels, order,
+[catalog.ts](./src/domain/shapes/catalog.ts) defines supported IDs, labels, order,
 and picker visibility. All six are currently visible. Hidden entries remain
-loadable; component/geometry mappings and previews enforce complete shape coverage.
+loadable. The [registry](./src/domain/shapes/registry.ts), `ShapeGrid`, and icon
+previews are keyed by every shape ID, so an unregistered shape fails to compile.
+Import a shape through its folder barrel (`@/domain/shapes/hexagon`) and shared
+shape data through `@/domain/shapes`. Files inside `domain/shapes` import siblings
+directly, never their own barrel, to avoid cycles.
 React rendering remains separate from geometry and storage.
 
 ### Grid sizes
 
 Each shape offers small, medium, and large grids. Size choices are remembered
-independently per shape in [gridSizes.ts](./src/data/gridSizes.ts).
+independently per shape in [sizes.ts](./src/domain/shapes/sizes.ts).
 
 | Shape | Small | Medium | Large | Default |
 | --- | --- | --- | --- | --- |
 | Hexagon | Radius 3 | Radius 4 | Radius 6 | Medium |
-| Triangle | Size 4 (intro size) | Size 7 | Size 10 | Medium |
+| Triangle | Size 5 | Size 7 | Size 10 | Medium |
 | Diamond star | 3 x 3 per point | 4 x 4 per point | 5 x 5 per point | Medium |
 | Hexagram | Size 2 | Size 3 | Size 4 | Large |
-| Circle rings | 3 rings + center | 4 rings + center | 6 rings + center | Large |
-| Pinwheel | 2 x 2 per spoke | 2 x 3 per spoke | 3 x 3 per spoke | Large |
+| Circle rings | 3 rings + center | 4 rings + center | 5 rings + center | Large |
+| Pinwheel | 3 x 2 per spoke | 3 x 3 per spoke | 4 x 3 per spoke | Large |
 
 Default app grids:
 
@@ -195,28 +480,31 @@ Default app grids:
 | Triangle | D3 | Size 7 | 49 | 12 |
 | Diamond star | D6 | 4 x 4 per point | 96 | 10 |
 | Hexagram | D6 | Size 4 | 192 | 20 |
-| Circle rings | D6 | 6 rings + center | 127 | 16 |
-| Pinwheel | C8, rotation only | 3 x 3 per spoke | 72 | 9 |
+| Circle rings | D6 | 5 rings + center | 91 | 12 |
+| Pinwheel | C8, rotation only | 4 x 3 per spoke (rows x columns) | 96 | 12 |
+
+The Zen intro keeps its own triangle of size 4 (five groups, one per palette
+color), so tuning the small triangle does not change it.
 
 Hexagons use axial-coordinate symmetry; other shapes use the shared geometric
 symmetry engine. One representative per group is clickable.
 
 ### State and persistence
 
-- New designs start in dark mode with the first scheme in
-  [colorSchemes.ts](./src/data/colorSchemes.ts) and its first color selected.
+- New designs start in dark mode with the first palette in
+  [catalog.ts](./src/domain/palettes/catalog.ts) and its first color selected.
 - Painting toggles a group back to accent when its current color is selected again.
   Unpainted groups also display accent.
 - Each of the 18 shape/size combinations has an independent paint map. Switching
   boards saves the outgoing pattern and restores the incoming one; unvisited
   boards start empty. Paint is never copied between sizes or shapes.
-- Palette and theme are global, not board-specific. Scheme changes remap painted
+- Palette and theme are global, not board-specific. Palette changes remap painted
   palette colors by position on all boards and select the first new color.
   Explicit dark/light toggles remap neutral base/accent paint on all boards;
   switching boards and undo/redo never change the theme.
 - Reset and randomize affect only the active board. Switching shape and size
   together is one undo step.
-- Undoable: paint, scheme, shape, grid size, randomize, reset. Current color, dark mode,
+- Undoable: paint, palette, shape, grid size, randomize, reset. Current color, dark mode,
   and editable-area visibility are tool/view choices, not undo stops.
 - History is one unlimited, session-only chronological timeline across all boards,
   including switches. Restored boards form the session's starting baseline;
@@ -227,7 +515,7 @@ symmetry engine. One representative per group is clickable.
 - Theme toggles do not remap historical snapshots, so undo across a toggle can
   restore older literal neutral colors without changing the current theme.
 - Autosave writes version 5 to `kaleidoscope:design` on state changes. It saves
-  scheme name, selected color, dark mode, shape, per-shape sizes,
+  palette name (stored as `schemeName`), selected color, dark mode, shape, per-shape sizes,
   editable-area preference, and all board paint maps in one record.
   `shapeGroupColors` holds active paint; `savedBoards` holds inactive paint keyed
   by stable `shape:size` IDs (for example, `triangle:sm`), never duplicating the
@@ -237,7 +525,7 @@ symmetry engine. One representative per group is clickable.
   legacy size. Earlier placeholder medium values for Hexagram (v1), Circle Rings
   (v1-2), and Pinwheel (v1-3) migrate to large to preserve their previous grids.
 - Loading rejects malformed records, arrays, invalid six-digit hex colors,
-  unknown versions/shapes/schemes, invalid board keys, and duplicate active-board
+  unknown versions/shapes/palettes, invalid board keys, and duplicate active-board
   entries; fallback is a fresh design. Missing historical
   shape/visibility fields default to hexagon/true. Storage failures never crash the app.
 - Colors retain case and need not belong to the current palette. Unknown group IDs
@@ -257,6 +545,26 @@ symmetry engine. One representative per group is clickable.
 - Native dialogs provide modal focus behavior. Reset confirmation has a
   persistent opt-out, saved only on confirmation. Board switches are immediate
   and non-destructive, so no shape-change confirmation is needed.
+- Admin palette/puzzle/group deletion, bulk palette changes, and group assignment
+  use the shared rich `ConfirmDialog`, preserving the originating list/editor,
+  affected names/counts, and explicit consequences. Admin confirmations have no
+  opt-out. Errors and pending `Loading` stay in the dialog; writes disable
+  confirm, Cancel, X, Escape, and backdrop dismissal. Cancel makes no write.
+  Shared controls supply the red destructive confirmation variant.
+- `Modal.initialFocusRef` focuses form fields after native opening.
+  `useModalState` retains action content through the shared exit animation and
+  can defer editor navigation/catalog refresh until closing finishes.
+- Admin [NavigationGuardProvider](./src/ui/navigation/NavigationGuard.tsx)
+  owns discard decisions and the native `beforeunload` safety net. Each editable
+  or mutating view registers its own `{ dirty, pending }` through
+  [useUnsavedDraft](./src/ui/navigation/useUnsavedDraft.ts); do not merge these
+  into one parent dirty boolean or add `window.confirm` at new navigation sites.
+  [useAdminRoute](./src/app/useAdminRoute.ts) guards Home before changing the
+  hash and reconciles already-triggered hashes. Indexed Back/Forward traversals
+  return to the accepted entry while deciding, preserving their destination
+  entries for retry; untracked hashes restore the accepted URL in place.
+  Reload, tab close, and cross-document exit retain the browser-owned warning:
+  a custom modal cannot replace `beforeunload`.
 - The shape picker uses three scaled versions of each icon (32/48/64px) in
   equal 88px square buttons, without visible shape or size text. Accessible
   names and tooltips identify shape and size as S/M/L. Rows wrap at narrow widths.
@@ -275,7 +583,7 @@ symmetry engine. One representative per group is clickable.
 - When the design storage key is absent at startup (checked before autosave; key
   existence, not payload validity), `App` shows the first-visit intro instead of the
   grid, controls, and footer. Intro state is local: a size-4 triangle grid with its
-  5 paintable tiles, and the first scheme's five colors. Choosing a swatch and a tile
+  5 paintable tiles, and the first palette's five colors. Choosing a swatch and a tile
   permanently paints that tile and disables that swatch; after five, dimming is
   released and **Continue** replaces the swatches. Continue shows the regular app
   with a fresh design and the help modal open. Nothing is saved until then. The
@@ -306,7 +614,7 @@ symmetry engine. One representative per group is clickable.
 - The preview reserves the selected shape and size's geometry-derived aspect ratio. Generation failures show an
   error; share failures retain preview/download/retry. Share cancellation is quiet.
   Share appears only when file sharing is supported; download is enabled when ready.
-- Randomization weights each scheme color 18 times and theme base 10 times
+- Randomization weights each palette color 18 times and theme base 10 times
   (90% palette, 10% base). Accent is excluded. The pool is built once per design;
   only groups present at the selected grid size are randomized.
   Duotone tint is computed once per hook invocation.
@@ -319,6 +627,13 @@ and stubs page scrolling and `ResizeObserver` for jsdom.
 Clear or seed storage and use deterministic state/randomness where needed.
 jsdom does not verify real layout, native focus trapping, or PNG rasterization.
 Browser checks are ad hoc; there is no maintained browser suite or coverage threshold.
+
+Admin catalogs load asynchronously, and many actions render disabled until they
+finish; a click on a disabled button is silently ignored. Wait for a button to be
+enabled before clicking it (admin [clickWhenEnabled](./src/features/admin/testing/clickWhenEnabled.ts)),
+and wait for the resulting state (for example the generated playtest) rather than
+for fields that render before it. To check a test for this kind of race, temporarily
+delay its mocked catalog read by ~50 ms; it should still pass.
 
 [CI](./.github/workflows/ci-deploy.yml) runs lint, format checks, tests, and build
 on pushes to `main` and PRs targeting `main`; successful pushes deploy to Pages.

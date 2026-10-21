@@ -1,0 +1,106 @@
+.shape {
+	margin-block: 1rem;
+	padding: 1rem;
+	border: 1px solid var(--admin-border);
+	border-radius: var(--control-radius);
+	background: var(--admin-surface);
+}
+
+.shape h3 {
+	margin-block: 0 0.75rem;
+}
+
+/* Two boxes side by side; the bonus box drops below when the width runs short. */
+.columns {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+	gap: 1rem;
+	align-items: start;
+}
+
+.column {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+	padding: 0.75rem;
+	border: 1px solid var(--admin-border);
+	border-radius: var(--control-radius);
+}
+
+.slot {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+}
+
+.slot + .slot {
+	padding-top: 0.75rem;
+	border-top: 1px solid var(--admin-border);
+}
+
+.slotHeading {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem;
+}
+
+.slotHeading h4 {
+	margin: 0;
+	font-size: 0.875rem;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+}
+
+.groupName {
+	margin: 0;
+	font-weight: 600;
+	overflow-wrap: anywhere;
+}
+
+.empty {
+	opacity: 0.7;
+}
+
+/* Puzzle thumbnail on the left, the reward on the right. */
+.body {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	margin-top: 0.5rem;
+}
+
+.thumbnail {
+	display: grid;
+	align-items: center;
+	flex: none;
+	width: 4.5rem;
+	aspect-ratio: 1;
+}
+
+.rewardBox {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+	min-width: 0;
+}
+
+.rewardLabel {
+	margin: 0;
+	font-size: 0.8125rem;
+	letter-spacing: 0.04em;
+	opacity: 0.7;
+}
+
+.reward {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 0.25rem;
+}
+
+.warnings {
+	margin: 0.75rem 0 0;
+	padding: 0;
+	list-style: none;
+}

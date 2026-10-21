@@ -1,0 +1,60 @@
+.dialog {
+	width: 36rem;
+}
+
+.title {
+	margin: 0 0 0.75rem;
+	font-family: var(--button-font, 'Righteous', sans-serif);
+	text-transform: uppercase;
+	font-size: 1.6rem;
+}
+
+.heading {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 1rem;
+}
+
+.message {
+	margin: 0 0 1.5rem;
+	line-height: 1.4;
+}
+
+.bottomRow {
+	margin-top: 1rem;
+	display: flex;
+	flex-direction: row;
+	align-items: flex-end;
+	justify-content: flex-end;
+	gap: 1rem;
+}
+
+.dontShowAgain {
+	font-size: 0.85rem;
+	/* Pushes .actions to the right regardless of whether this checkbox is
+       rendered at all — relying on `justify-content: space-between` here
+       would only work when both children are present, and would otherwise
+       misplace the lone .actions div at the start of the row instead of
+       the end. */
+	margin-right: auto;
+}
+
+.actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 0.75rem;
+	flex-wrap: wrap;
+}
+
+@media screen and (max-width: 480px) {
+	.bottomRow {
+		flex-direction: column;
+		align-items: flex-end;
+		justify-content: flex-end;
+		gap: 1rem;
+	}
+	.dontShowAgain {
+		margin-bottom: 1.2rem;
+	}
+}

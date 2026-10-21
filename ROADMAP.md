@@ -1,0 +1,276 @@
+# Kaleidoscope: Roadmap
+
+The single place to see where the project is going and what comes next.
+Consolidated on 2026-10-19 from the earlier Copilot session plans. Those plans
+are now historical; update this file instead.
+
+- **Current behavior and standards:** [CONTEXT.md](./CONTEXT.md)
+- **Why things are the way they are:** [DECISIONS.md](./DECISIONS.md)
+- **Database setup, migrations, and SQL tests:** [supabase/README.md](./supabase/README.md)
+- **Original phase descriptions:** [BACKLOG.md](./BACKLOG.md)
+
+Status key: ✅ done · 👀 ready for review · 🔜 next · ⬜ not started · ❓ needs a decision
+
+
+---
+
+## Where we are now
+
+**Phase 2A: building the admin portal** (branch `54-create-admin-portal`, issue #54).
+
+Supabase is set up and hosted, the admin can sign in, and the admin can generate,
+save, and organize puzzles in all six shapes, and palettes. Nothing is released to players
+yet.
+
+The live app currently has **Zen Mode only**, with every shape and a limited set
+of palettes. Launching Puzzle Mode makes it the primary feature and makes access
+more restrictive (see "Launch impact" below).
+
+**Next up:** the Scheduled and Published catalog views, then the remaining
+admin tools. The codebase reorganization is complete.
+
+---
+
+## Phase 2 at a glance
+
+### Phase 2A: admin complete, then players get Puzzle Mode and Zen Mode with limited access
+
+| #   | Step                                                          | Status         |
+| --- | ------------------------------------------------------------- | -------------- |
+| A1  | Product and content rules                                     | ✅ mostly      |
+| A2  | Supabase foundation: schema, RLS, Auth, admin role, types     | ✅             |
+| A3  | Admin portal: everything needed for 2A content                | 🔜 in progress |
+| A4  | Player accounts, explicit guest import, offline/cloud sync    | ⬜             |
+| A5  | Content access and puzzle-set progression in Puzzle and Zen   | ⬜             |
+| A6  | Harden, verify, and launch Puzzle Mode                        | ⬜             |
+
+**2A is done when** the admin side is complete and players can use Puzzle Mode
+and Zen Mode with limited access. Moving past the first shape requires an account.
+
+### Phase 2B: store, then daily puzzles
+
+| #   | Step                                                          | Status |
+| --- | ------------------------------------------------------------- | ------ |
+| B1  | Choose a payment approach that works with Phases 3 and 5      | ⬜     |
+| B2  | Store UI, product listings, and combo deals                   | ⬜     |
+| B3  | Checkout, verified fulfillment, and entitlements              | ⬜     |
+| B4  | Daily puzzles: admin scheduling and player feature            | ⬜     |
+
+**2B ends** with the daily puzzles feature. The admin groundwork for daily
+puzzles already in the schema stays parked until then.
+
+---
+
+## Codebase reorganization (done)
+
+Move from layer folders (`components/`, `services/`, `hooks/`, `utils/`) to
+features plus shared layers, before 2A player work adds accounts and progression.
+Each step changes no behavior, keeps tests green, and is reviewed and committed
+separately.
+
+Target layout:
+
+```
+src/
+  app/        entry, routing, navigation guard, global CSS
+  features/   zen/, puzzle/, admin/{shell,catalog,common,groups,puzzles,puzzle-groups,palettes,palette-groups,services}/
+              (later account/, store/, daily/)
+  domain/     React-free: shapes/<shape>/ + registry, puzzles/, palettes/
+  ui/         shared components and hooks, grid rendering, shared puzzle board
+  lib/        Supabase client and generated types, math helpers
+```
+
+Rules:
+
+- One `@/` alias for `src/`. Barrel `index.ts` for each feature, area, and shared folder.
+- Every component gets its own colocated CSS Module. No shared stylesheet across
+  unrelated components.
+- "Palette" everywhere in code, not "scheme". Persisted localStorage keys and
+  database names stay unchanged.
+- Features never import other features. `ui`, `domain`, and `lib` never import
+  features. `domain` has no React. Enforced by ESLint.
+
+| #   | Step                                                                    | Status |
+| --- | ----------------------------------------------------------------------- | ------ |
+| R1  | One `@/` alias; convert all imports                                     | ✅     |
+| R2  | Fix wrong-way dependencies and import cycles                            | ✅     |
+| R3  | Shapes domain: one folder per shape plus a registry                     | ✅     |
+| R4  | Puzzle engine to `domain/`; shared board/tray split from player shell   | ✅     |
+| R5  | Admin into `features/admin/*` with its services and colocated CSS       | ✅     |
+| R6  | Zen into `features/zen`; `app/`, `ui/`, `lib/` settled; barrels         | ✅     |
+| R7  | Rename "scheme" to "palette" and `AppState` to `ZenState` across code  | ✅     |
+| R8  | Split large files, share duplicated helpers                             | ✅     |
+| R9  | ESLint boundary rules; update CONTEXT architecture                      | ✅     |
+
+---
+
+## Admin portal: done
+
+- ✅ Admin sign-in, server-checked admin role, generated database types.
+- ✅ Edit scheduled content until its release time, then lock it (migration `010000`).
+- ✅ Hexagon engine with all six recipes (sizes S/M/L, with and without rotation) and an isolated playtest that never writes player progress.
+- ✅ Shape-neutral puzzle engine, board, and authoring RPCs (migration `20261019030000`); puzzles and groups in all six shapes with the same six recipes.
+- ✅ Puzzle-creator palette pickers ordered by palette group and position.
+- ✅ Puzzle drafts: save, library, edit, delete, bulk palette and bulk delete, replace the design.
+- ✅ Regenerate assigned or scheduled puzzles until they go live (migration `20261019020000`).
+- ✅ Puzzle groups: create with a purpose (Undecided/Core/Reward/Daily/Pack), shape, and track, edit them while unpublished, add members, drag to reorder, remove, delete (migration `20261020000000`).
+- ✅ Palettes: create, edit, duplicate, sandbox preview, usage details, single and bulk delete.
+- ✅ Palette groups (`palette_groups` table, purposes Undecided/Core/Reward/Pack): create, assign, reorder, delete.
+- ✅ Navigation: Puzzles | Palettes | Shapes, then Groups | Items, then Unassigned | Assigned | Scheduled | Published. Group lists filter by purpose (and shape and track for puzzles); puzzle items filter by shape and track, and the Assigned view by purpose and group.
+- ✅ UI audit parts 1–6 (shared controls, loading, dialogs, unsaved-work guard, palette and layout components, CSS cleanup).
+- ✅ Unsaved-work safety: a token refresh no longer remounts the workspace (the admin-role check is keyed to the user ID), and unsaved edits in the new-puzzle, puzzle-draft, and palette editors are autosaved to localStorage with an explicit Restore or Discard after a reload (`src/features/admin/drafts`, see CONTEXT.md). Other admin forms (group dialogs, progression slots, group edit forms) don't persist yet; reuse `useDraftRecovery` for them and for any new release-tool editors.
+
+## Admin portal: what's left for 2A (suggested order)
+
+1. 🔜 **Scheduled and Published views.** These are placeholders in
+   [AdminWorkspace.tsx](./src/features/admin/shell/AdminWorkspace.tsx).
+   Scheduled puzzles can already be regenerated in the database but can't be opened in the UI yet.
+   Planned for its own branch, together with item 2, because it depends on player-side changes.
+2. ⬜ **Publish and schedule (release tools).** Approve content with a release
+   date, reschedule or cancel before release, and show missing dependencies.
+   Live content stays locked. Same separate branch as item 1.
+3. ✅ **Progression section** (migrations `20261021000000`, `20261022000000`): Order (drag the shapes;
+   locked once a core group is published), Puzzles and Rewards (four slots per shape: basic and rotation
+   core and bonus groups, each with a puzzle group and one reward palette from reward palette groups;
+   bonus groups link to the rotation core group automatically) with pattern warnings and a list of
+   grouped puzzles whose palette players cannot get. Warnings never block publishing yet.
+4. ⬜ **Daily groups and scheduling.** Daily groups organize puzzles (for example by month); scheduling
+   one per day moves to 2B.
+5. ✅ **Shapes section** (first pass): a workbench to try grid sizes (n) and piece mixes per recipe with a
+   playable sample, locked for shapes that already have puzzles; nothing is saved, and chosen values are copied
+   into code. Still open: splitting piece mixes per recipe in code, and any stored shape settings.
+6. ⬜ **Exceptional palette correction** for live palettes, keeping the revision and audit history.
+7. ⬜ **End-to-end admin check** in the hosted project.
+
+Moved to 2B: daily puzzle scheduling (part of B4) and pricing and merchandising
+screens (part of B2).
+
+Not planned: a manual target or piece editor and multiple admins.
+
+**Content work (yours, alongside the tools):** finish the pack palette groups,
+then choose the core palette group (Zen starters) and the reward palettes. Author 24-puzzle groups for
+the core sequence and rewards.
+
+---
+
+## 2A player work (after the admin portal)
+
+**A4: Accounts and sync**
+
+- The app stays usable without an account. Signup is available at any time.
+- Never merge guest progress automatically. Offer an explicit import on both
+  signup and sign-in, and keep the guest save if the player declines.
+- Keep guest storage separate from per-account caches.
+- Sync automatically when the player is back online. Merge completions, and
+  ask only when two devices changed the same unfinished puzzle.
+
+**A5: Access and progression**
+
+- One access layer used by the palette picker, shape picker, and puzzle catalog,
+  in both Puzzle Mode and Zen Mode.
+- Replace player-side random puzzle generation with published puzzles.
+- The first introductory sequence is fixed. After that, every puzzle in an unlocked set is selectable.
+- Solving either core group of a shape (basic or rotation) unlocks the next shape and its two core groups; reward palettes and bonus groups come from completing groups, without duplicate rewards.
+- Grant the Zen randomizer permanently after all 12 core and 12 bonus groups are solved.
+- Validate completions and grant rewards on the server, idempotently.
+- Migrate existing Zen saves from hex colors to palette slots.
+- Puzzle Mode has no resume today: the current puzzle, placements, and rotations
+  live in React state, and a reload generates a new random puzzle. Once puzzles
+  come from published sets, save the puzzle ID plus placements and rotations so a
+  reload resumes the same puzzle (rebuild from the ID or seed rather than storing
+  solutions). Build this on the A4 guest-storage format so it isn't done twice.
+
+**A6: Launch impact and release**
+
+- Today's Zen Mode offers every shape. After launch, Zen offers Hexagon plus
+  whatever has been unlocked, and a limited starter palette list.
+- Existing visitors' saved designs may use shapes or palettes that become locked.
+  Decide how that looks before launch (see "Open decisions").
+- Test RLS against forged requests, the critical player journeys, offline use and
+  reconnecting, and palette corrections.
+- Cover privacy, account deletion, monitoring, and a rollback plan.
+
+## 2B work
+
+**B1: Payment approach**
+
+- Choose with Phases 3 and 5 in mind. Apple and Google generally require their
+  own in-app purchases for digital content in their apps. Purchases on the web
+  should still unlock content on mobile under the same account.
+- Options to compare: Stripe for the web plus native in-app purchases later, or
+  a cross-platform purchase service that sits over all three. Entitlements stay
+  in Supabase, provider-neutral.
+
+**B2–B3: Store**
+
+- Store UI, listings for puzzle packs and palette packs, and combo deals (bundles).
+- Purchases require an account. A paid puzzle pack requires owning its shape and grants only its puzzles.
+- Verified server-side fulfillment and idempotent grants. Never trust the
+  browser's return URL. Handle refunds and chargebacks.
+
+**B4: Daily puzzles (ends 2B)**
+
+- Admin: set the global rollover time and schedule daily puzzles.
+- A rolling five-day window with one global rollover time, free for guests.
+- A puzzle being actively played can be finished after it expires. Once the player exits, it's gone.
+- A daily puzzle bypasses shape ownership for that puzzle only.
+
+---
+
+## Key product rules (settled)
+
+- **Terminology:** admin and database data structures are **groups**, each with a **purpose** (core, reward, daily, pack, or undecided). Players see free **puzzle sets** (core) versus paid **puzzle packs**; "group" never appears in the player UI. Difficulty
+  labels are Easy, Moderate, Hard, and Challenging (stored as `super_hard`).
+- **Tracks:** core and reward puzzle groups are **basic** (no rotation: Easy/Moderate/Hard) or **rotation** (Moderate/Hard/Challenging). Packs may also be mixed; daily groups have no track.
+- **Progression:** each of the six shapes has two core groups (basic, rotation). Solving either unlocks the next shape. Completing the basic core group awards one palette; completing the rotation core group awards one palette plus two bonus groups (one basic, one rotation); each bonus group awards one palette. The Zen randomizer needs all 12 core and 12 bonus groups.
+- **Palettes:** a puzzle stores its palette. Bought puzzle packs do not grant palettes; palette packs (or a discounted combo) do.
+- **Sizes:** puzzle groups have **24 puzzles**. Palette groups have **6 palettes**.
+- **Six recipes for every puzzle shape:** Easy = S; Moderate = M, or S + rotation; Hard = L, or M + rotation; Challenging = L + rotation.
+  The admin picks the shape and exact recipe.
+- **Guests:** Hexagon Zen, the initial set, and locally earned palettes (plus daily puzzles once 2B adds them).
+  Anything beyond the initial set, and the second shape, requires an earned unlock AND an account.
+- **No levels or XP.** Show completed sets and the specific unlock requirements instead.
+- **Live content never changes.** New offerings are additions. Scheduled content
+  stays editable until its release instant. The one exception is a palette
+  color correction, which updates all rendering through stable palette IDs and color slots.
+- **Admin is not a player.** Previews and playtests never record progress or rewards.
+- **Each puzzle group uses one shape, except daily groups, which can mix shapes.** Palettes can vary from puzzle to puzzle.
+  A puzzle belongs to one group at most.
+- **Playing a puzzle in a palette doesn't grant that palette in Zen.**
+- **No hints or cloud design collections yet.** Cloud design collections wait for Phase 4.
+
+---
+
+## Open decisions ❓
+
+- Difficulty split inside a 24-puzzle core or bonus group (counts are not enforced yet).
+- Whether publishing should enforce exactly 24 puzzles and 6 palettes, or only warn.
+- Starter and reward palette group lineups (after the pack palette groups are done).
+- What happens to existing visitors' saved designs that use shapes or palettes
+  that become locked, and how to migrate legacy hex saves with duplicate colors.
+- Offline unlock policy: how long cached access lasts, and whether unlocks can be used before the server confirms them.
+- Guest-import UX details and conflict wording.
+- Emergency withdrawal of live content.
+- UI wording for "qualified" versus "solved every puzzle."
+- Whether a separate player test account is enough for progression testing.
+- 2B: payment provider, product IDs, pricing, combo deals, refunds, currency, and tax.
+- 2B: daily rollover hour, replay within the window, and what counts as
+  "active" (reload, background, tab close, offline).
+
+---
+
+## Later phases
+
+- **Phase 3:** React Native app for iOS/iPadOS with haptics. Reuse accounts, content IDs, and entitlements.
+- **Phase 4:** Community sharing: collections, feed, likes, follows, posting limits.
+- **Phase 5:** Android release.
+- **Phase 6 (maybe):** Community-made puzzles.
+
+---
+
+## How to keep this current
+
+- After a feature is reviewed and committed, tick it off here. Put details in
+  CONTEXT/DECISIONS, not here.
+- New decisions go in "Key product rules" or come out of "Open decisions."
+- Copilot session plans are scratch space for one task. This file is the long-term plan.

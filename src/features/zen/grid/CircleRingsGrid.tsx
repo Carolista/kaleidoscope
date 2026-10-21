@@ -1,0 +1,81 @@
+import { useMemo } from 'react'
+import type { Ref } from 'react'
+import {
+	CIRCLE_RINGS_GRID_SIZE,
+	computeGridAspectRatio,
+	generateCircleRingsCells,
+	circleRingsBoundingBox,
+	circleRingsCellCenter,
+	circleRingsCellRadius,
+} from '@/domain/shapes/circle-rings'
+import type { CircleRingsLayout } from '@/domain/shapes/circle-rings'
+import GridView from './GridView'
+import type { GridCell } from './GridView'
+
+export interface CircleRingsGridProps {
+	readonly ringCount?: number
+	// Diameter of the center dot/ring 1's circles, in SVG user units.
+	readonly ringSize?: number
+	// Exposes the rendered <svg> element, e.g. for image export.
+	readonly svgRef?: Ref<SVGSVGElement>
+}
+
+const DEFAULT_RING_SIZE = 30
+
+function CircleRingsGrid({
+	ringCount = CIRCLE_RINGS_GRID_SIZE,
+	ringSize = DEFAULT_RING_SIZE,
+	svgRef,
+}: CircleRingsGridProps) {
+	const layout: CircleRingsLayout = useMemo(
+		() => ({ ringCount, size: ringSize }),
+		[ringCount, ringSize],
+	)
+	const cells = useMemo(
+		() => generateCircleRingsCells(ringCount),
+		[ringCount],
+	)
+	const sizingAspectRatio = useMemo(
+		() => computeGridAspectRatio(ringCount),
+		[ringCount],
+	)
+	const { circles, viewBox, hoverAreaPath } = useMemo(() => {
+		const positioned = cells.map(cell => ({
+			center: circleRingsCellCenter(cell, layout),
+			radius: circleRingsCellRadius(cell, layout),
+		}))
+		const { minX, minY, maxX, maxY } = circleRingsBoundingBox(positioned)
+		const outerRadius = Math.max(
+			...positioned.map(
+				({ center, radius }) => Math.hypot(center.x, center.y) + radius,
+			),
+		)
+		const circles: GridCell[] = cells.map((cell, i) => ({
+			kind: 'circle',
+			key: `${cell.ring},${cell.index}`,
+			groupId: cell.groupId,
+			isClickable: cell.isClickable,
+			...positioned[i],
+		}))
+		return {
+			circles,
+			viewBox: `${minX} ${minY} ${maxX - minX} ${maxY - minY}`,
+			// A path keeps the invisible hit area out of cell-only export styling.
+			hoverAreaPath: `M 0 ${-outerRadius} A ${outerRadius} ${outerRadius} 0 1 1 0 ${outerRadius} A ${outerRadius} ${outerRadius} 0 1 1 0 ${-outerRadius} Z`,
+		}
+	}, [cells, layout])
+
+	return (
+		<GridView
+			cells={circles}
+			viewBox={viewBox}
+			hoverAreaPath={hoverAreaPath}
+			svgRef={svgRef}
+			sizingAspectRatio={sizingAspectRatio}
+			label="Kaleidoscope circle rings grid"
+			instructions="Tab to move between circles. Press Enter or Space to paint the focused circle with the current color."
+		/>
+	)
+}
+
+export default CircleRingsGrid

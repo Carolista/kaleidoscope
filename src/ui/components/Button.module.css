@@ -1,0 +1,80 @@
+.button {
+	font-family: var(--button-font, 'Righteous', sans-serif);
+	font-size: var(--button-font-size, 1rem);
+	text-transform: var(--button-text-transform, uppercase);
+	letter-spacing: var(--button-letter-spacing, 0.03em);
+	line-height: var(--button-line-height, normal);
+	padding: var(--button-padding, 0.5rem 1rem);
+	margin-block: var(--button-margin, 0);
+	min-height: var(--button-height, auto);
+	border: var(--button-border-width, 2px) solid
+		var(--control-border, var(--accent, #222));
+	border-radius: var(--control-radius, 4px);
+	cursor: pointer;
+}
+
+.button:disabled {
+	opacity: var(--control-disabled-opacity, 0.5);
+	cursor: var(--control-disabled-cursor, not-allowed);
+}
+
+.solid {
+	background: var(--button-surface, var(--accent, #222));
+	color: var(--button-text, var(--base, #fff));
+}
+
+/* No transition: animating background to/from a color-mix() result is
+   buggy in at least one current Chromium build (the hover color never
+   actually appears), so this snaps instantly instead of fading. */
+.solid:hover:not(:disabled) {
+	background: var(
+		--button-hover,
+		color-mix(in srgb, var(--accent, #222) 80%, transparent)
+	);
+}
+
+.outline {
+	background: transparent;
+	color: var(--accent, #222);
+}
+
+.outline:hover:not(:disabled) {
+	background: color-mix(in srgb, var(--accent, #222) 10%, transparent);
+}
+
+.primary {
+	background: var(--control-primary, var(--accent, #222));
+	color: var(--button-text, var(--base, #fff));
+}
+
+.primary:hover:not(:disabled) {
+	background: color-mix(
+		in srgb,
+		var(--control-primary, var(--accent, #222)) 80%,
+		transparent
+	);
+}
+
+.link {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--control-gap, 0.375rem);
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: var(--control-primary, var(--accent, #222));
+}
+
+.danger {
+	background: var(--control-danger, #b42318);
+	color: #fff;
+}
+
+.danger:hover:not(:disabled) {
+	background: color-mix(in srgb, var(--control-danger, #b42318) 85%, #000);
+}
+
+.button:focus-visible {
+	outline: 2px solid var(--control-focus, var(--accent, #222));
+	outline-offset: 3px;
+}

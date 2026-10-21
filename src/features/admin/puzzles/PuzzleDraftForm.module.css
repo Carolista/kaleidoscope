@@ -1,0 +1,57 @@
+.paletteHeading {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem;
+}
+
+.authoringForm {
+	display: grid;
+	gap: 0.75rem;
+}
+
+.paletteControls,
+.draftControls {
+	display: grid;
+	align-content: start;
+	gap: 0.5rem;
+	min-width: 0;
+}
+
+.draftControls {
+	margin-top: 1.1rem;
+}
+
+.recipeControls {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: end;
+	gap: 0.5rem;
+}
+
+.recipeControls select {
+	width: 100%;
+	min-width: 0;
+}
+
+.metadataForm {
+	display: flex;
+	justify-content: flex-end;
+	gap: 0.5rem;
+	align-items: end;
+}
+
+.metadataForm button {
+	margin-block: 0;
+}
+
+.actions {
+	display: flex;
+	gap: 0.5rem;
+}
+
+@media (min-width: 640px) {
+	.authoringForm {
+		grid-template-columns: minmax(0, 6fr) minmax(0, 4fr);
+	}
+}

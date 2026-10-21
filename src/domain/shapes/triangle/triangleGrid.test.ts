@@ -1,0 +1,92 @@
+import { describe, expect, it } from 'vitest'
+import {
+	TRIANGLE_GRID_SIZES,
+	TRIANGLE_INTRO_GRID_SIZE,
+	TRIANGLE_GRID_SIZE,
+	computeGridAspectRatio,
+	generateTriangleCells,
+	getGroupIds,
+	groupTriangleCells,
+} from './triangleGrid'
+
+describe('generateTriangleCells', () => {
+	const cells = generateTriangleCells()
+
+	it('generates gridSize^2 cells at the default grid size', () => {
+		expect(TRIANGLE_GRID_SIZE).toBe(10)
+		expect(cells).toHaveLength(100)
+	})
+
+	it('produces the expected mirror-group orbit sizes at the default grid size (1 center, 9 threes, 12 sixes)', () => {
+		const groups = groupTriangleCells(cells)
+		expect(groups.size).toBe(22)
+
+		const sizesByCount = new Map<number, number>()
+		for (const members of groups.values()) {
+			sizesByCount.set(
+				members.length,
+				(sizesByCount.get(members.length) ?? 0) + 1,
+			)
+		}
+
+		expect(sizesByCount.get(1)).toBe(1)
+		expect(sizesByCount.get(3)).toBe(9)
+		expect(sizesByCount.get(6)).toBe(12)
+	})
+
+	it('marks exactly one cell per group as clickable', () => {
+		const groups = groupTriangleCells(cells)
+		for (const members of groups.values()) {
+			const clickable = members.filter(cell => cell.isClickable)
+			expect(clickable).toHaveLength(1)
+		}
+	})
+
+	it('scales to a smaller grid size (gridSize^2 cells total)', () => {
+		const small = generateTriangleCells(4)
+		expect(small).toHaveLength(16)
+	})
+
+	it.each(Object.entries(TRIANGLE_GRID_SIZES))(
+		'generates the %s grid size with %s lattice rows',
+		(_size, gridSize) => {
+			const sizeCells = generateTriangleCells(gridSize)
+			expect(sizeCells).toHaveLength(gridSize * gridSize)
+			const groups = groupTriangleCells(sizeCells)
+			expect(getGroupIds(gridSize)).toHaveLength(groups.size)
+			expect(sizeCells.filter(cell => cell.isClickable)).toHaveLength(
+				groups.size,
+			)
+		},
+	)
+
+	it('keeps a separate intro grid with five paintable groups, whatever the small size is', () => {
+		expect(TRIANGLE_INTRO_GRID_SIZE).toBe(4)
+		expect(getGroupIds(TRIANGLE_INTRO_GRID_SIZE)).toHaveLength(5)
+		expect(TRIANGLE_GRID_SIZES.sm).toBe(5)
+		expect(getGroupIds(TRIANGLE_GRID_SIZES.sm)).toHaveLength(7)
+	})
+})
+
+describe('getGroupIds', () => {
+	it('returns one id per mirror-symmetry group (22 at the default grid size), matching groupTriangleCells', () => {
+		const ids = getGroupIds()
+		expect(ids).toHaveLength(22)
+		expect(new Set(ids)).toEqual(
+			new Set(groupTriangleCells(generateTriangleCells()).keys()),
+		)
+	})
+})
+
+describe('computeGridAspectRatio', () => {
+	it('matches the known (width / height) ratio of an equilateral triangle (2 / sqrt(3))', () => {
+		expect(computeGridAspectRatio()).toBeCloseTo(2 / Math.sqrt(3), 4)
+	})
+
+	it('returns the same ratio regardless of grid size (a uniform scale factor cancels out)', () => {
+		expect(computeGridAspectRatio(4)).toBeCloseTo(
+			computeGridAspectRatio(),
+			10,
+		)
+	})
+})

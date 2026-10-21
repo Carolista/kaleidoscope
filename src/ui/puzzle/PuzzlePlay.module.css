@@ -1,0 +1,99 @@
+.puzzle {
+	display: grid;
+	justify-items: center;
+	gap: 1rem;
+	width: 100%;
+	color: var(--accent);
+}
+
+.puzzle[hidden] {
+	display: none;
+}
+
+.goalAndPieces {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	align-items: center;
+	gap: 0.5rem;
+	width: fit-content;
+	max-width: 100%;
+}
+
+.withTrayAction .goalAndPieces {
+	grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.target {
+	width: 120px;
+	margin: 0;
+	text-align: center;
+}
+
+.board {
+	width: 100%;
+	justify-self: center;
+}
+
+.tray {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: center;
+	gap: 0;
+	width: 100%;
+}
+
+.piece {
+	display: flex;
+	flex: 0 0 auto;
+	aspect-ratio: 1;
+	align-items: center;
+	justify-content: center;
+	min-width: 44px;
+	min-height: 44px;
+	padding: 0.5rem;
+	border: 1px solid transparent;
+	border-radius: 6px;
+	background: transparent;
+	color: var(--accent);
+	font: inherit;
+	cursor: grab;
+	touch-action: none;
+	user-select: none;
+}
+
+.piece svg {
+	display: block;
+	overflow: visible;
+}
+
+.piece[aria-pressed='true'],
+.piece:focus-visible {
+	border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+	outline: none;
+}
+
+.piece:hover:not(:disabled) {
+	background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.piece:disabled {
+	cursor: default;
+	opacity: 0.45;
+}
+
+.piece:disabled svg {
+	filter: grayscale(0.8);
+}
+
+@media screen and (max-width: 480px) {
+	.withTrayAction .goalAndPieces {
+		grid-template-columns: minmax(0, 1fr);
+		justify-items: center;
+		width: 100%;
+	}
+
+	.target {
+		width: 96px;
+	}
+}

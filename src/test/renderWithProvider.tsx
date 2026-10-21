@@ -1,9 +1,9 @@
 import { render } from '@testing-library/react'
 import type { ReactElement } from 'react'
-import { AppStateProvider } from '../state/AppContext'
+import { ZenStateProvider } from '@/features/zen/state'
 
-// Wraps `render()` with the real `AppStateProvider`, since nearly every
+// Wraps `render()` with the real `ZenStateProvider`, since nearly every
 // component reads from app state via context.
 export function renderWithProvider(ui: ReactElement) {
-	return render(ui, { wrapper: AppStateProvider })
+	return render(ui, { wrapper: ZenStateProvider })
 }

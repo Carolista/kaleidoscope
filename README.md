@@ -42,7 +42,7 @@ Today, the application reflects how my engineering approach has evolved. It has 
 - **Six geometric grids, three sizes each:** Hexagon, triangle, diamond star, hexagram, circle rings, and pinwheel. Choose small, medium, or large using scaled shape icons.
 - **18 independent boards:** Each shape and size keeps its own pattern. Switch freely and pick up where you left off; new boards start blank.
 - **Symmetrical painting:** Paint a tile in the editable area and its corresponding cells update across the full design.
-- **Multiple color palettes:** Pick from curated schemes, then choose a color to paint with. Palette changes carry the color pattern over across all boards.
+- **Multiple color palettes:** Pick from curated palettes, then choose a color to paint with. Palette changes carry the color pattern over across all boards.
 - **Design controls:** Randomize or reset the current board, or undo and redo edits and board switches in one session-wide history.
 - **Light and dark themes:** Switch the surrounding canvas theme; tiles painted with the theme colors adapt across all boards. Board switches never change your theme.
 - **Save and share:** Compare PNG previews with or without grid lines, then download your chosen version or share it where the browser supports file sharing. A pulsing logo star indicates image generation and respects reduced-motion preferences. Your grid-line preference is remembered across designs and visits.
@@ -68,10 +68,99 @@ This project has been a chance to build both a creative user experience and the 
 
 ## Puzzle Mode prototype
 
-The upcoming database foundation and Dashboard setup instructions are documented
+The database foundation and Dashboard setup instructions are documented
 in [supabase/README.md](./supabase/README.md). Admin sign-in is available at
 `#/admin` after local configuration; the player prototype below remains local
 and unchanged.
+
+The admin **puzzle lab** authors puzzles in all six shapes with all six size/rotation recipes, a visual
+Supabase palette picker, and one-click randomization. Previously previewed seeds
+are skipped per shape and recipe during the lab session; seeds are not displayed.
+A puzzle's shape is chosen before randomizing and fixed once saved. Palette
+pickers list palettes in palette-set order, then unassigned palettes by name.
+Saved puzzles supply persistent exclusions across palettes and intended uses.
+Palette changes recolor the same design without resetting placements.
+At wider widths, the shared New/Edit form has a palette picker on the left and
+name, shape, recipe/wand randomizer, and intended-use/save controls stacked on the right.
+All fields appear before generation; saving requires a named preview. Narrow
+screens stack the columns. The compact header groups account, sign-out, and theme
+controls, with favicon navigation back to the player app. Admin defaults to dark
+mode and uses the same neutral charcoal/white theme colors as the player app.
+
+Click/tap tray pieces to rotate in rotation-enabled recipes; drag to move.
+Double-click/double-tap board pieces or drag back to return them to the tray.
+Keyboard users can rotate/select with Enter/Space, activate a board tile to place,
+and use Delete/Backspace on an occupied tile to return its piece. Square tray
+slots stay fixed through rotation and use one subtle selected border.
+The admin workspace has peer **Puzzles | Palettes | Shapes** sections. Puzzles and
+Palettes each open on **Sets**, with an items view filtered by Unassigned, Assigned,
+Scheduled, or Published (Shapes and the release views are placeholders for now).
+Assigned puzzles and palettes list in set order: set name, then position in the set.
+In the Assigned views, **New puzzle** / **New palette** appears only while the list
+is filtered to one draft set; the new item is created directly in that set (a puzzle
+takes the set's shape and Set/pack use). Unassigned views create unassigned drafts.
+Selected items in the Assigned views can be bulk **Unassign**ed from their sets
+(one request per set); their designs are unchanged.
+Loaded catalogs are cached for the session, so switching views is instant; lists
+reload after your own saves or with **Refresh**. In the puzzle drafts view,
+**New puzzle** and each card's
+**Edit** button open dedicated creation/editing views. Save named Set/pack or Daily
+drafts atomically; reopening uses the stored definition rather than regeneration.
+After saving, name/palette/recipe choices apply to the next generation without
+changing the saved puzzle. A revised name survives randomization; an unchanged
+saved name clears.
+Unsaved work is guarded when leaving the workspace; choose the **Unassigned** tab
+to return to the gallery. Every add/edit form also has a **Cancel** button (**Back**
+once saved or read-only) that returns to the same list, filters included, asking
+before it discards edits. The playtest Restart sits beside the pieces.
+
+Drafts can preview replacement designs with the recipe/wand controls, even when
+assigned or scheduled, until they go live.
+Save Changes atomically replaces the public design and private solution under the
+same puzzle ID, then returns to the library. Leaving without saving keeps the
+original; errors preserve the pending replacement for retry. Assigned drafts keep
+their set/daily assignment but cannot change intended use.
+
+Non-clickable cards center the thumbnail and details above a bottom row with the
+selection checkbox and small blue Edit/red Delete icons; selected cards are
+highlighted. Filter by use or by set, then select all or individual drafts to
+change palettes or delete in bulk. Palette changes require Apply; deletion
+confirms count and names. Bulk operations are all-or-nothing, with database
+release/reference checks. Only unassigned drafts can be deleted, and assigned
+drafts cannot switch intended use.
+
+**Puzzles > Sets** creates named Core, Reward, or Paid draft sets with no
+fixed puzzle count; each set has one shape, chosen at creation. Select unassigned
+Set/pack drafts of one shape in the puzzle gallery and use **Assign to set** to
+append them atomically to a set of that shape. Cards show each puzzle's or set's
+shape; assigned cards also show their set name and Core/Reward/Pack type.
+
+Draft-set cards use two equal columns above 640px and one below, with a thumbnail
+on the left, details at the top right, and edit/delete controls at the bottom right. The set editor
+shows every member's saved-design thumbnail beside its name, a drag handle,
+and square-minus removal button. Drag members (or use arrow/Home/End keys on a
+focused handle) into any order, then choose the blue **Save** beside the name to
+save the name and order at once. Removal saves immediately. Removing a member or confirming set deletion preserves the
+puzzles and their private solutions. Scheduled/live content and dependent
+progression/routes/rewards remain protected by database checks.
+
+**Palettes** opens palette sets, and its **Palettes** view holds the Supabase
+palette library. Palette sets share the puzzle set cards and editor. Palette
+cards match puzzle cards; select palettes to assign them to a set or, when all
+are unassigned drafts, delete them in one confirmed batch. Create or edit draft
+palettes using five ordered hex fields/color pickers, or use a card's **Duplicate**
+icon to start an unnamed palette with those colors. The medium hexagon sandbox
+offers **Randomize** with an equal chance for each palette slot and no neutral
+color. Editing colors recolors the current pattern without regenerating it.
+The editor's blue **Save** sits beside the name. Usage lists linked puzzle previews
+and distribution references; only unused drafts can be deleted, from the library,
+with confirmation. Scheduled/live palettes are read-only
+but can be duplicated. Saving a palette refreshes the colors used by puzzle
+authoring and set previews. Zen's local palettes and randomizer remain unchanged.
+
+Playtest placements remain memory-only. Publishing, player progress,
+and changes to Zen saves are not included. See
+[Supabase instructions](./supabase/README.md) for required migrations and tests.
 
 The header switch opens a session-only proof of concept; it does not change or
 overwrite saved Zen designs. Pieces may be placed anywhere they fit within the
@@ -83,7 +172,8 @@ visible, with a **Next puzzle** button below the board. Rotation, accounts, rewa
 persistence are not included yet.
 
 Placed pieces are outlined on the board and disabled/desaturated in the tray;
-move them directly from the board or return them to the tray. Mirrored tiles
+move them directly from the board or return them by dragging back or
+double-clicking/double-tapping. Mirrored tiles
 stay muted until completion, when the full design is revealed and piece
 interaction and outlines are removed. Restart makes the board editable again.
 The goal image and uniformly scaled pieces share a compact row above the
@@ -91,15 +181,16 @@ full-width playable board. Visible instructions and piece labels are omitted;
 controls retain accessible names and placement feedback is announced to screen
 readers.
 
-[`generateHexPuzzle(seed, scheme)`](./src/puzzles/hexPuzzle.ts) produces a
+[`generatePuzzle(seed, palette, recipe, shape)`](./src/domain/puzzles/puzzle.ts) produces a
 serializable, deterministic puzzle definition with the target, fixed-orientation
-colored piece offsets, and a known solution. The current version uses the small
-hexagon and connected pieces of one, two, and three tiles; the UI passes the Cabo
-palette. Future set/pack authoring can call this pure generator with explicit
+colored piece offsets, and a known solution. Player Puzzle Mode uses its defaults:
+the small hexagon with connected pieces of one, two, and three tiles; the UI passes
+the Cabo palette. Future set/pack authoring can call this pure generator with explicit
 seeds and store the generated definitions. Save the complete versioned
 definition, not just a seed, so a future generator change cannot alter a
-published puzzle. This is not yet an authoring tool or a difficulty/uniqueness
-certifier.
+published puzzle. The admin lab wraps the expanded generator with a version-2
+palette-slot authoring model and private solution metadata. Draft persistence
+is available in the admin portal; neither generator certifies difficulty or uniqueness.
 
 ## Working with AI
 

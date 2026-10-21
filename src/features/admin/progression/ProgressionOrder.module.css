@@ -1,0 +1,19 @@
+.shape {
+	display: flex;
+	flex-direction: column;
+	gap: 0.125rem;
+}
+
+.shapeName {
+	font-size: 1.0625rem;
+}
+
+.detail {
+	display: block;
+}
+
+.icon {
+	flex: 0 0 3.5rem;
+	width: 3.5rem;
+	height: 3.5rem;
+}

@@ -1,0 +1,40 @@
+import { describe, expect, it, vi } from 'vitest'
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { ZenStateProvider } from '@/features/zen/state'
+import EditableAreaToggle from './EditableAreaToggle'
+import { useIsTouchDevice } from '@/ui/hooks'
+
+vi.mock('@/ui/hooks/useIsTouchDevice')
+const mockUseIsTouchDevice = vi.mocked(useIsTouchDevice)
+
+describe('EditableAreaToggle', () => {
+	it('renders nothing on non-touch devices', () => {
+		mockUseIsTouchDevice.mockReturnValue(false)
+		const { container } = render(<EditableAreaToggle />, {
+			wrapper: ZenStateProvider,
+		})
+		expect(container).toBeEmptyDOMElement()
+	})
+
+	it('labels itself with the destination state, and flips the label/icon on click', async () => {
+		mockUseIsTouchDevice.mockReturnValue(true)
+		const user = userEvent.setup()
+		render(<EditableAreaToggle />, { wrapper: ZenStateProvider })
+
+		// Defaults on, so the destination is hiding it.
+		const button = screen.getByRole('button', {
+			name: 'Hide editable area',
+		})
+
+		await user.click(button)
+		expect(
+			screen.getByRole('button', { name: 'Show editable area' }),
+		).toBeInTheDocument()
+
+		await user.click(screen.getByRole('button'))
+		expect(
+			screen.getByRole('button', { name: 'Hide editable area' }),
+		).toBeInTheDocument()
+	})
+})

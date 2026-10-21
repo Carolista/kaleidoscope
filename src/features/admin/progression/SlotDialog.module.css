@@ -1,0 +1,11 @@
+.current {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+/* Long palette groups scroll on their own instead of stretching the dialog. */
+.palettes {
+	max-height: 20rem;
+	overflow-y: auto;
+}
