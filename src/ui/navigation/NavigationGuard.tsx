@@ -66,7 +66,11 @@ export function NavigationGuardProvider({
 			deciding.current = false
 			if (!navigate) return
 			if (hasPending()) requestNavigation(navigate)
-			else navigate()
+			else {
+				for (const value of work.current.values())
+					if (value.dirty) value.discard?.()
+				navigate()
+			}
 		})
 	}
 

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { useMemo, useRef, useState, type SubmitEvent } from 'react'
 import {
+	generateAuthoredPuzzle,
 	renderAuthoredPuzzle,
 	type AuthoredPuzzle,
 	type AuthoringPalette,
@@ -16,11 +17,15 @@ import {
 	puzzleDraftArgs,
 	savePuzzleDraft,
 	type DraftArgs,
+	isPuzzleGroupPurpose,
+	isPuzzleGroupTrack,
 	recipesForTrack,
+	previewedSeedKey,
 } from '@/features/admin/services'
 import PuzzlePlaytest from './PuzzlePlaytest'
 import PuzzleDraftLibrary, { type LibraryView } from './PuzzleDraftLibrary'
 import { useUnsavedDraft } from '@/ui/navigation'
+import { DraftRecoveryNotice, useDraftRecovery } from '@/features/admin/drafts'
 import PuzzleDraftForm from './PuzzleDraftForm'
 import { useCatalog, useCatalogInvalidation } from '@/features/admin/catalog'
 import { Button, Loading } from '@/ui/components'
@@ -28,6 +33,48 @@ import { errorMessage } from '@/features/admin/common'
 import { compareGroupOrder, memberGroupOrderKey } from '@/features/admin/groups'
 
 const fallbackError = 'Unable to prepare the puzzle playtest.'
+
+// A generated preview is rebuilt from its seed, so the solution is never stored.
+interface NewPuzzleSnapshot {
+	readonly name: string
+	readonly shape: PuzzleShapeId
+	readonly recipeId: string
+	readonly paletteId: string | null
+	readonly previewSeed: string | null
+	readonly previewPaletteId: string | null
+	readonly group: PuzzleGroup['row'] | null
+}
+
+function parseNewPuzzleSnapshot(raw: unknown): NewPuzzleSnapshot | null {
+	if (!raw || typeof raw !== 'object') return null
+	const value = raw as Record<string, unknown>
+	const optionalString = (field: unknown) =>
+		field === null || typeof field === 'string'
+	const group = value.group as Record<string, unknown> | null
+	if (
+		typeof value.name !== 'string' ||
+		typeof value.shape !== 'string' ||
+		!isPuzzleShapeId(value.shape) ||
+		typeof value.recipeId !== 'string' ||
+		!optionalString(value.paletteId) ||
+		!optionalString(value.previewSeed) ||
+		!optionalString(value.previewPaletteId) ||
+		(group !== null &&
+			(typeof group !== 'object' ||
+				typeof group.id !== 'string' ||
+				typeof group.name !== 'string'))
+	)
+		return null
+	return {
+		name: value.name,
+		shape: value.shape,
+		recipeId: value.recipeId,
+		paletteId: value.paletteId as string | null,
+		previewSeed: value.previewSeed as string | null,
+		previewPaletteId: value.previewPaletteId as string | null,
+		group: group as PuzzleGroup['row'] | null,
+	}
+}
 
 export default function PuzzleAuthoring({
 	client,
@@ -81,7 +128,72 @@ export default function PuzzleAuthoring({
 	const dirty =
 		creating &&
 		(saved ? draftName !== savedName : !!generated || draftName.length > 0)
-	useUnsavedDraft({ dirty, pending: busy })
+	const recovery = useDraftRecovery<NewPuzzleSnapshot>({
+		key: 'puzzle:new',
+		// Once saved, the work is on the server and no longer at risk.
+		dirty: dirty && !saved,
+		snapshot: {
+			name: draftName,
+			shape,
+			recipeId,
+			paletteId: selectedPaletteId,
+			previewSeed: generated?.puzzle.seed ?? null,
+			previewPaletteId: generated?.puzzle.paletteId ?? null,
+			group: targetGroup?.row ?? null,
+		},
+		parse: parseNewPuzzleSnapshot,
+		onRestore: restored => {
+			const group = restored.group
+			const recipe = PUZZLE_RECIPES.find(
+				value => value.id === restored.recipeId,
+			)
+			let puzzle: AuthoredPuzzle | null = null
+			if (recipe && restored.previewSeed && restored.previewPaletteId) {
+				try {
+					puzzle = generateAuthoredPuzzle(
+						restored.previewSeed,
+						restored.previewPaletteId,
+						recipe,
+						restored.shape,
+					)
+				} catch {
+					puzzle = null
+				}
+			}
+			if (puzzle) {
+				const key = previewedSeedKey(restored.shape, puzzle.recipe)
+				const seeds = previewedSeeds.current.get(key) ?? new Set()
+				seeds.add(puzzle.seed)
+				previewedSeeds.current.set(key, seeds)
+			}
+			setTargetGroup(
+				group && {
+					row: group,
+					purpose: isPuzzleGroupPurpose(group.purpose)
+						? group.purpose
+						: 'undecided',
+					track:
+						group.track && isPuzzleGroupTrack(group.track)
+							? group.track
+							: null,
+					preview: null,
+					members: [],
+				},
+			)
+			setShape(restored.shape)
+			setRecipeId(recipe?.id ?? PUZZLE_RECIPES[0].id)
+			setSelectedPaletteId(restored.paletteId)
+			setDraftName(restored.name)
+			setGenerated(puzzle && { puzzle, run: 1 })
+			setLibraryView(undefined)
+			setSaved(false)
+			setSaveMessage('')
+			setError('')
+			pendingSave.current = null
+			setCreating(true)
+		},
+	})
+	useUnsavedDraft({ dirty, pending: busy, discard: recovery.discard })
 
 	function refreshPalettes() {
 		setError('')
@@ -156,6 +268,7 @@ export default function PuzzleAuthoring({
 				})
 			setSaved(true)
 			setSavedName(draftName)
+			recovery.discard()
 			invalidate('puzzleDrafts', 'puzzleGroups')
 			setSaveMessage(
 				`Saved "${args.p_name}" as an unpublished ${targetGroup ? `draft in "${targetGroup.row.name}"` : 'draft'}. Name, palette, and recipe choices now apply to the next randomization; this saved preview stays unchanged.`,
@@ -173,6 +286,11 @@ export default function PuzzleAuthoring({
 	)
 	const selectedPalette =
 		palettes.find(value => value.id === selectedPaletteId) ?? palettes[0]
+	if (!creating && recovery.pending) {
+		return (
+			<DraftRecoveryNotice recovery={recovery} subject="a new puzzle" />
+		)
+	}
 	if (!creating) {
 		return (
 			<>

@@ -19,11 +19,30 @@ import {
 } from '@/features/admin/common'
 import PaletteSandbox from './PaletteSandbox'
 import { useNavigationGuard, useUnsavedDraft } from '@/ui/navigation'
+import { DraftRecoveryNotice, useDraftRecovery } from '@/features/admin/drafts'
 import styles from './PaletteEditor.module.css'
 import { releaseState } from './releaseState'
 import { Button, FormField, Input, Loading } from '@/ui/components'
 
 const fallbackError = 'Unable to manage palettes.'
+
+interface PaletteSnapshot {
+	readonly name: string
+	readonly colors: readonly string[]
+}
+
+function parsePaletteSnapshot(raw: unknown): PaletteSnapshot | null {
+	if (!raw || typeof raw !== 'object') return null
+	const { name, colors } = raw as Record<string, unknown>
+	if (
+		typeof name !== 'string' ||
+		!Array.isArray(colors) ||
+		colors.length !== 5 ||
+		colors.some(color => typeof color !== 'string')
+	)
+		return null
+	return { name, colors: colors as string[] }
+}
 
 export default function PaletteEditor({
 	client,
@@ -57,7 +76,17 @@ export default function PaletteEditor({
 		!readOnly &&
 		(name !== (initial?.name ?? '') ||
 			colors.some((color, index) => color !== startingColors[index]))
-	useUnsavedDraft({ dirty, pending: busy })
+	const recovery = useDraftRecovery<PaletteSnapshot>({
+		key: `palette:${initial?.id ?? `new:${targetGroup?.id ?? ''}`}`,
+		dirty,
+		snapshot: { name, colors },
+		parse: parsePaletteSnapshot,
+		onRestore: saved => {
+			setName(saved.name)
+			setColors(saved.colors)
+		},
+	})
+	useUnsavedDraft({ dirty, pending: busy, discard: recovery.discard })
 	const validColors =
 		colors.length === 5 &&
 		colors.every(color => /^#[0-9a-f]{6}$/i.test(color))
@@ -114,6 +143,7 @@ export default function PaletteEditor({
 						paletteIds: [createRequest.current.id],
 					})
 			}
+			recovery.discard()
 			onSaved(
 				`Saved "${palette.name}" as a draft palette${!initial && targetGroup ? ` in "${targetGroup.name}"` : ''}.`,
 			)
@@ -136,6 +166,13 @@ export default function PaletteEditor({
 			)}
 			{readOnly && (
 				<p>{initial && releaseState(initial)} palette (read-only).</p>
+			)}
+			{!readOnly && (
+				<DraftRecoveryNotice
+					recovery={recovery}
+					subject="this palette"
+					replacesFields
+				/>
 			)}
 			<AdminFeedback error={error} />
 			{pending && <Loading label={pending} />}

@@ -569,4 +569,103 @@ describe('AdminPortal', () => {
 			'Connection failed',
 		)
 	})
+	describe('unsaved work safety', () => {
+		beforeEach(() => {
+			localStorage.clear()
+			mocks.getSession.mockResolvedValue({
+				data: { session: session() },
+				error: null,
+			})
+		})
+		afterEach(() => localStorage.clear())
+
+		it('keeps the workspace and its unsaved edits through a token refresh', async () => {
+			render(<AdminPortal />)
+			await openPaletteCatalog()
+			await clickWhenEnabled('New palette')
+			fireEvent.change(screen.getByLabelText('Palette name'), {
+				target: { value: 'Half-finished' },
+			})
+			const checks = mocks.maybeSingle.mock.calls.length
+			act(() =>
+				authCallback('TOKEN_REFRESHED', {
+					...session(),
+					access_token: 'token-refreshed',
+				}),
+			)
+			expect(
+				screen.queryByText('Checking admin access…'),
+			).not.toBeInTheDocument()
+			expect(screen.getByLabelText('Palette name')).toHaveValue(
+				'Half-finished',
+			)
+			expect(mocks.maybeSingle).toHaveBeenCalledTimes(checks)
+		})
+
+		it('offers to restore unsaved edits after a reload', async () => {
+			const first = render(<AdminPortal />)
+			await openPaletteCatalog()
+			await clickWhenEnabled('New palette')
+			fireEvent.change(screen.getByLabelText('Palette name'), {
+				target: { value: 'Survives reload' },
+			})
+			first.unmount()
+
+			render(<AdminPortal />)
+			await openPaletteCatalog()
+			await clickWhenEnabled('New palette')
+			expect(screen.getByLabelText('Palette name')).toHaveValue('')
+			fireEvent.click(
+				screen.getByRole('button', { name: 'Restore unsaved changes' }),
+			)
+			expect(screen.getByLabelText('Palette name')).toHaveValue(
+				'Survives reload',
+			)
+		})
+
+		it('does not offer another user’s unsaved edits', async () => {
+			const first = render(<AdminPortal />)
+			await openPaletteCatalog()
+			await clickWhenEnabled('New palette')
+			fireEvent.change(screen.getByLabelText('Palette name'), {
+				target: { value: 'Private' },
+			})
+			first.unmount()
+
+			mocks.getSession.mockResolvedValue({
+				data: { session: session('other') },
+				error: null,
+			})
+			mocks.maybeSingle.mockResolvedValue({
+				data: { user_id: 'other' },
+				error: null,
+			})
+			render(<AdminPortal />)
+			await openPaletteCatalog()
+			await clickWhenEnabled('New palette')
+			expect(
+				screen.queryByRole('button', {
+					name: 'Restore unsaved changes',
+				}),
+			).not.toBeInTheDocument()
+		})
+
+		it('forgets edits the user confirms discarding', async () => {
+			const first = render(<AdminPortal />)
+			await openPaletteCatalog()
+			await clickWhenEnabled('New palette')
+			fireEvent.change(screen.getByLabelText('Palette name'), {
+				target: { value: 'Discarded' },
+			})
+			fireEvent.click(
+				screen.getByRole('button', { name: 'Sign out on this device' }),
+			)
+			fireEvent.click(
+				screen.getByRole('button', { name: 'Discard changes' }),
+			)
+			await screen.findByLabelText('Password')
+			expect(localStorage.length).toBe(0)
+			first.unmount()
+		})
+	})
 })

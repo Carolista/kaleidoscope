@@ -2,6 +2,7 @@ import { useRef, useState, type SubmitEvent } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase'
 import {
+	generateAuthoredPuzzle,
 	renderAuthoredPuzzle,
 	type AuthoredPuzzle,
 	type AuthoringPalette,
@@ -22,9 +23,45 @@ import { AdminFeedback, errorMessage } from '@/features/admin/common'
 import { Button, ConfirmDialog, Loading } from '@/ui/components'
 import PuzzleDraftForm from './PuzzleDraftForm'
 import { useUnsavedDraft } from '@/ui/navigation'
+import { DraftRecoveryNotice, useDraftRecovery } from '@/features/admin/drafts'
 import { useModalState } from '@/ui/hooks'
 
 const fallbackError = 'Unable to manage puzzle drafts.'
+
+// A regenerated preview is rebuilt from its seed, so the solution is never stored.
+interface EditSnapshot {
+	readonly name: string
+	readonly paletteId: string
+	readonly recipeId: string
+	readonly preview: {
+		readonly seed: string
+		readonly paletteId: string
+		readonly recipeId: string
+	} | null
+}
+
+function parseEditSnapshot(raw: unknown): EditSnapshot | null {
+	if (!raw || typeof raw !== 'object') return null
+	const value = raw as Record<string, unknown>
+	const preview = value.preview as Record<string, unknown> | null
+	if (
+		typeof value.name !== 'string' ||
+		typeof value.paletteId !== 'string' ||
+		typeof value.recipeId !== 'string' ||
+		(preview !== null &&
+			(typeof preview !== 'object' ||
+				typeof preview.seed !== 'string' ||
+				typeof preview.paletteId !== 'string' ||
+				typeof preview.recipeId !== 'string'))
+	)
+		return null
+	return {
+		name: value.name,
+		paletteId: value.paletteId,
+		recipeId: value.recipeId,
+		preview: preview as EditSnapshot['preview'],
+	}
+}
 
 export default function PuzzleDraftEditor({
 	client,
@@ -73,7 +110,53 @@ export default function PuzzleDraftEditor({
 		name !== draft.row.name ||
 		paletteId !== draft.row.palette_id ||
 		replacement !== null
-	useUnsavedDraft({ dirty, pending: busy })
+	const recovery = useDraftRecovery<EditSnapshot>({
+		key: `puzzle:${draft.row.id}`,
+		dirty,
+		snapshot: {
+			name,
+			paletteId,
+			recipeId,
+			preview: replacement && {
+				seed: replacement.seed,
+				paletteId: replacement.paletteId,
+				recipeId: replacement.recipe.id,
+			},
+		},
+		parse: parseEditSnapshot,
+		onRestore: saved => {
+			let next: AuthoredPuzzle | null = null
+			if (saved.preview) {
+				const recipe = PUZZLE_RECIPES.find(
+					value => value.id === saved.preview?.recipeId,
+				)
+				if (recipe) {
+					try {
+						next = generateAuthoredPuzzle(
+							saved.preview.seed,
+							saved.preview.paletteId,
+							recipe,
+							draft.puzzle.shape,
+						)
+					} catch {
+						next = null
+					}
+				}
+			}
+			setName(saved.name)
+			setPaletteId(saved.paletteId)
+			setRecipeId(saved.recipeId)
+			setReplacement(next)
+			if (next) {
+				const key = previewedSeedKey(next.shape, next.recipe)
+				const seeds = previewedSeeds.current.get(key) ?? new Set()
+				seeds.add(next.seed)
+				previewedSeeds.current.set(key, seeds)
+				setPreviewRun(value => value + 1)
+			}
+		},
+	})
+	useUnsavedDraft({ dirty, pending: busy, discard: recovery.discard })
 
 	async function generate() {
 		if (working.current) return
@@ -127,6 +210,7 @@ export default function PuzzleDraftEditor({
 			}
 			const args = puzzleDraftArgs(draft.row.id, name, updatedPuzzle)
 			setName(name.trim())
+			recovery.discard()
 			onChanged('Draft changes saved.', {
 				...draft,
 				row: {
@@ -155,6 +239,7 @@ export default function PuzzleDraftEditor({
 		setDeleteError('')
 		try {
 			await deletePuzzleDraft(client, draft.row.id)
+			recovery.discard()
 			setConfirmDelete(null, () =>
 				onChanged(`Deleted "${draft.row.name}".`, null),
 			)
@@ -169,6 +254,11 @@ export default function PuzzleDraftEditor({
 	return (
 		<article aria-label={`Edit ${draft.row.name}`}>
 			<h2>Editing: {draft.row.name}</h2>
+			<DraftRecoveryNotice
+				recovery={recovery}
+				subject="this puzzle draft"
+				replacesFields
+			/>
 			<AdminFeedback error={error} />
 			<PuzzleDraftForm
 				mode="edit"

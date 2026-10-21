@@ -9,14 +9,17 @@ import {
 import styles from './AdminSession.module.css'
 import AdminHeader from './AdminHeader'
 import AdminWorkspace from './AdminWorkspace'
+import { clearUserDrafts, DraftScopeProvider } from '@/features/admin/drafts'
 import { useNavigationGuard, useUnsavedDraft } from '@/ui/navigation'
 import { Button, FormField, Input, Loading } from '@/ui/components'
 import { faRightFromBracket } from '@fortawesome/pro-solid-svg-icons'
 
+// Keyed by user, not access token: a background token refresh must not
+// discard the verified role and unmount the workspace.
 type RoleCheck =
-	| { token: string; status: 'allowed' }
-	| { token: string; status: 'denied' }
-	| { token: string; status: 'error'; message: string }
+	| { userId: string; status: 'allowed' }
+	| { userId: string; status: 'denied' }
+	| { userId: string; status: 'error'; message: string }
 
 export default function AdminSession({
 	client,
@@ -71,28 +74,35 @@ export default function AdminSession({
 		}
 	}, [client])
 
+	const userId = session?.user.id
 	useEffect(() => {
-		if (!session) return
+		if (!userId) return
+		const checkedUserId = userId
 		let active = true
-		const token = session.access_token
-		const userId = session.user.id
 		async function checkRole() {
 			try {
 				const { data, error } = await client
 					.from('admin_account')
 					.select('user_id')
-					.eq('user_id', userId)
+					.eq('user_id', checkedUserId)
 					.maybeSingle()
 				if (!active) return
 				setRole(
 					error
-						? { token, status: 'error', message: error.message }
-						: { token, status: data ? 'allowed' : 'denied' },
+						? {
+								userId: checkedUserId,
+								status: 'error',
+								message: error.message,
+							}
+						: {
+								userId: checkedUserId,
+								status: data ? 'allowed' : 'denied',
+							},
 				)
 			} catch (cause) {
 				if (!active) return
 				setRole({
-					token,
+					userId: checkedUserId,
 					status: 'error',
 					message: errorMessage(
 						cause,
@@ -105,7 +115,7 @@ export default function AdminSession({
 		return () => {
 			active = false
 		}
-	}, [client, session, retry])
+	}, [client, userId, retry])
 
 	async function signIn(event: SubmitEvent<HTMLFormElement>) {
 		event.preventDefault()
@@ -138,6 +148,8 @@ export default function AdminSession({
 			const { error } = await client.auth.signOut({ scope: 'local' })
 			if (error) setError(error.message)
 			else {
+				// An explicit sign-out already confirmed discarding unsaved work.
+				if (userId) clearUserDrafts(userId)
 				setSession(null)
 				setRole(null)
 			}
@@ -151,7 +163,7 @@ export default function AdminSession({
 		}
 	}
 
-	const checkedRole = role?.token === session?.access_token ? role : null
+	const checkedRole = role?.userId === userId ? role : null
 	return (
 		<>
 			<AdminHeader light={light} onToggleTheme={onToggleTheme}>
@@ -221,10 +233,12 @@ export default function AdminSession({
 						<Loading label="Checking admin access…" />
 					) : checkedRole.status === 'allowed' ? (
 						<div inert={busy}>
-							<AdminWorkspace
-								key={session.user.id}
-								client={client}
-							/>
+							<DraftScopeProvider userId={session.user.id}>
+								<AdminWorkspace
+									key={session.user.id}
+									client={client}
+								/>
+							</DraftScopeProvider>
 						</div>
 					) : checkedRole.status === 'denied' ? (
 						<p role="alert">

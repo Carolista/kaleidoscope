@@ -118,15 +118,17 @@ Rules:
 - ✅ Palette groups (`palette_groups` table, purposes Undecided/Core/Reward/Pack): create, assign, reorder, delete.
 - ✅ Navigation: Puzzles | Palettes | Shapes, then Groups | Items, then Unassigned | Assigned | Scheduled | Published. Group lists filter by purpose (and shape and track for puzzles); puzzle items filter by shape and track, and the Assigned view by purpose and group.
 - ✅ UI audit parts 1–6 (shared controls, loading, dialogs, unsaved-work guard, palette and layout components, CSS cleanup).
+- ✅ Unsaved-work safety: a token refresh no longer remounts the workspace (the admin-role check is keyed to the user ID), and unsaved edits in the new-puzzle, puzzle-draft, and palette editors are autosaved to localStorage with an explicit Restore or Discard after a reload (`src/features/admin/drafts`, see CONTEXT.md). Other admin forms (group dialogs, progression slots, group edit forms) don't persist yet; reuse `useDraftRecovery` for them and for any new release-tool editors.
 
 ## Admin portal: what's left for 2A (suggested order)
 
 1. 🔜 **Scheduled and Published views.** These are placeholders in
    [AdminWorkspace.tsx](./src/features/admin/shell/AdminWorkspace.tsx).
    Scheduled puzzles can already be regenerated in the database but can't be opened in the UI yet.
+   Planned for its own branch, together with item 2, because it depends on player-side changes.
 2. ⬜ **Publish and schedule (release tools).** Approve content with a release
    date, reschedule or cancel before release, and show missing dependencies.
-   Live content stays locked.
+   Live content stays locked. Same separate branch as item 1.
 3. ✅ **Progression section** (migrations `20261021000000`, `20261022000000`): Order (drag the shapes;
    locked once a core group is published), Puzzles and Rewards (four slots per shape: basic and rotation
    core and bonus groups, each with a puzzle group and one reward palette from reward palette groups;
@@ -172,6 +174,11 @@ the core sequence and rewards.
 - Grant the Zen randomizer permanently after all 12 core and 12 bonus groups are solved.
 - Validate completions and grant rewards on the server, idempotently.
 - Migrate existing Zen saves from hex colors to palette slots.
+- Puzzle Mode has no resume today: the current puzzle, placements, and rotations
+  live in React state, and a reload generates a new random puzzle. Once puzzles
+  come from published sets, save the puzzle ID plus placements and rotations so a
+  reload resumes the same puzzle (rebuild from the ID or seed rather than storing
+  solutions). Build this on the A4 guest-storage format so it isn't done twice.
 
 **A6: Launch impact and release**
 

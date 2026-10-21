@@ -105,6 +105,14 @@ In-flight operations are separate from unsaved edits: navigation is blocked
 with an explanation, never offered as a way to cancel a request already sent.
 Retry navigation after the operation finishes. Sign-out keeps the editor mounted
 and inert while pending; failure restores editing without losing values/previews.
+Token refreshes never unmount the workspace: the admin-role check is keyed to the
+user ID, not the access token.
+Unsaved edits in the new-puzzle, puzzle-draft, and palette editors are also
+autosaved to localStorage (`features/admin/drafts`), scoped to the signed-in user and
+expiring after 7 days. After a reload the editor offers Restore or Discard; nothing
+is applied silently. Puzzle previews store only their seed (never the solution).
+Saving, deleting, cancelling, confirming Discard changes, and signing out clear the
+saved copy; an expired session keeps it. Other admin forms don't persist yet.
 
 Drafts, including assigned and scheduled ones, can randomize replacement previews
 and change recipe locally until release.

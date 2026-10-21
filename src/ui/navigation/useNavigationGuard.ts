@@ -3,6 +3,8 @@ import { createContext, useContext, type ReactNode } from 'react'
 export interface UnsavedWork {
 	readonly dirty: boolean
 	readonly pending: boolean
+	// Called when the user confirms discarding this work.
+	readonly discard?: () => void
 }
 
 export interface NavigationGuard {

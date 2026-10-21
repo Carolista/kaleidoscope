@@ -23,6 +23,7 @@ import { puzzleDraftArgs } from '@/features/admin/services'
 import PuzzleAuthoring from './PuzzleAuthoring'
 import { AdminWorkspace } from '@/features/admin/shell'
 import { useNavigationGuard } from '@/ui/navigation'
+import { DraftScopeProvider } from '@/features/admin/drafts'
 import styles from './PuzzleDraftForm.module.css'
 import playtestStyles from './PuzzlePlaytest.module.css'
 import fieldStyles from '@/ui/components/FormField.module.css'
@@ -107,6 +108,7 @@ function setup(
 	},
 	startCreating = true,
 	workspace = false,
+	scoped = false,
 ) {
 	vi.spyOn(crypto, 'getRandomValues').mockImplementation(values => {
 		if (!(values instanceof Uint32Array))
@@ -137,11 +139,16 @@ function setup(
 		}
 		return { select: () => query }
 	})
+	const content = workspace ? (
+		<AdminWorkspace client={getSupabaseClient()} />
+	) : (
+		<Harness />
+	)
 	const view = render(
-		workspace ? (
-			<AdminWorkspace client={getSupabaseClient()} />
+		scoped ? (
+			<DraftScopeProvider userId="admin">{content}</DraftScopeProvider>
 		) : (
-			<Harness />
+			content
 		),
 	)
 	if (startCreating)
@@ -1184,5 +1191,47 @@ describe('admin puzzle lab', () => {
 				name: new RegExp(`^Select piece ${index + 1},.*in tray$`),
 			}),
 		).toBeEnabled()
+	})
+	it('restores an unsaved new puzzle after a reload without storing its solution', async () => {
+		localStorage.clear()
+		const first = setup(undefined, true, false, true)
+		await randomize()
+		fireEvent.change(screen.getByLabelText('Puzzle name'), {
+			target: { value: 'Recovered puzzle' },
+		})
+		const stored = JSON.stringify({ ...localStorage })
+		expect(stored).toContain('Recovered puzzle')
+		expect(stored).not.toContain('knownSolution')
+		const preview = document.querySelectorAll(
+			`.${playtestStyles.playtest}`,
+		).length
+		expect(preview).toBe(1)
+		first.unmount()
+
+		setup(undefined, false, false, true)
+		fireEvent.click(
+			await screen.findByRole('button', {
+				name: 'Restore unsaved changes',
+			}),
+		)
+		expect(screen.getByLabelText('Puzzle name')).toHaveValue(
+			'Recovered puzzle',
+		)
+		expect(
+			document.querySelectorAll(`.${playtestStyles.playtest}`),
+		).toHaveLength(preview)
+		localStorage.clear()
+	})
+
+	it('forgets an unsaved new puzzle when the user discards it', async () => {
+		localStorage.clear()
+		setup(undefined, true, false, true)
+		fireEvent.change(screen.getByLabelText('Puzzle name'), {
+			target: { value: 'Abandoned' },
+		})
+		fireEvent.click(screen.getByRole('button', { name: 'Drafts tab' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }))
+		await screen.findByRole('button', { name: 'New puzzle' })
+		expect(localStorage.length).toBe(0)
 	})
 })
