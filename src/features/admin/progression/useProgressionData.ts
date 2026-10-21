@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase'
-import { useCatalog } from '@/features/admin/catalog'
+import { useCatalog, useCatalogInvalidation } from '@/features/admin/catalog'
 
 // The catalogs every progression view reads; puzzles load only where they are needed.
 export default function useProgressionData(
@@ -11,6 +11,7 @@ export default function useProgressionData(
 	const paletteGroups = useCatalog('paletteGroups', client)
 	const palettes = useCatalog('palettes', client)
 	const puzzles = useCatalog('puzzleDrafts', client, includePuzzles)
+	const invalidate = useCatalogInvalidation()
 	const sources = includePuzzles
 		? [progression, paletteGroups, palettes, puzzles]
 		: [progression, paletteGroups, palettes]
@@ -26,5 +27,7 @@ export default function useProgressionData(
 			await Promise.all(sources.map(source => source.refresh()))
 		},
 		updateProgression: progression.update,
+		reloadProgression: progression.refresh,
+		invalidate,
 	}
 }

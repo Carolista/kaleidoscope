@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { checkRewardPattern } from './rewardPattern'
+import { checkRewardPattern, SLOT_ORDER, slotTitle } from './rewardPattern'
 import type { GroupReward, ProgressionGroup } from './progression'
 import { findUnavailablePalettes } from './paletteCoverage'
 
@@ -20,13 +20,13 @@ const group = (
 	track,
 	published: false,
 })
-const reward = (
-	groupId: string,
-	paletteIds: string[],
-	bonusGroupIds: string[] = [],
-): GroupReward => ({ groupId, paletteIds, bonusGroupIds })
+const reward = (groupId: string, paletteIds: string[]): GroupReward => ({
+	groupId,
+	paletteIds,
+	bonusGroupIds: [],
+})
 
-// A hexagon that follows the pattern exactly.
+// A hexagon with all four slots filled, each awarding one palette.
 const groups = [
 	group('basic', 'core', 'basic'),
 	group('rotation', 'core', 'rotation'),
@@ -35,7 +35,7 @@ const groups = [
 ]
 const complete = [
 	reward('basic', ['p1']),
-	reward('rotation', ['p2'], ['bonus-basic', 'bonus-rotation']),
+	reward('rotation', ['p2']),
 	reward('bonus-basic', ['p3']),
 	reward('bonus-rotation', ['p4']),
 ]
@@ -48,113 +48,81 @@ const check = (
 		w => w.message,
 	)
 
+describe('slots', () => {
+	it('lists the four slots in layout order with their titles', () => {
+		expect(SLOT_ORDER.map(slot => slotTitle(slot))).toEqual([
+			'Basic',
+			'Rotation',
+			'Bonus Basic',
+			'Bonus Rotation',
+		])
+	})
+})
+
 describe('reward pattern checker', () => {
-	it('accepts a shape that follows the pattern', () => {
+	it('accepts a shape with every slot filled and one palette each', () => {
 		expect(check(groups, complete)).toEqual([])
 	})
 
-	it('reports missing core groups and unrewarded groups', () => {
+	it('reports every empty slot, by shape', () => {
 		expect(check([], [], ['triangle'])).toEqual([
 			'Triangle has no basic core group.',
 			'Triangle has no rotation core group.',
+			'Triangle has no basic bonus group.',
+			'Triangle has no rotation bonus group.',
 		])
+	})
+
+	it('reports filled slots that award nothing yet, with the group named', () => {
 		expect(check(groups, [])).toEqual([
 			'Basic core group "basic" awards nothing yet.',
 			'Rotation core group "rotation" awards nothing yet.',
-			'Rotation core group "rotation" should award two bonus groups, one basic and one rotation (it awards 0).',
-			'Reward group "bonus-basic" is not awarded by the Hexagon rotation core group.',
-			'Reward group "bonus-rotation" is not awarded by the Hexagon rotation core group.',
+			'Basic bonus group "bonus-basic" awards nothing yet.',
+			'Rotation bonus group "bonus-rotation" awards nothing yet.',
 		])
 	})
 
-	it('wants exactly one palette per core and bonus group', () => {
-		const messages = check(groups, [
-			reward('basic', ['p1', 'p2']),
-			reward('rotation', ['p3', 'p4'], ['bonus-basic', 'bonus-rotation']),
-			reward('bonus-basic', ['p5', 'p6']),
-			reward('bonus-rotation', ['p7']),
-		])
-		expect(messages).toContain(
-			'Basic core group "basic" should award exactly one palette (it awards 2).',
-		)
-		expect(messages).toContain(
-			'Rotation core group "rotation" should award exactly one palette (it awards 2).',
-		)
-		expect(messages).toContain(
-			'Bonus group "bonus-basic" should award exactly one palette (it awards 2).',
-		)
-		expect(messages).not.toContainEqual(
-			expect.stringContaining('bonus-rotation" should'),
-		)
-	})
-
-	it('keeps bonus groups off the basic core group and off bonus groups', () => {
-		const messages = check(groups, [
-			reward('basic', ['p1'], ['bonus-basic']),
-			reward('rotation', ['p2'], ['bonus-basic', 'bonus-rotation']),
-			reward('bonus-basic', ['p3'], ['bonus-rotation']),
-			reward('bonus-rotation', ['p4']),
-		])
-		expect(messages).toEqual([
-			'Basic core group "basic" should not award bonus groups.',
-			'Bonus group "bonus-basic" should not award bonus groups.',
-		])
-	})
-
-	it('wants one basic and one rotation bonus group of the same shape', () => {
-		const twoBasic = [...groups, group('bonus-basic-2', 'reward', 'basic')]
+	it('wants exactly one palette per group', () => {
 		expect(
-			check(twoBasic, [
-				...complete.slice(0, 1),
-				reward('rotation', ['p2'], ['bonus-basic', 'bonus-basic-2']),
-				reward('bonus-basic', ['p3']),
-				reward('bonus-basic-2', ['p5']),
+			check(groups, [
+				reward('basic', ['p1', 'p2']),
+				reward('rotation', ['p3']),
+				reward('bonus-basic', ['p4', 'p5', 'p6']),
+				reward('bonus-rotation', ['p7']),
 			]),
-		).toContain(
-			'The bonus groups of "rotation" should be one basic and one rotation.',
-		)
+		).toEqual([
+			'Basic core group "basic" should award exactly one palette (it awards 2).',
+			'Basic bonus group "bonus-basic" should award exactly one palette (it awards 3).',
+		])
+	})
+
+	it('ignores groups of other purposes and other shapes', () => {
 		expect(
 			check(
 				[
 					...groups,
-					group('other-rotation', 'reward', 'rotation', 'triangle'),
+					group('other', 'core', 'basic', 'triangle'),
+					group('x', 'reward', 'basic', 'triangle'),
 				],
-				[
-					...complete.slice(0, 1),
-					reward(
-						'rotation',
-						['p2'],
-						['bonus-basic', 'other-rotation'],
-					),
-					reward('bonus-basic', ['p3']),
-					reward('other-rotation', ['p5']),
-				],
+				complete,
 			),
-		).toContain(
-			'Bonus group "other-rotation" belongs to a different shape than "rotation".',
-		)
-		expect(
-			check(groups, [
-				...complete.slice(0, 1),
-				reward('rotation', ['p2'], ['bonus-basic']),
-				reward('bonus-basic', ['p3']),
-			]),
-		).toContain(
-			'Rotation core group "rotation" should award two bonus groups, one basic and one rotation (it awards 1).',
-		)
+		).toEqual([])
 	})
 
 	it('warns about a palette awarded by more than one group', () => {
-		const messages = check(groups, [
-			...complete.slice(0, 3),
-			reward('bonus-rotation', ['p1']),
-		])
-		expect(messages).toEqual([
+		expect(
+			check(groups, [
+				reward('basic', ['p1']),
+				reward('rotation', ['p2']),
+				reward('bonus-basic', ['p3']),
+				reward('bonus-rotation', ['p1']),
+			]),
+		).toEqual([
 			'Palette "Palette p1" is awarded by more than one group: basic, bonus-rotation.',
 		])
 	})
 
-	it('checks every shape, in order, and tags warnings with their shape and group', () => {
+	it('checks every shape in order and tags warnings with their shape and group', () => {
 		const result = checkRewardPattern(
 			{
 				shapeIds: ['hexagon', 'triangle'],
@@ -167,8 +135,10 @@ describe('reward pattern checker', () => {
 			names,
 		)
 		expect(result.map(w => [w.shapeId, w.groupId])).toEqual([
-			['triangle', null],
 			['triangle', 'tri-basic'],
+			['triangle', null],
+			['triangle', null],
+			['triangle', null],
 		])
 	})
 })

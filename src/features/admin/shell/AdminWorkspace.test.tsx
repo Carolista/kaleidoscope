@@ -474,30 +474,34 @@ describe('admin workspace navigation', () => {
 		expect(mocks.puzzles).toHaveBeenCalledOnce()
 	})
 
-	it('adds a Progression section with Order, Rewards, and Checks views that guards a staged shape order', async () => {
+	it('adds a Progression section with Puzzles and Rewards (first) and Order views that guards a staged shape order', async () => {
 		render(<AdminWorkspace client={client} />)
 		await screen.findByRole('button', {
 			name: 'Edit group Design collection',
 		})
 		choose('Admin sections', 'Progression')
 		expect(
-			await screen.findByRole('heading', { name: 'Shape order' }),
+			await screen.findByRole('heading', { name: 'Puzzles and rewards' }),
 		).toBeInTheDocument()
-		await screen.findByText(/1\. Hexagon/)
 		expect(
 			within(
 				screen.getByRole('navigation', { name: 'Progression views' }),
 			)
 				.getAllByRole('button')
 				.map(button => button.textContent),
-		).toEqual(['Order', 'Rewards', 'Checks'])
+		).toEqual(['Puzzles and Rewards', 'Order'])
+		choose('Progression views', 'Order')
+		expect(
+			await screen.findByRole('heading', { name: 'Shape order' }),
+		).toBeInTheDocument()
+		await screen.findByText('Hexagon')
 		fireEvent.keyDown(
 			screen.getByRole('button', { name: 'Reorder Hexagon' }),
 			{
 				key: 'ArrowDown',
 			},
 		)
-		choose('Progression views', 'Rewards')
+		choose('Progression views', 'Puzzles and Rewards')
 		expect(
 			screen.getByRole('dialog', { name: 'Discard unsaved changes?' }),
 		).toBeInTheDocument()
@@ -505,14 +509,10 @@ describe('admin workspace navigation', () => {
 		expect(
 			screen.getByRole('heading', { name: 'Shape order' }),
 		).toBeInTheDocument()
-		choose('Progression views', 'Rewards')
+		choose('Progression views', 'Puzzles and Rewards')
 		fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }))
 		expect(
-			await screen.findByRole('heading', { name: 'Rewards' }),
-		).toBeInTheDocument()
-		choose('Progression views', 'Checks')
-		expect(
-			await screen.findByRole('heading', { name: 'Checks' }),
+			await screen.findByRole('heading', { name: 'Puzzles and rewards' }),
 		).toBeInTheDocument()
 		choose('Admin sections', 'Puzzles')
 		expect(

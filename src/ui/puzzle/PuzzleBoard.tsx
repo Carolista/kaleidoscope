@@ -147,6 +147,8 @@ interface PuzzleBoardProps {
 	readonly gridSize: number
 	readonly colors: Readonly<Record<string, string>>
 	readonly target?: boolean
+	// False drops the lines between cells, for small thumbnails.
+	readonly gridlines?: boolean
 	readonly solved?: boolean
 	readonly pieces?: readonly PuzzlePiece[]
 	readonly placements?: PuzzlePlacements
@@ -166,6 +168,7 @@ export default function PuzzleBoard({
 	gridSize,
 	colors,
 	target = false,
+	gridlines = true,
 	solved = false,
 	pieces = [],
 	placements = {},
@@ -222,6 +225,11 @@ export default function PuzzleBoard({
 						key={`${cell.transform ?? 0}:${coordinateKey(cell)}`}
 						points={polygonPoints(shape, cell)}
 						fill={fill ?? 'var(--base)'}
+						style={
+							gridlines
+								? undefined
+								: { stroke: fill ?? 'var(--base)' }
+						}
 						className={
 							target || solved
 								? styles.targetCell

@@ -128,3 +128,10 @@ export function getHoverFill(
 	if (fill === base || fill === accent) return NEUTRAL_HOVER_FILL
 	return brightenAndSaturate(fill)
 }
+
+// The same color with its hue removed, using perceived brightness (Rec. 601 luma).
+export function toGrayscale(hex: string): string {
+	const { r, g, b } = hexToRgb(hex)
+	const gray = 0.299 * r + 0.587 * g + 0.114 * b
+	return rgbToHex({ r: gray, g: gray, b: gray })
+}

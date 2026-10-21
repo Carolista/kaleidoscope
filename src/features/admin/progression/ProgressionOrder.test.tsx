@@ -34,6 +34,11 @@ vi.mock('@/features/admin/services/paletteGroups', async importOriginal => ({
 
 const client = {} as SupabaseClient<Database>
 
+const shapeOrder = () =>
+	screen
+		.getAllByRole('listitem')
+		.map(item => item.querySelector('strong')?.textContent)
+
 function isProtected() {
 	const event = new Event('beforeunload', { cancelable: true })
 	window.dispatchEvent(event)
@@ -49,21 +54,18 @@ beforeEach(() => {
 })
 
 describe('progression shape order', () => {
-	it('lists the shapes in unlock order with their core groups', async () => {
+	it('lists the shapes in unlock order and nothing else', async () => {
 		render(<ProgressionOrder client={client} />)
-		await screen.findByText(/1\. Hexagon/)
+		await screen.findByText('Hexagon')
 		expect(screen.getByText('Open from the start')).toBeInTheDocument()
 		expect(
 			screen.getByText('Unlocks when a Hexagon core group is completed'),
 		).toBeInTheDocument()
-		expect(
-			screen.getByText(
-				/Basic core: Neon Nights · Rotation core: Neon Spin/,
-			),
-		).toBeInTheDocument()
-		expect(
-			screen.getByText(/Basic core: Tri Bright · Rotation core: Missing/),
-		).toBeInTheDocument()
+		expect(screen.queryByText(/core:/)).not.toBeInTheDocument()
+		expect(shapeOrder()).toEqual(['Hexagon', 'Triangle'])
+		for (const item of screen.getAllByRole('listitem')) {
+			expect(item.querySelector('svg')).toBeInTheDocument()
+		}
 		expect(
 			screen.getByRole('button', { name: 'Save order' }),
 		).toBeDisabled()
@@ -74,14 +76,14 @@ describe('progression shape order', () => {
 
 	it('stages a reorder until Save, then confirms it and updates the unlock text', async () => {
 		render(<ProgressionOrder client={client} />)
-		await screen.findByText(/1\. Hexagon/)
+		await screen.findByText('Hexagon')
 		fireEvent.keyDown(
 			screen.getByRole('button', { name: 'Reorder Hexagon' }),
 			{
 				key: 'ArrowDown',
 			},
 		)
-		expect(screen.getByText(/1\. Triangle/)).toBeInTheDocument()
+		expect(shapeOrder()).toEqual(['Triangle', 'Hexagon'])
 		expect(mocks.manage).not.toHaveBeenCalled()
 		expect(isProtected()).toBe(true)
 		fireEvent.click(screen.getByRole('button', { name: 'Save order' }))
@@ -103,7 +105,7 @@ describe('progression shape order', () => {
 	it('keeps the staged order and shows the error when the save fails', async () => {
 		mocks.manage.mockRejectedValueOnce(new Error('Lost connection'))
 		render(<ProgressionOrder client={client} />)
-		await screen.findByText(/1\. Hexagon/)
+		await screen.findByText('Hexagon')
 		fireEvent.keyDown(
 			screen.getByRole('button', { name: 'Reorder Hexagon' }),
 			{
@@ -114,7 +116,7 @@ describe('progression shape order', () => {
 		expect(await screen.findByRole('alert')).toHaveTextContent(
 			'Lost connection',
 		)
-		expect(screen.getByText(/1\. Triangle/)).toBeInTheDocument()
+		expect(shapeOrder()).toEqual(['Triangle', 'Hexagon'])
 		expect(screen.getByRole('button', { name: 'Save order' })).toBeEnabled()
 		fireEvent.click(screen.getByRole('button', { name: 'Save order' }))
 		await screen.findByText('Shape order saved.')
@@ -129,7 +131,7 @@ describe('progression shape order', () => {
 			}),
 		)
 		render(<ProgressionOrder client={client} />)
-		await screen.findByText(/1\. Hexagon/)
+		await screen.findByText('Hexagon')
 		fireEvent.keyDown(
 			screen.getByRole('button', { name: 'Reorder Hexagon' }),
 			{
@@ -148,7 +150,7 @@ describe('progression shape order', () => {
 	it('is read-only once a core group is published', async () => {
 		mocks.progression.mockResolvedValue(progression({ locked: true }))
 		render(<ProgressionOrder client={client} />)
-		await screen.findByText(/1\. Hexagon/)
+		await screen.findByText('Hexagon')
 		expect(screen.getByRole('note')).toHaveTextContent('locked')
 		expect(
 			screen.getByRole('button', { name: 'Save order' }),
@@ -159,7 +161,7 @@ describe('progression shape order', () => {
 				key: 'ArrowDown',
 			},
 		)
-		expect(screen.getByText(/1\. Hexagon/)).toBeInTheDocument()
+		expect(shapeOrder()).toEqual(['Hexagon', 'Triangle'])
 	})
 
 	it('shows load failures and refreshes on request', async () => {
@@ -169,7 +171,7 @@ describe('progression shape order', () => {
 		fireEvent.click(
 			screen.getByRole('button', { name: 'Refresh shape order' }),
 		)
-		await screen.findByText(/1\. Hexagon/)
+		await screen.findByText('Hexagon')
 		expect(screen.queryByRole('alert')).not.toBeInTheDocument()
 	})
 })

@@ -53,17 +53,22 @@ groups, rewards, and packs connect and roll out. Group lists filter by purpose (
 shape and track); puzzle items filter by shape and track, and the Assigned view by purpose and group. Section/view changes use the
 navigation guard and reset lower choices to their defaults.
 
-**Progression** has three views. **Order** drags the six shapes into unlock order
-(one **Save order**; read-only once any core group is published) and shows each
-shape's basic and rotation core group. **Rewards** goes shape by shape: the basic
-core group awards one palette; the rotation core group awards one palette plus a
-basic and a rotation bonus group; each bonus group awards one palette. Each row
-opens a reward dialog; palettes can only come from reward palette groups
-(searchable), and published groups are not editable. **Checks** lists reward-pattern
-warnings per shape and the palettes of grouped puzzles that are in no core, reward,
-or pack palette group. Warnings never block anything. The views share the
-`progression` catalog ([progression.ts](./src/features/admin/services/progression.ts)),
-and the pattern rules live in [rewardPattern.ts](./src/features/admin/services/rewardPattern.ts).
+**Progression** has two views and opens on Puzzles and Rewards. **Order** is strictly the shape order: drag the six shapes, each
+shown with the same preview icon as the Zen shape picker
+([GridShapeIcon](./src/ui/components/GridShapeIcon.tsx)), into
+unlock order (one **Save order**; read-only once any core group is published). **Puzzles and
+Rewards** shows each shape as a box holding two nested boxes: the core groups (Basic, Rotation) and
+the bonus groups (Bonus Basic, Bonus Rotation), which drops below on narrow screens. Each slot shows
+its puzzle group, a small gridline-free thumbnail of the group's first puzzle, and the palette it
+awards; its edit icon opens a dialog to pick the puzzle group for the slot (any unassigned group that
+fits the shape and track, or Not assigned). Below that the dialog shows the current reward palette (with a
+reset button) and one fieldset per reward palette group, so the palette is chosen visually from reward
+palette groups only, with palettes another group already awards shown in greyscale (names kept) and
+disabled. Published groups are not editable. The same page warns under each shape
+about pattern problems (general warnings sit above the shapes) and lists palettes of grouped puzzles
+that are in no core, reward, or pack palette group; warnings never block anything. The views share the `progression` catalog
+([progression.ts](./src/features/admin/services/progression.ts)), and the pattern rules live in
+[rewardPattern.ts](./src/features/admin/services/rewardPattern.ts).
 
 [AdminCatalogProvider](./src/features/admin/catalog/AdminCatalog.tsx) caches puzzle
 groups, puzzle drafts, palettes, and palette groups for the signed-in session.

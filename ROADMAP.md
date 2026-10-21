@@ -127,10 +127,11 @@ Rules:
 2. ⬜ **Publish and schedule (release tools).** Approve content with a release
    date, reschedule or cancel before release, and show missing dependencies.
    Live content stays locked.
-3. ✅ **Progression section** (migration `20261021000000`): Order (drag the shapes; locked once a core
-   group is published), Rewards (shape by shape; palettes only from reward palette groups), and Checks
-   (reward-pattern warnings, and grouped puzzles whose palette players cannot get). One core group per
-   shape and track is enforced. Warnings never block publishing yet.
+3. ✅ **Progression section** (migrations `20261021000000`, `20261022000000`): Order (drag the shapes;
+   locked once a core group is published), Puzzles and Rewards (four slots per shape: basic and rotation
+   core and bonus groups, each with a puzzle group and one reward palette from reward palette groups;
+   bonus groups link to the rotation core group automatically) with pattern warnings and a list of
+   grouped puzzles whose palette players cannot get. Warnings never block publishing yet.
 4. ⬜ **Daily groups and scheduling.** Daily groups organize puzzles (for example by month); scheduling
    one per day moves to 2B.
 5. ⬜ **Shapes section.** Catalog settings only. New shape geometry still needs app code.

@@ -261,16 +261,32 @@ and starter tables are gone. The admin RPCs are `manage_puzzle_group` and
 completion, and pack access are enforced by the same security-definer helpers that
 gate puzzle reads.
 
-**Progression admin.** Progression is a top-level admin section (Order | Rewards | Checks).
-The database allows one core group per shape and track (a trigger gives a readable error,
-a unique index backs it up), and one reward rule per group, replaced atomically by
-`manage_group_reward`. Reward palettes must belong to a palette group with the reward
-purpose; bonus groups must be reward groups. `manage_shape_progression` reorders the shapes
+**Progression admin.** Progression is a top-level admin section (Puzzles and Rewards, the default view | Order).
+Order is strictly the shape order. Each shape has four **slots**: a basic and a rotation core
+group, and a basic and a rotation bonus (reward) group. A slot holds at most one group (core and
+reward groups are unique per shape and track, with a trigger for a readable error and a unique
+index behind it). Editing a slot picks the puzzle group that fills it and the one palette it
+awards, in one atomic call (`manage_progression_slot`): the group takes the slot's purpose,
+shape, and track; the group that held the slot becomes Undecided and loses its reward; an empty
+slot is a null group. Candidates are unpublished groups outside every slot whose puzzles fit
+the shape and track. Reward palettes must belong to a palette group with the reward purpose, and
+the editor shows palettes another group already awards in greyscale, with their names, and
+disables them. Slot cards show a gridline-free thumbnail of the group's first puzzle, read from
+the puzzle group catalog (unpublished groups only, so a published group would show none).
+The shape preview icon is a shared UI component because features cannot import each other. The pattern checks live on the Puzzles and Rewards page itself (a warning list
+under each shape, general warnings above the shapes, and a list of grouped puzzles whose palette
+no player can get), so there is no separate Checks view.
+
+The bonus groups of a shape are exactly its reward groups, and the database links them to the
+shape's rotation core group automatically (`reward_puzzle_groups`, kept in sync by a trigger and
+rebuilt on every slot change), so completing the rotation core group will grant them. Nobody
+picks those links by hand. A group with automatic links is changed through its slot, not by
+deleting it or changing its purpose elsewhere. `manage_shape_progression` reorders the shapes
 and, with a trigger on the table, refuses any change once a core group is published, because
-the order decides who unlocks what. The reward pattern is only checked, never enforced:
-checks warn (missing core groups, wrong palette or bonus counts, unawarded reward groups,
-a palette awarded twice, and grouped puzzles whose palette no player can get) and do not
-block publishing until the release tools exist.
+the order decides who unlocks what. The pattern is only checked, never enforced: checks warn
+(an empty slot, a group awarding no palette or more than one, a palette awarded twice, and
+grouped puzzles whose palette no player can get) and do not block publishing until the release
+tools exist.
 
 ### Puzzle shapes
 

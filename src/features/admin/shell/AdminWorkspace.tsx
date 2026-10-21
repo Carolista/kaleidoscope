@@ -7,9 +7,8 @@ import { PuzzleAuthoring } from '@/features/admin/puzzles'
 import { PuzzleGroupLibrary } from '@/features/admin/puzzle-groups'
 import { PaletteLibrary } from '@/features/admin/palettes'
 import {
-	ProgressionChecks,
 	ProgressionOrder,
-	ProgressionRewards,
+	ProgressionSlots,
 } from '@/features/admin/progression'
 import { useNavigationGuard } from '@/ui/navigation'
 
@@ -32,9 +31,9 @@ export default function AdminWorkspace({
 	>('puzzles')
 	const [view, setView] = useState<'groups' | 'items'>('groups')
 	const [status, setStatus] = useState<CatalogStatus>('drafts')
-	const [progressionView, setProgressionView] = useState<
-		'order' | 'rewards' | 'checks'
-	>('order')
+	const [progressionView, setProgressionView] = useState<'order' | 'rewards'>(
+		'rewards',
+	)
 	// Choosing any tab, including the current one, returns to that view's list.
 	const [visit, setVisit] = useState(0)
 	const { requestNavigation } = useNavigationGuard()
@@ -58,7 +57,7 @@ export default function AdminWorkspace({
 						setSection(next)
 						setView('groups')
 						setStatus('drafts')
-						setProgressionView('order')
+						setProgressionView('rewards')
 						setVisit(value => value + 1)
 					})
 				}
@@ -68,9 +67,8 @@ export default function AdminWorkspace({
 					<AdminNavigation
 						label="Progression views"
 						items={[
+							{ value: 'rewards', label: 'Puzzles and Rewards' },
 							{ value: 'order', label: 'Order' },
-							{ value: 'rewards', label: 'Rewards' },
-							{ value: 'checks', label: 'Checks' },
 						]}
 						value={progressionView}
 						onChange={next =>
@@ -82,10 +80,8 @@ export default function AdminWorkspace({
 					/>
 					{progressionView === 'order' ? (
 						<ProgressionOrder key={visit} client={client} />
-					) : progressionView === 'rewards' ? (
-						<ProgressionRewards key={visit} client={client} />
 					) : (
-						<ProgressionChecks key={visit} client={client} />
+						<ProgressionSlots key={visit} client={client} />
 					)}
 				</>
 			) : section === 'shapes' ? (

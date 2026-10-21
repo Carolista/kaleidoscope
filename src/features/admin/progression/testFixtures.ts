@@ -4,6 +4,7 @@ import type {
 	PaletteGroup,
 	Progression,
 	ProgressionGroup,
+	SlotCandidate,
 } from '@/features/admin/services'
 import { generateAuthoredPuzzle, PUZZLE_RECIPES } from '@/domain/puzzles'
 import { puzzleDraftArgs } from '@/features/admin/services'
@@ -15,6 +16,7 @@ export const palettes: CatalogPalette[] = [
 	['tahiti', 'Tahiti'],
 	['regatta', 'Regatta'],
 	['orphan', 'Orphan'],
+	['dune', 'Dune'],
 ].map(([id, name]) => ({
 	id,
 	name,
@@ -40,7 +42,11 @@ const paletteGroup = (
 })
 
 export const paletteGroups: PaletteGroup[] = [
-	paletteGroup('earned', 'Earned palettes', 'reward', ['cabo', 'tahiti']),
+	paletteGroup('earned', 'Earned palettes', 'reward', [
+		'cabo',
+		'tahiti',
+		'dune',
+	]),
 	paletteGroup('sold', 'Sold palettes', 'pack', ['regatta']),
 	paletteGroup('maybe', 'Maybe palettes', 'undecided', []),
 ]
@@ -53,6 +59,21 @@ const group = (
 	track: 'basic' | 'rotation',
 	published = false,
 ): ProgressionGroup => ({ id, name, purpose, shapeId, track, published })
+
+export const candidate = (
+	id: string,
+	name: string,
+	overrides: Partial<SlotCandidate> = {},
+): SlotCandidate => ({
+	id,
+	name,
+	purpose: 'undecided',
+	memberCount: 0,
+	shapeIds: [],
+	hasBasic: false,
+	hasRotation: false,
+	...overrides,
+})
 
 export function progression(overrides: Partial<Progression> = {}): Progression {
 	return {
@@ -78,6 +99,25 @@ export function progression(overrides: Partial<Progression> = {}): Progression {
 		],
 		rewards: [
 			{ groupId: 'hex-basic', paletteIds: ['cabo'], bonusGroupIds: [] },
+		],
+		candidates: [
+			candidate('spare-basic', 'Spare basic', {
+				memberCount: 3,
+				shapeIds: ['hexagon'],
+				hasBasic: true,
+			}),
+			candidate('spare-rotation', 'Spare rotation', {
+				memberCount: 1,
+				shapeIds: ['hexagon'],
+				hasRotation: true,
+			}),
+			candidate('spare-triangle', 'Spare triangle', {
+				purpose: 'pack',
+				memberCount: 2,
+				shapeIds: ['triangle'],
+				hasBasic: true,
+			}),
+			candidate('spare-empty', 'Spare empty'),
 		],
 		locked: false,
 		...overrides,

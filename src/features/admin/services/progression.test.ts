@@ -2,12 +2,14 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { describe, expect, it, vi } from 'vitest'
 import type { Database } from '@/lib/supabase'
 import {
-	coreGroupsOf,
+	candidateFits,
+	groupInSlot,
 	loadProgression,
-	manageGroupReward,
+	manageProgressionSlot,
 	manageShapeProgression,
 	rewardOf,
 	type ProgressionGroup,
+	type SlotCandidate,
 } from './progression'
 
 function client(value: object) {
@@ -34,6 +36,7 @@ function setup(
 		shapes?: unknown
 		groups?: unknown
 		rules?: unknown
+		candidates?: unknown
 	} = {},
 ) {
 	const results: Record<string, unknown> = {
@@ -52,6 +55,41 @@ function setup(
 			],
 			error: null,
 		},
+		candidates: overrides.candidates ?? {
+			data: [
+				{
+					id: 'spare',
+					name: 'Spare',
+					purpose: 'undecided',
+					published_at: null,
+					release_at: null,
+					puzzle_group_members: [
+						{
+							puzzles: {
+								shape_id: 'hexagon',
+								rotation_allowed: false,
+							},
+						},
+						{
+							puzzles: {
+								shape_id: 'hexagon',
+								rotation_allowed: true,
+							},
+						},
+						{ puzzles: null },
+					],
+				},
+				{
+					id: 'empty',
+					name: 'Empty',
+					purpose: 'pack',
+					published_at: null,
+					release_at: null,
+					puzzle_group_members: [],
+				},
+			],
+			error: null,
+		},
 		reward_rules: overrides.rules ?? {
 			data: [
 				{
@@ -65,8 +103,15 @@ function setup(
 		},
 	}
 	const calls: unknown[][] = []
-	const range = vi.fn((table: string) => Promise.resolve(results[table]))
+	const range = vi.fn((table: string, purposes: string[] = []) =>
+		Promise.resolve(
+			table === 'puzzle_groups' && purposes.includes('undecided')
+				? results.candidates
+				: results[table],
+		),
+	)
 	const from = vi.fn((table: string) => {
+		let purposes: string[] = []
 		const query = {
 			select: (columns: string) => {
 				calls.push([table, 'select', columns])
@@ -74,6 +119,7 @@ function setup(
 			},
 			in: (column: string, values: string[]) => {
 				calls.push([table, 'in', column, values])
+				purposes = values
 				return query
 			},
 			order: (column: string) => {
@@ -83,9 +129,13 @@ function setup(
 					? Promise.resolve(results[table])
 					: query
 			},
+			is: (column: string, value: null) => {
+				calls.push([table, 'is', column, value])
+				return query
+			},
 			range: (...args: number[]) => {
 				calls.push([table, 'range', ...args])
-				return range(table)
+				return range(table, purposes)
 			},
 		}
 		return query
@@ -118,12 +168,38 @@ describe('progression catalog', () => {
 				bonusGroupIds: ['bonus'],
 			},
 		])
+		expect(progression.candidates).toEqual([
+			{
+				id: 'spare',
+				name: 'Spare',
+				purpose: 'undecided',
+				memberCount: 2,
+				shapeIds: ['hexagon'],
+				hasBasic: true,
+				hasRotation: true,
+			},
+			{
+				id: 'empty',
+				name: 'Empty',
+				purpose: 'pack',
+				memberCount: 0,
+				shapeIds: [],
+				hasBasic: false,
+				hasRotation: false,
+			},
+		])
 		expect(progression.locked).toBe(false)
 		expect(calls).toContainEqual([
 			'puzzle_groups',
 			'in',
 			'purpose',
 			['core', 'reward'],
+		])
+		expect(calls).toContainEqual([
+			'puzzle_groups',
+			'in',
+			'purpose',
+			['undecided', 'pack', 'daily'],
 		])
 		expect(calls).toContainEqual(['shape_progression', 'order', 'position'])
 	})
@@ -173,17 +249,19 @@ describe('progression catalog', () => {
 				error: null,
 			},
 		]
-		range.mockImplementation((table: string) =>
+		range.mockImplementation((table: string, purposes: string[] = []) =>
 			Promise.resolve(
-				table === 'puzzle_groups'
+				table === 'puzzle_groups' && !purposes.includes('undecided')
 					? (pages.shift() ?? { data: [], error: null })
-					: results[table],
+					: purposes.includes('undecided')
+						? results.candidates
+						: results[table],
 			),
 		)
 		expect((await loadProgression(client)).groups).toHaveLength(1001)
 	})
 
-	it.each(['shapes', 'groups', 'rules'] as const)(
+	it.each(['shapes', 'groups', 'rules', 'candidates'] as const)(
 		'reports %s read errors and missing data explicitly',
 		async key => {
 			const failing = setup({
@@ -198,6 +276,25 @@ describe('progression catalog', () => {
 			)
 		},
 	)
+
+	it('rejects an available group with an unsupported purpose', async () => {
+		const bad = setup({
+			candidates: {
+				data: [
+					{
+						id: 'x',
+						name: 'X',
+						purpose: 'sold',
+						published_at: null,
+						release_at: null,
+						puzzle_group_members: [],
+					},
+				],
+				error: null,
+			},
+		})
+		await expect(loadProgression(bad.client)).rejects.toThrow('unsupported')
+	})
 
 	it('rejects unsupported purposes and tracks', async () => {
 		for (const row of [
@@ -242,34 +339,45 @@ describe('progression writes', () => {
 		).rejects.toThrow('Order is locked')
 	})
 
-	it('confirms one reward change per group', async () => {
-		const rpc = vi.fn().mockResolvedValue({ data: 'rotation', error: null })
-		await manageGroupReward(client({ rpc }), 'rotation', {
-			paletteIds: ['cabo'],
-			bonusGroupIds: ['a', 'b'],
-		})
-		expect(rpc).toHaveBeenCalledExactlyOnceWith('manage_group_reward', {
-			p_group_id: 'rotation',
+	it('confirms one atomic slot change, with or without a group', async () => {
+		const slot = {
+			shapeId: 'hexagon',
+			purpose: 'core',
+			track: 'rotation',
+		} as const
+		const rpc = vi.fn().mockResolvedValue({ data: 'group', error: null })
+		await manageProgressionSlot(client({ rpc }), slot, 'group', ['cabo'])
+		expect(rpc).toHaveBeenCalledExactlyOnceWith('manage_progression_slot', {
+			p_shape_id: 'hexagon',
+			p_purpose: 'core',
+			p_track: 'rotation',
+			p_group_id: 'group',
 			p_palette_ids: ['cabo'],
-			p_bonus_group_ids: ['a', 'b'],
+		})
+		rpc.mockClear()
+		rpc.mockResolvedValue({ data: null, error: null })
+		await manageProgressionSlot(client({ rpc }), slot, null, [])
+		expect(rpc).toHaveBeenCalledExactlyOnceWith('manage_progression_slot', {
+			p_shape_id: 'hexagon',
+			p_purpose: 'core',
+			p_track: 'rotation',
+			p_palette_ids: [],
 		})
 		rpc.mockResolvedValue({ data: 'other', error: null })
 		await expect(
-			manageGroupReward(client({ rpc }), 'rotation', {
-				paletteIds: [],
-				bonusGroupIds: [],
-			}),
+			manageProgressionSlot(client({ rpc }), slot, 'group', []),
+		).rejects.toThrow('not confirmed')
+		rpc.mockResolvedValue({ data: 'group', error: null })
+		await expect(
+			manageProgressionSlot(client({ rpc }), slot, null, []),
 		).rejects.toThrow('not confirmed')
 		rpc.mockResolvedValue({
 			data: null,
-			error: { message: 'Palette is not in a reward palette group' },
+			error: { message: 'Group "A" already fills another slot.' },
 		})
 		await expect(
-			manageGroupReward(client({ rpc }), 'rotation', {
-				paletteIds: ['x'],
-				bonusGroupIds: [],
-			}),
-		).rejects.toThrow('not in a reward palette group')
+			manageProgressionSlot(client({ rpc }), slot, 'group', []),
+		).rejects.toThrow('already fills another slot')
 	})
 })
 
@@ -288,25 +396,82 @@ describe('progression helpers', () => {
 		published: false,
 	})
 
-	it('finds the basic and rotation core group of a shape', () => {
+	it('finds the group filling a slot by shape, purpose, and track', () => {
 		const groups = [
 			group('a', 'core', 'hexagon', 'basic'),
 			group('b', 'core', 'hexagon', 'rotation'),
 			group('c', 'core', 'triangle', 'basic'),
 			group('d', 'reward', 'triangle', 'rotation'),
 		]
-		expect(coreGroupsOf(groups, 'hexagon')).toEqual({
-			basic: groups[0],
-			rotation: groups[1],
+		const slot = (
+			shapeId: string,
+			purpose: 'core' | 'reward',
+			track: 'basic' | 'rotation',
+		) => ({
+			shapeId,
+			purpose,
+			track,
 		})
-		expect(coreGroupsOf(groups, 'triangle')).toEqual({
-			basic: groups[2],
-			rotation: undefined,
+		expect(groupInSlot(groups, slot('hexagon', 'core', 'basic'))).toBe(
+			groups[0],
+		)
+		expect(
+			groupInSlot(groups, slot('triangle', 'reward', 'rotation')),
+		).toBe(groups[3])
+		expect(
+			groupInSlot(groups, slot('triangle', 'core', 'rotation')),
+		).toBeUndefined()
+		expect(
+			groupInSlot(groups, slot('hexagon', 'reward', 'basic')),
+		).toBeUndefined()
+	})
+
+	it('decides whether a group fits a slot from its puzzles', () => {
+		const candidate = (
+			shapeIds: string[],
+			hasBasic: boolean,
+			hasRotation: boolean,
+		): SlotCandidate => ({
+			id: 'x',
+			name: 'X',
+			purpose: 'undecided',
+			memberCount: shapeIds.length,
+			shapeIds,
+			hasBasic,
+			hasRotation,
 		})
-		expect(coreGroupsOf(groups, 'pinwheel')).toEqual({
-			basic: undefined,
-			rotation: undefined,
-		})
+		const basic = {
+			shapeId: 'hexagon',
+			purpose: 'core',
+			track: 'basic',
+		} as const
+		const rotation = { ...basic, track: 'rotation' } as const
+		expect(candidateFits(candidate([], false, false), basic)).toBe(true)
+		expect(candidateFits(candidate([], false, false), rotation)).toBe(true)
+		expect(candidateFits(candidate(['hexagon'], true, false), basic)).toBe(
+			true,
+		)
+		expect(
+			candidateFits(candidate(['hexagon'], true, false), rotation),
+		).toBe(false)
+		expect(
+			candidateFits(candidate(['hexagon'], false, true), rotation),
+		).toBe(true)
+		expect(candidateFits(candidate(['hexagon'], false, true), basic)).toBe(
+			false,
+		)
+		expect(candidateFits(candidate(['hexagon'], true, true), basic)).toBe(
+			false,
+		)
+		expect(candidateFits(candidate(['triangle'], true, false), basic)).toBe(
+			false,
+		)
+		expect(
+			candidateFits(
+				candidate(['hexagon', 'triangle'], true, false),
+				basic,
+			),
+		).toBe(false)
 	})
 
 	it('reads a group reward, or an empty one', () => {

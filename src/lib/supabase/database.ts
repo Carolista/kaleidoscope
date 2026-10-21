@@ -816,14 +816,6 @@ export type Database = {
 				Args: { p_id: string; p_name: string; p_palette_id: string }
 				Returns: string
 			}
-			manage_group_reward: {
-				Args: {
-					p_bonus_group_ids?: string[]
-					p_group_id: string
-					p_palette_ids?: string[]
-				}
-				Returns: string
-			}
 			manage_palette_draft: {
 				Args: {
 					p_action: string
@@ -843,6 +835,16 @@ export type Database = {
 					p_name?: string
 					p_palette_ids?: string[]
 					p_purpose?: string
+				}
+				Returns: string
+			}
+			manage_progression_slot: {
+				Args: {
+					p_group_id?: string
+					p_palette_ids?: string[]
+					p_purpose: string
+					p_shape_id: string
+					p_track: string
 				}
 				Returns: string
 			}

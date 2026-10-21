@@ -5,7 +5,7 @@ import {
 } from '@/domain/shapes'
 import { useZenState } from '@/features/zen/state'
 import type { GridShapeId, GridSize } from '@/domain/shapes'
-import GridShapeIcon from './GridShapeIcon'
+import { GridShapeIcon } from '@/ui/components'
 import styles from './GridShapePicker.module.css'
 
 export interface GridShapePickerProps {

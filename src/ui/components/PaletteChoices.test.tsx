@@ -34,6 +34,25 @@ describe('palette presentation', () => {
 		},
 	)
 
+	it('can disable individual choices while the rest stay selectable', async () => {
+		const user = userEvent.setup()
+		const onSelect = vi.fn()
+		render(
+			<PaletteChoices
+				palettes={palettes}
+				onSelect={onSelect}
+				isDisabled={palette => palette.id === 'first'}
+			/>,
+		)
+		const [first, second] = screen.getAllByRole('button')
+		expect(first).toBeDisabled()
+		expect(second).toBeEnabled()
+		await user.click(first)
+		expect(onSelect).not.toHaveBeenCalled()
+		await user.click(second)
+		expect(onSelect).toHaveBeenCalledExactlyOnceWith('second')
+	})
+
 	it('uses IDs for controlled selection even with duplicate names and reordered options', async () => {
 		const user = userEvent.setup()
 		const onSelect = vi.fn()

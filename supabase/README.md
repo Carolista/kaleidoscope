@@ -647,7 +647,7 @@ After the groups and purposes migration:
 
 This adds a unique rule of one `core` puzzle group per shape and track (with a friendlier
 error from a trigger), one reward rule per group, `manage_shape_progression` (reorder all
-shapes in one transaction), and `manage_group_reward` (replace a group's palettes and bonus
+shapes in one transaction), and `manage_group_reward` (replaced by the slots migration below; it replaced a group's palettes and bonus
 groups in one transaction; palettes must be in a palette group with the reward purpose, and
 bonus groups must be reward groups). A trigger on `shape_progression` rejects any change once a
 core group is published.
@@ -655,6 +655,41 @@ core group is published.
 The previous suite ([groups_and_purpose.sql](./tests/groups_and_purpose.sql)) belongs to the
 migration before this one: run it before applying this migration, not after, because its
 fixtures create core groups that the new rule rejects.
+
+## Apply progression slots
+
+After the progression tools migration:
+
+1. Run
+   [20261022000000_progression_slots.sql](./migrations/20261022000000_progression_slots.sql)
+   once in SQL Editor as `postgres`. It stops with a clear message, changing nothing, if a shape
+   already has two reward groups on the same track; change all but one to another purpose
+   (Puzzles > Groups) and run it again.
+2. Run [progression_slots.sql](./tests/progression_slots.sql) as `postgres`, without an automatic RLS
+   wrapper. Expect **35 PASS results**; fixtures roll back (existing core and reward groups are set aside
+   inside the test transaction only).
+3. Regenerate the database types, then deploy the app.
+
+Each shape has four slots: a basic and a rotation core group, and a basic and a rotation bonus
+(reward) group. This migration:
+
+- Allows at most one `reward` puzzle group per shape and track, like core groups (the friendlier
+  error comes from the same trigger).
+- Links the bonus groups of a shape to its rotation core group automatically: a trigger on
+  `puzzle_groups` keeps `reward_puzzle_groups` equal to the shape's reward groups, and the
+  migration rebuilds those links once for existing data (hand-picked links are replaced).
+- Replaces `manage_group_reward` with `manage_progression_slot(shape, purpose, track, group, palettes)`,
+  which atomically fills a slot with a group (setting its purpose, shape, and track), turns the
+  previous occupant into an Undecided group with no reward, and sets the one reward palette
+  (which must be in a reward palette group). A null group empties the slot. Published groups are
+  rejected, and a group that already fills another slot must be emptied there first.
+- A group with automatic links (the rotation core group, or a bonus group) is changed through its
+  slot; deleting it or changing its purpose in Puzzles > Groups is refused until the slot is emptied.
+
+The earlier suites belong to their own migrations: run
+[groups_and_purpose.sql](./tests/groups_and_purpose.sql) and
+[progression_tools.sql](./tests/progression_tools.sql) right after their migrations, not after
+this one (`progression_tools.sql` calls the removed `manage_group_reward`).
 
 ## Bootstrap the one admin
 

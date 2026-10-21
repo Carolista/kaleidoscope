@@ -12,6 +12,7 @@ export default function PaletteChoices({
 	selectedId,
 	onSelect,
 	disabled = false,
+	isDisabled,
 	showNames = false,
 	label = palette => `Select the ${palette.name} color palette`,
 }: {
@@ -19,6 +20,8 @@ export default function PaletteChoices({
 	readonly selectedId?: string
 	readonly onSelect: (id: string) => void
 	readonly disabled?: boolean
+	// Disables individual choices, for palettes that cannot be picked right now.
+	readonly isDisabled?: (palette: PaletteChoice) => boolean
 	readonly showNames?: boolean
 	readonly label?: (palette: PaletteChoice) => string
 }) {
@@ -32,7 +35,7 @@ export default function PaletteChoices({
 						title={palette.name}
 						aria-label={label(palette)}
 						aria-pressed={selectedId === palette.id}
-						disabled={disabled}
+						disabled={disabled || isDisabled?.(palette)}
 						onClick={() => onSelect(palette.id)}
 					>
 						<PaletteStrip colors={palette.colors} />

@@ -3,6 +3,7 @@ import {
 	NEUTRAL_HOVER_FILL,
 	brightenAndSaturate,
 	getHoverFill,
+	toGrayscale,
 } from './colorMath'
 
 describe('getHoverFill', () => {
@@ -45,5 +46,24 @@ describe('brightenAndSaturate', () => {
 		expect(brightenAndSaturate('#2ec4b6')).toBe(
 			brightenAndSaturate('#2ec4b6'),
 		)
+	})
+})
+
+describe('toGrayscale', () => {
+	it('removes the hue but keeps perceived brightness', () => {
+		expect(toGrayscale('#000000')).toBe('#000000')
+		expect(toGrayscale('#ffffff')).toBe('#ffffff')
+		expect(toGrayscale('#808080')).toBe('#808080')
+		for (const color of ['#ff0000', '#00ff00', '#0000ff', '#bc4749']) {
+			const gray = toGrayscale(color)
+			expect(gray).toMatch(/^#([0-9a-f]{2})\1\1$/)
+		}
+	})
+
+	it('weights green above red above blue', () => {
+		const level = (hex: string) =>
+			parseInt(toGrayscale(hex).slice(1, 3), 16)
+		expect(level('#00ff00')).toBeGreaterThan(level('#ff0000'))
+		expect(level('#ff0000')).toBeGreaterThan(level('#0000ff'))
 	})
 })
