@@ -74,7 +74,10 @@ export async function loadPaletteUsage(
 	for (let offset = 0; ; offset += 1000) {
 		const { data, error } = await client
 			.from('reward_palettes')
-			.select('reward_rule_id, reward_rules(puzzle_groups(name))')
+			// Named because bonus links give reward_rules a second path to puzzle_groups.
+			.select(
+				'reward_rule_id, reward_rules(puzzle_groups!reward_rules_group_id_fkey(name))',
+			)
 			.eq('palette_id', id)
 			.order('reward_rule_id')
 			.range(offset, offset + 999)

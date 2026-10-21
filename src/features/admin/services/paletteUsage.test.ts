@@ -125,7 +125,7 @@ describe('palette usage', () => {
 		})
 		expect(selects).toHaveBeenCalledWith(
 			'reward_palettes',
-			'reward_rule_id, reward_rules(puzzle_groups(name))',
+			'reward_rule_id, reward_rules(puzzle_groups!reward_rules_group_id_fkey(name))',
 			undefined,
 		)
 	})
