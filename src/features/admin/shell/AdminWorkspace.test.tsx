@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => ({
 	palettes: vi.fn(),
 	paletteGroups: vi.fn(),
 	manageGroup: vi.fn(),
+	progression: vi.fn(),
 }))
 vi.mock('@/features/admin/services/puzzleLibrary', async importOriginal => ({
 	...(await importOriginal<
@@ -34,6 +35,12 @@ vi.mock('@/features/admin/services/puzzleGroups', async importOriginal => ({
 	>()),
 	loadPuzzleGroups: (...args: unknown[]) => mocks.puzzleGroups(...args),
 	managePuzzleGroup: (...args: unknown[]) => mocks.manageGroup(...args),
+}))
+vi.mock('@/features/admin/services/progression', async importOriginal => ({
+	...(await importOriginal<
+		typeof import('@/features/admin/services/progression')
+	>()),
+	loadProgression: (...args: unknown[]) => mocks.progression(...args),
 }))
 vi.mock('@/features/admin/services/palettes', async importOriginal => ({
 	...(await importOriginal<
@@ -107,6 +114,12 @@ const group: PuzzleGroup = {
 
 beforeEach(() => {
 	vi.resetAllMocks()
+	mocks.progression.mockResolvedValue({
+		shapeIds: ['hexagon', 'triangle'],
+		groups: [],
+		rewards: [],
+		locked: false,
+	})
 	mocks.puzzleGroups.mockResolvedValue([group])
 	mocks.puzzles.mockResolvedValue([
 		draft,
@@ -459,5 +472,56 @@ describe('admin workspace navigation', () => {
 		})
 		expect(mocks.puzzleGroups).toHaveBeenCalledTimes(2)
 		expect(mocks.puzzles).toHaveBeenCalledOnce()
+	})
+
+	it('adds a Progression section with Order, Rewards, and Checks views that guards a staged shape order', async () => {
+		render(<AdminWorkspace client={client} />)
+		await screen.findByRole('button', {
+			name: 'Edit group Design collection',
+		})
+		choose('Admin sections', 'Progression')
+		expect(
+			await screen.findByRole('heading', { name: 'Shape order' }),
+		).toBeInTheDocument()
+		await screen.findByText(/1\. Hexagon/)
+		expect(
+			within(
+				screen.getByRole('navigation', { name: 'Progression views' }),
+			)
+				.getAllByRole('button')
+				.map(button => button.textContent),
+		).toEqual(['Order', 'Rewards', 'Checks'])
+		fireEvent.keyDown(
+			screen.getByRole('button', { name: 'Reorder Hexagon' }),
+			{
+				key: 'ArrowDown',
+			},
+		)
+		choose('Progression views', 'Rewards')
+		expect(
+			screen.getByRole('dialog', { name: 'Discard unsaved changes?' }),
+		).toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: 'Keep editing' }))
+		expect(
+			screen.getByRole('heading', { name: 'Shape order' }),
+		).toBeInTheDocument()
+		choose('Progression views', 'Rewards')
+		fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }))
+		expect(
+			await screen.findByRole('heading', { name: 'Rewards' }),
+		).toBeInTheDocument()
+		choose('Progression views', 'Checks')
+		expect(
+			await screen.findByRole('heading', { name: 'Checks' }),
+		).toBeInTheDocument()
+		choose('Admin sections', 'Puzzles')
+		expect(
+			await screen.findByRole('button', {
+				name: 'Edit group Design collection',
+			}),
+		).toBeInTheDocument()
+		expect(
+			screen.queryByRole('navigation', { name: 'Progression views' }),
+		).not.toBeInTheDocument()
 	})
 })

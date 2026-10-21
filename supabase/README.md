@@ -153,8 +153,8 @@ top right and square Edit/Delete icons at the bottom right. Empty groups show a 
 resolve current Supabase palette colors without regenerating designs.
 The large **New group** plus opens creation. Deleting a group requires confirmation
 and unassigns its puzzles without deleting their designs or private solutions.
-The shape progression and reward screens, pricing/shop products, selection rules,
-scheduling, and publishing tools follow separately.
+Pricing/shop products, selection rules, scheduling, and publishing tools follow
+separately (shape order and rewards are under **Progression**).
 No player attempts, completions, reward grants, guest imports,
 or Zen autosaves are written.
 
@@ -631,6 +631,31 @@ Older SQL suites target the schema at the time of their migration; run each one 
 after its own migration, not after this one. A local harness that applies the
 migrations to PGlite and then runs the new suite is a convenient pre-flight check.
 
+## Apply progression tools
+
+After the groups and purposes migration:
+
+1. Run
+   [20261021000000_progression_tools.sql](./migrations/20261021000000_progression_tools.sql)
+   once in SQL Editor as `postgres`. It stops with a clear message, changing nothing, if a
+   shape already has two core groups on the same track; change all but one to another
+   purpose (Puzzles > Groups) and run it again.
+2. Run [progression_tools.sql](./tests/progression_tools.sql) as `postgres`, without an
+   automatic RLS wrapper. Expect **43 PASS results**; fixtures roll back.
+3. Regenerate the database types, then deploy the app. The types in the repository were
+   updated by hand to match, so regenerating should change nothing functional.
+
+This adds a unique rule of one `core` puzzle group per shape and track (with a friendlier
+error from a trigger), one reward rule per group, `manage_shape_progression` (reorder all
+shapes in one transaction), and `manage_group_reward` (replace a group's palettes and bonus
+groups in one transaction; palettes must be in a palette group with the reward purpose, and
+bonus groups must be reward groups). A trigger on `shape_progression` rejects any change once a
+core group is published.
+
+The previous suite ([groups_and_purpose.sql](./tests/groups_and_purpose.sql)) belongs to the
+migration before this one: run it before applying this migration, not after, because its
+fixtures create core groups that the new rule rejects.
+
 ## Bootstrap the one admin
 
 An ordinary app user cannot make themselves an admin. There is no public
@@ -836,7 +861,7 @@ The app continues behaving exactly as before until intentionally integrated.
 - Player Auth/registration flows, explicit guest import, and the rest of the admin
   authoring workspace. Admin sign-in, generated types, and six-recipe isolated
   playtesting, atomic draft saving/library, draft group assembly/deletion,
-  and draft palette management are available; the progression, reward, and
+  draft palette management, and the progression and reward screens are available; the
   release tools remain pending.
 - Server-side structural/geometric authoring validation and slot-based saved-content
   integration into player mode. The admin engine and palette-slot rendering adapter

@@ -5,6 +5,7 @@ import {
 	loadPuzzleDrafts,
 	loadPuzzleGroups,
 	loadPaletteGroups,
+	loadProgression,
 } from '@/features/admin/services'
 import type { Database } from '@/lib/supabase'
 
@@ -15,6 +16,7 @@ export const catalogLoaders = {
 	puzzleDrafts: loadPuzzleDrafts,
 	palettes: loadPalettes,
 	paletteGroups: loadPaletteGroups,
+	progression: loadProgression,
 }
 
 export type CatalogKey = keyof typeof catalogLoaders

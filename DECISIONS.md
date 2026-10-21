@@ -261,6 +261,17 @@ and starter tables are gone. The admin RPCs are `manage_puzzle_group` and
 completion, and pack access are enforced by the same security-definer helpers that
 gate puzzle reads.
 
+**Progression admin.** Progression is a top-level admin section (Order | Rewards | Checks).
+The database allows one core group per shape and track (a trigger gives a readable error,
+a unique index backs it up), and one reward rule per group, replaced atomically by
+`manage_group_reward`. Reward palettes must belong to a palette group with the reward
+purpose; bonus groups must be reward groups. `manage_shape_progression` reorders the shapes
+and, with a trigger on the table, refuses any change once a core group is published, because
+the order decides who unlocks what. The reward pattern is only checked, never enforced:
+checks warn (missing core groups, wrong palette or bonus counts, unawarded reward groups,
+a palette awarded twice, and grouped puzzles whose palette no player can get) and do not
+block publishing until the release tools exist.
+
 ### Puzzle shapes
 
 Puzzle Mode was always meant to offer the Zen shapes, so the engine, board, and

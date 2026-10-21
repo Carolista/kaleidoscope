@@ -693,7 +693,7 @@ export type Database = {
 					{
 						foreignKeyName: 'reward_rules_group_id_fkey'
 						columns: ['group_id']
-						isOneToOne: false
+						isOneToOne: true
 						referencedRelation: 'puzzle_groups'
 						referencedColumns: ['id']
 					},
@@ -790,105 +790,108 @@ export type Database = {
 			[_ in never]: never
 		}
 		Functions: {
-			bulk_puzzle_drafts: {
-				Args: {
-					p_ids: string[]
-					p_action: string
-					p_palette_id?: string
-				}
+			bulk_delete_palette_drafts: {
+				Args: { p_ids: string[] }
 				Returns: string[]
 			}
-			manage_palette_draft: {
+			bulk_puzzle_drafts: {
 				Args: {
-					p_id: string
 					p_action: string
-					p_name?: string
-					p_colors?: string[]
-					p_expected_name?: string
-					p_expected_colors?: string[]
-					p_expected_revision?: number
-				}
-				Returns: string
-			}
-			manage_palette_group: {
-				Args: {
-					p_id: string
-					p_action: string
-					p_name?: string
-					p_purpose?: string
-					p_palette_ids?: string[]
-				}
-				Returns: string
-			}
-			bulk_delete_palette_drafts: {
-				Args: {
 					p_ids: string[]
+					p_palette_id?: string
 				}
 				Returns: string[]
 			}
 			delete_palette_draft: {
 				Args: {
-					p_id: string
-					p_expected_name: string
 					p_expected_colors: string[]
+					p_expected_name: string
 					p_expected_revision: number
-				}
-				Returns: string
-			}
-			save_puzzle_draft: {
-				Args: {
 					p_id: string
-					p_name: string
-					p_shape_id: string
-					p_palette_id: string
-					p_board_size: string
-					p_rotation_allowed: boolean
-					p_difficulty: string
-					p_definition: Json
-					p_seed: string
-					p_generator_version: string
-					p_known_solution: Json
 				}
 				Returns: string
 			}
+			delete_puzzle_draft: { Args: { p_id: string }; Returns: string }
 			edit_puzzle_draft: {
+				Args: { p_id: string; p_name: string; p_palette_id: string }
+				Returns: string
+			}
+			manage_group_reward: {
 				Args: {
+					p_bonus_group_ids?: string[]
+					p_group_id: string
+					p_palette_ids?: string[]
+				}
+				Returns: string
+			}
+			manage_palette_draft: {
+				Args: {
+					p_action: string
+					p_colors?: string[]
+					p_expected_colors?: string[]
+					p_expected_name?: string
+					p_expected_revision?: number
 					p_id: string
-					p_name: string
-					p_palette_id: string
+					p_name?: string
+				}
+				Returns: string
+			}
+			manage_palette_group: {
+				Args: {
+					p_action: string
+					p_id: string
+					p_name?: string
+					p_palette_ids?: string[]
+					p_purpose?: string
 				}
 				Returns: string
 			}
 			manage_puzzle_group: {
 				Args: {
-					p_id: string
 					p_action: string
+					p_id: string
 					p_name?: string
 					p_purpose?: string
+					p_puzzle_ids?: string[]
 					p_shape_id?: string
 					p_track?: string
-					p_puzzle_ids?: string[]
 				}
 				Returns: string
+			}
+			manage_shape_progression: {
+				Args: { p_shape_ids: string[] }
+				Returns: string[]
 			}
 			replace_puzzle_draft: {
 				Args: {
-					p_id: string
-					p_name: string
-					p_shape_id: string
-					p_palette_id: string
 					p_board_size: string
-					p_rotation_allowed: boolean
-					p_difficulty: string
 					p_definition: Json
-					p_seed: string
+					p_difficulty: string
 					p_generator_version: string
+					p_id: string
 					p_known_solution: Json
+					p_name: string
+					p_palette_id: string
+					p_rotation_allowed: boolean
+					p_seed: string
+					p_shape_id: string
 				}
 				Returns: string
 			}
-			delete_puzzle_draft: {
-				Args: { p_id: string }
+			save_puzzle_draft: {
+				Args: {
+					p_board_size: string
+					p_definition: Json
+					p_difficulty: string
+					p_generator_version: string
+					p_id: string
+					p_known_solution: Json
+					p_name: string
+					p_palette_id: string
+					p_rotation_allowed: boolean
+					p_seed: string
+					p_shape_id: string
+				}
 				Returns: string
 			}
 		}

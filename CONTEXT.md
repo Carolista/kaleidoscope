@@ -43,7 +43,7 @@ The compact header groups account, sign-out, and theme controls at the right,
 with favicon navigation at the left. Admin defaults to dark mode using the shared
 neutral charcoal/white theme helper, without initializing player state.
 
-Admin navigation has peer sections: **Puzzles | Palettes | Shapes**. Puzzles and
+Admin navigation has peer sections: **Puzzles | Palettes | Shapes | Progression**. Puzzles and
 Palettes each offer **Groups** (default) | items; items filter by **Unassigned**
 (default) | **Assigned** | **Scheduled** | **Published**. Shapes, Scheduled, and
 Published are placeholders. Everything stays a draft until published; the first
@@ -52,6 +52,18 @@ tab names the unassigned stage. Assigned lists sort by group name, then group po
 groups, rewards, and packs connect and roll out. Group lists filter by purpose (puzzle groups also by
 shape and track); puzzle items filter by shape and track, and the Assigned view by purpose and group. Section/view changes use the
 navigation guard and reset lower choices to their defaults.
+
+**Progression** has three views. **Order** drags the six shapes into unlock order
+(one **Save order**; read-only once any core group is published) and shows each
+shape's basic and rotation core group. **Rewards** goes shape by shape: the basic
+core group awards one palette; the rotation core group awards one palette plus a
+basic and a rotation bonus group; each bonus group awards one palette. Each row
+opens a reward dialog; palettes can only come from reward palette groups
+(searchable), and published groups are not editable. **Checks** lists reward-pattern
+warnings per shape and the palettes of grouped puzzles that are in no core, reward,
+or pack palette group. Warnings never block anything. The views share the
+`progression` catalog ([progression.ts](./src/features/admin/services/progression.ts)),
+and the pattern rules live in [rewardPattern.ts](./src/features/admin/services/rewardPattern.ts).
 
 [AdminCatalogProvider](./src/features/admin/catalog/AdminCatalog.tsx) caches puzzle
 groups, puzzle drafts, palettes, and palette groups for the signed-in session.
@@ -123,8 +135,8 @@ Confirmed group deletion unassigns members but preserves puzzles/private solutio
 Admin/invoker-RLS RPCs recheck release/reference state under the catalog lock;
 scheduled/live groups, prepared members, and dependent rewards, completions or
 grants block deletion. Membership reads paginate.
-Publishing, shape progression, and reward screens remain deferred; the database
-already holds `shape_progression` and `group_completions`.
+Publishing and release tools remain deferred; shape order and rewards are managed under
+**Progression**, and the database also holds `group_completions` for later player progress.
 
 **Palettes** opens palette groups by default; its Palettes view is a database-backed
 catalog sharing the puzzle card layout, selection bar, and blue selected state,

@@ -127,18 +127,15 @@ Rules:
 2. ⬜ **Publish and schedule (release tools).** Approve content with a release
    date, reschedule or cancel before release, and show missing dependencies.
    Live content stays locked.
-3. ⬜ **Progression screen.** Order the shapes (stored in `shape_progression`) and choose each
-   shape's two core groups (basic and rotation). Either one, once solved, unlocks the next shape.
-   Core palette groups are the Zen starters; Hexagon is the first shape.
-4. ⬜ **Rewards screen.** Per group completion, pick exact palettes and/or bonus puzzle groups,
-   guided by the pattern below, with a checker that warns when a shape does not follow it.
-5. ⬜ **Daily groups and scheduling.** Daily groups organize puzzles (for example by month); scheduling
+3. ✅ **Progression section** (migration `20261021000000`): Order (drag the shapes; locked once a core
+   group is published), Rewards (shape by shape; palettes only from reward palette groups), and Checks
+   (reward-pattern warnings, and grouped puzzles whose palette players cannot get). One core group per
+   shape and track is enforced. Warnings never block publishing yet.
+4. ⬜ **Daily groups and scheduling.** Daily groups organize puzzles (for example by month); scheduling
    one per day moves to 2B.
-6. ⬜ **Publish checks for palettes.** Warn when a puzzle's palette is not sold in any pack or free through a
-   core or reward group, since the store will offer it.
-7. ⬜ **Shapes section.** Catalog settings only. New shape geometry still needs app code.
-8. ⬜ **Exceptional palette correction** for live palettes, keeping the revision and audit history.
-9. ⬜ **End-to-end admin check** in the hosted project.
+5. ⬜ **Shapes section.** Catalog settings only. New shape geometry still needs app code.
+6. ⬜ **Exceptional palette correction** for live palettes, keeping the revision and audit history.
+7. ⬜ **End-to-end admin check** in the hosted project.
 
 Moved to 2B: daily puzzle scheduling (part of B4) and pricing and merchandising
 screens (part of B2).

@@ -28,7 +28,8 @@ export default function SortableGroupMembers<T extends SortableMember>({
 	readonly preview?: (member: T) => ReactNode
 	readonly children: (member: T, index: number) => ReactNode
 	readonly onReorder: (ids: string[]) => void
-	readonly onRemove: (id: string) => void
+	// Omit for lists whose members cannot be removed, such as the shape order.
+	readonly onRemove?: (id: string) => void
 }) {
 	const helpId = useId()
 	const [dragging, setDragging] = useState<string | null>(null)
@@ -164,13 +165,15 @@ export default function SortableGroupMembers<T extends SortableMember>({
 										setDragging(member.id)
 									}}
 								/>
-								<AdminIconButton
-									icon={faSquareMinus}
-									tone="delete"
-									label={`Remove ${member.name} from group`}
-									disabled={disabled || dragging !== null}
-									onClick={() => onRemove(member.id)}
-								/>
+								{onRemove && (
+									<AdminIconButton
+										icon={faSquareMinus}
+										tone="delete"
+										label={`Remove ${member.name} from group`}
+										disabled={disabled || dragging !== null}
+										onClick={() => onRemove(member.id)}
+									/>
+								)}
 							</>
 						}
 					>

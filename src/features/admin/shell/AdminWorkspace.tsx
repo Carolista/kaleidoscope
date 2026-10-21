@@ -6,6 +6,11 @@ import AdminNavigation from './AdminNavigation'
 import { PuzzleAuthoring } from '@/features/admin/puzzles'
 import { PuzzleGroupLibrary } from '@/features/admin/puzzle-groups'
 import { PaletteLibrary } from '@/features/admin/palettes'
+import {
+	ProgressionChecks,
+	ProgressionOrder,
+	ProgressionRewards,
+} from '@/features/admin/progression'
 import { useNavigationGuard } from '@/ui/navigation'
 
 type CatalogStatus = 'drafts' | 'assigned' | 'scheduled' | 'published'
@@ -22,11 +27,14 @@ export default function AdminWorkspace({
 }: {
 	readonly client: SupabaseClient<Database>
 }) {
-	const [section, setSection] = useState<'puzzles' | 'palettes' | 'shapes'>(
-		'puzzles',
-	)
+	const [section, setSection] = useState<
+		'puzzles' | 'palettes' | 'shapes' | 'progression'
+	>('puzzles')
 	const [view, setView] = useState<'groups' | 'items'>('groups')
 	const [status, setStatus] = useState<CatalogStatus>('drafts')
+	const [progressionView, setProgressionView] = useState<
+		'order' | 'rewards' | 'checks'
+	>('order')
 	// Choosing any tab, including the current one, returns to that view's list.
 	const [visit, setVisit] = useState(0)
 	const { requestNavigation } = useNavigationGuard()
@@ -42,6 +50,7 @@ export default function AdminWorkspace({
 					{ value: 'puzzles', label: 'Puzzles' },
 					{ value: 'palettes', label: 'Palettes' },
 					{ value: 'shapes', label: 'Shapes' },
+					{ value: 'progression', label: 'Progression' },
 				]}
 				value={section}
 				onChange={next =>
@@ -49,11 +58,37 @@ export default function AdminWorkspace({
 						setSection(next)
 						setView('groups')
 						setStatus('drafts')
+						setProgressionView('order')
 						setVisit(value => value + 1)
 					})
 				}
 			/>
-			{section === 'shapes' ? (
+			{section === 'progression' ? (
+				<>
+					<AdminNavigation
+						label="Progression views"
+						items={[
+							{ value: 'order', label: 'Order' },
+							{ value: 'rewards', label: 'Rewards' },
+							{ value: 'checks', label: 'Checks' },
+						]}
+						value={progressionView}
+						onChange={next =>
+							requestNavigation(() => {
+								setProgressionView(next)
+								setVisit(value => value + 1)
+							})
+						}
+					/>
+					{progressionView === 'order' ? (
+						<ProgressionOrder key={visit} client={client} />
+					) : progressionView === 'rewards' ? (
+						<ProgressionRewards key={visit} client={client} />
+					) : (
+						<ProgressionChecks key={visit} client={client} />
+					)}
+				</>
+			) : section === 'shapes' ? (
 				<section aria-labelledby="admin-shapes-title">
 					<h2 id="admin-shapes-title">Shapes</h2>
 					<p>Shape management is not available yet.</p>
