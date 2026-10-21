@@ -45,13 +45,24 @@ neutral charcoal/white theme helper, without initializing player state.
 
 Admin navigation has peer sections: **Puzzles | Palettes | Shapes | Progression**. Puzzles and
 Palettes each offer **Groups** (default) | items; items filter by **Unassigned**
-(default) | **Assigned** | **Scheduled** | **Published**. Shapes, Scheduled, and
+(default) | **Assigned** | **Scheduled** | **Published**. Scheduled and
 Published are placeholders. Everything stays a draft until published; the first
 tab names the unassigned stage. Assigned lists sort by group name, then group position
 ([groupOrder](./src/features/admin/groups/groupOrder.ts)); puzzles without a group follow by name. A future top-level orchestration view will map how
 groups, rewards, and packs connect and roll out. Group lists filter by purpose (puzzle groups also by
 shape and track); puzzle items filter by shape and track, and the Assigned view by purpose and group. Section/view changes use the
 navigation guard and reset lower choices to their defaults.
+
+**Shapes** is a workbench for the grid sizes (n) and piece mixes behind both
+player modes ([ShapesWorkspace](./src/features/admin/shapes/ShapesWorkspace.tsx)). Each shape's card has a
+Grid sizes table (Size, n, Wedge, Total) and a Recipes table (Preview eye button, Difficulty (Size),
+Pieces, Distribution) above a centered, playable sample with Restart and Randomize buttons. A shape that
+already has puzzles (drafts included, counted by `loadShapePuzzleCounts`) is locked and read-only. For
+other shapes n and each recipe's distribution can be edited to try values out: it checks that the pieces
+add up to the wedge, marks every changed value ("Changed", with the shipped value shown), and builds
+the sample with `generatePuzzle`'s `tuning` argument. Nothing is saved: settled values are copied into
+the code ([sizes and piece mixes](./src/domain/puzzles/puzzleShapes.ts), the per-shape `*_GRID_SIZES`).
+The pinwheel is the special case, edited as rows x columns of steps.
 
 **Progression** has two views and opens on Puzzles and Rewards. **Order** is strictly the shape order: drag the six shapes, each
 shown with the same preview icon as the Zen shape picker
@@ -447,11 +458,11 @@ independently per shape in [sizes.ts](./src/domain/shapes/sizes.ts).
 | Shape | Small | Medium | Large | Default |
 | --- | --- | --- | --- | --- |
 | Hexagon | Radius 3 | Radius 4 | Radius 6 | Medium |
-| Triangle | Size 4 (intro size) | Size 7 | Size 10 | Medium |
+| Triangle | Size 5 | Size 7 | Size 10 | Medium |
 | Diamond star | 3 x 3 per point | 4 x 4 per point | 5 x 5 per point | Medium |
 | Hexagram | Size 2 | Size 3 | Size 4 | Large |
-| Circle rings | 3 rings + center | 4 rings + center | 6 rings + center | Large |
-| Pinwheel | 2 x 2 per spoke | 2 x 3 per spoke | 3 x 3 per spoke | Large |
+| Circle rings | 3 rings + center | 4 rings + center | 5 rings + center | Large |
+| Pinwheel | 3 x 2 per spoke | 3 x 3 per spoke | 4 x 3 per spoke | Large |
 
 Default app grids:
 
@@ -461,8 +472,11 @@ Default app grids:
 | Triangle | D3 | Size 7 | 49 | 12 |
 | Diamond star | D6 | 4 x 4 per point | 96 | 10 |
 | Hexagram | D6 | Size 4 | 192 | 20 |
-| Circle rings | D6 | 6 rings + center | 127 | 16 |
-| Pinwheel | C8, rotation only | 3 x 3 per spoke | 72 | 9 |
+| Circle rings | D6 | 5 rings + center | 91 | 12 |
+| Pinwheel | C8, rotation only | 4 x 3 per spoke (rows x columns) | 96 | 12 |
+
+The Zen intro keeps its own triangle of size 4 (five groups, one per palette
+color), so tuning the small triangle does not change it.
 
 Hexagons use axial-coordinate symmetry; other shapes use the shared geometric
 symmetry engine. One representative per group is clickable.

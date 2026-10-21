@@ -22,16 +22,16 @@ import type { PinwheelLayout } from './pinwheelLayout'
 // square, which — combined with `sideRight`/`sideLeft` being
 // deliberately unequal distances from the center — is what keeps the
 // spoke from reading as a sharp, symmetric star point. `PINWHEEL_ROW_STEPS
-// * PINWHEEL_COL_STEPS` clickable groups per spoke (9 at these
+// * PINWHEEL_COL_STEPS` clickable groups per spoke (12 at these
 // defaults).
-export const PINWHEEL_ROW_STEPS = 3
+export const PINWHEEL_ROW_STEPS = 4
 export const PINWHEEL_COL_STEPS = 3
 export const PINWHEEL_GRID_SIZES: Record<
 	GridSize,
 	{ readonly rowSteps: number; readonly colSteps: number }
 > = {
-	sm: { rowSteps: 2, colSteps: 2 },
-	md: { rowSteps: 2, colSteps: 3 },
+	sm: { rowSteps: 3, colSteps: 2 },
+	md: { rowSteps: 3, colSteps: 3 },
 	lg: { rowSteps: PINWHEEL_ROW_STEPS, colSteps: PINWHEEL_COL_STEPS },
 }
 

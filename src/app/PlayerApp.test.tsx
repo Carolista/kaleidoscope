@@ -374,10 +374,10 @@ describe('App', () => {
 			name: 'Kaleidoscope triangle grid',
 		})
 		expect(triangleGrid).toBeInTheDocument()
-		expect(triangleGrid.querySelectorAll('polygon')).toHaveLength(16)
+		expect(triangleGrid.querySelectorAll('polygon')).toHaveLength(25)
 		expect(
 			screen.getAllByRole('button', { name: /Paint tile/ }),
-		).toHaveLength(5)
+		).toHaveLength(7)
 		expect(
 			screen.queryByRole('group', { name: 'Kaleidoscope hexagon grid' }),
 		).not.toBeInTheDocument()

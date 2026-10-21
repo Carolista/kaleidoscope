@@ -12,13 +12,13 @@ describe('generateCircleRingsCells', () => {
 	const cells = generateCircleRingsCells()
 
 	it('generates 1 + 6 * (1 + 2 + ... + ringCount) circles at the default ring count (the center dot plus 6n per ring n)', () => {
-		expect(CIRCLE_RINGS_GRID_SIZE).toBe(6)
-		expect(cells).toHaveLength(127)
+		expect(CIRCLE_RINGS_GRID_SIZE).toBe(5)
+		expect(cells).toHaveLength(91)
 	})
 
-	it('produces 16 symmetry groups at the default ring count: the center dot (orbit size 1), 9 on-axis groups of orbit size 6, and 6 of orbit size 12', () => {
+	it('produces 12 symmetry groups at the default ring count: the center dot (orbit size 1), 7 on-axis groups of orbit size 6, and 4 of orbit size 12', () => {
 		const groups = groupCircleRingsCells(cells)
-		expect(groups.size).toBe(16)
+		expect(groups.size).toBe(12)
 
 		const sizesByCount = new Map<number, number>()
 		for (const members of groups.values()) {
@@ -29,8 +29,8 @@ describe('generateCircleRingsCells', () => {
 		}
 
 		expect(sizesByCount.get(1)).toBe(1)
-		expect(sizesByCount.get(6)).toBe(9)
-		expect(sizesByCount.get(12)).toBe(6)
+		expect(sizesByCount.get(6)).toBe(7)
+		expect(sizesByCount.get(12)).toBe(4)
 	})
 
 	it('marks exactly one cell per group as clickable', () => {
@@ -67,9 +67,9 @@ describe('generateCircleRingsCells', () => {
 })
 
 describe('getGroupIds', () => {
-	it('returns one id per symmetry group (16 at the default ring count), matching groupCircleRingsCells', () => {
+	it('returns one id per symmetry group (12 at the default ring count), matching groupCircleRingsCells', () => {
 		const ids = getGroupIds()
-		expect(ids).toHaveLength(16)
+		expect(ids).toHaveLength(12)
 		expect(new Set(ids)).toEqual(
 			new Set(groupCircleRingsCells(generateCircleRingsCells()).keys()),
 		)

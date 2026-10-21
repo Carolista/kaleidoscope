@@ -69,7 +69,7 @@ describe('gridShapeRegistry', () => {
 
 	it('uses the selected triangle size when computing its group ids and aspect ratio', () => {
 		expect(getGroupIdsForShape('triangle', 'sm')).toEqual(
-			triangle.getGroupIds(4),
+			triangle.getGroupIds(5),
 		)
 		expect(getGroupIdsForShape('triangle', 'md')).toEqual(
 			triangle.getGroupIds(7),
@@ -78,7 +78,7 @@ describe('gridShapeRegistry', () => {
 			triangle.getGroupIds(10),
 		)
 		expect(computeAspectRatioForShape('triangle', 'sm')).toBe(
-			triangle.computeGridAspectRatio(4),
+			triangle.computeGridAspectRatio(5),
 		)
 	})
 
@@ -120,7 +120,7 @@ describe('gridShapeRegistry', () => {
 			circleRings.getGroupIds(4),
 		)
 		expect(getGroupIdsForShape('circleRings', 'lg')).toEqual(
-			circleRings.getGroupIds(6),
+			circleRings.getGroupIds(5),
 		)
 		expect(computeAspectRatioForShape('circleRings', 'sm')).toBe(
 			circleRings.computeGridAspectRatio(3),

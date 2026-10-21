@@ -13,14 +13,14 @@ describe('generatePinwheelCells', () => {
 	const cells = generatePinwheelCells()
 
 	it('generates 8 * rowSteps * colSteps cells at the default grid size', () => {
-		expect(PINWHEEL_ROW_STEPS).toBe(3)
+		expect(PINWHEEL_ROW_STEPS).toBe(4)
 		expect(PINWHEEL_COL_STEPS).toBe(3)
-		expect(cells).toHaveLength(8 * 3 * 3)
+		expect(cells).toHaveLength(8 * 4 * 3)
 	})
 
-	it('produces rowSteps * colSteps symmetry groups (9 at the default grid size), each of orbit size 8 (rotation only, no mirror pairing)', () => {
+	it('produces rowSteps * colSteps symmetry groups (12 at the default grid size), each of orbit size 8 (rotation only, no mirror pairing)', () => {
 		const groups = groupPinwheelCells(cells)
-		expect(groups.size).toBe(9)
+		expect(groups.size).toBe(12)
 		for (const members of groups.values()) {
 			expect(members).toHaveLength(8)
 		}
@@ -36,7 +36,7 @@ describe('generatePinwheelCells', () => {
 
 	it('every clickable cell comes from transform 0 (the pinwheel\'s own "up" spoke)', () => {
 		const clickable = cells.filter(cell => cell.isClickable)
-		expect(clickable).toHaveLength(9)
+		expect(clickable).toHaveLength(12)
 		expect(clickable.every(cell => cell.transformIndex === 0)).toBe(true)
 	})
 
@@ -62,9 +62,9 @@ describe('generatePinwheelCells', () => {
 })
 
 describe('getGroupIds', () => {
-	it('returns one id per symmetry group (9 at the default grid size), matching groupPinwheelCells', () => {
+	it('returns one id per symmetry group (12 at the default grid size), matching groupPinwheelCells', () => {
 		const ids = getGroupIds()
-		expect(ids).toHaveLength(9)
+		expect(ids).toHaveLength(12)
 		expect(new Set(ids)).toEqual(
 			new Set(groupPinwheelCells(generatePinwheelCells()).keys()),
 		)

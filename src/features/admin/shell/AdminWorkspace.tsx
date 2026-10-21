@@ -10,6 +10,7 @@ import {
 	ProgressionOrder,
 	ProgressionSlots,
 } from '@/features/admin/progression'
+import { ShapesWorkspace } from '@/features/admin/shapes'
 import { useNavigationGuard } from '@/ui/navigation'
 
 type CatalogStatus = 'drafts' | 'assigned' | 'scheduled' | 'published'
@@ -85,10 +86,7 @@ export default function AdminWorkspace({
 					)}
 				</>
 			) : section === 'shapes' ? (
-				<section aria-labelledby="admin-shapes-title">
-					<h2 id="admin-shapes-title">Shapes</h2>
-					<p>Shape management is not available yet.</p>
-				</section>
+				<ShapesWorkspace client={client} />
 			) : (
 				<>
 					<AdminNavigation

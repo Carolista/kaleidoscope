@@ -22,6 +22,7 @@ const mocks = vi.hoisted(() => ({
 	paletteGroups: vi.fn(),
 	manageGroup: vi.fn(),
 	progression: vi.fn(),
+	shapeCounts: vi.fn(),
 }))
 vi.mock('@/features/admin/services/puzzleLibrary', async importOriginal => ({
 	...(await importOriginal<
@@ -41,6 +42,9 @@ vi.mock('@/features/admin/services/progression', async importOriginal => ({
 		typeof import('@/features/admin/services/progression')
 	>()),
 	loadProgression: (...args: unknown[]) => mocks.progression(...args),
+}))
+vi.mock('@/features/admin/services/shapePuzzleCounts', () => ({
+	loadShapePuzzleCounts: (...args: unknown[]) => mocks.shapeCounts(...args),
 }))
 vi.mock('@/features/admin/services/palettes', async importOriginal => ({
 	...(await importOriginal<
@@ -114,6 +118,14 @@ const group: PuzzleGroup = {
 
 beforeEach(() => {
 	vi.resetAllMocks()
+	mocks.shapeCounts.mockResolvedValue({
+		hexagon: 1,
+		triangle: 0,
+		diamondStar: 0,
+		hexagram: 0,
+		circleRings: 0,
+		pinwheel: 0,
+	})
 	mocks.progression.mockResolvedValue({
 		shapeIds: ['hexagon', 'triangle'],
 		groups: [],
@@ -221,7 +233,10 @@ describe('admin workspace navigation', () => {
 		).toHaveAttribute('aria-current', 'page')
 		choose('Admin sections', 'Shapes')
 		expect(
-			screen.getByText('Shape management is not available yet.'),
+			await screen.findByRole('heading', { name: 'Shapes' }),
+		).toBeInTheDocument()
+		expect(
+			await screen.findByRole('region', { name: 'Hexagon' }),
 		).toBeInTheDocument()
 		expect(
 			screen.queryByRole('navigation', { name: 'Palettes views' }),

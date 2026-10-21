@@ -165,7 +165,11 @@ const triangle: PuzzleShape = {
 	...triangleLattice,
 	id: 'triangle',
 	gridSizes: TRIANGLE_GRID_SIZES,
-	pieceSizes: { sm: [3, 2], md: [4, 3, 3, 2], lg: [4, 4, 4, 3, 3, 2, 1, 1] },
+	pieceSizes: {
+		sm: [3, 2, 2],
+		md: [4, 3, 3, 2],
+		lg: [4, 4, 4, 3, 3, 2, 1, 1],
+	},
 	cells: gridSize =>
 		generateTriangleCells(gridSize).map(
 			({ row, col, direction, groupId, isClickable }) => ({
@@ -253,13 +257,18 @@ const diamondStar: PuzzleShape = {
 }
 
 // Pinwheel tiles are (row, col) parallelograms of one spoke; the wedge is the
-// whole top spoke. Its two step counts are identified by tiles per spoke.
-function pinwheelSteps(tiles: number) {
-	const steps = Object.values(PINWHEEL_GRID_SIZES).find(
-		({ rowSteps, colSteps }) => rowSteps * colSteps === tiles,
-	)
-	if (!steps) throw new Error('Unsupported pinwheel size.')
-	return steps
+// whole top spoke. Its grid is rows x columns of steps, identified by
+// rows * 10 + columns (1 to 9 steps each way): 32 is 3 rows by 2 columns.
+export function pinwheelGridSize(rowSteps: number, colSteps: number): number {
+	return rowSteps * 10 + colSteps
+}
+
+export function pinwheelSteps(size: number) {
+	const rowSteps = Math.floor(size / 10)
+	const colSteps = size % 10
+	if (Number.isInteger(size) && rowSteps >= 1 && colSteps >= 1)
+		return { rowSteps, colSteps }
+	throw new Error('Unsupported pinwheel size.')
 }
 
 const pinwheel: PuzzleShape = {
@@ -271,11 +280,20 @@ const pinwheel: PuzzleShape = {
 	),
 	id: 'pinwheel',
 	gridSizes: {
-		sm: PINWHEEL_GRID_SIZES.sm.rowSteps * PINWHEEL_GRID_SIZES.sm.colSteps,
-		md: PINWHEEL_GRID_SIZES.md.rowSteps * PINWHEEL_GRID_SIZES.md.colSteps,
-		lg: PINWHEEL_GRID_SIZES.lg.rowSteps * PINWHEEL_GRID_SIZES.lg.colSteps,
+		sm: pinwheelGridSize(
+			PINWHEEL_GRID_SIZES.sm.rowSteps,
+			PINWHEEL_GRID_SIZES.sm.colSteps,
+		),
+		md: pinwheelGridSize(
+			PINWHEEL_GRID_SIZES.md.rowSteps,
+			PINWHEEL_GRID_SIZES.md.colSteps,
+		),
+		lg: pinwheelGridSize(
+			PINWHEEL_GRID_SIZES.lg.rowSteps,
+			PINWHEEL_GRID_SIZES.lg.colSteps,
+		),
 	},
-	pieceSizes: { sm: [2, 1, 1], md: [3, 2, 1], lg: [4, 3, 2] },
+	pieceSizes: { sm: [3, 2, 1], md: [3, 3, 2, 1], lg: [3, 3, 3, 2, 1] },
 	cells: tiles => {
 		const { rowSteps, colSteps } = pinwheelSteps(tiles)
 		return generatePinwheelCells(rowSteps, colSteps).map(
@@ -335,6 +353,7 @@ const circleRings: PuzzleShape = {
 	...hexagon,
 	id: 'circleRings',
 	gridSizes: CIRCLE_RINGS_GRID_SIZES,
+	pieceSizes: { ...hexagon.pieceSizes, lg: [4, 3, 2, 2, 1] },
 	cells: ringCount =>
 		generateCircleRingsCells(ringCount).map(
 			({ ring, index, groupId, isClickable }) => ({

@@ -552,7 +552,7 @@ describe('admin puzzle lab', () => {
 		expect(seedFilters).toContainEqual(['puzzles.shape_id', 'triangle'])
 		const target = screen.getByRole('img', { name: 'Target design' })
 		const tiles = [...target.querySelectorAll('polygon')]
-		expect(tiles).toHaveLength(16)
+		expect(tiles).toHaveLength(25)
 		for (const tile of tiles)
 			expect(tile.getAttribute('points')!.split(' ')).toHaveLength(3)
 		fireEvent.change(screen.getByLabelText('Puzzle name'), {
@@ -575,7 +575,7 @@ describe('admin puzzle lab', () => {
 				p_known_solution: puzzle.knownSolution,
 			}),
 		)
-		expect(puzzle.definition.geometry).toEqual({ size: 4 })
+		expect(puzzle.definition.geometry).toEqual({ size: 5 })
 	})
 
 	it('creates a puzzle inside the filtered group with its shape and appends it after saving', async () => {

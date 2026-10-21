@@ -123,7 +123,7 @@ describe('saved puzzle decoding', () => {
 	})
 	it('rejects triangle data stored with hexagon geometry, sizes or generator', () => {
 		const { row, authoring } = fixture(PUZZLE_RECIPES[0], 'triangle')
-		expect(row.definition).toMatchObject({ geometry: { size: 4 } })
+		expect(row.definition).toMatchObject({ geometry: { size: 5 } })
 		expect(authoring.generator_version).toBe('triangle-v1')
 		expect(() =>
 			readAuthoredPuzzle(row, {
@@ -132,7 +132,7 @@ describe('saved puzzle decoding', () => {
 			}),
 		).toThrow('generator')
 		const definition = JSON.parse(JSON.stringify(row.definition))
-		definition.geometry = { radius: 4 }
+		definition.geometry = { radius: 5 }
 		expect(() =>
 			readAuthoredPuzzle({ ...row, definition }, authoring),
 		).toThrow()

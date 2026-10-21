@@ -151,9 +151,12 @@ function partition(
 	cells: readonly AxialCoord[],
 	sizes: readonly number[],
 	random: () => number,
+	budget?: { left: number },
 ): AxialCoord[][] | null {
 	if (sizes.length === 0) return cells.length === 0 ? [] : null
 	for (const candidate of shuffle(combinations(cells, sizes[0]), random)) {
+		if (budget && --budget.left < 0)
+			throw new Error('No arrangement of those pieces was found quickly.')
 		if (!isConnected(shape, candidate)) continue
 		const keys = new Set(candidate.map(coordinateKey))
 		const rest = partition(
@@ -161,10 +164,20 @@ function partition(
 			cells.filter(cell => !keys.has(coordinateKey(cell))),
 			sizes.slice(1),
 			random,
+			budget,
 		)
 		if (rest) return [candidate, ...rest]
 	}
 	return null
+}
+
+// Overrides a shape's grid size and piece mix, for trying values out before
+// they become the shape's defaults.
+export interface PuzzleTuning {
+	readonly gridSize?: number
+	readonly pieceSizes?: readonly number[]
+	// Gives up after this many candidate pieces, so untested mixes cannot hang.
+	readonly attemptLimit?: number
 }
 
 // Keep the original default recipe reproducible for the player POC.
@@ -176,6 +189,7 @@ export function generatePuzzle(
 		readonly rotation: boolean
 	} = PUZZLE_RECIPES[0],
 	shapeId: PuzzleShapeId = 'hexagon',
+	tuning: PuzzleTuning = {},
 ): Puzzle {
 	if (!seed.trim()) throw new Error('A puzzle seed is required.')
 	if (
@@ -187,14 +201,17 @@ export function generatePuzzle(
 		)
 	}
 	const shape = puzzleShapes[shapeId]
-	const gridSize = shape.gridSizes[recipe.size]
+	const gridSize = tuning.gridSize ?? shape.gridSizes[recipe.size]
 	const cells = shape.cells(gridSize).filter(cell => cell.isClickable)
 	const random = seededRandom(seed)
 	const groups = partition(
 		shape,
 		cells,
-		shape.pieceSizes[recipe.size],
+		tuning.pieceSizes ?? shape.pieceSizes[recipe.size],
 		random,
+		tuning.attemptLimit === undefined
+			? undefined
+			: { left: tuning.attemptLimit },
 	)
 	if (!groups) throw new Error('Unable to partition the puzzle wedge.')
 	const target = Object.fromEntries(

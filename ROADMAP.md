@@ -134,7 +134,9 @@ Rules:
    grouped puzzles whose palette players cannot get. Warnings never block publishing yet.
 4. ⬜ **Daily groups and scheduling.** Daily groups organize puzzles (for example by month); scheduling
    one per day moves to 2B.
-5. ⬜ **Shapes section.** Catalog settings only. New shape geometry still needs app code.
+5. ✅ **Shapes section** (first pass): a workbench to try grid sizes (n) and piece mixes per recipe with a
+   playable sample, locked for shapes that already have puzzles; nothing is saved, and chosen values are copied
+   into code. Still open: splitting piece mixes per recipe in code, and any stored shape settings.
 6. ⬜ **Exceptional palette correction** for live palettes, keeping the revision and audit history.
 7. ⬜ **End-to-end admin check** in the hosted project.
 

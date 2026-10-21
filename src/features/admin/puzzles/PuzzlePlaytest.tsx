@@ -7,9 +7,12 @@ import styles from './PuzzlePlaytest.module.css'
 
 export default function PuzzlePlaytest({
 	puzzle,
+	actions,
 	children,
 }: {
 	readonly puzzle: Puzzle
+	// Extra buttons shown with Restart.
+	readonly actions?: ReactNode
 	// Rendered above the playtest, e.g. a save status.
 	readonly children?: ReactNode
 }) {
@@ -22,12 +25,15 @@ export default function PuzzlePlaytest({
 				puzzle={puzzle}
 				solvedMessage="Playtest solved! No player progress recorded."
 				trayAction={
-					<IconButton
-						size="sm"
-						icon={faRotate}
-						label="Restart"
-						onClick={() => play.current?.reset()}
-					/>
+					<div className={styles.actions}>
+						<IconButton
+							size="sm"
+							icon={faRotate}
+							label="Restart"
+							onClick={() => play.current?.reset()}
+						/>
+						{actions}
+					</div>
 				}
 			/>
 		</div>

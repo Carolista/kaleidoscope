@@ -13,8 +13,11 @@ import type { TriangleLayout } from './triangleLayout'
 // give a similar number of clickable tiles (~20) to the hexagon grid's
 // default radius, for comparable painting granularity.
 export const TRIANGLE_GRID_SIZE = 10
+// The intro paints one tile per palette color, so it keeps the grid with five
+// groups no matter how the small size is tuned.
+export const TRIANGLE_INTRO_GRID_SIZE = 4
 export const TRIANGLE_GRID_SIZES: Record<GridSize, number> = {
-	sm: 4,
+	sm: 5,
 	md: 7,
 	lg: TRIANGLE_GRID_SIZE,
 }

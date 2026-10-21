@@ -182,7 +182,7 @@ describe('PuzzlePlay', () => {
 			)
 		}
 
-		it('renders triangular target and board tiles with a five-tile wedge', () => {
+		it('renders triangular target and board tiles with a seven-tile wedge', () => {
 			renderPlay(triangle)
 			for (const name of ['Target design', 'Puzzle board']) {
 				const svg = screen.getByRole(
@@ -192,7 +192,7 @@ describe('PuzzlePlay', () => {
 					},
 				)
 				const polygons = [...svg.querySelectorAll('polygon')]
-				expect(polygons).toHaveLength(16)
+				expect(polygons).toHaveLength(25)
 				for (const polygon of polygons)
 					expect(
 						polygon.getAttribute('points')!.split(' '),
@@ -200,7 +200,7 @@ describe('PuzzlePlay', () => {
 			}
 			expect(
 				document.querySelectorAll('[data-puzzle-cell]'),
-			).toHaveLength(5)
+			).toHaveLength(7)
 		})
 
 		it('solves by rotating with the keyboard and placing each first tile', async () => {

@@ -41,16 +41,16 @@ const grids = [
 	{
 		name: 'pinwheel',
 		component: PinwheelGrid,
-		cells: 72,
-		tiles: 9,
+		cells: 96,
+		tiles: 12,
 		ratio: 1,
 	},
 	{
 		name: 'circle rings',
 		component: CircleRingsGrid,
-		cells: 127,
-		tiles: 16,
-		ratio: 1,
+		cells: 91,
+		tiles: 12,
+		ratio: 0.9950222043401786,
 	},
 ]
 

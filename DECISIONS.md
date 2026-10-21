@@ -290,6 +290,18 @@ tools exist.
 
 ### Puzzle shapes
 
+**Grid sizes and piece mixes are tuned in the Shapes workbench, not stored.** Each shape's n per
+size and piece mix per size are constants in code, shared by Zen and puzzle generation, and a
+puzzle only reads back if its stored size matches them. Changing them under existing puzzles would
+break those puzzles, so the workbench locks a shape that has any puzzle (drafts included). Shapes
+without puzzles can try values freely (the pieces must add up to the wedge, grids stay within 30
+cells to fill and pieces within 6 tiles, and generation gives up on a mix it cannot arrange
+quickly), but nothing is saved: values that work are copied into the code. The workbench shows
+a mix per recipe, though the code still keeps one per size, so two recipes of a size share a mix
+until they are split. Tuning the first round moved triangle small to size 5 ([3, 2, 2]), circle
+rings large to 5 rings, and pinwheel to 3 x 2, 3 x 3, and 4 x 3. The Zen intro keeps its own
+size-4 triangle (five groups, one per palette color).
+
 Puzzle Mode was always meant to offer the Zen shapes, so the engine, board, and
 authoring RPCs are shape-neutral. Each shape supplies one adapter in
 [puzzleShapes.ts](./src/domain/puzzles/puzzleShapes.ts): grid sizes, piece sizes,
@@ -306,24 +318,26 @@ its definitions keep `geometry.radius` and `hexagon-v2`.
 - **Triangle rotation is 60 degrees (6 orientations),** like hexagon. Up and down
   tiles are 60 degrees apart, so pieces must turn in 60-degree steps to reach both;
   120 degrees would keep every tile's direction, and 30 degrees fits no lattice spot.
-- **Triangle pieces allow four tiles:** S [3, 2], M [4, 3, 3, 2], L
-  [4, 4, 4, 3, 3, 2, 1, 1] for 5/12/22-tile wedges. Three connected triangles are
+- **Triangle pieces allow four tiles:** S [3, 2, 2], M [4, 3, 3, 2], L
+  [4, 4, 4, 3, 3, 2, 1, 1] for 7/12/22-tile wedges (small is size 5). Three connected triangles are
   always a straight strip, so four-tile pieces add more varied shapes.
 - **Diamond star and pinwheel turn 180 degrees (2 orientations).** Their
   parallelogram tiles only realign after a half turn. Each shape declares its
   rotation step in 60-degree units, and the tray, validation, and reader use it.
   They share one (row, col) parallelogram adapter base; wedges are the top point's
-  right half (6/10/15) and the whole top spoke (4/6/9). Pieces: diamond star
-  S [3, 2, 1], M [4, 3, 2, 1], L [4, 4, 3, 2, 1, 1]; pinwheel S [2, 1, 1],
-  M [3, 2, 1], L [4, 3, 2]. Pinwheel's two step counts are stored as tiles per
-  spoke. Its small wedge makes its puzzles easier than other shapes' at the same recipe.
+  right half (6/10/15) and the whole top spoke (6/9/12). Pieces: diamond star
+  S [3, 2, 1], M [4, 3, 2, 1], L [4, 4, 3, 2, 1, 1]; pinwheel S [3, 2, 1],
+  M [3, 3, 2, 1], L [3, 3, 3, 2, 1] on 3 x 2, 3 x 3, and 4 x 3 steps (rows x
+  columns). Pinwheel's grid is two numbers, so its puzzle grid size is
+  rows * 10 + columns (32, 33, 43), with 1 to 9 steps each way.
 - **Hexagram shares the triangle lattice** (centered on a vertex), so it reuses the
   triangle adapter with its own cells. Wedges 6/12/20; pieces S [3, 2, 1],
   M [4, 3, 3, 2], L [4, 4, 4, 3, 2, 2, 1].
 - **Circle rings is a hexagon grid drawn as circles.** Ring k has 6k circles, like
   a hex ring, so each circle maps to the hex cell at the same ring position; hex
   neighbours are the touching circles and 60-degree rotation maps rings onto
-  themselves. It reuses the hexagon adapter and piece sizes (wedges 6/9/16). Placed
+  themselves. It reuses the hexagon adapter and small and medium piece sizes (wedges 6/9/12; large is
+  5 rings with [4, 3, 2, 2, 1]). Placed
   pieces look slightly stretched in outer rings, accepted as the trade-off.
 - **Shape is chosen at creation and fixed.** Puzzles pick it in the New form; groups
   pick it in the group-creation dialog. Assign to group offers only groups that
@@ -407,8 +421,8 @@ Hexagon padding and circle-radius bounds remain separate from polygon bounds.
 
 - **Hexagon:** radii 3/4/6; medium is the default. Large uses radius 6
   rather than the former radius 7 to keep density more manageable.
-- **Triangle:** equilateral size-4/7/10 lattices with D3 symmetry. Small matches
-  the intro; large preserves the previous regular grid; medium is the default.
+- **Triangle:** equilateral size-5/7/10 lattices with D3 symmetry. The intro keeps its
+  own size-4 grid; large preserves the previous regular grid; medium is the default.
 - **Diamond star:** whole rhombi, not half-diamond triangle slivers.
   Three/four/five subdivisions per axis are available; medium retains the
   previous 96 cells/10 groups. Widening the point angle
@@ -420,11 +434,12 @@ Hexagon padding and circle-radius bounds remain separate from polygon bounds.
 - **Circle rings:** ring `n` has `6n` circles. The center and first ring share a
   minimum diameter; later rings grow by `1/12` of it per step. Spacing factor
   `1.04` satisfies within-ring and between-ring non-overlap constraints.
-  Three/four/six rings are available; large remains the default with
-  127 cells/16 groups. Seven forced overly subtle growth or tight spacing.
+  Three/four/five rings are available; large remains the default with
+  91 cells/12 groups. Six was the first large size; more rings forced overly subtle
+  growth or tight spacing.
 - **Pinwheel:** eight unequal-sided spokes with uniform 2:1 parallelogram cells,
-  2 x 2, 2 x 3, or 3 x 3 steps per spoke. Large remains the default with
-  72 cells/9 groups. Equal-sided rhombi looked like a star.
+  3 x 2, 3 x 3, or 4 x 3 steps per spoke (rows x columns). Large remains the default with
+  96 cells/12 groups. Equal-sided rhombi looked like a star.
   Gaps between blades are intentional; asymmetry comes from unequal side lengths,
   not unequal default step counts.
 

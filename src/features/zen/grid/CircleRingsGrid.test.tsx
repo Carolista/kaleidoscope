@@ -95,12 +95,12 @@ describe('CircleRingsGrid', () => {
 		expect(clone.querySelector('path')).toHaveAttribute('stroke', 'none')
 	})
 
-	it('exposes exactly 16 clickable tiles, each as an accessible, labeled button', () => {
+	it('exposes exactly 12 clickable tiles, each as an accessible, labeled button', () => {
 		render(<CircleRingsGrid />, { wrapper: ZenStateProvider })
 		const tiles = screen.getAllByRole('button')
-		expect(tiles).toHaveLength(16)
-		expect(tiles[0]).toHaveAccessibleName('Paint tile 1 of 16')
-		expect(tiles[15]).toHaveAccessibleName('Paint tile 16 of 16')
+		expect(tiles).toHaveLength(12)
+		expect(tiles[0]).toHaveAccessibleName('Paint tile 1 of 12')
+		expect(tiles[11]).toHaveAccessibleName('Paint tile 12 of 12')
 	})
 
 	it('paints a tile on click and announces it via the live region', async () => {
@@ -108,7 +108,7 @@ describe('CircleRingsGrid', () => {
 		render(<CircleRingsGrid />, { wrapper: ZenStateProvider })
 
 		const tile = screen.getByRole('button', {
-			name: 'Paint tile 1 of 16',
+			name: 'Paint tile 1 of 12',
 		})
 		const fillBefore = tile.getAttribute('fill')
 
@@ -116,7 +116,7 @@ describe('CircleRingsGrid', () => {
 
 		expect(tile.getAttribute('fill')).not.toBe(fillBefore)
 		expect(screen.getByRole('status')).toHaveTextContent(
-			'Painted tile 1 of 16.',
+			'Painted tile 1 of 12.',
 		)
 	})
 
@@ -125,7 +125,7 @@ describe('CircleRingsGrid', () => {
 		render(<CircleRingsGrid />, { wrapper: ZenStateProvider })
 
 		const tile = screen.getByRole('button', {
-			name: 'Paint tile 2 of 16',
+			name: 'Paint tile 2 of 12',
 		})
 		tile.focus()
 		const fillBefore = tile.getAttribute('fill')

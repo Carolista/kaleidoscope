@@ -2,12 +2,12 @@ import { TriangleGrid } from '@/features/zen/grid'
 import { Button } from '@/ui/components'
 import { useZenState } from '@/features/zen/state'
 import { useState } from 'react'
-import { TRIANGLE_GRID_SIZES } from '@/domain/shapes/triangle'
+import { TRIANGLE_INTRO_GRID_SIZE } from '@/domain/shapes/triangle'
 import { ColorSwatches } from '@/features/zen/controls/palettes'
 import styles from './IntroSequence.module.css'
 
 // The intro demonstrates the smallest selectable triangle size (5 groups).
-const INTRO_GRID_SIZE = TRIANGLE_GRID_SIZES.sm
+const INTRO_GRID_SIZE = TRIANGLE_INTRO_GRID_SIZE
 const INTRO_TILE_COUNT = 5
 
 interface IntroSequenceProps {

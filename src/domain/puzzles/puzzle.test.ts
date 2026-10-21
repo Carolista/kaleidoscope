@@ -35,7 +35,7 @@ import {
 	rotateCoordinate,
 } from './puzzle'
 import type { PuzzlePlacements } from './puzzle'
-import { puzzleShapes } from './puzzleShapes'
+import { pinwheelGridSize, puzzleShapes } from './puzzleShapes'
 
 const palette = palettes[1]
 
@@ -248,7 +248,7 @@ describe('triangle puzzles', () => {
 			Object.values(triangle.gridSizes).map(
 				size => wedgeKeys(size).length,
 			),
-		).toEqual([5, 12, 22])
+		).toEqual([7, 12, 22])
 	})
 
 	it('rotates tile offsets 60 degrees about their anchor vertex, flipping direction', () => {
@@ -684,7 +684,7 @@ describe('circle rings puzzles', () => {
 				size =>
 					circles.cells(size).filter(cell => cell.isClickable).length,
 			),
-		).toEqual([6, 9, 16])
+		).toEqual([6, 9, 12])
 	})
 
 	it('rotates positions 60 degrees about the center', () => {
@@ -734,12 +734,15 @@ describe('pinwheel puzzles', () => {
 	const pointKey = ({ x, y }: { x: number; y: number }) =>
 		`${Math.round(x * 1e6)},${Math.round(y * 1e6)}`
 
-	it('matches the Zen spokes, with the whole top spoke as a 4/6/9-tile wedge and edge neighbours', () => {
+	it('matches the Zen spokes, with the whole top spoke as a 6/9/12-tile wedge and edge neighbours', () => {
 		for (const [size, steps] of Object.entries(PINWHEEL_GRID_SIZES)) {
-			const tiles =
+			const gridSize =
 				pinwheel.gridSizes[size as keyof typeof pinwheel.gridSizes]
-			expect(tiles).toBe(steps.rowSteps * steps.colSteps)
-			const cells = pinwheel.cells(tiles)
+			const tiles = steps.rowSteps * steps.colSteps
+			expect(gridSize).toBe(
+				pinwheelGridSize(steps.rowSteps, steps.colSteps),
+			)
+			const cells = pinwheel.cells(gridSize)
 			const zen = generatePinwheelCells(steps.rowSteps, steps.colSteps)
 			expect(
 				new Set(
