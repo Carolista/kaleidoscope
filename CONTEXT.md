@@ -43,13 +43,15 @@ The compact header groups account, sign-out, and theme controls at the right,
 with favicon navigation at the left. Admin defaults to dark mode using the shared
 neutral charcoal/white theme helper, without initializing player state.
 
-Admin navigation has peer sections: **Puzzles | Palettes | Shapes | Progression**. Puzzles and
+Admin navigation has peer sections: **Puzzles | Palettes | Shapes | Progression | Release**. Puzzles and
 Palettes each offer **Groups** (default) | items; items filter by **Unassigned**
-(default) | **Assigned** | **Scheduled** | **Published**. Scheduled and
-Published are placeholders. Everything stays a draft until published; the first
-tab names the unassigned stage. Assigned lists sort by group name, then group position
-([groupOrder](./src/features/admin/groups/groupOrder.ts)); puzzles without a group follow by name. A future top-level orchestration view will map how
-groups, rewards, and packs connect and roll out. Group lists filter by purpose (puzzle groups also by
+(default) | **Assigned** | **Scheduled** | **Published**. Everything stays a draft until
+released; the first tab names the unassigned stage. Assigned lists sort by group name, then group position
+([groupOrder](./src/features/admin/groups/groupOrder.ts)); puzzles without a group follow by name. The
+Scheduled and Published item views list what has been released (palettes with Edit/View as before; puzzles through
+[PreparedPuzzleLibrary](./src/features/admin/puzzles/PreparedPuzzleLibrary.tsx): scheduled puzzles open in
+the regular editor until their release, live ones in a read-only view). They carry no release buttons: items are
+released through their groups. Group lists filter by purpose (puzzle groups also by
 shape and track); puzzle items filter by shape and track, and the Assigned view by purpose and group. Section/view changes use the
 navigation guard and reset lower choices to their defaults.
 
@@ -80,6 +82,21 @@ about pattern problems (general warnings sit above the shapes) and lists palette
 that are in no core, reward, or pack palette group; warnings never block anything. The views share the `progression` catalog
 ([progression.ts](./src/features/admin/services/progression.ts)), and the pattern rules live in
 [rewardPattern.ts](./src/features/admin/services/rewardPattern.ts).
+
+**Release** ([ReleaseOverview](./src/features/admin/release/ReleaseOverview.tsx)) is where content goes out.
+A shape's four core and bonus groups (basic and rotation core, basic and rotation bonus) are released as one
+**package**: each shape gets one box in unlock order with its status ("4 of 4 groups · Draft"), the package
+buttons (Schedule, Reschedule, Unschedule), a list of what blocks it slot by slot, and a table of the four slots
+with group, puzzle count, reward palette, "Also unlocks", and state. Below are the palette groups (with
+count problems) and every other puzzle group (daily, pack, undecided), each with its own buttons. Core and bonus
+groups show their state elsewhere but never have release buttons there. All release buttons open the shared
+[ReleaseDialog](./src/features/admin/release/ReleaseDialog.tsx): a local-time date and time (or Release now, never
+the default, with a stronger warning), a preview of everything that will change (palettes, palette groups, puzzle
+groups, and a collapsed puzzle list, with notes such as "moves earlier, from …"), blockers that disable the button, and
+warnings that need an "I have reviewed these warnings" checkbox. The preview comes from the database
+(`preview_release`) and the button runs exactly that plan (`apply_release`), so the dialog and the result cannot
+disagree. After a release the cached catalogs reload. The overview's own issue lists mirror the hard rules in
+[releaseOverview.ts](./src/features/admin/services/releaseOverview.ts); the dialog has the authoritative check.
 
 [AdminCatalogProvider](./src/features/admin/catalog/AdminCatalog.tsx) caches puzzle
 groups, puzzle drafts, palettes, and palette groups for the signed-in session.
@@ -159,8 +176,9 @@ Confirmed group deletion unassigns members but preserves puzzles/private solutio
 Admin/invoker-RLS RPCs recheck release/reference state under the catalog lock;
 scheduled/live groups, prepared members, and dependent rewards, completions or
 grants block deletion. Membership reads paginate.
-Publishing and release tools remain deferred; shape order and rewards are managed under
-**Progression**, and the database also holds `group_completions` for later player progress.
+Shape order and rewards are managed under **Progression**, releases under **Release** (and, for
+daily, pack, and undecided groups, from the group cards), and the database also holds
+`group_completions` for later player progress.
 
 **Palettes** opens palette groups by default; its Palettes view is a database-backed
 catalog sharing the puzzle card layout, selection bar, and blue selected state,

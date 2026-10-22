@@ -39,6 +39,11 @@ import {
 	type PaletteGroupPurpose,
 } from '@/features/admin/services'
 import { useUnsavedDraft } from '@/ui/navigation'
+import {
+	ReleaseActions,
+	releaseStateLabel,
+	useReleaseDialog,
+} from '@/features/admin/release'
 
 const fallbackError = 'Unable to manage palette groups.'
 
@@ -78,6 +83,10 @@ export default function PaletteGroupLibrary({
 	const [status, setStatus] = useState('')
 	const [busy, setBusy] = useState(false)
 	const [deleting, setDeleting, deleteModal] = useModalState<PaletteGroup>()
+	const release = useReleaseDialog(client, message => {
+		setError('')
+		setStatus(message)
+	})
 	const working = useRef(false)
 	const selected = groups.find(group => group.row.id === editing?.id)
 	const readOnly = !!selected?.row.published_at || !!selected?.row.release_at
@@ -178,6 +187,16 @@ export default function PaletteGroupLibrary({
 						: 'Palette groups'
 				}
 			>
+				{selected && (
+					<ReleaseActions
+						kind="palette_group"
+						id={selected.row.id}
+						name={selected.row.name}
+						row={selected.row}
+						disabled={unavailable || dirty}
+						onStart={release.start}
+					/>
+				)}
 				{!editing && (
 					<>
 						<AdminIconButton
@@ -343,6 +362,14 @@ export default function PaletteGroupLibrary({
 							}
 							actions={
 								<>
+									<ReleaseActions
+										kind="palette_group"
+										id={group.row.id}
+										name={group.row.name}
+										row={group.row}
+										disabled={unavailable || !!deleting}
+										onStart={release.start}
+									/>
 									<AdminIconButton
 										icon={faPenToSquare}
 										label={`Edit group ${group.row.name}`}
@@ -389,6 +416,9 @@ export default function PaletteGroupLibrary({
 									? 'palette'
 									: 'palettes'}
 							</span>
+							{releaseStateLabel(group.row) && (
+								<span>{releaseStateLabel(group.row)}</span>
+							)}
 						</AdminGroupCard>
 					))}
 				</AdminGallery>
@@ -421,6 +451,7 @@ export default function PaletteGroupLibrary({
 					</ul>
 				</ConfirmDialog>
 			)}
+			{release.dialog}
 			{busy && !deleting && <Loading label="Saving palette group…" />}
 			{loading && (
 				<Loading

@@ -58,6 +58,17 @@ create function pg_temp.apply(p_action text, p_kind text, p_id uuid, p_at timest
 returns jsonb language sql as $$
 	select public.apply_release(p_action, p_kind, p_id::text, p_at);
 $$;
+create function pg_temp.ids(variadic p_numbers integer[]) returns uuid[] language sql as $$
+	select coalesce(array_agg(pg_temp.id(n) order by pg_temp.id(n)), '{}'::uuid[]) from unnest(p_numbers) as n;
+$$;
+create function pg_temp.pplan(p_action text, p_at timestamptz default null)
+returns jsonb language sql as $$
+	select public.preview_release(p_action, 'shape_package', 'hexagon', p_at);
+$$;
+create function pg_temp.papply(p_action text, p_at timestamptz default null)
+returns jsonb language sql as $$
+	select public.apply_release(p_action, 'shape_package', 'hexagon', p_at);
+$$;
 create function pg_temp.changes(p_plan jsonb, p_kind text, p_change text) returns bigint language sql as $$
 	select count(*) from jsonb_array_elements(p_plan -> 'items') i
 	where i ->> 'kind' = p_kind and i ->> 'change' = p_change;
@@ -108,7 +119,6 @@ select pg_temp.fill(12, 'puz-b', true, 24);
 select pg_temp.fill(13, 'puz-b', true, 24);
 select pg_temp.fill(14, 'daily-only', false, 26);
 select pg_temp.fill(15, 'puz-a', false, 23);
-select pg_temp.slot('core', 'basic', 10, array['rw-1']);
 
 select pg_temp.assert_true(
 	to_regprocedure('public.preview_release(text, text, text, timestamptz)') is not null
@@ -116,194 +126,170 @@ select pg_temp.assert_true(
 	'release tools exist'
 ) as test;
 
--- Blockers on an unfinished slot setup.
+-- Groups outside the slots release on their own.
 select pg_temp.assert_true(
-	pg_temp.has_text(pg_temp.plan('schedule', 'puzzle_group', pg_temp.id(11), now() + interval '1 day') -> 'blockers',
-		'Choose a purpose for "Bonus basic"'),
+	pg_temp.has_text(pg_temp.plan('schedule', 'puzzle_group', pg_temp.id(15), now() + interval '1 day') -> 'blockers',
+		'Choose a purpose for "Short core"'),
 	'an undecided group cannot be released'
 ) as test;
+select pg_temp.assert_true(
+	jsonb_array_length(pg_temp.plan('schedule', 'puzzle_group', pg_temp.id(14), now() + interval '1 day') -> 'blockers') = 0,
+	'a daily group with more than 24 puzzles has no count blocker'
+) as test;
+
+-- A package needs all four slots.
+select pg_temp.slot('core', 'basic', 10, array['rw-1']);
+select pg_temp.assert_true(
+	pg_temp.has_text(pg_temp.pplan('schedule', now() + interval '1 day') -> 'blockers', 'Hexagon has no rotation core group.')
+	and pg_temp.has_text(pg_temp.pplan('schedule', now() + interval '1 day') -> 'blockers', 'Hexagon has no basic bonus group.')
+	and pg_temp.has_text(pg_temp.pplan('schedule', now() + interval '1 day') -> 'blockers', 'Hexagon has no rotation bonus group.')
+	and not pg_temp.has_text(pg_temp.pplan('schedule', now() + interval '1 day') -> 'blockers', 'no basic core group'),
+	'a package with empty slots is blocked, naming each empty slot'
+) as test;
+select pg_temp.assert_true(
+	pg_temp.has_text(pg_temp.plan('schedule', 'puzzle_group', pg_temp.id(10), now() + interval '1 day') -> 'blockers',
+		'"Core basic" is released with the other core and bonus groups of its shape. Use the Hexagon package instead.')
+	and pg_temp.has_text(pg_temp.plan('cancel', 'puzzle_group', pg_temp.id(10)) -> 'blockers', 'Use the Hexagon package instead'),
+	'a core or bonus group cannot be scheduled or cancelled on its own'
+) as test;
+select pg_temp.expect_error(
+	$$select public.preview_release('schedule', 'shape_package', 'square')$$,
+	'P0002', 'an unknown shape is rejected'
+) as test;
+
+-- Wrong counts and missing rewards block the package.
+select pg_temp.slot('core', 'basic', 15, array['rw-5']);
+select pg_temp.assert_true(
+	pg_temp.has_text(pg_temp.pplan('schedule', now() + interval '1 day') -> 'blockers',
+		'"Short core" has 23 puzzles; core groups need exactly 24'),
+	'a core group without 24 puzzles blocks the package'
+) as test;
+select pg_temp.slot('core', 'basic', 10, array['rw-1']);
 select pg_temp.slot('reward', 'basic', 11, array['rw-2']);
 select pg_temp.slot('core', 'rotation', 12, array['rw-3']);
 select pg_temp.slot('reward', 'rotation', 13, array['rw-4']);
-select pg_temp.assert_true(
-	pg_temp.has_text(pg_temp.plan('schedule', 'puzzle_group', pg_temp.id(14), now() + interval '1 day') -> 'blockers',
-		'Choose a purpose') is false
-	and jsonb_array_length(pg_temp.plan('schedule', 'puzzle_group', pg_temp.id(14), now() + interval '1 day') -> 'blockers') = 0,
-	'a daily group with more than 24 puzzles has no count blocker'
-) as test;
-select pg_temp.assert_true(
-	pg_temp.has_text(pg_temp.plan('schedule', 'puzzle_group', pg_temp.id(15), now() + interval '1 day') -> 'blockers',
-		'has no puzzles') is false
-	and pg_temp.has_text(pg_temp.plan('schedule', 'puzzle_group', pg_temp.id(15), now() + interval '1 day') -> 'blockers',
-		'Choose a purpose'),
-	'an undecided short group is reported'
-) as test;
-select pg_temp.slot('core', 'basic', 15, array['rw-5']);
-select pg_temp.assert_true(
-	pg_temp.has_text(pg_temp.plan('schedule', 'puzzle_group', pg_temp.id(15), now() + interval '1 day') -> 'blockers',
-		'has 23 puzzles; core groups need exactly 24'),
-	'a core group without 24 puzzles is blocked'
-) as test;
-select pg_temp.slot('core', 'basic', 10, array['rw-1']);
-
--- A rotation core group must award a palette too.
-select pg_temp.slot('core', 'rotation', 12, array['rw-3']);
 delete from public.reward_palettes where palette_id = 'rw-3';
 select pg_temp.assert_true(
-	pg_temp.has_text(pg_temp.plan('schedule', 'puzzle_group', pg_temp.id(12), now() + interval '1 day') -> 'blockers',
-		'"Core rotation" awards no palette'),
-	'a core group that awards no palette is blocked'
+	pg_temp.has_text(pg_temp.pplan('schedule', now() + interval '1 day') -> 'blockers', '"Core rotation" awards no palette'),
+	'a group that awards no palette blocks the package'
 ) as test;
 insert into public.reward_palettes(reward_rule_id, palette_id)
 	select id, 'rw-3' from public.reward_rules where group_id = pg_temp.id(12);
 
--- Preview of the basic core group: bonus group, its puzzles, and their palettes come along.
+-- The complete package.
 select pg_temp.assert_true(
-	pg_temp.changes(pg_temp.plan('schedule', 'puzzle_group', pg_temp.id(10), now() + interval '1 day'), 'puzzle_group', 'release') = 2
-	and pg_temp.changes(pg_temp.plan('schedule', 'puzzle_group', pg_temp.id(10), now() + interval '1 day'), 'puzzle', 'release') = 48
-	and pg_temp.changes(pg_temp.plan('schedule', 'puzzle_group', pg_temp.id(10), now() + interval '1 day'), 'palette', 'release') = 3
-	and jsonb_array_length(pg_temp.plan('schedule', 'puzzle_group', pg_temp.id(10), now() + interval '1 day') -> 'blockers') = 0,
-	'the basic core group brings its bonus group, 48 puzzles, and 3 palettes with no blockers'
+	jsonb_array_length(pg_temp.pplan('schedule', now() + interval '1 day') -> 'blockers') = 0
+	and pg_temp.changes(pg_temp.pplan('schedule', now() + interval '1 day'), 'puzzle_group', 'release') = 4
+	and pg_temp.changes(pg_temp.pplan('schedule', now() + interval '1 day'), 'puzzle', 'release') = 96
+	and pg_temp.changes(pg_temp.pplan('schedule', now() + interval '1 day'), 'palette', 'release') = 6
+	and pg_temp.pplan('schedule', now() + interval '1 day') ->> 'name' = 'Hexagon package',
+	'a complete package plans its 4 groups, 96 puzzles, and 6 palettes with no blockers'
 ) as test;
 select pg_temp.assert_true(
-	pg_temp.state('puzzle_groups', pg_temp.id(10)::text) = 'draft'
-	and pg_temp.state('palettes', 'rw-1') = 'draft',
+	pg_temp.state('puzzle_groups', pg_temp.id(10)::text) = 'draft' and pg_temp.state('palettes', 'rw-1') = 'draft',
 	'a preview changes nothing'
 ) as test;
 select pg_temp.assert_true(
-	pg_temp.has_text(pg_temp.plan('schedule', 'puzzle_group', pg_temp.id(10), now() + interval '1 day') -> 'warnings',
-		'Hexagon has no') is false
-	and pg_temp.has_text(pg_temp.plan('schedule', 'puzzle_group', pg_temp.id(10), now() + interval '1 day') -> 'warnings',
-		'Triangle has no basic bonus group yet')
-	and pg_temp.has_text(pg_temp.plan('schedule', 'puzzle_group', pg_temp.id(10), now() + interval '1 day') -> 'warnings',
-		'locks the shape order'),
-	'warnings cover empty slots in other shapes and the shape order lock'
+	pg_temp.has_text(pg_temp.pplan('schedule', now() + interval '1 day') -> 'warnings', 'locks the shape order')
+	and not pg_temp.has_text(pg_temp.pplan('schedule', now() + interval '1 day') -> 'warnings', 'has no basic bonus group yet'),
+	'the shape order lock is warned about, and empty slots elsewhere are not'
 ) as test;
 select pg_temp.assert_true(
-	pg_temp.has_text(pg_temp.plan('schedule', 'puzzle_group', pg_temp.id(14), now() + interval '1 day') -> 'warnings',
-		'"daily-only" is also used') is false
-	and pg_temp.has_text(pg_temp.plan('schedule', 'palette_group', pg_temp.id(51), now() + interval '1 day') -> 'warnings',
+	pg_temp.has_text(pg_temp.plan('schedule', 'palette_group', pg_temp.id(51), now() + interval '1 day') -> 'warnings',
 		'Palette "daily-only" is also used by daily puzzles'),
 	'releasing a palette used by daily puzzles through a palette group warns'
 ) as test;
 
--- Past times and authorization.
+-- Past times and bad requests.
 select pg_temp.assert_true(
-	pg_temp.has_text(pg_temp.plan('schedule', 'puzzle_group', pg_temp.id(10), now() - interval '1 day') -> 'blockers',
-		'future release time'),
+	pg_temp.has_text(pg_temp.pplan('schedule', now() - interval '1 day') -> 'blockers', 'future release time'),
 	'a release time in the past is blocked'
 ) as test;
 select pg_temp.expect_error(
-	$$select pg_temp.apply('schedule', 'puzzle_group', pg_temp.id(10), now() - interval '1 day')$$,
+	$$select pg_temp.papply('schedule', now() - interval '1 day')$$,
 	'23514', 'applying a blocked plan is rejected'
 ) as test;
 select pg_temp.expect_error(
 	$$select public.preview_release('schedule', 'palette', 'rw-1')$$,
-	'22023', 'only groups can be scheduled'
+	'22023', 'a lone palette cannot be scheduled'
+) as test;
+select pg_temp.expect_error(
+	$$select public.preview_release('cancel', 'palette', 'rw-1')$$,
+	'22023', 'a lone palette cannot be cancelled either'
 ) as test;
 select pg_temp.expect_error(
 	$$select pg_temp.plan('schedule', 'puzzle_group', pg_temp.id(999))$$,
 	'P0002', 'an unknown group is rejected'
 ) as test;
 
--- Scheduling the basic core group.
-select pg_temp.apply('schedule', 'puzzle_group', pg_temp.id(10), date_trunc('second', now() + interval '3 days'));
+-- Scheduling the package.
+select pg_temp.papply('schedule', date_trunc('second', now() + interval '3 days'));
 select pg_temp.assert_true(
 	pg_temp.state('puzzle_groups', pg_temp.id(10)::text) = 'scheduled'
 	and pg_temp.state('puzzle_groups', pg_temp.id(11)::text) = 'scheduled'
-	and pg_temp.state('puzzle_groups', pg_temp.id(12)::text) = 'draft'
-	and pg_temp.state('palettes', 'puz-a') = 'scheduled' and pg_temp.state('palettes', 'rw-2') = 'scheduled'
-	and pg_temp.state('palettes', 'puz-b') = 'draft' and pg_temp.state('palette_groups', pg_temp.id(51)::text) = 'draft'
-	and (select count(*) = 48 from public.puzzles where published_at is not null)
-	and (select count(distinct release_at) = 1 from public.puzzles where published_at is not null),
-	'the group, its bonus group, their puzzles, and only the palettes they use are scheduled together'
-) as test;
-
--- Scheduling the rotation core group shares the basic bonus group and pulls an earlier release.
-select pg_temp.assert_true(
-	pg_temp.changes(pg_temp.plan('schedule', 'puzzle_group', pg_temp.id(12), now() + interval '1 day'), 'puzzle_group', 'earlier') = 1
-	and pg_temp.changes(pg_temp.plan('schedule', 'puzzle_group', pg_temp.id(12), now() + interval '1 day'), 'puzzle_group', 'release') = 2
-	and pg_temp.changes(pg_temp.plan('schedule', 'puzzle_group', pg_temp.id(12), now() + interval '1 day'), 'palette', 'earlier') = 2,
-	'a shared bonus group and its palettes are pulled earlier, never later'
-) as test;
-select pg_temp.assert_true(
-	pg_temp.changes(pg_temp.plan('schedule', 'puzzle_group', pg_temp.id(12), now() + interval '5 days'), 'puzzle_group', 'keep') = 1
-	and pg_temp.changes(pg_temp.plan('schedule', 'puzzle_group', pg_temp.id(12), now() + interval '5 days'), 'puzzle_group', 'release') = 2,
-	'a shared bonus group scheduled earlier stays where it is'
-) as test;
-select pg_temp.apply('schedule', 'puzzle_group', pg_temp.id(12), now() + interval '5 days');
-select pg_temp.assert_true(
-	pg_temp.state('puzzle_groups', pg_temp.id(12)::text) = 'scheduled'
+	and pg_temp.state('puzzle_groups', pg_temp.id(12)::text) = 'scheduled'
 	and pg_temp.state('puzzle_groups', pg_temp.id(13)::text) = 'scheduled'
-	and (select release_at from public.puzzle_groups where id = pg_temp.id(11))
-		< (select release_at from public.puzzle_groups where id = pg_temp.id(12)),
-	'the rotation core group and both bonus groups are scheduled'
+	and (select count(*) = 96 from public.puzzles where published_at is not null)
+	and (select count(distinct release_at) = 1 from public.puzzles where published_at is not null)
+	and (select count(*) = 6 from public.palettes where published_at is not null)
+	and pg_temp.state('palettes', 'daily-only') = 'draft'
+	and pg_temp.state('palette_groups', pg_temp.id(51)::text) = 'draft'
+	and pg_temp.state('puzzle_groups', pg_temp.id(14)::text) = 'draft',
+	'the four groups, their puzzles, and only the palettes they use are scheduled together'
 ) as test;
-
--- Rescheduling.
 select pg_temp.assert_true(
-	pg_temp.has_text(pg_temp.plan('schedule', 'puzzle_group', pg_temp.id(11), now() + interval '9 days') -> 'blockers',
-		'"Core basic" awards this group and releases earlier'),
-	'moving a bonus group later than a core group that awards it is blocked'
+	pg_temp.pplan('schedule', now() + interval '3 days') ->> 'state' = 'scheduled'
+	and pg_temp.changes(pg_temp.pplan('schedule', now() + interval '5 days'), 'puzzle_group', 'reschedule') = 4
+	and pg_temp.changes(pg_temp.pplan('schedule', now() + interval '5 days'), 'palette', 'keep') = 6,
+	'a scheduled package can be rescheduled, keeping palettes already ready'
 ) as test;
-select pg_temp.apply('schedule', 'puzzle_group', pg_temp.id(11), now() + interval '2 days');
+select pg_temp.papply('schedule', date_trunc('second', now() + interval '5 days'));
 select pg_temp.assert_true(
-	(select release_at from public.puzzle_groups where id = pg_temp.id(11)) < now() + interval '2 days 1 minute'
-	and (select count(distinct release_at) = 1 from public.puzzles
-		where id in (select puzzle_id from public.puzzle_group_members where group_id = pg_temp.id(11))),
-	'a bonus group can move earlier, bringing its puzzles with it'
+	(select count(distinct release_at) = 1 from public.puzzle_groups where id = any(pg_temp.ids(10, 11, 12, 13)))
+	and (select release_at > now() + interval '4 days' from public.puzzle_groups where id = pg_temp.id(10)),
+	'rescheduling moves all four groups together'
+) as test;
+select pg_temp.assert_true(
+	pg_temp.changes(pg_temp.pplan('schedule', now() + interval '2 days'), 'puzzle_group', 'reschedule') = 4
+	and pg_temp.changes(pg_temp.pplan('schedule', now() + interval '2 days'), 'palette', 'earlier') = 6,
+	'moving a package earlier pulls its scheduled palettes earlier too'
+) as test;
+select pg_temp.apply('schedule', 'palette_group', pg_temp.id(50), now() + interval '2 days');
+select pg_temp.assert_true(
+	pg_temp.state('palette_groups', pg_temp.id(50)::text) = 'scheduled'
+	and (select count(*) = 6 from public.palettes where id like 'rw-%' and published_at is not null),
+	'scheduling a palette group schedules its palettes'
+) as test;
+select pg_temp.assert_true(
+	pg_temp.changes(pg_temp.plan('cancel', 'palette_group', pg_temp.id(50)), 'palette', 'cancel') = 2,
+	'cancelling a palette group plans to return only the palettes nothing else uses'
+) as test;
+select pg_temp.apply('cancel', 'palette_group', pg_temp.id(50));
+select pg_temp.assert_true(
+	pg_temp.state('palette_groups', pg_temp.id(50)::text) = 'draft'
+	and pg_temp.state('palettes', 'rw-5') = 'draft' and pg_temp.state('palettes', 'rw-6') = 'draft'
+	and pg_temp.state('palettes', 'rw-1') = 'scheduled',
+	'cancelling a palette group returns its unneeded palettes to draft and keeps those still in use'
 ) as test;
 
 -- Cancelling.
 select pg_temp.assert_true(
-	pg_temp.changes(pg_temp.plan('cancel', 'puzzle_group', pg_temp.id(11)), 'puzzle_group', 'cancel') = 3
-	and pg_temp.changes(pg_temp.plan('cancel', 'puzzle_group', pg_temp.id(11)), 'puzzle', 'cancel') = 72
-	and pg_temp.has_text(pg_temp.plan('cancel', 'puzzle_group', pg_temp.id(11)) -> 'warnings', '"Core basic" awards this group')
-	and pg_temp.has_text(pg_temp.plan('cancel', 'puzzle_group', pg_temp.id(11)) -> 'warnings', 'stay scheduled'),
-	'cancelling a bonus group also cancels the core groups that award it'
+	pg_temp.changes(pg_temp.pplan('cancel'), 'puzzle_group', 'cancel') = 4
+	and pg_temp.changes(pg_temp.pplan('cancel'), 'puzzle', 'cancel') = 96
+	and pg_temp.changes(pg_temp.pplan('cancel'), 'palette', 'cancel') = 6
+	and jsonb_array_length(pg_temp.pplan('cancel') -> 'blockers') = 0,
+	'cancelling a package cancels its four groups, 96 puzzles, and the palettes only it used'
+) as test;
+select pg_temp.papply('cancel');
+select pg_temp.assert_true(
+	(select count(*) = 4 from public.puzzle_groups where id = any(pg_temp.ids(10, 11, 12, 13)) and published_at is null)
+	and (select count(*) = 0 from public.puzzles where published_at is not null)
+	and (select count(*) = 0 from public.palettes where published_at is not null),
+	'cancelling returns the groups, puzzles, and unneeded palettes to draft'
 ) as test;
 select pg_temp.assert_true(
-	pg_temp.changes(pg_temp.plan('cancel', 'puzzle_group', pg_temp.id(12)), 'puzzle_group', 'cancel') = 1
-	and pg_temp.changes(pg_temp.plan('cancel', 'puzzle_group', pg_temp.id(12)), 'puzzle', 'cancel') = 24,
-	'cancelling a core group leaves its bonus groups scheduled'
-) as test;
-select pg_temp.apply('cancel', 'puzzle_group', pg_temp.id(12));
-select pg_temp.assert_true(
-	pg_temp.state('puzzle_groups', pg_temp.id(12)::text) = 'draft'
-	and pg_temp.state('puzzle_groups', pg_temp.id(13)::text) = 'scheduled'
-	and pg_temp.state('palettes', 'puz-b') = 'scheduled'
-	and (select count(*) = 0 from public.puzzles where id in (
-		select puzzle_id from public.puzzle_group_members where group_id = pg_temp.id(12)) and published_at is not null),
-	'cancelling returns the group and its puzzles to draft and keeps palettes scheduled'
-) as test;
-select pg_temp.expect_error(
-	$$select public.preview_release('cancel', 'palette', 'missing')$$,
-	'P0002', 'an unknown palette is rejected'
-) as test;
-select pg_temp.assert_true(
-	pg_temp.has_text(public.preview_release('cancel', 'palette', 'puz-a') -> 'blockers', 'Puzzle "Puzzle 10-1" and 47 more use this palette')
-	and pg_temp.has_text(public.preview_release('cancel', 'palette', 'rw-1') -> 'blockers', '"Core basic" awards this palette'),
-	'a palette used by scheduled puzzles or rewards cannot be cancelled'
-) as test;
-select pg_temp.assert_true(
-	jsonb_array_length(public.preview_release('cancel', 'palette', 'puz-b') -> 'blockers') = 1
-	and pg_temp.has_text(public.preview_release('cancel', 'palette', 'puz-b') -> 'blockers', 'Puzzle "Puzzle 13-1" and 23 more use this palette'),
-	'a palette still used by the bonus rotation group stays blocked'
-) as test;
-select pg_temp.apply('cancel', 'puzzle_group', pg_temp.id(13));
-select pg_temp.assert_true(
-	jsonb_array_length(public.preview_release('cancel', 'palette', 'puz-b') -> 'blockers') = 0
-	and jsonb_array_length(public.preview_release('cancel', 'palette', 'rw-3') -> 'blockers') = 0,
-	'a palette can be cancelled once nothing scheduled uses it'
-) as test;
-select public.apply_release('cancel', 'palette', 'puz-b');
-select pg_temp.assert_true(
-	pg_temp.state('palettes', 'puz-b') = 'draft',
-	'cancelling a palette returns it to draft'
-) as test;
-select pg_temp.expect_error(
-	$$select public.apply_release('cancel', 'palette', 'puz-b')$$,
-	'23514', 'a palette that is not scheduled cannot be cancelled'
+	pg_temp.has_text(pg_temp.pplan('cancel') -> 'blockers', 'Hexagon package" is not scheduled'),
+	'a package that is not scheduled cannot be cancelled'
 ) as test;
 
 -- Palette groups.
@@ -314,53 +300,27 @@ select pg_temp.assert_true(
 ) as test;
 select pg_temp.assert_true(
 	jsonb_array_length(pg_temp.plan('schedule', 'palette_group', pg_temp.id(50), now() + interval '1 day') -> 'blockers') = 0
-	and pg_temp.changes(pg_temp.plan('schedule', 'palette_group', pg_temp.id(50), now() + interval '1 day'), 'palette', 'release') = 2
-	and pg_temp.changes(pg_temp.plan('schedule', 'palette_group', pg_temp.id(50), now() + interval '1 day'), 'palette', 'earlier') = 4,
-	'a palette group of 6 releases its drafts and pulls scheduled palettes earlier'
-) as test;
-select pg_temp.apply('schedule', 'palette_group', pg_temp.id(50), now() + interval '1 day');
-select pg_temp.assert_true(
-	pg_temp.state('palette_groups', pg_temp.id(50)::text) = 'scheduled'
-	and (select count(*) = 6 from public.palettes where id like 'rw-%' and published_at is not null),
-	'scheduling a palette group schedules its palettes'
-) as test;
-select pg_temp.assert_true(
-	pg_temp.changes(pg_temp.plan('schedule', 'palette_group', pg_temp.id(50), now() + interval '2 days'), 'palette', 'keep') = 6
-	and pg_temp.changes(pg_temp.plan('schedule', 'palette_group', pg_temp.id(50), now() + interval '2 days'), 'palette_group', 'reschedule') = 1,
-	'moving a palette group later leaves its palettes where they are'
-) as test;
-select pg_temp.apply('cancel', 'palette_group', pg_temp.id(50));
-select pg_temp.assert_true(
-	pg_temp.state('palette_groups', pg_temp.id(50)::text) = 'draft'
-	and pg_temp.state('palettes', 'rw-5') = 'scheduled',
-	'cancelling a palette group leaves its palettes scheduled'
+	and pg_temp.changes(pg_temp.plan('schedule', 'palette_group', pg_temp.id(50), now() + interval '1 day'), 'palette', 'release') = 6,
+	'a palette group of 6 releases all of its palettes'
 ) as test;
 
 -- Release now makes everything live and locks it.
-select pg_temp.apply('schedule', 'puzzle_group', pg_temp.id(12));
+select pg_temp.papply('schedule');
 select pg_temp.assert_true(
-	pg_temp.state('puzzle_groups', pg_temp.id(12)::text) = 'live'
-	and pg_temp.state('puzzle_groups', pg_temp.id(13)::text) = 'live'
-	and pg_temp.state('puzzle_groups', pg_temp.id(11)::text) = 'live'
+	(select count(*) = 4 from public.puzzle_groups
+		where id = any(pg_temp.ids(10, 11, 12, 13)) and published_at is not null and release_at <= clock_timestamp())
 	and pg_temp.state('palettes', 'puz-b') = 'live',
-	'releasing now makes the group and everything it pulls in live'
+	'releasing now makes the package and everything it pulls in live'
 ) as test;
 select pg_temp.assert_true(
-	pg_temp.has_text(pg_temp.plan('cancel', 'puzzle_group', pg_temp.id(12)) -> 'blockers', 'is live')
-	and pg_temp.has_text(pg_temp.plan('schedule', 'puzzle_group', pg_temp.id(12), now() + interval '1 day') -> 'blockers', 'is live')
-	and pg_temp.changes(pg_temp.plan('schedule', 'puzzle_group', pg_temp.id(10), now() + interval '1 day'), 'puzzle_group', 'live') = 1,
-	'live content cannot be rescheduled or cancelled, and is left alone as a dependency'
+	pg_temp.has_text(pg_temp.pplan('cancel') -> 'blockers', 'is live')
+	and pg_temp.has_text(pg_temp.pplan('schedule', now() + interval '1 day') -> 'blockers', 'is live')
+	and pg_temp.pplan('cancel') ->> 'state' = 'live',
+	'a live package cannot be rescheduled or cancelled'
 ) as test;
 select pg_temp.expect_error(
-	$$select pg_temp.apply('cancel', 'puzzle_group', pg_temp.id(12))$$,
-	'23514', 'applying a cancel of live content is rejected'
-) as test;
-select pg_temp.assert_true(
-	pg_temp.has_text(pg_temp.plan('cancel', 'puzzle_group', pg_temp.id(11)) -> 'blockers', 'is live')
-	and jsonb_array_length(pg_temp.plan('cancel', 'puzzle_group', pg_temp.id(10)) -> 'blockers') = 0
-	and pg_temp.changes(pg_temp.plan('cancel', 'puzzle_group', pg_temp.id(10)), 'puzzle_group', 'cancel') = 1
-	and pg_temp.state('puzzle_groups', pg_temp.id(10)::text) = 'scheduled',
-	'a scheduled core group can be cancelled while its bonus group is live, but not the reverse'
+	$$select pg_temp.papply('cancel')$$,
+	'23514', 'applying a cancel of a live package is rejected'
 ) as test;
 
 -- A daily group with scheduled daily puzzles is protected.
@@ -391,18 +351,18 @@ reset role;
 select set_config('request.jwt.claim.sub', pg_temp.id(2)::text, true);
 set local role authenticated;
 select pg_temp.expect_error(
-	$$select pg_temp.plan('schedule', 'puzzle_group', pg_temp.id(10), now() + interval '1 day')$$,
+	$$select pg_temp.pplan('schedule', now() + interval '1 day')$$,
 	'42501', 'regular users cannot preview releases'
 ) as test;
 select pg_temp.expect_error(
-	$$select pg_temp.apply('cancel', 'puzzle_group', pg_temp.id(10))$$,
+	$$select pg_temp.papply('cancel')$$,
 	'42501', 'regular users cannot apply releases'
 ) as test;
 reset role;
 select set_config('request.jwt.claim.sub', '', true);
 set local role anon;
 select pg_temp.expect_error(
-	$$select pg_temp.plan('schedule', 'puzzle_group', pg_temp.id(10), now() + interval '1 day')$$,
+	$$select pg_temp.pplan('schedule', now() + interval '1 day')$$,
 	'42501', 'guests cannot preview releases'
 ) as test;
 reset role;

@@ -24,6 +24,7 @@ import {
 } from '@/features/admin/services'
 import PuzzlePlaytest from './PuzzlePlaytest'
 import PuzzleDraftLibrary, { type LibraryView } from './PuzzleDraftLibrary'
+import PreparedPuzzleLibrary from './PreparedPuzzleLibrary'
 import { useUnsavedDraft } from '@/ui/navigation'
 import { DraftRecoveryNotice, useDraftRecovery } from '@/features/admin/drafts'
 import PuzzleDraftForm from './PuzzleDraftForm'
@@ -81,7 +82,7 @@ export default function PuzzleAuthoring({
 	catalogStatus,
 }: {
 	readonly client: SupabaseClient<Database>
-	readonly catalogStatus?: 'drafts' | 'assigned'
+	readonly catalogStatus?: 'drafts' | 'assigned' | 'scheduled' | 'published'
 }) {
 	const paletteCatalog = useCatalog('palettes', client)
 	const paletteGroupCatalog = useCatalog('paletteGroups', client)
@@ -303,37 +304,55 @@ export default function PuzzleAuthoring({
 						</Button>
 					</p>
 				)}
-				<PuzzleDraftLibrary
-					client={client}
-					palettes={palettes}
-					catalogStatus={catalogStatus}
-					initialView={libraryView}
-					onNew={(group, view) => {
-						setLibraryView(view)
-						setGenerated(null)
-						setTargetGroup(group ?? null)
-						setShape(
-							group?.row.shape_id &&
-								isPuzzleShapeId(group.row.shape_id)
-								? group.row.shape_id
-								: 'hexagon',
-						)
-						setRecipeId(recipesForTrack(group?.track ?? null)[0].id)
-						setSaved(false)
-						setDraftName('')
-						setSaveMessage('')
-						setError('')
-						pendingSave.current = null
-						setCreating(true)
-					}}
-					onRefreshPalettes={refreshPalettes}
-					palettesLoading={loading}
-					palettesRefreshing={
-						paletteCatalog.refreshing ||
-						paletteGroupCatalog.refreshing
-					}
-					palettesError={!!paletteError}
-				/>
+				{catalogStatus === 'scheduled' ||
+				catalogStatus === 'published' ? (
+					<PreparedPuzzleLibrary
+						client={client}
+						status={catalogStatus}
+						palettes={palettes}
+						onRefreshPalettes={refreshPalettes}
+						palettesLoading={loading}
+						palettesRefreshing={
+							paletteCatalog.refreshing ||
+							paletteGroupCatalog.refreshing
+						}
+						palettesError={!!paletteError}
+					/>
+				) : (
+					<PuzzleDraftLibrary
+						client={client}
+						palettes={palettes}
+						catalogStatus={catalogStatus}
+						initialView={libraryView}
+						onNew={(group, view) => {
+							setLibraryView(view)
+							setGenerated(null)
+							setTargetGroup(group ?? null)
+							setShape(
+								group?.row.shape_id &&
+									isPuzzleShapeId(group.row.shape_id)
+									? group.row.shape_id
+									: 'hexagon',
+							)
+							setRecipeId(
+								recipesForTrack(group?.track ?? null)[0].id,
+							)
+							setSaved(false)
+							setDraftName('')
+							setSaveMessage('')
+							setError('')
+							pendingSave.current = null
+							setCreating(true)
+						}}
+						onRefreshPalettes={refreshPalettes}
+						palettesLoading={loading}
+						palettesRefreshing={
+							paletteCatalog.refreshing ||
+							paletteGroupCatalog.refreshing
+						}
+						palettesError={!!paletteError}
+					/>
+				)}
 			</>
 		)
 	}

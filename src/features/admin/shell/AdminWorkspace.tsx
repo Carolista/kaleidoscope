@@ -10,6 +10,7 @@ import {
 	ProgressionOrder,
 	ProgressionSlots,
 } from '@/features/admin/progression'
+import { ReleaseOverview } from '@/features/admin/release'
 import { ShapesWorkspace } from '@/features/admin/shapes'
 import { useNavigationGuard } from '@/ui/navigation'
 
@@ -28,7 +29,7 @@ export default function AdminWorkspace({
 	readonly client: SupabaseClient<Database>
 }) {
 	const [section, setSection] = useState<
-		'puzzles' | 'palettes' | 'shapes' | 'progression'
+		'puzzles' | 'palettes' | 'shapes' | 'progression' | 'release'
 	>('puzzles')
 	const [view, setView] = useState<'groups' | 'items'>('groups')
 	const [status, setStatus] = useState<CatalogStatus>('drafts')
@@ -39,8 +40,6 @@ export default function AdminWorkspace({
 	const [visit, setVisit] = useState(0)
 	const { requestNavigation } = useNavigationGuard()
 	const itemLabel = section === 'palettes' ? 'Palettes' : 'Puzzles'
-	const placeholder =
-		view === 'items' && (status === 'scheduled' || status === 'published')
 
 	return (
 		<AdminCatalogProvider>
@@ -51,6 +50,7 @@ export default function AdminWorkspace({
 					{ value: 'palettes', label: 'Palettes' },
 					{ value: 'shapes', label: 'Shapes' },
 					{ value: 'progression', label: 'Progression' },
+					{ value: 'release', label: 'Release' },
 				]}
 				value={section}
 				onChange={next =>
@@ -85,6 +85,8 @@ export default function AdminWorkspace({
 						<ProgressionSlots key={visit} client={client} />
 					)}
 				</>
+			) : section === 'release' ? (
+				<ReleaseOverview key={visit} client={client} />
 			) : section === 'shapes' ? (
 				<ShapesWorkspace client={client} />
 			) : (
@@ -117,27 +119,12 @@ export default function AdminWorkspace({
 							}
 						/>
 					)}
-					{placeholder ? (
-						<section aria-labelledby="catalog-placeholder-title">
-							<h2 id="catalog-placeholder-title">
-								{status === 'scheduled'
-									? 'Scheduled'
-									: 'Published'}{' '}
-								{itemLabel.toLowerCase()}
-							</h2>
-							<p>
-								This catalog view is not available yet. Release
-								tools will be added separately.
-							</p>
-						</section>
-					) : section === 'palettes' ? (
+					{section === 'palettes' ? (
 						<PaletteLibrary
 							key={`${view}-${status}-${visit}`}
 							client={client}
 							view={view === 'groups' ? 'groups' : 'palettes'}
-							catalogStatus={
-								status === 'assigned' ? 'assigned' : 'drafts'
-							}
+							catalogStatus={status}
 						/>
 					) : view === 'groups' ? (
 						<PuzzleGroupLibrary key={visit} client={client} />
@@ -145,9 +132,7 @@ export default function AdminWorkspace({
 						<PuzzleAuthoring
 							key={`${status}-${visit}`}
 							client={client}
-							catalogStatus={
-								status === 'assigned' ? 'assigned' : 'drafts'
-							}
+							catalogStatus={status}
 						/>
 					)}
 				</>

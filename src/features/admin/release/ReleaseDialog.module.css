@@ -1,0 +1,39 @@
+.when {
+	display: grid;
+	gap: 0.5rem;
+	border: 1px solid var(--admin-border);
+	border-radius: var(--control-radius);
+}
+
+.choice {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.items {
+	margin: 0.25rem 0 0.75rem;
+	padding-left: 1.25rem;
+}
+
+.note {
+	opacity: 0.75;
+}
+
+.blockers,
+.warnings {
+	padding: 0.5rem 0.75rem;
+	border: 1px solid var(--admin-border);
+	border-radius: var(--control-radius);
+}
+
+.blockers h3,
+.warnings h3 {
+	margin: 0 0 0.25rem;
+}
+
+.blockers ul,
+.warnings ul {
+	margin: 0 0 0.5rem;
+	padding-left: 1.25rem;
+}

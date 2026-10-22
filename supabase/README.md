@@ -209,9 +209,10 @@ the initial migration. Zen still uses its local array and is unchanged.
   is an unassigned draft (in no palette group and unreferenced). It confirms the
   names and deletes them in one all-or-nothing request; apply the
   [bulk palette deletion migration](#apply-bulk-palette-deletion) first.
-- Scheduled/live palettes are read-only here, but can be duplicated. Publishing,
-  release scheduling, exceptional published color corrections, starter selection,
-  pack organization, and reward mapping are separate later tools.
+- Scheduled/live palettes are read-only here, but can be duplicated. Palettes are
+  released and returned to draft with the groups that use them (see
+  [Apply the release tools](#apply-the-release-tools)); exceptional published color
+  corrections are a separate later tool.
 
 Save returns to the palette library and refreshes it, along with the cached
 catalog used by puzzle authoring selectors and group previews; saved puzzle
@@ -710,6 +711,41 @@ migration replaces `private.sync_bonus_groups` (the trigger keeps calling it) an
 links once for existing data, so unpublished basic core groups gain their link right away.
 Published or scheduled core groups keep the links they had.
 
+## Apply the release tools
+
+After the basic bonus unlock, run these three migrations in order, each once in SQL Editor as `postgres`,
+then the test:
+
+1. [20261022020000_release_tools.sql](./migrations/20261022020000_release_tools.sql) adds
+   `preview_release(action, kind, id, release_at)` and `apply_release(...)`.
+2. [20261022030000_release_packages.sql](./migrations/20261022030000_release_packages.sql) adds the
+   `shape_package` kind and refuses core and bonus groups as standalone releases.
+3. [20261022040000_release_palette_cleanup.sql](./migrations/20261022040000_release_palette_cleanup.sql)
+   makes cancelling return unneeded palettes to draft and removes the single-palette cancel.
+4. Run [release_tools.sql](./tests/release_tools.sql) as `postgres`, without an automatic RLS wrapper. It tests
+   the final behavior, so run it after all three migrations. Expect **37 PASS results**; fixtures roll back.
+   [progression_slots.sql](./tests/progression_slots.sql) (35) and
+   [basic_bonus_unlock.sql](./tests/basic_bonus_unlock.sql) (8) still pass afterward.
+
+No tables or columns change. Both functions are admin-only (`security invoker`, rechecked with `is_admin()`);
+`apply_release` also needs READ COMMITTED and takes the catalog lock. The generated types gain the two functions
+(hand-added in the repository; regenerating should change nothing functional).
+
+- **Kinds.** `shape_package` (id is the shape id: its four core and bonus groups), `puzzle_group` (daily, pack, and
+  undecided groups; core and bonus groups in a slot are blocked), and `palette_group`. Actions are `schedule`
+  (a null time means now) and `cancel`.
+- **Plan.** The result is JSON: the request, the main item's state, the release time, `items` (each palette,
+  puzzle, group, or palette group with its state, what happens to it: `release`, `earlier`, `reschedule`, `keep`,
+  `live`, or `cancel`, and its previous and new times), `blockers`, and `warnings`. `apply_release` raises if any
+  blocker remains and otherwise updates the items in dependency order (palettes, puzzles, bonus groups, groups).
+- **Scheduling** sets every item that is not live to the release time, except a dependency already scheduled
+  earlier, which keeps its time (one scheduled later is pulled earlier). Palettes come from the group's puzzles and
+  reward rules, never from pack palette groups.
+- **Cancelling** returns the group, its scheduled puzzles, and palettes nothing else scheduled uses to draft; a
+  package cancels all four groups. Live items and puzzles on the daily schedule block it.
+- The hard rules are 24 puzzles per core and bonus puzzle group, 6 palettes per core and reward palette group,
+  a reward palette for each core and bonus group, and all four slots filled for a package.
+
 ## Bootstrap the one admin
 
 An ordinary app user cannot make themselves an admin. There is no public
@@ -878,12 +914,11 @@ be present for prepared content. Future releases are hidden by database policies
 
 Author in this order:
 
-1. Prepare/publish palettes and supported shapes.
-2. Save a puzzle draft and its authoring provenance/known solution, then publish.
-3. Assemble group membership and reward rules, then publish the group (it needs a purpose).
-4. Fill the shape progression with published core groups ready by launch.
-5. Set the global UTC rollover time, then schedule published puzzles from daily
-   groups using `daily_puzzles`.
+1. Save puzzle drafts with their authoring provenance and known solutions, and palettes.
+2. Assemble group membership, reward rules, and the progression slots.
+3. Release each shape's package (or other groups) with the release tools; they release the palettes and
+   puzzles a group needs along with it (see [Apply the release tools](#apply-the-release-tools)).
+4. Set the global UTC rollover time, then schedule puzzles from daily groups using `daily_puzzles`.
 
 Puzzle and group publication checks dependency release dates, and groups need a purpose other than undecided.
 The migration does not publish incomplete example puzzles or invent content

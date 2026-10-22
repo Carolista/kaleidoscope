@@ -85,30 +85,33 @@ export function AdminItemCard({
 	readonly label: string
 	readonly preview: ReactNode
 	readonly children: ReactNode
-	readonly selectLabel: string
-	readonly selected: boolean
+	// Omit onSelect for views without bulk actions; the card then has no checkbox.
+	readonly selectLabel?: string
+	readonly selected?: boolean
 	readonly selectDisabled?: boolean
-	readonly onSelect: (selected: boolean) => void
+	readonly onSelect?: (selected: boolean) => void
 	readonly actions: ReactNode
 }) {
 	return (
 		<li
 			className={styles.itemCard}
 			aria-label={label}
-			data-selected={selected}
+			data-selected={selected ?? false}
 		>
 			<div className={styles.itemPreview}>{preview}</div>
 			<div className={styles.itemDetails}>{children}</div>
 			<div className={styles.itemFooter}>
-				<Checkbox
-					plain
-					hideLabel
-					label={selectLabel}
-					className={styles.itemCheckbox}
-					checked={selected}
-					disabled={selectDisabled}
-					onChange={onSelect}
-				/>
+				{onSelect && (
+					<Checkbox
+						plain
+						hideLabel
+						label={selectLabel ?? 'Select'}
+						className={styles.itemCheckbox}
+						checked={selected ?? false}
+						disabled={selectDisabled}
+						onChange={onSelect}
+					/>
+				)}
 				<div className={styles.itemActions}>{actions}</div>
 			</div>
 		</li>

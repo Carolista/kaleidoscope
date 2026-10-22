@@ -46,6 +46,11 @@ import { useModalState } from '@/ui/hooks'
 import styles from './PuzzleGroupLibrary.module.css'
 import { useUnsavedDraft } from '@/ui/navigation'
 import { useCatalog, useCatalogInvalidation } from '@/features/admin/catalog'
+import {
+	ReleaseActions,
+	releaseStateLabel,
+	useReleaseDialog,
+} from '@/features/admin/release'
 
 type PuzzleGroupDetailsValue = GroupDetailsValue<PuzzleGroup['purpose']>
 
@@ -139,6 +144,10 @@ export default function PuzzleGroupLibrary({
 	const [deleteError, setDeleteError] = useState('')
 	const [status, setStatus] = useState('')
 	const [deleting, setDeleting, deleteModal] = useModalState<PuzzleGroup>()
+	const release = useReleaseDialog(client, message => {
+		setError('')
+		setStatus(message)
+	})
 	const selected = groups.find(group => group.row.id === selectedId)
 	const order = useStagedOrder(
 		selected?.members ?? [],
@@ -269,6 +278,17 @@ export default function PuzzleGroupLibrary({
 					selected ? `Group: ${selected.row.name}` : 'Puzzle groups'
 				}
 			>
+				{selected && (
+					<ReleaseActions
+						kind="puzzle_group"
+						id={selected.row.id}
+						name={selected.row.name}
+						row={selected.row}
+						slot={selected.row}
+						disabled={busy || dirty}
+						onStart={release.start}
+					/>
+				)}
 				{!selected && (
 					<>
 						<AdminIconButton
@@ -496,6 +516,15 @@ export default function PuzzleGroupLibrary({
 							}
 							actions={
 								<>
+									<ReleaseActions
+										kind="puzzle_group"
+										id={group.row.id}
+										name={group.row.name}
+										row={group.row}
+										slot={group.row}
+										disabled={busy || !!deleting}
+										onStart={release.start}
+									/>
 									<AdminIconButton
 										icon={faPenToSquare}
 										label={`Edit group ${group.row.name}`}
@@ -538,10 +567,14 @@ export default function PuzzleGroupLibrary({
 									? 'puzzle'
 									: 'puzzles'}
 							</span>
+							{releaseStateLabel(group.row) && (
+								<span>{releaseStateLabel(group.row)}</span>
+							)}
 						</AdminGroupCard>
 					))}
 				</AdminGallery>
 			)}
+			{release.dialog}
 			{pending && !deleting && <Loading label={pending} />}
 		</section>
 	)

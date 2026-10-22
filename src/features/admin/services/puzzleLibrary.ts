@@ -21,22 +21,28 @@ export interface LibraryDraft {
 	readonly puzzle: AuthoredPuzzle
 }
 
-export async function loadPuzzleDrafts(
+async function loadLibrary(
 	client: SupabaseClient<Database>,
+	prepared: boolean,
 ): Promise<LibraryDraft[]> {
 	const drafts: LibraryDraft[] = []
+	const noun = prepared ? 'scheduled and live puzzles' : 'drafts'
 	for (let offset = 0; ; offset += 1000) {
-		const { data, error } = await client
+		const query = client
 			.from('puzzles')
 			.select(
 				'*, puzzle_authoring(*), puzzle_group_members(puzzle_id, group_id, position, puzzle_groups(name, purpose, track)), daily_puzzles(id)',
 			)
 			.in('shape_id', [...PUZZLE_SHAPE_IDS])
-			.is('published_at', null)
+		const { data, error } = await (
+			prepared
+				? query.not('published_at', 'is', null)
+				: query.is('published_at', null)
+		)
 			.order('id')
 			.range(offset, offset + 999)
-		if (error) throw new Error(`Unable to load drafts: ${error.message}`)
-		if (!data) throw new Error('The draft library returned no data.')
+		if (error) throw new Error(`Unable to load ${noun}: ${error.message}`)
+		if (!data) throw new Error(`The library returned no ${noun}.`)
 		for (const row of data) {
 			const member = row.puzzle_group_members
 			if (member && !member.puzzle_groups)
@@ -67,6 +73,19 @@ export async function loadPuzzleDrafts(
 		if (data.length < 1000)
 			return drafts.sort((a, b) => a.row.name.localeCompare(b.row.name))
 	}
+}
+
+export function loadPuzzleDrafts(
+	client: SupabaseClient<Database>,
+): Promise<LibraryDraft[]> {
+	return loadLibrary(client, false)
+}
+
+// Puzzles that are scheduled or live, shaped like drafts so the same editor can open them.
+export function loadPreparedPuzzles(
+	client: SupabaseClient<Database>,
+): Promise<LibraryDraft[]> {
+	return loadLibrary(client, true)
 }
 
 export async function editPuzzleDraft(

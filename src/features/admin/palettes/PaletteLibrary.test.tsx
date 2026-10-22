@@ -909,7 +909,7 @@ describe('palette management', () => {
 			},
 		])
 		setup()
-		expect(await screen.findByText('Scheduled')).toBeInTheDocument()
+		expect(await screen.findByText(/^Scheduled for /)).toBeInTheDocument()
 		expect(screen.getByText('Live')).toBeInTheDocument()
 		expect(screen.queryByText('Draft')).not.toBeInTheDocument()
 		expect(
@@ -1357,5 +1357,59 @@ describe('palette management', () => {
 		expect(screen.queryByRole('status')).not.toBeInTheDocument()
 		expect(screen.getByRole('alert')).toHaveTextContent('Catalog offline')
 		expect(screen.queryByText(/No palettes yet/)).not.toBeInTheDocument()
+	})
+})
+
+describe('scheduled and published palette views', () => {
+	const prepared = [
+		samplePalette,
+		{
+			...samplePalette,
+			id: 'scheduled',
+			name: 'Scheduled art',
+			published_at: '2026-01-01',
+			release_at: '2099-01-01',
+		},
+		{
+			...samplePalette,
+			id: 'live',
+			name: 'Live art',
+			published_at: '2000-01-01',
+			release_at: '2000-01-01',
+		},
+	]
+
+	it('lists only scheduled palettes, with no release buttons, creation, or selection', async () => {
+		mocks.load.mockResolvedValue(prepared)
+		render(<PaletteLibrary client={client} catalogStatus="scheduled" />)
+		expect(
+			await screen.findByRole('heading', { name: 'Scheduled palettes' }),
+		).toBeInTheDocument()
+		expect(screen.getByText('Scheduled art')).toBeInTheDocument()
+		expect(screen.queryByText('Live art')).not.toBeInTheDocument()
+		expect(screen.queryByText('Cabo')).not.toBeInTheDocument()
+		expect(
+			screen.queryByRole('button', { name: /^(Re|Un)?[Ss]chedule / }),
+		).not.toBeInTheDocument()
+		expect(
+			screen.queryByRole('button', { name: 'New palette' }),
+		).not.toBeInTheDocument()
+		expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+	})
+
+	it('lists only live palettes with nothing to schedule or cancel', async () => {
+		mocks.load.mockResolvedValue(prepared)
+		render(<PaletteLibrary client={client} catalogStatus="published" />)
+		expect(
+			await screen.findByRole('heading', { name: 'Published palettes' }),
+		).toBeInTheDocument()
+		expect(screen.getByText('Live art')).toBeInTheDocument()
+		expect(screen.queryByText('Scheduled art')).not.toBeInTheDocument()
+		expect(
+			screen.queryByRole('button', { name: /Unschedule palette/ }),
+		).not.toBeInTheDocument()
+		expect(
+			screen.getByRole('button', { name: 'View Live art' }),
+		).toBeInTheDocument()
 	})
 })

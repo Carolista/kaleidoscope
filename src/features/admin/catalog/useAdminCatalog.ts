@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createContext, useContext, useEffect } from 'react'
 import {
 	loadPalettes,
+	loadPreparedPuzzles,
 	loadPuzzleDrafts,
 	loadPuzzleGroups,
 	loadPaletteGroups,
@@ -15,6 +16,7 @@ export type Client = SupabaseClient<Database>
 export const catalogLoaders = {
 	puzzleGroups: (client: Client) => loadPuzzleGroups(client, true),
 	puzzleDrafts: loadPuzzleDrafts,
+	preparedPuzzles: loadPreparedPuzzles,
 	palettes: loadPalettes,
 	paletteGroups: loadPaletteGroups,
 	progression: loadProgression,

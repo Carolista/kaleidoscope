@@ -1,0 +1,91 @@
+.summary {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.25rem 1.5rem;
+}
+
+.block {
+	margin: 1rem 0;
+	padding: 0.5rem 0.75rem;
+	border: 1px solid var(--admin-border);
+	border-radius: var(--control-radius);
+	background: var(--admin-surface);
+}
+
+.block h3 {
+	margin: 0 0 0.5rem;
+}
+
+/* Wide tables scroll inside their box instead of stretching the page. */
+.scroll {
+	overflow-x: auto;
+}
+
+.table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.table th,
+.table td {
+	padding: 0.4rem 0.5rem;
+	border-top: 1px solid var(--admin-border);
+	text-align: left;
+	vertical-align: top;
+}
+
+.table thead th {
+	border-top: 0;
+}
+
+.table td:last-child {
+	white-space: nowrap;
+}
+
+.table td > span {
+	display: block;
+}
+
+.table td > .reward {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.detail {
+	opacity: 0.75;
+	font-size: 0.85em;
+}
+
+.issue {
+	font-size: 0.85em;
+}
+
+.empty {
+	opacity: 0.6;
+}
+
+.hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+
+.packageHeading {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.25rem 1rem;
+}
+
+.packageHeading h3 {
+	margin: 0;
+}
+
+.issues {
+	margin: 0.5rem 0;
+	padding-left: 1.25rem;
+}

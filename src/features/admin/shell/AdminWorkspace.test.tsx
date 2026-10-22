@@ -17,6 +17,7 @@ import AdminWorkspace from './AdminWorkspace'
 
 const mocks = vi.hoisted(() => ({
 	puzzles: vi.fn(),
+	prepared: vi.fn(),
 	puzzleGroups: vi.fn(),
 	palettes: vi.fn(),
 	paletteGroups: vi.fn(),
@@ -29,6 +30,7 @@ vi.mock('@/features/admin/services/puzzleLibrary', async importOriginal => ({
 		typeof import('@/features/admin/services/puzzleLibrary')
 	>()),
 	loadPuzzleDrafts: (...args: unknown[]) => mocks.puzzles(...args),
+	loadPreparedPuzzles: (...args: unknown[]) => mocks.prepared(...args),
 }))
 vi.mock('@/features/admin/services/puzzleGroups', async importOriginal => ({
 	...(await importOriginal<
@@ -133,6 +135,28 @@ beforeEach(() => {
 		locked: false,
 	})
 	mocks.puzzleGroups.mockResolvedValue([group])
+	mocks.prepared.mockResolvedValue([
+		{
+			...draft,
+			row: {
+				...draft.row,
+				id: 'scheduled',
+				name: 'Scheduled design',
+				published_at: '2026-01-01T00:00:00Z',
+				release_at: '2999-01-01T00:00:00Z',
+			},
+		},
+		{
+			...draft,
+			row: {
+				...draft.row,
+				id: 'live',
+				name: 'Live design',
+				published_at: '2000-01-01T00:00:00Z',
+				release_at: '2000-01-01T00:00:00Z',
+			},
+		},
+	])
 	mocks.puzzles.mockResolvedValue([
 		draft,
 		{
@@ -249,7 +273,28 @@ describe('admin workspace navigation', () => {
 		).toBeInTheDocument()
 	})
 
-	it('separates unassigned puzzle drafts from assigned puzzles and exposes release placeholders', async () => {
+	it('opens the release overview as its own section', async () => {
+		render(<AdminWorkspace client={client} />)
+		expect(
+			within(screen.getByRole('navigation', { name: 'Admin sections' }))
+				.getAllByRole('button')
+				.map(button => button.textContent),
+		).toEqual(['Puzzles', 'Palettes', 'Shapes', 'Progression', 'Release'])
+		choose('Admin sections', 'Release')
+		expect(
+			await screen.findByRole('heading', { name: 'Release' }),
+		).toBeInTheDocument()
+		expect(
+			await screen.findByRole('table', {
+				name: 'Hexagon release status',
+			}),
+		).toBeInTheDocument()
+		expect(
+			screen.getByRole('table', { name: 'Palette group release status' }),
+		).toBeInTheDocument()
+	})
+
+	it('separates unassigned puzzle drafts from assigned puzzles and shows scheduled and published puzzles', async () => {
 		render(<AdminWorkspace client={client} />)
 		choose('Puzzles views', 'Puzzles')
 		expect(
@@ -278,15 +323,26 @@ describe('admin workspace navigation', () => {
 				name: 'Edit draft Unassigned design',
 			}),
 		).not.toBeInTheDocument()
-		for (const label of ['Scheduled', 'Published']) {
-			choose('Puzzles status', label)
-			expect(
-				screen.getByRole('heading', { name: `${label} puzzles` }),
-			).toBeInTheDocument()
-			expect(
-				screen.getByText(/This catalog view is not available yet/),
-			).toBeInTheDocument()
-		}
+		choose('Puzzles status', 'Scheduled')
+		expect(
+			await screen.findByRole('heading', { name: 'Scheduled puzzles' }),
+		).toBeInTheDocument()
+		expect(
+			await screen.findByRole('button', {
+				name: 'Edit puzzle Scheduled design',
+			}),
+		).toBeInTheDocument()
+		expect(screen.queryByText('Live design')).not.toBeInTheDocument()
+		choose('Puzzles status', 'Published')
+		expect(
+			await screen.findByRole('heading', { name: 'Published puzzles' }),
+		).toBeInTheDocument()
+		expect(
+			await screen.findByRole('button', {
+				name: 'View puzzle Live design',
+			}),
+		).toBeInTheDocument()
+		expect(screen.queryByText('Scheduled design')).not.toBeInTheDocument()
 		choose('Puzzles status', 'Unassigned')
 		expect(
 			await screen.findByRole('button', {
