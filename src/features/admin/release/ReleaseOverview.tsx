@@ -1,6 +1,3 @@
-import { faRotate } from '@fortawesome/pro-solid-svg-icons'
-import type { SupabaseClient } from '@supabase/supabase-js'
-import { useState } from 'react'
 import { useCatalog } from '@/features/admin/catalog'
 import {
 	AdminFeedback,
@@ -22,10 +19,13 @@ import {
 } from '@/features/admin/services'
 import type { Database } from '@/lib/supabase'
 import { Loading } from '@/ui/components'
+import { faRotate } from '@fortawesome/pro-solid-svg-icons'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import { useState } from 'react'
 import ReleaseActions from './ReleaseActions'
-import ShapePackageSection from './ShapePackageSection'
 import styles from './ReleaseOverview.module.css'
 import { releaseStateText, shapeLabel } from './releaseText'
+import ShapePackageSection from './ShapePackageSection'
 import useReleaseDialog from './useReleaseDialog'
 
 const fallbackError = 'Unable to load the release overview.'
@@ -34,8 +34,9 @@ function describeStates(counts: StateCounts) {
 	return `${counts.draft} draft · ${counts.scheduled} scheduled · ${counts.live} live`
 }
 
-// Everything that has to go out for launch and where it is: each shape's core and bonus
-// groups in unlock order, then palette groups, then every other puzzle group.
+// Everything that has to go out for launch and where it is:
+// each shape's core and bonus groups in unlock order,
+// then palette groups, then every other puzzle group.
 export default function ReleaseOverview({
 	client,
 }: {
@@ -135,13 +136,34 @@ export default function ReleaseOverview({
 									>
 										<thead>
 											<tr>
-												<th scope="col">
+												<th
+													scope="col"
+													style={{ width: '40%' }}
+												>
 													Palette group
 												</th>
-												<th scope="col">Purpose</th>
-												<th scope="col">Palettes</th>
-												<th scope="col">Status</th>
-												<th scope="col">
+												<th
+													scope="col"
+													style={{ width: '20%' }}
+												>
+													Purpose
+												</th>
+												<th
+													scope="col"
+													style={{ width: '15%' }}
+												>
+													Palettes
+												</th>
+												<th
+													scope="col"
+													style={{ width: '15%' }}
+												>
+													Status
+												</th>
+												<th
+													scope="col"
+													style={{ width: '10%' }}
+												>
 													<span
 														className={
 															styles.hidden
@@ -235,14 +257,40 @@ export default function ReleaseOverview({
 									>
 										<thead>
 											<tr>
-												<th scope="col">
+												<th
+													scope="col"
+													style={{ width: '20%' }}
+												>
 													Puzzle group
 												</th>
-												<th scope="col">Purpose</th>
-												<th scope="col">Shape</th>
-												<th scope="col">Puzzles</th>
-												<th scope="col">Status</th>
-												<th scope="col">
+												<th
+													scope="col"
+													style={{ width: '20%' }}
+												>
+													Purpose
+												</th>
+												<th
+													scope="col"
+													style={{ width: '20%' }}
+												>
+													Shape
+												</th>
+												<th
+													scope="col"
+													style={{ width: '15%' }}
+												>
+													Puzzles
+												</th>
+												<th
+													scope="col"
+													style={{ width: '15%' }}
+												>
+													Status
+												</th>
+												<th
+													scope="col"
+													style={{ width: '10%' }}
+												>
 													<span
 														className={
 															styles.hidden

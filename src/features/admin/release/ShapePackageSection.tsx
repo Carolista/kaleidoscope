@@ -2,12 +2,13 @@ import type { Palette } from '@/domain/palettes'
 import { packageRelease, type SlotRelease } from '@/features/admin/services'
 import { PaletteStrip } from '@/ui/components'
 import ReleaseActions from './ReleaseActions'
+import type { ReleaseTarget } from './ReleaseDialog'
 import styles from './ReleaseOverview.module.css'
 import { releaseStateText, shapeLabel } from './releaseText'
-import type { ReleaseTarget } from './ReleaseDialog'
 
-// One shape's core and bonus groups: released together as a package, so the status, problems,
-// and buttons are for the package while each slot row shows its own group, reward, and state.
+// One shape's core and bonus groups: released together as a package,
+// so the status, problems, and buttons are for the package while each
+// slot row shows its own group, reward, and state.
 export default function ShapePackageSection({
 	shapeId,
 	slots,
@@ -65,10 +66,18 @@ export default function ShapePackageSection({
 				>
 					<thead>
 						<tr>
-							<th scope="col">Slot</th>
-							<th scope="col">Puzzle group</th>
-							<th scope="col">Reward</th>
-							<th scope="col">Status</th>
+							<th scope="col" style={{ width: '15%' }}>
+								Slot
+							</th>
+							<th scope="col" style={{ width: '25%' }}>
+								Puzzle group
+							</th>
+							<th scope="col" style={{ width: '50%' }}>
+								Reward
+							</th>
+							<th scope="col" style={{ width: '10%' }}>
+								Status
+							</th>
 						</tr>
 					</thead>
 					<tbody>
