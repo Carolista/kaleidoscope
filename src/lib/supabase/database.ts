@@ -790,6 +790,15 @@ export type Database = {
 			[_ in never]: never
 		}
 		Functions: {
+			apply_release: {
+				Args: {
+					p_action: string
+					p_id: string
+					p_kind: string
+					p_release_at?: string
+				}
+				Returns: Json
+			}
 			bulk_delete_palette_drafts: {
 				Args: { p_ids: string[] }
 				Returns: string[]
@@ -863,6 +872,15 @@ export type Database = {
 			manage_shape_progression: {
 				Args: { p_shape_ids: string[] }
 				Returns: string[]
+			}
+			preview_release: {
+				Args: {
+					p_action: string
+					p_id: string
+					p_kind: string
+					p_release_at?: string
+				}
+				Returns: Json
 			}
 			replace_puzzle_draft: {
 				Args: {
