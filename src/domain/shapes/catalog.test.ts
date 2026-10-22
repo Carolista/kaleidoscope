@@ -2,14 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { gridShapes, isGridShapeId, supportedGridShapes } from './catalog'
 
 describe('grid shape definitions', () => {
-	it('preserves supported IDs, labels, and current picker order', () => {
+	it('lists shapes in unlock order, Circle Rings last', () => {
 		const expected = [
 			['hexagon', 'Hexagon'],
 			['triangle', 'Triangle'],
 			['diamondStar', 'Diamond Star'],
 			['hexagram', 'Hexagram'],
-			['circleRings', 'Circle Rings'],
 			['pinwheel', 'Pinwheel'],
+			['circleRings', 'Circle Rings'],
 		]
 		expect(
 			supportedGridShapes.map(shape => [shape.id, shape.label]),

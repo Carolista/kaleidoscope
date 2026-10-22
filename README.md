@@ -39,7 +39,7 @@ Today, the application reflects how my engineering approach has evolved. It has 
 ## Features
 
 - **Animated welcome:** The logo spins into view at the center of the page, then settles into the header as the app fades in. Reduced-motion preferences skip the animation.
-- **Six geometric grids, three sizes each:** Hexagon, triangle, diamond star, hexagram, circle rings, and pinwheel. Choose small, medium, or large using scaled shape icons.
+- **Six geometric grids, three sizes each:** Hexagon, triangle, diamond star, hexagram, pinwheel, and circle rings. Choose small, medium, or large using scaled shape icons.
 - **18 independent boards:** Each shape and size keeps its own pattern. Switch freely and pick up where you left off; new boards start blank.
 - **Symmetrical painting:** Paint a tile in the editable area and its corresponding cells update across the full design.
 - **Multiple color palettes:** Pick from curated palettes, then choose a color to paint with. Palette changes carry the color pattern over across all boards.

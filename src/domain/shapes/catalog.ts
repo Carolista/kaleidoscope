@@ -1,11 +1,13 @@
 // Supported shapes remain loadable even when hidden from the picker.
+// Listed in unlock order: every shape menu and list follows this order, so
+// keep it in sync with the `shape_progression` table.
 export const supportedGridShapes = [
 	{ id: 'hexagon', label: 'Hexagon', pickerVisible: true },
 	{ id: 'triangle', label: 'Triangle', pickerVisible: true },
 	{ id: 'diamondStar', label: 'Diamond Star', pickerVisible: true },
 	{ id: 'hexagram', label: 'Hexagram', pickerVisible: true },
-	{ id: 'circleRings', label: 'Circle Rings', pickerVisible: true },
 	{ id: 'pinwheel', label: 'Pinwheel', pickerVisible: true },
+	{ id: 'circleRings', label: 'Circle Rings', pickerVisible: true },
 ] as const satisfies readonly {
 	readonly id: string
 	readonly label: string

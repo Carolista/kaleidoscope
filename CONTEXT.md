@@ -436,7 +436,7 @@ Test files and `src/test/` are exempt so tests can reach internals and mock exac
 | [ui/hooks/](./src/ui/hooks/) | `useModalState`, `useIsTouchDevice` |
 | [ui/navigation/](./src/ui/navigation/) | App-wide unsaved-work navigation guard |
 | [ui/puzzle/](./src/ui/puzzle/) | Shared `PuzzlePlay` (target, tray, board, pointer/keyboard interaction) and shape-neutral `PuzzleBoard` |
-| [domain/shapes/](./src/domain/shapes/) | React-free shape catalog, sizes, registry, and one folder per shape (grid, layout, types) |
+| [domain/shapes/](./src/domain/shapes/) | React-free shape catalog, sizes, registry, and one folder per shape (grid, layout, types). The catalog's `supportedGridShapes` order is the single shape order (unlock order, Circle Rings last); `PUZZLE_SHAPE_IDS`, `PUZZLE_SHAPE_LABELS`, and every shape menu derive from it |
 | [domain/geometry/](./src/domain/geometry/) | `Point`, shared geometry math, symmetry engine, cell grouping, SVG points |
 | [domain/puzzles/](./src/domain/puzzles/) | Pure seeded puzzle generation, authoring, stored-definition readers, placement validation, and completion; per-shape adapters in `puzzleShapes.ts` |
 | [domain/palettes/](./src/domain/palettes/) | Local palette catalog, palette type, color math, light/dark theme colors |

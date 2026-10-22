@@ -36,16 +36,11 @@ import {
 	generateDiamondStarCells,
 } from '@/domain/shapes/diamond-star'
 
-export const PUZZLE_SHAPE_IDS = [
-	'hexagon',
-	'triangle',
-	'diamondStar',
-	'hexagram',
-	'circleRings',
-	'pinwheel',
-] as const satisfies readonly GridShapeId[]
+export type PuzzleShapeId = GridShapeId
 
-export type PuzzleShapeId = (typeof PUZZLE_SHAPE_IDS)[number]
+// Unlock order, inherited from the shape catalog.
+export const PUZZLE_SHAPE_IDS: readonly PuzzleShapeId[] =
+	supportedGridShapes.map(shape => shape.id)
 
 // Board-only position (e.g. which star point) for shapes whose mirrored copies
 // reuse the wedge's coordinates. Wedge cells and piece tiles omit it.
@@ -384,23 +379,16 @@ export const puzzleShapes: Readonly<Record<PuzzleShapeId, PuzzleShape>> = {
 	triangle,
 	diamondStar,
 	hexagram,
-	circleRings,
 	pinwheel,
+	circleRings,
 }
 
 export function isPuzzleShapeId(value: unknown): value is PuzzleShapeId {
 	return PUZZLE_SHAPE_IDS.some(id => id === value)
 }
 
-function catalogLabel(shape: PuzzleShapeId): string {
-	return supportedGridShapes.find(option => option.id === shape)!.label
-}
-
-export const PUZZLE_SHAPE_LABELS: Readonly<Record<PuzzleShapeId, string>> = {
-	hexagon: catalogLabel('hexagon'),
-	triangle: catalogLabel('triangle'),
-	diamondStar: catalogLabel('diamondStar'),
-	hexagram: catalogLabel('hexagram'),
-	circleRings: catalogLabel('circleRings'),
-	pinwheel: catalogLabel('pinwheel'),
-}
+// Key order follows the catalog, so menus built from the entries stay in
+// unlock order.
+export const PUZZLE_SHAPE_LABELS = Object.fromEntries(
+	supportedGridShapes.map(shape => [shape.id, shape.label]),
+) as Readonly<Record<PuzzleShapeId, string>>
