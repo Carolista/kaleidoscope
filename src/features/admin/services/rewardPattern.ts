@@ -33,7 +33,8 @@ export function slotGroupLabel(slot: Pick<Slot, 'purpose' | 'track'>): string {
 }
 
 // The pattern for every shape: a basic and a rotation core group, and a basic and a rotation
-// bonus group (awarded together with the rotation core group), each awarding one palette.
+// bonus group, each awarding one palette. The basic core group also awards the basic bonus
+// group; the rotation core group awards both.
 // Slots and rewards stay flexible, so this only warns.
 export function checkRewardPattern(
 	progression: Pick<Progression, 'shapeIds' | 'groups' | 'rewards'>,

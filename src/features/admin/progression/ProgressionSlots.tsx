@@ -203,9 +203,10 @@ export default function ProgressionSlots({
 			</AdminSectionHeading>
 			<p>
 				Each shape has a basic and a rotation core group. Completing the
-				rotation core group also awards the basic and rotation bonus
-				groups. Every group awards one palette from a reward palette
-				group. Warnings do not block publishing.
+				basic core group also awards the basic bonus group; completing
+				the rotation core group awards both bonus groups. Every group
+				awards one palette from a reward palette group. Warnings do not
+				block publishing.
 			</p>
 			<AdminFeedback
 				error={

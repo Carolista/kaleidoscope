@@ -677,19 +677,38 @@ Each shape has four slots: a basic and a rotation core group, and a basic and a 
   error comes from the same trigger).
 - Links the bonus groups of a shape to its rotation core group automatically: a trigger on
   `puzzle_groups` keeps `reward_puzzle_groups` equal to the shape's reward groups, and the
-  migration rebuilds those links once for existing data (hand-picked links are replaced).
+  migration rebuilds those links once for existing data (hand-picked links are replaced). The
+  [basic bonus unlock](#apply-the-basic-bonus-unlock) below also links the basic bonus group to the
+  basic core group.
 - Replaces `manage_group_reward` with `manage_progression_slot(shape, purpose, track, group, palettes)`,
   which atomically fills a slot with a group (setting its purpose, shape, and track), turns the
   previous occupant into an Undecided group with no reward, and sets the one reward palette
   (which must be in a reward palette group). A null group empties the slot. Published groups are
   rejected, and a group that already fills another slot must be emptied there first.
-- A group with automatic links (the rotation core group, or a bonus group) is changed through its
+- A group with automatic links (a core group with bonus links, or a bonus group) is changed through its
   slot; deleting it or changing its purpose in Puzzles > Groups is refused until the slot is emptied.
 
 The earlier suites belong to their own migrations: run
 [groups_and_purpose.sql](./tests/groups_and_purpose.sql) and
 [progression_tools.sql](./tests/progression_tools.sql) right after their migrations, not after
 this one (`progression_tools.sql` calls the removed `manage_group_reward`).
+
+## Apply the basic bonus unlock
+
+After the progression slots migration:
+
+1. Run
+   [20261022010000_basic_bonus_unlock.sql](./migrations/20261022010000_basic_bonus_unlock.sql)
+   once in SQL Editor as `postgres`.
+2. Run [basic_bonus_unlock.sql](./tests/basic_bonus_unlock.sql) as `postgres`, without an
+   automatic RLS wrapper. Expect **8 PASS results**; fixtures roll back.
+   [progression_slots.sql](./tests/progression_slots.sql) still passes (35) after this migration.
+
+No types change. The bonus links now follow both core groups: the basic core group links the
+shape's basic bonus group, and the rotation core group still links both bonus groups. The
+migration replaces `private.sync_bonus_groups` (the trigger keeps calling it) and rebuilds the
+links once for existing data, so unpublished basic core groups gain their link right away.
+Published or scheduled core groups keep the links they had.
 
 ## Bootstrap the one admin
 
@@ -825,9 +844,9 @@ identity and do not accept an arbitrary user ID.
   puzzle solved, recorded in `group_completions`) opens the next shape.
 - **Rewards:** a `reward_rules` row applies when its group is completed. Child tables
   award exact palettes and/or bonus puzzle groups (which must have the `reward`
-  purpose). The intended pattern per shape is: basic core awards one palette,
-  rotation core awards one palette plus two bonus groups (one basic, one rotation),
-  and each bonus awards one palette. The rules stay flexible; a later admin screen
+  purpose). The intended pattern per shape is: basic core awards one palette plus
+  the basic bonus group, rotation core awards one palette plus both bonus groups
+  (basic and rotation), and each bonus awards one palette. The rules stay flexible; a later admin screen
   will check them. The final randomizer is a `feature_grants` row with source
   `progression`, earned after all core and bonus groups; no hint economy is included.
 - **Access:** palette/shape/group grants preserve distinct rule sources.

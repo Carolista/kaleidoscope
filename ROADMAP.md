@@ -16,18 +16,26 @@ Status key: ✅ done · 👀 ready for review · 🔜 next · ⬜ not started ·
 
 ## Where we are now
 
-**Phase 2A: building the admin portal** (branch `54-create-admin-portal`, issue #54).
+**Phase 2A: finishing the admin portal** (branch `62-admin-can-schedule-and-publish-assets`, issue #62).
 
 Supabase is set up and hosted, the admin can sign in, and the admin can generate,
-save, and organize puzzles in all six shapes, and palettes. Nothing is released to players
-yet.
+save, and organize puzzles in all six shapes, and palettes. The 2A content is
+authored: all 24 core and bonus puzzle groups with their reward palettes are set
+in Progression, and 12 core palettes are chosen as the Zen starters. Nothing is
+released to players yet.
 
 The live app currently has **Zen Mode only**, with every shape and a limited set
 of palettes. Launching Puzzle Mode makes it the primary feature and makes access
 more restrictive (see "Launch impact" below).
 
-**Next up:** the Scheduled and Published catalog views, then the remaining
-admin tools. The codebase reorganization is complete.
+**Next up, in order:**
+
+1. #62: Scheduled and Published views and the release tools. Players can only read
+   published, released content, so every player-side step depends on this.
+2. #59: Zen starter palettes from the database (the first player read of published content).
+3. #57: accounts and guest import (A4), before any progression is stored.
+4. #58 with A5 (#28, #26): Puzzle Mode becomes primary with its tutorial first; the
+   Zen tutorial shows the first time a player switches to Zen.
 
 ---
 
@@ -132,7 +140,8 @@ Rules:
 3. ✅ **Progression section** (migrations `20261021000000`, `20261022000000`): Order (drag the shapes;
    locked once a core group is published), Puzzles and Rewards (four slots per shape: basic and rotation
    core and bonus groups, each with a puzzle group and one reward palette from reward palette groups;
-   bonus groups link to the rotation core group automatically) with pattern warnings and a list of
+   bonus groups link to the core groups automatically: basic core to the basic bonus group, rotation
+   core to both; migration `20261022010000`) with pattern warnings and a list of
    grouped puzzles whose palette players cannot get. Warnings never block publishing yet.
 4. ⬜ **Daily groups and scheduling.** Daily groups organize puzzles (for example by month); scheduling
    one per day moves to 2B.
@@ -147,9 +156,9 @@ screens (part of B2).
 
 Not planned: a manual target or piece editor and multiple admins.
 
-**Content work (yours, alongside the tools):** finish the pack palette groups,
-then choose the core palette group (Zen starters) and the reward palettes. Author 24-puzzle groups for
-the core sequence and rewards.
+**Content work (yours, alongside the tools):** ✅ the core and bonus puzzle groups for all six
+shapes (24 puzzles each) with their reward palettes, and the 12 core palettes (Zen starters). The
+remaining pack palette groups wait for the 2B store.
 
 ---
 
@@ -168,9 +177,11 @@ the core sequence and rewards.
 
 - One access layer used by the palette picker, shape picker, and puzzle catalog,
   in both Puzzle Mode and Zen Mode.
+- Puzzle Mode is the default mode and its tutorial comes first; the Zen tutorial
+  shows only the first time a player switches from Puzzle to Zen (#58).
 - Replace player-side random puzzle generation with published puzzles.
 - The first introductory sequence is fixed. After that, every puzzle in an unlocked set is selectable.
-- Solving either core group of a shape (basic or rotation) unlocks the next shape and its two core groups; reward palettes and bonus groups come from completing groups, without duplicate rewards.
+- Solving either core group of a shape (basic or rotation) unlocks the next shape and its two core groups. The basic core group also unlocks the basic bonus group; the rotation core group unlocks both bonus groups. Reward palettes come from completing groups, without duplicate rewards.
 - Grant the Zen randomizer permanently after all 12 core and 12 bonus groups are solved.
 - Validate completions and grant rewards on the server, idempotently.
 - Migrate existing Zen saves from hex colors to palette slots.
@@ -222,7 +233,7 @@ the core sequence and rewards.
 - **Terminology:** admin and database data structures are **groups**, each with a **purpose** (core, reward, daily, pack, or undecided). Players see free **puzzle sets** (core) versus paid **puzzle packs**; "group" never appears in the player UI. Difficulty
   labels are Easy, Moderate, Hard, and Challenging (stored as `super_hard`).
 - **Tracks:** core and reward puzzle groups are **basic** (no rotation: Easy/Moderate/Hard) or **rotation** (Moderate/Hard/Challenging). Packs may also be mixed; daily groups have no track.
-- **Progression:** each of the six shapes has two core groups (basic, rotation). Solving either unlocks the next shape. Completing the basic core group awards one palette; completing the rotation core group awards one palette plus two bonus groups (one basic, one rotation); each bonus group awards one palette. The Zen randomizer needs all 12 core and 12 bonus groups.
+- **Progression:** each of the six shapes has two core groups (basic, rotation). Solving either unlocks the next shape. Completing the basic core group awards one palette plus the basic bonus group; completing the rotation core group awards one palette plus both bonus groups (the basic one only if not already earned); each bonus group awards one palette. Players who never solve rotation puzzles still reach every basic group. The Zen randomizer needs all 12 core and 12 bonus groups.
 - **Palettes:** a puzzle stores its palette. Bought puzzle packs do not grant palettes; palette packs (or a discounted combo) do.
 - **Sizes:** puzzle groups have **24 puzzles**. Palette groups have **6 palettes**.
 - **Six recipes for every puzzle shape:** Easy = S; Moderate = M, or S + rotation; Hard = L, or M + rotation; Challenging = L + rotation.
@@ -245,7 +256,7 @@ the core sequence and rewards.
 
 - Difficulty split inside a 24-puzzle core or bonus group (counts are not enforced yet).
 - Whether publishing should enforce exactly 24 puzzles and 6 palettes, or only warn.
-- Starter and reward palette group lineups (after the pack palette groups are done).
+- Pack palette group lineups for the store (2B).
 - What happens to existing visitors' saved designs that use shapes or palettes
   that become locked, and how to migrate legacy hex saves with duplicate colors.
 - Offline unlock policy: how long cached access lasts, and whether unlocks can be used before the server confirms them.

@@ -245,9 +245,13 @@ the earlier per-set qualifying routes no longer exist. Shape menus in the app
 catalog, `supportedGridShapes`, with Circle Rings last. It is not read from the
 database, so update it when the unlock order changes.
 
-**Rewards.** Completing the basic core group awards one palette; completing the
-rotation core group awards one palette plus two bonus groups (one basic, one
-rotation); completing each bonus group awards one palette. Rewards name exact
+**Rewards.** Completing the basic core group awards one palette plus the basic bonus
+group; completing the rotation core group awards one palette plus both bonus groups
+(basic and rotation), so a player who already has the basic bonus group only gains the
+rotation one; completing each bonus group awards one palette. The basic core group
+awards its bonus group directly so that players who never take on rotation puzzles
+still get more to play, rather than having the extra basic puzzles locked behind the
+hardest track. Rewards name exact
 palettes, not a palette group. That is the intended pattern for all six shapes, but
 reward rules stay flexible in the database (any group can award palettes and/or
 bonus groups) so a later admin screen can check a shape against the pattern. A player who
@@ -281,8 +285,10 @@ under each shape, general warnings above the shapes, and a list of grouped puzzl
 no player can get), so there is no separate Checks view.
 
 The bonus groups of a shape are exactly its reward groups, and the database links them to the
-shape's rotation core group automatically (`reward_puzzle_groups`, kept in sync by a trigger and
-rebuilt on every slot change), so completing the rotation core group will grant them. Nobody
+shape's core groups automatically (`reward_puzzle_groups`, kept in sync by a trigger and
+rebuilt on every slot change): the basic core group links the basic bonus group, and the
+rotation core group links both, so completing either core group grants its bonus groups. Grants
+are idempotent, so the basic bonus group is granted once even though two rules name it. Nobody
 picks those links by hand. A group with automatic links is changed through its slot, not by
 deleting it or changing its purpose elsewhere. `manage_shape_progression` reorders the shapes
 and, with a trigger on the table, refuses any change once a core group is published, because
