@@ -240,7 +240,10 @@ one unlocks the next shape and its two core groups. The unlock order lives in
 `shape_progression` (default Hexagon, Triangle, Diamond Star, Hexagram, Circle
 Rings, Pinwheel), editable by the admin; the first shape is the starter. A group
 counts as completed when every puzzle in it is solved (`group_completions`);
-the earlier per-set qualifying routes no longer exist.
+the earlier per-set qualifying routes no longer exist. Shape menus in the app
+(Zen picker, admin selects and filters) follow one order defined in the shape
+catalog, `supportedGridShapes`, with Circle Rings last. It is not read from the
+database, so update it when the unlock order changes.
 
 **Rewards.** Completing the basic core group awards one palette; completing the
 rotation core group awards one palette plus two bonus groups (one basic, one
