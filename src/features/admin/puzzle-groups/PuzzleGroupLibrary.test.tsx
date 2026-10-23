@@ -19,6 +19,15 @@ import iconStyles from '@/ui/components/IconButton.module.css'
 const mocks = vi.hoisted(() => ({
 	load: vi.fn(),
 	manage: vi.fn(),
+	preview: vi.fn(),
+	apply: vi.fn(),
+}))
+vi.mock('@/features/admin/services/release', async importOriginal => ({
+	...(await importOriginal<
+		typeof import('@/features/admin/services/release')
+	>()),
+	previewRelease: (...args: unknown[]) => mocks.preview(...args),
+	applyRelease: (...args: unknown[]) => mocks.apply(...args),
 }))
 vi.mock('@/features/admin/services/puzzleGroups', () => ({
 	loadPuzzleGroups: (...args: unknown[]) => mocks.load(...args),
@@ -891,5 +900,149 @@ describe('puzzle group workspace', () => {
 		expect(
 			await screen.findByRole('button', { name: 'Edit group Revised' }),
 		).toBeInTheDocument()
+	})
+})
+
+describe('releasing groups', () => {
+	// Core and bonus groups in a slot are released as a package, only from the Release tab.
+	const pack = (release: {
+		published_at: string | null
+		release_at: string | null
+	}): PuzzleGroup => ({
+		...draftGroup,
+		row: { ...draftGroup.row, purpose: 'pack', ...release },
+		purpose: 'pack',
+	})
+	const draftPack = pack({ published_at: null, release_at: null })
+	const scheduledPack = pack({
+		published_at: '2026-01-01T00:00:00Z',
+		release_at: '2999-01-01T00:00:00Z',
+	})
+	const livePack = pack({
+		published_at: '2000-01-01T00:00:00Z',
+		release_at: '2000-01-01T00:00:00Z',
+	})
+	const releasePlan = (action: 'schedule' | 'cancel') => ({
+		action,
+		kind: 'puzzle_group',
+		id: 'group',
+		name: 'First group',
+		state: 'draft',
+		releaseAt: null,
+		items: [
+			{
+				kind: 'puzzle_group',
+				id: 'group',
+				name: 'First group',
+				state: 'draft',
+				change: action === 'cancel' ? 'cancel' : 'release',
+				previousReleaseAt: null,
+				releaseAt: null,
+			},
+		],
+		blockers: [],
+		warnings: [],
+	})
+
+	it('offers to schedule a draft pack group and opens the release dialog', async () => {
+		mocks.load.mockResolvedValue([draftPack])
+		mocks.preview.mockResolvedValue(releasePlan('schedule'))
+		setup()
+		fireEvent.click(
+			await screen.findByRole('button', {
+				name: 'Schedule group First group',
+			}),
+		)
+		expect(
+			await screen.findByRole('heading', {
+				name: 'Release "First group"',
+			}),
+		).toBeInTheDocument()
+		expect(
+			screen.queryByRole('button', {
+				name: 'Unschedule group First group',
+			}),
+		).not.toBeInTheDocument()
+		expect(screen.queryByText(/^Scheduled for/)).not.toBeInTheDocument()
+	})
+
+	it('shows the release time and reschedule and unschedule for a scheduled group', async () => {
+		mocks.load.mockResolvedValue([scheduledPack])
+		mocks.preview.mockResolvedValue(releasePlan('cancel'))
+		mocks.apply.mockResolvedValue(releasePlan('cancel'))
+		setup()
+		expect(await screen.findByText(/^Scheduled for /)).toBeInTheDocument()
+		expect(
+			screen.getByRole('button', {
+				name: 'Reschedule group First group',
+			}),
+		).toBeInTheDocument()
+		expect(
+			screen.queryByRole('button', {
+				name: 'Schedule group First group',
+			}),
+		).not.toBeInTheDocument()
+		fireEvent.click(
+			screen.getByRole('button', {
+				name: 'Unschedule group First group',
+			}),
+		)
+		fireEvent.click(
+			await within(await screen.findByRole('dialog')).findByRole(
+				'button',
+				{ name: 'Unschedule' },
+			),
+		)
+		expect(
+			await screen.findByText('Unscheduled "First group".'),
+		).toBeInTheDocument()
+		// The release dialog refreshes the cached groups.
+		await waitFor(() => expect(mocks.load).toHaveBeenCalledTimes(2))
+	})
+
+	it('shows a live group without release buttons', async () => {
+		mocks.load.mockResolvedValue([livePack])
+		setup()
+		expect(await screen.findByText('Live')).toBeInTheDocument()
+		expect(
+			screen.queryByRole('button', { name: /chedule/ }),
+		).not.toBeInTheDocument()
+	})
+
+	it('leaves core and bonus groups to the Release tab, though it shows their state', async () => {
+		mocks.load.mockResolvedValue([
+			{
+				...draftGroup,
+				row: {
+					...draftGroup.row,
+					published_at: '2026-01-01T00:00:00Z',
+					release_at: '2999-01-01T00:00:00Z',
+				},
+			},
+		])
+		setup()
+		expect(await screen.findByText(/^Scheduled for /)).toBeInTheDocument()
+		expect(
+			screen.queryByRole('button', { name: /chedule/ }),
+		).not.toBeInTheDocument()
+		await open()
+		expect(
+			screen.queryByRole('button', { name: /chedule/ }),
+		).not.toBeInTheDocument()
+	})
+
+	it('offers scheduling from inside an open pack group, but not with unsaved changes', async () => {
+		mocks.load.mockResolvedValue([draftPack])
+		setup()
+		await open()
+		expect(
+			screen.getByRole('button', { name: 'Schedule group First group' }),
+		).toBeEnabled()
+		fireEvent.change(screen.getByLabelText('Group name'), {
+			target: { value: 'Revised' },
+		})
+		expect(
+			screen.getByRole('button', { name: 'Schedule group First group' }),
+		).toBeDisabled()
 	})
 })

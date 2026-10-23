@@ -92,9 +92,10 @@ Double-click/double-tap board pieces or drag back to return them to the tray.
 Keyboard users can rotate/select with Enter/Space, activate a board tile to place,
 and use Delete/Backspace on an occupied tile to return its piece. Square tray
 slots stay fixed through rotation and use one subtle selected border.
-The admin workspace has peer **Puzzles | Palettes | Shapes** sections. Puzzles and
-Palettes each open on **Sets**, with an items view filtered by Unassigned, Assigned,
-Scheduled, or Published (Shapes and the release views are placeholders for now).
+The admin workspace has peer **Puzzles | Palettes | Shapes | Progression | Release** sections. Puzzles and
+Palettes each open on **Groups**, with an items view filtered by Unassigned, Assigned,
+Scheduled, or Published. Releases are scheduled from the **Release** section (a shape's core and bonus groups
+go out together as a package) or, for other groups, from their cards.
 Assigned puzzles and palettes list in set order: set name, then position in the set.
 In the Assigned views, **New puzzle** / **New palette** appears only while the list
 is filtered to one draft set; the new item is created directly in that set (a puzzle

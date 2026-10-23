@@ -38,7 +38,7 @@
 	--palette-choice-selected-border: var(--admin-blue);
 	--palette-choice-selected-surface: var(--admin-selected);
 	color-scheme: dark;
-	max-width: 44rem;
+	max-width: 80rem;
 	margin: 0 auto;
 	padding: 0.75rem 1rem;
 	background: var(--base);

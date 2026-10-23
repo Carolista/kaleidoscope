@@ -209,9 +209,10 @@ the initial migration. Zen still uses its local array and is unchanged.
   is an unassigned draft (in no palette group and unreferenced). It confirms the
   names and deletes them in one all-or-nothing request; apply the
   [bulk palette deletion migration](#apply-bulk-palette-deletion) first.
-- Scheduled/live palettes are read-only here, but can be duplicated. Publishing,
-  release scheduling, exceptional published color corrections, starter selection,
-  pack organization, and reward mapping are separate later tools.
+- Scheduled/live palettes are read-only here, but can be duplicated. Palettes are
+  released and returned to draft with the groups that use them (see
+  [Apply the release tools](#apply-the-release-tools)); exceptional published color
+  corrections are a separate later tool.
 
 Save returns to the palette library and refreshes it, along with the cached
 catalog used by puzzle authoring selectors and group previews; saved puzzle
@@ -677,19 +678,73 @@ Each shape has four slots: a basic and a rotation core group, and a basic and a 
   error comes from the same trigger).
 - Links the bonus groups of a shape to its rotation core group automatically: a trigger on
   `puzzle_groups` keeps `reward_puzzle_groups` equal to the shape's reward groups, and the
-  migration rebuilds those links once for existing data (hand-picked links are replaced).
+  migration rebuilds those links once for existing data (hand-picked links are replaced). The
+  [basic bonus unlock](#apply-the-basic-bonus-unlock) below also links the basic bonus group to the
+  basic core group.
 - Replaces `manage_group_reward` with `manage_progression_slot(shape, purpose, track, group, palettes)`,
   which atomically fills a slot with a group (setting its purpose, shape, and track), turns the
   previous occupant into an Undecided group with no reward, and sets the one reward palette
   (which must be in a reward palette group). A null group empties the slot. Published groups are
   rejected, and a group that already fills another slot must be emptied there first.
-- A group with automatic links (the rotation core group, or a bonus group) is changed through its
+- A group with automatic links (a core group with bonus links, or a bonus group) is changed through its
   slot; deleting it or changing its purpose in Puzzles > Groups is refused until the slot is emptied.
 
 The earlier suites belong to their own migrations: run
 [groups_and_purpose.sql](./tests/groups_and_purpose.sql) and
 [progression_tools.sql](./tests/progression_tools.sql) right after their migrations, not after
 this one (`progression_tools.sql` calls the removed `manage_group_reward`).
+
+## Apply the basic bonus unlock
+
+After the progression slots migration:
+
+1. Run
+   [20261022010000_basic_bonus_unlock.sql](./migrations/20261022010000_basic_bonus_unlock.sql)
+   once in SQL Editor as `postgres`.
+2. Run [basic_bonus_unlock.sql](./tests/basic_bonus_unlock.sql) as `postgres`, without an
+   automatic RLS wrapper. Expect **8 PASS results**; fixtures roll back.
+   [progression_slots.sql](./tests/progression_slots.sql) still passes (35) after this migration.
+
+No types change. The bonus links now follow both core groups: the basic core group links the
+shape's basic bonus group, and the rotation core group still links both bonus groups. The
+migration replaces `private.sync_bonus_groups` (the trigger keeps calling it) and rebuilds the
+links once for existing data, so unpublished basic core groups gain their link right away.
+Published or scheduled core groups keep the links they had.
+
+## Apply the release tools
+
+After the basic bonus unlock, run these three migrations in order, each once in SQL Editor as `postgres`,
+then the test:
+
+1. [20261022020000_release_tools.sql](./migrations/20261022020000_release_tools.sql) adds
+   `preview_release(action, kind, id, release_at)` and `apply_release(...)`.
+2. [20261022030000_release_packages.sql](./migrations/20261022030000_release_packages.sql) adds the
+   `shape_package` kind and refuses core and bonus groups as standalone releases.
+3. [20261022040000_release_palette_cleanup.sql](./migrations/20261022040000_release_palette_cleanup.sql)
+   makes cancelling return unneeded palettes to draft and removes the single-palette cancel.
+4. Run [release_tools.sql](./tests/release_tools.sql) as `postgres`, without an automatic RLS wrapper. It tests
+   the final behavior, so run it after all three migrations. Expect **37 PASS results**; fixtures roll back.
+   [progression_slots.sql](./tests/progression_slots.sql) (35) and
+   [basic_bonus_unlock.sql](./tests/basic_bonus_unlock.sql) (8) still pass afterward.
+
+No tables or columns change. Both functions are admin-only (`security invoker`, rechecked with `is_admin()`);
+`apply_release` also needs READ COMMITTED and takes the catalog lock. The generated types gain the two functions
+(hand-added in the repository; regenerating should change nothing functional).
+
+- **Kinds.** `shape_package` (id is the shape id: its four core and bonus groups), `puzzle_group` (daily, pack, and
+  undecided groups; core and bonus groups in a slot are blocked), and `palette_group`. Actions are `schedule`
+  (a null time means now) and `cancel`.
+- **Plan.** The result is JSON: the request, the main item's state, the release time, `items` (each palette,
+  puzzle, group, or palette group with its state, what happens to it: `release`, `earlier`, `reschedule`, `keep`,
+  `live`, or `cancel`, and its previous and new times), `blockers`, and `warnings`. `apply_release` raises if any
+  blocker remains and otherwise updates the items in dependency order (palettes, puzzles, bonus groups, groups).
+- **Scheduling** sets every item that is not live to the release time, except a dependency already scheduled
+  earlier, which keeps its time (one scheduled later is pulled earlier). Palettes come from the group's puzzles and
+  reward rules, never from pack palette groups.
+- **Cancelling** returns the group, its scheduled puzzles, and palettes nothing else scheduled uses to draft; a
+  package cancels all four groups. Live items and puzzles on the daily schedule block it.
+- The hard rules are 24 puzzles per core and bonus puzzle group, 6 palettes per core and reward palette group,
+  a reward palette for each core and bonus group, and all four slots filled for a package.
 
 ## Bootstrap the one admin
 
@@ -825,9 +880,9 @@ identity and do not accept an arbitrary user ID.
   puzzle solved, recorded in `group_completions`) opens the next shape.
 - **Rewards:** a `reward_rules` row applies when its group is completed. Child tables
   award exact palettes and/or bonus puzzle groups (which must have the `reward`
-  purpose). The intended pattern per shape is: basic core awards one palette,
-  rotation core awards one palette plus two bonus groups (one basic, one rotation),
-  and each bonus awards one palette. The rules stay flexible; a later admin screen
+  purpose). The intended pattern per shape is: basic core awards one palette plus
+  the basic bonus group, rotation core awards one palette plus both bonus groups
+  (basic and rotation), and each bonus awards one palette. The rules stay flexible; a later admin screen
   will check them. The final randomizer is a `feature_grants` row with source
   `progression`, earned after all core and bonus groups; no hint economy is included.
 - **Access:** palette/shape/group grants preserve distinct rule sources.
@@ -859,12 +914,11 @@ be present for prepared content. Future releases are hidden by database policies
 
 Author in this order:
 
-1. Prepare/publish palettes and supported shapes.
-2. Save a puzzle draft and its authoring provenance/known solution, then publish.
-3. Assemble group membership and reward rules, then publish the group (it needs a purpose).
-4. Fill the shape progression with published core groups ready by launch.
-5. Set the global UTC rollover time, then schedule published puzzles from daily
-   groups using `daily_puzzles`.
+1. Save puzzle drafts with their authoring provenance and known solutions, and palettes.
+2. Assemble group membership, reward rules, and the progression slots.
+3. Release each shape's package (or other groups) with the release tools; they release the palettes and
+   puzzles a group needs along with it (see [Apply the release tools](#apply-the-release-tools)).
+4. Set the global UTC rollover time, then schedule puzzles from daily groups using `daily_puzzles`.
 
 Puzzle and group publication checks dependency release dates, and groups need a purpose other than undecided.
 The migration does not publish incomplete example puzzles or invent content

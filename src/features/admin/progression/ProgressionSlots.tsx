@@ -1,9 +1,5 @@
-import { faPenToSquare, faRotate } from '@fortawesome/pro-solid-svg-icons'
-import type { SupabaseClient } from '@supabase/supabase-js'
-import { useState } from 'react'
 import type { Puzzle } from '@/domain/puzzles'
 import { useCatalog } from '@/features/admin/catalog'
-import type { Database } from '@/lib/supabase'
 import {
 	AdminFeedback,
 	AdminIconButton,
@@ -16,15 +12,19 @@ import {
 	groupInSlot,
 	manageProgressionSlot,
 	rewardOf,
+	SLOT_ORDER,
 	slotGroupLabel,
 	slotTitle,
-	SLOT_ORDER,
 	type Progression,
 	type Slot,
 } from '@/features/admin/services'
+import type { Database } from '@/lib/supabase'
 import { Loading, PaletteStrip } from '@/ui/components'
-import { PuzzleBoard } from '@/ui/puzzle'
 import { useModalState } from '@/ui/hooks'
+import { PuzzleBoard } from '@/ui/puzzle'
+import { faPenToSquare, faRotate } from '@fortawesome/pro-solid-svg-icons'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import { useState } from 'react'
 import { shapeName } from './labels'
 import styles from './ProgressionSlots.module.css'
 import SlotDialog, { type SlotChoice } from './SlotDialog'
@@ -201,12 +201,6 @@ export default function ProgressionSlots({
 					}}
 				/>
 			</AdminSectionHeading>
-			<p>
-				Each shape has a basic and a rotation core group. Completing the
-				rotation core group also awards the basic and rotation bonus
-				groups. Every group awards one palette from a reward palette
-				group. Warnings do not block publishing.
-			</p>
 			<AdminFeedback
 				error={
 					data.error || groups.error

@@ -197,6 +197,51 @@ describe('palette management', () => {
 		).not.toBeInTheDocument()
 	})
 
+	it('filters palettes by group purpose and narrows the group choices to match', async () => {
+		const reward = { ...samplePalette, id: 'reef', name: 'Reef' }
+		mocks.load.mockResolvedValue([samplePalette, reward])
+		mocks.groups.mockResolvedValue([
+			paletteGroup,
+			{
+				...paletteGroup,
+				row: {
+					...paletteGroup.row,
+					id: 'set-two',
+					name: 'Reward colors',
+					purpose: 'reward',
+				},
+				purpose: 'reward',
+				members: [reward],
+			},
+		])
+		setup()
+		await screen.findByRole('button', { name: 'Edit Cabo' })
+		fireEvent.change(screen.getByLabelText('Show palettes'), {
+			target: { value: 'set-one' },
+		})
+		fireEvent.change(screen.getByLabelText('Show purpose'), {
+			target: { value: 'reward' },
+		})
+		expect(screen.getByLabelText('Show palettes')).toHaveValue('all')
+		expect(
+			screen.queryByRole('option', { name: 'No group' }),
+		).not.toBeInTheDocument()
+		expect(
+			screen.queryByRole('option', { name: 'Warm colors (Undecided)' }),
+		).not.toBeInTheDocument()
+		expect(
+			screen.getByRole('option', { name: 'Reward colors (Reward)' }),
+		).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: 'Edit Reef' })).toBeVisible()
+		expect(
+			screen.queryByRole('button', { name: 'Edit Cabo' }),
+		).not.toBeInTheDocument()
+		fireEvent.change(screen.getByLabelText('Show purpose'), {
+			target: { value: 'all' },
+		})
+		expect(screen.getByRole('button', { name: 'Edit Cabo' })).toBeVisible()
+	})
+
 	it('unassigns selected palettes from each of their groups and hides the action for unassigned palettes', async () => {
 		const ember = { ...samplePalette, id: 'ember', name: 'Ember' }
 		const loose = { ...samplePalette, id: 'loose', name: 'Loose' }
@@ -909,7 +954,7 @@ describe('palette management', () => {
 			},
 		])
 		setup()
-		expect(await screen.findByText('Scheduled')).toBeInTheDocument()
+		expect(await screen.findByText(/^Scheduled for /)).toBeInTheDocument()
 		expect(screen.getByText('Live')).toBeInTheDocument()
 		expect(screen.queryByText('Draft')).not.toBeInTheDocument()
 		expect(
@@ -1357,5 +1402,59 @@ describe('palette management', () => {
 		expect(screen.queryByRole('status')).not.toBeInTheDocument()
 		expect(screen.getByRole('alert')).toHaveTextContent('Catalog offline')
 		expect(screen.queryByText(/No palettes yet/)).not.toBeInTheDocument()
+	})
+})
+
+describe('scheduled and published palette views', () => {
+	const prepared = [
+		samplePalette,
+		{
+			...samplePalette,
+			id: 'scheduled',
+			name: 'Scheduled art',
+			published_at: '2026-01-01',
+			release_at: '2099-01-01',
+		},
+		{
+			...samplePalette,
+			id: 'live',
+			name: 'Live art',
+			published_at: '2000-01-01',
+			release_at: '2000-01-01',
+		},
+	]
+
+	it('lists only scheduled palettes, with no release buttons, creation, or selection', async () => {
+		mocks.load.mockResolvedValue(prepared)
+		render(<PaletteLibrary client={client} catalogStatus="scheduled" />)
+		expect(
+			await screen.findByRole('heading', { name: 'Scheduled palettes' }),
+		).toBeInTheDocument()
+		expect(screen.getByText('Scheduled art')).toBeInTheDocument()
+		expect(screen.queryByText('Live art')).not.toBeInTheDocument()
+		expect(screen.queryByText('Cabo')).not.toBeInTheDocument()
+		expect(
+			screen.queryByRole('button', { name: /^(Re|Un)?[Ss]chedule / }),
+		).not.toBeInTheDocument()
+		expect(
+			screen.queryByRole('button', { name: 'New palette' }),
+		).not.toBeInTheDocument()
+		expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+	})
+
+	it('lists only live palettes with nothing to schedule or cancel', async () => {
+		mocks.load.mockResolvedValue(prepared)
+		render(<PaletteLibrary client={client} catalogStatus="published" />)
+		expect(
+			await screen.findByRole('heading', { name: 'Published palettes' }),
+		).toBeInTheDocument()
+		expect(screen.getByText('Live art')).toBeInTheDocument()
+		expect(screen.queryByText('Scheduled art')).not.toBeInTheDocument()
+		expect(
+			screen.queryByRole('button', { name: /Unschedule palette/ }),
+		).not.toBeInTheDocument()
+		expect(
+			screen.getByRole('button', { name: 'View Live art' }),
+		).toBeInTheDocument()
 	})
 })

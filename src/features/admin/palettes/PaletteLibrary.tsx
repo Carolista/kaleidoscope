@@ -16,8 +16,10 @@ import {
 	bulkDeletePalettes,
 	type CatalogPalette,
 	managePaletteGroup,
+	PALETTE_GROUP_PURPOSES,
 	paletteGroupPurposeLabels,
 	type PaletteGroup,
+	releaseStateOf,
 } from '@/features/admin/services'
 import {
 	AdminIconButton,
@@ -31,7 +33,7 @@ import {
 } from '@/features/admin/common'
 import { useUnsavedDraft } from '@/ui/navigation'
 import PaletteEditor from './PaletteEditor'
-import { releaseState } from './releaseState'
+import { releaseStateLabel } from '@/features/admin/release'
 import { PaletteGroupLibrary } from '@/features/admin/palette-groups'
 import { useCatalog, useCatalogInvalidation } from '@/features/admin/catalog'
 import {
@@ -54,7 +56,7 @@ export default function PaletteLibrary({
 }: {
 	readonly client: SupabaseClient<Database>
 	readonly view?: 'groups' | 'palettes'
-	readonly catalogStatus?: 'drafts' | 'assigned'
+	readonly catalogStatus?: 'drafts' | 'assigned' | 'scheduled' | 'published'
 }) {
 	const paletteCatalog = useCatalog('palettes', client, view === 'palettes')
 	const groupCatalog = useCatalog('paletteGroups', client)
@@ -67,13 +69,17 @@ export default function PaletteLibrary({
 		(view === 'palettes' && paletteCatalog.error) || groupCatalog.error
 	const error = catalogError ? errorMessage(catalogError, fallbackError) : ''
 	const [status, setStatus] = useState('')
+	const [purposeFilter, setPurposeFilter] = useState('all')
 	const [filterChoice, setFilter] = useState('all')
 	const [targetChoice, setTargetGroup] = useState('')
-	// Drop choices that no longer exist after the catalog changes.
+	const groupOptions = groups.filter(
+		group => purposeFilter === 'all' || group.purpose === purposeFilter,
+	)
+	// Drop choices that no longer exist after the catalog or purpose changes.
 	const filter =
 		filterChoice === 'all' ||
-		filterChoice === 'ungrouped' ||
-		groups.some(group => group.row.id === filterChoice)
+		(filterChoice === 'ungrouped' && purposeFilter === 'all') ||
+		groupOptions.some(group => group.row.id === filterChoice)
 			? filterChoice
 			: 'all'
 	const targetGroup = groups.some(
@@ -105,16 +111,23 @@ export default function PaletteLibrary({
 			!group.row.published_at &&
 			!group.row.release_at,
 	)
-	const canCreate = catalogStatus !== 'assigned' || !!filteredGroup
+	const prepared =
+		catalogStatus === 'scheduled' || catalogStatus === 'published'
+	const canCreate =
+		!prepared && (catalogStatus !== 'assigned' || !!filteredGroup)
 	const filteredPalettes = palettes.filter(palette => {
 		const group = groupOf(palette.id)
 		return (
+			(purposeFilter === 'all' || group?.purpose === purposeFilter) &&
 			(filter === 'all' ||
 				(filter === 'ungrouped' ? !group : group?.row.id === filter)) &&
 			(!catalogStatus ||
-				(!palette.published_at &&
-					!palette.release_at &&
-					!!group === (catalogStatus === 'assigned')))
+				(prepared
+					? releaseStateOf(palette) ===
+						(catalogStatus === 'scheduled' ? 'scheduled' : 'live')
+					: !palette.published_at &&
+						!palette.release_at &&
+						!!group === (catalogStatus === 'assigned')))
 		)
 	})
 	const visiblePalettes =
@@ -287,7 +300,11 @@ export default function PaletteLibrary({
 				title={
 					catalogStatus === 'assigned'
 						? 'Assigned palettes'
-						: 'Palettes'
+						: catalogStatus === 'scheduled'
+							? 'Scheduled palettes'
+							: catalogStatus === 'published'
+								? 'Published palettes'
+								: 'Palettes'
 				}
 			>
 				{canCreate && (
@@ -311,27 +328,47 @@ export default function PaletteLibrary({
 					onClick={() => refresh()}
 				/>
 				{catalogStatus !== 'drafts' && (
-					<Select
-						id="palette-group-filter"
-						aria-label="Show palettes"
-						value={filter}
-						disabled={loading || busy}
-						onChange={event => {
-							setFilter(event.target.value)
-							selection.clear()
-						}}
-					>
-						<option value="all">All groups</option>
-						{catalogStatus !== 'assigned' && (
-							<option value="ungrouped">No group</option>
-						)}
-						{groups.map(group => (
-							<option key={group.row.id} value={group.row.id}>
-								{group.row.name} (
-								{paletteGroupPurposeLabels[group.purpose]})
-							</option>
-						))}
-					</Select>
+					<>
+						<Select
+							id="palette-purpose-filter"
+							aria-label="Show purpose"
+							value={purposeFilter}
+							disabled={loading || busy}
+							onChange={event => {
+								setPurposeFilter(event.target.value)
+								selection.clear()
+							}}
+						>
+							<option value="all">All purposes</option>
+							{PALETTE_GROUP_PURPOSES.map(purpose => (
+								<option key={purpose} value={purpose}>
+									{paletteGroupPurposeLabels[purpose]}
+								</option>
+							))}
+						</Select>
+						<Select
+							id="palette-group-filter"
+							aria-label="Show palettes"
+							value={filter}
+							disabled={loading || busy}
+							onChange={event => {
+								setFilter(event.target.value)
+								selection.clear()
+							}}
+						>
+							<option value="all">All groups</option>
+							{catalogStatus !== 'assigned' &&
+								purposeFilter === 'all' && (
+									<option value="ungrouped">No group</option>
+								)}
+							{groupOptions.map(group => (
+								<option key={group.row.id} value={group.row.id}>
+									{group.row.name} (
+									{paletteGroupPurposeLabels[group.purpose]})
+								</option>
+							))}
+						</Select>
+					</>
 				)}
 			</AdminSectionHeading>
 			<AdminFeedback error={error} status={status} />
@@ -453,7 +490,7 @@ export default function PaletteLibrary({
 					}
 				/>
 			)}
-			{!loading && !error && (
+			{!loading && !error && !prepared && (
 				<AdminSelectionBar
 					label="Bulk palette actions"
 					shown={visiblePalettes.length}
@@ -503,7 +540,6 @@ export default function PaletteLibrary({
 				(visiblePalettes.length ? (
 					<AdminGallery layout="palettes">
 						{visiblePalettes.map(palette => {
-							const state = releaseState(palette)
 							const group = groupOf(palette.id)
 							return (
 								<AdminItemCard
@@ -516,8 +552,14 @@ export default function PaletteLibrary({
 										!!group?.row.published_at ||
 										!!group?.row.release_at
 									}
-									onSelect={value =>
-										selection.toggle(palette.id, value)
+									onSelect={
+										prepared
+											? undefined
+											: value =>
+													selection.toggle(
+														palette.id,
+														value,
+													)
 									}
 									preview={
 										<PaletteStrip
@@ -572,7 +614,11 @@ export default function PaletteLibrary({
 									}
 								>
 									<strong>{palette.name}</strong>
-									{state !== 'Draft' && <span>{state}</span>}
+									{releaseStateLabel(palette) && (
+										<span>
+											{releaseStateLabel(palette)}
+										</span>
+									)}
 									{group && (
 										<span>
 											{group.row.name} ·{' '}

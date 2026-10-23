@@ -245,9 +245,13 @@ the earlier per-set qualifying routes no longer exist. Shape menus in the app
 catalog, `supportedGridShapes`, with Circle Rings last. It is not read from the
 database, so update it when the unlock order changes.
 
-**Rewards.** Completing the basic core group awards one palette; completing the
-rotation core group awards one palette plus two bonus groups (one basic, one
-rotation); completing each bonus group awards one palette. Rewards name exact
+**Rewards.** Completing the basic core group awards one palette plus the basic bonus
+group; completing the rotation core group awards one palette plus both bonus groups
+(basic and rotation), so a player who already has the basic bonus group only gains the
+rotation one; completing each bonus group awards one palette. The basic core group
+awards its bonus group directly so that players who never take on rotation puzzles
+still get more to play, rather than having the extra basic puzzles locked behind the
+hardest track. Rewards name exact
 palettes, not a palette group. That is the intended pattern for all six shapes, but
 reward rules stay flexible in the database (any group can award palettes and/or
 bonus groups) so a later admin screen can check a shape against the pattern. A player who
@@ -281,15 +285,63 @@ under each shape, general warnings above the shapes, and a list of grouped puzzl
 no player can get), so there is no separate Checks view.
 
 The bonus groups of a shape are exactly its reward groups, and the database links them to the
-shape's rotation core group automatically (`reward_puzzle_groups`, kept in sync by a trigger and
-rebuilt on every slot change), so completing the rotation core group will grant them. Nobody
+shape's core groups automatically (`reward_puzzle_groups`, kept in sync by a trigger and
+rebuilt on every slot change): the basic core group links the basic bonus group, and the
+rotation core group links both, so completing either core group grants its bonus groups. Grants
+are idempotent, so the basic bonus group is granted once even though two rules name it. Nobody
 picks those links by hand. A group with automatic links is changed through its slot, not by
 deleting it or changing its purpose elsewhere. `manage_shape_progression` reorders the shapes
 and, with a trigger on the table, refuses any change once a core group is published, because
-the order decides who unlocks what. The pattern is only checked, never enforced: checks warn
-(an empty slot, a group awarding no palette or more than one, a palette awarded twice, and
-grouped puzzles whose palette no player can get) and do not block publishing until the release
-tools exist.
+the order decides who unlocks what. The Progression page only warns about the pattern (an empty
+slot, a group awarding no palette or more than one, a palette awarded twice, and grouped puzzles
+whose palette no player can get); the release tools turn the hard rules into blockers (see Releases).
+
+### Releases
+
+**Release means the content exists and is locked, not that players see it.** `published_at` approves content
+and `release_at` is when it goes live; a scheduled item stays editable until its release instant, a live one never
+changes (except a palette color correction). What a player is shown is a separate rule in the player app. The plan is
+to start with owned content only and later add a way to see what could be unlocked or bought.
+
+**Everything is released through groups.** Palettes and puzzles are never released or cancelled singly. Releasing a
+group also releases what it depends on, in dependency order: palettes, puzzles, then the group. A dependency already
+scheduled for later is pulled earlier, never later, so nothing that depends on it can break; live items stay as
+they are. Pack palette groups are not dependencies: only the individual palettes a puzzle uses are released, so
+pack groups stay editable drafts until the store exists.
+
+**A shape's core and bonus groups release as one package.** In the database a core group's reward is its bonus
+group, and rewards must be ready no later than what awards them, so the requirement points from the core group to
+the bonus group, the opposite of how a player experiences it (finish core, unlock bonus). Rather than explain that
+direction in the UI, the four groups of a shape (basic and rotation core, basic and rotation bonus) go out together:
+scheduling, rescheduling, and cancelling always cover all four with their puzzles and palettes, a package needs all
+four slots filled, and these groups are refused as standalone releases (`preview_release` blocks it and the UI
+shows no buttons for them outside the Release section). Daily, pack, and undecided groups and palette groups are
+still released one at a time. Players only ever see a progression that is complete for the shapes released.
+
+**Blockers and warnings.** Blockers stop a release: an undecided purpose, a core or bonus group without exactly
+24 puzzles, a core or reward palette group without exactly 6 palettes, a core or bonus group that awards no
+palette, a puzzle without saved solution data, a shape that is not released, a time in the past, anything live, a
+puzzle on the daily schedule (when cancelling), a missing slot in the package, and moving a group later than a
+group that awards it. Warnings need an acknowledgement: a palette awarded twice, a group awarding more than one
+palette, a palette players cannot get, a palette also used by daily puzzles (releasing it would make it public),
+and the first core release locking the shape order. Daily groups are exempt from the size rules because they are
+grouped by month or by collection.
+
+**Cancelling.** Unscheduling a package or group returns it and its scheduled puzzles to draft, along with palettes
+no other scheduled puzzle, reward, or palette group still uses, so palettes are never cancelled by hand (that
+option was removed). Live content, and puzzles on the daily schedule, block it. Release times are entered in the
+admin's time zone; Release now stamps the current time and is never the default.
+
+**One plan for preview and apply.** `preview_release(action, kind, id, release_at)` computes the whole plan as JSON
+(items in order with what happens to each, blockers, warnings) and `apply_release` runs the same plan in one
+transaction under the catalog lock, rejecting it if any blocker remains. The browser never decides what to
+release. Kinds are `shape_package` (id is the shape), `puzzle_group`, and `palette_group`.
+
+**Pack groups in 2B (proposal, not decided).** Designating a group as a pack already exists (its purpose). In the
+store, the product listing (price, description, contents, availability) is the natural thing to schedule, and
+releasing it would release the groups it sells with the same dependency walk, so there is no separate publish step
+for packs and nothing needs locking down early. Releasing a pack group before the store would only freeze its
+contents and expose it to players early.
 
 ### Puzzle shapes
 

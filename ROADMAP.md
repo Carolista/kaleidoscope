@@ -16,18 +16,27 @@ Status key: ✅ done · 👀 ready for review · 🔜 next · ⬜ not started ·
 
 ## Where we are now
 
-**Phase 2A: building the admin portal** (branch `54-create-admin-portal`, issue #54).
+**Phase 2A: finishing the admin portal** (branch `62-admin-can-schedule-and-publish-assets`, issue #62).
 
 Supabase is set up and hosted, the admin can sign in, and the admin can generate,
-save, and organize puzzles in all six shapes, and palettes. Nothing is released to players
-yet.
+save, and organize puzzles in all six shapes, and palettes. The 2A content is
+authored: all 24 core and bonus puzzle groups with their reward palettes are set
+in Progression, and 12 core palettes are chosen as the Zen starters. Nothing is
+released to players yet.
 
 The live app currently has **Zen Mode only**, with every shape and a limited set
 of palettes. Launching Puzzle Mode makes it the primary feature and makes access
 more restrictive (see "Launch impact" below).
 
-**Next up:** the Scheduled and Published catalog views, then the remaining
-admin tools. The codebase reorganization is complete.
+**Next up, in order:**
+
+1. 👀 #62: Release tools (the Release section, shape packages, group release buttons, and the
+   Scheduled and Published views) are built and in review. Players can only read released
+   content, so every player-side step depends on them.
+2. #59: Zen starter palettes from the database (the first player read of published content).
+3. #57: accounts and guest import (A4), before any progression is stored.
+4. #58 with A5 (#28, #26): Puzzle Mode becomes primary with its tutorial first; the
+   Zen tutorial shows the first time a player switches to Zen.
 
 ---
 
@@ -116,24 +125,28 @@ Rules:
 - ✅ Puzzle groups: create with a purpose (Undecided/Core/Reward/Daily/Pack), shape, and track, edit them while unpublished, add members, drag to reorder, remove, delete (migration `20261020000000`).
 - ✅ Palettes: create, edit, duplicate, sandbox preview, usage details, single and bulk delete.
 - ✅ Palette groups (`palette_groups` table, purposes Undecided/Core/Reward/Pack): create, assign, reorder, delete.
-- ✅ Navigation: Puzzles | Palettes | Shapes, then Groups | Items, then Unassigned | Assigned | Scheduled | Published. Group lists filter by purpose (and shape and track for puzzles); puzzle items filter by shape and track, and the Assigned view by purpose and group.
+- ✅ Navigation: Puzzles | Palettes | Shapes | Progression | Release, then Groups | Items, then Unassigned | Assigned | Scheduled | Published. Group lists filter by purpose (and shape and track for puzzles); puzzle items filter by shape and track, and the Assigned view by purpose and group; palette items filter by purpose and group.
+- ✅ Release tools (migrations `20261022020000`, `20261022030000`, `20261022040000`): `preview_release` and
+  `apply_release` plan and run a release in one transaction; a shape's four core and bonus groups go out as a
+  package from the **Release** section; daily, pack, and undecided groups and palette groups have buttons on
+  their cards; the Scheduled and Published item views list what has been released; cancelling returns unneeded
+  palettes to draft. Hard rules are blockers (24 puzzles, 6 palettes, a reward palette, all four slots),
+  the rest are warnings. See DECISIONS.md, Releases.
 - ✅ UI audit parts 1–6 (shared controls, loading, dialogs, unsaved-work guard, palette and layout components, CSS cleanup).
 - ✅ Unsaved-work safety: a token refresh no longer remounts the workspace (the admin-role check is keyed to the user ID), and unsaved edits in the new-puzzle, puzzle-draft, and palette editors are autosaved to localStorage with an explicit Restore or Discard after a reload (`src/features/admin/drafts`, see CONTEXT.md). Other admin forms (group dialogs, progression slots, group edit forms) don't persist yet; reuse `useDraftRecovery` for them and for any new release-tool editors.
 
 ## Admin portal: what's left for 2A (suggested order)
 
-1. 🔜 **Scheduled and Published views.** These are placeholders in
-   [AdminWorkspace.tsx](./src/features/admin/shell/AdminWorkspace.tsx).
-   Scheduled puzzles can already be regenerated in the database but can't be opened in the UI yet.
-   Planned for its own branch, together with item 2, because it depends on player-side changes.
-2. ⬜ **Publish and schedule (release tools).** Approve content with a release
-   date, reschedule or cancel before release, and show missing dependencies.
-   Live content stays locked. Same separate branch as item 1.
+1. ✅ **Scheduled and Published views** for puzzles and palettes, with scheduled puzzles opening in the
+   regular editor until release and live ones read-only.
+2. ✅ **Publish and schedule (release tools):** the **Release** section, shape packages, and release buttons on
+   other groups, with a dialog that previews everything, lists blockers and warnings, and applies in one step.
 3. ✅ **Progression section** (migrations `20261021000000`, `20261022000000`): Order (drag the shapes;
    locked once a core group is published), Puzzles and Rewards (four slots per shape: basic and rotation
    core and bonus groups, each with a puzzle group and one reward palette from reward palette groups;
-   bonus groups link to the rotation core group automatically) with pattern warnings and a list of
-   grouped puzzles whose palette players cannot get. Warnings never block publishing yet.
+   bonus groups link to the core groups automatically: basic core to the basic bonus group, rotation
+   core to both; migration `20261022010000`) with pattern warnings and a list of
+   grouped puzzles whose palette players cannot get. These stay warnings on the Progression page; the release tools block the hard rules.
 4. ⬜ **Daily groups and scheduling.** Daily groups organize puzzles (for example by month); scheduling
    one per day moves to 2B.
 5. ✅ **Shapes section** (first pass): a workbench to try grid sizes (n) and piece mixes per recipe with a
@@ -147,9 +160,9 @@ screens (part of B2).
 
 Not planned: a manual target or piece editor and multiple admins.
 
-**Content work (yours, alongside the tools):** finish the pack palette groups,
-then choose the core palette group (Zen starters) and the reward palettes. Author 24-puzzle groups for
-the core sequence and rewards.
+**Content work (yours, alongside the tools):** ✅ the core and bonus puzzle groups for all six
+shapes (24 puzzles each) with their reward palettes, and the 12 core palettes (Zen starters). The
+remaining pack palette groups wait for the 2B store.
 
 ---
 
@@ -168,9 +181,11 @@ the core sequence and rewards.
 
 - One access layer used by the palette picker, shape picker, and puzzle catalog,
   in both Puzzle Mode and Zen Mode.
+- Puzzle Mode is the default mode and its tutorial comes first; the Zen tutorial
+  shows only the first time a player switches from Puzzle to Zen (#58).
 - Replace player-side random puzzle generation with published puzzles.
 - The first introductory sequence is fixed. After that, every puzzle in an unlocked set is selectable.
-- Solving either core group of a shape (basic or rotation) unlocks the next shape and its two core groups; reward palettes and bonus groups come from completing groups, without duplicate rewards.
+- Solving either core group of a shape (basic or rotation) unlocks the next shape and its two core groups. The basic core group also unlocks the basic bonus group; the rotation core group unlocks both bonus groups. Reward palettes come from completing groups, without duplicate rewards.
 - Grant the Zen randomizer permanently after all 12 core and 12 bonus groups are solved.
 - Validate completions and grant rewards on the server, idempotently.
 - Migrate existing Zen saves from hex colors to palette slots.
@@ -222,14 +237,19 @@ the core sequence and rewards.
 - **Terminology:** admin and database data structures are **groups**, each with a **purpose** (core, reward, daily, pack, or undecided). Players see free **puzzle sets** (core) versus paid **puzzle packs**; "group" never appears in the player UI. Difficulty
   labels are Easy, Moderate, Hard, and Challenging (stored as `super_hard`).
 - **Tracks:** core and reward puzzle groups are **basic** (no rotation: Easy/Moderate/Hard) or **rotation** (Moderate/Hard/Challenging). Packs may also be mixed; daily groups have no track.
-- **Progression:** each of the six shapes has two core groups (basic, rotation). Solving either unlocks the next shape. Completing the basic core group awards one palette; completing the rotation core group awards one palette plus two bonus groups (one basic, one rotation); each bonus group awards one palette. The Zen randomizer needs all 12 core and 12 bonus groups.
+- **Progression:** each of the six shapes has two core groups (basic, rotation). Solving either unlocks the next shape. Completing the basic core group awards one palette plus the basic bonus group; completing the rotation core group awards one palette plus both bonus groups (the basic one only if not already earned); each bonus group awards one palette. Players who never solve rotation puzzles still reach every basic group. The Zen randomizer needs all 12 core and 12 bonus groups.
 - **Palettes:** a puzzle stores its palette. Bought puzzle packs do not grant palettes; palette packs (or a discounted combo) do.
 - **Sizes:** puzzle groups have **24 puzzles**. Palette groups have **6 palettes**.
 - **Six recipes for every puzzle shape:** Easy = S; Moderate = M, or S + rotation; Hard = L, or M + rotation; Challenging = L + rotation.
   The admin picks the shape and exact recipe.
-- **Guests:** Hexagon Zen, the initial set, and locally earned palettes (plus daily puzzles once 2B adds them).
-  Anything beyond the initial set, and the second shape, requires an earned unlock AND an account.
+- **Guests:** Hexagon Zen with the core palettes, all four Hexagon groups (basic and rotation core, and both bonus groups)
+  with their palettes earned locally (plus daily puzzles once 2B adds them). Triangle and later shapes require
+  an earned unlock AND an account.
 - **No levels or XP.** Show completed sets and the specific unlock requirements instead.
+- **Release is not visibility.** Releasing locks content; what a player sees is a separate rule. Players start by seeing only
+  what they own, with a way to see what they could unlock or buy added later.
+- **A shape's core and bonus groups release together** as one package, only from the Release section; everything else
+  is released through groups, never as single puzzles or palettes. Cancelling returns palettes nothing else uses to draft.
 - **Live content never changes.** New offerings are additions. Scheduled content
   stays editable until its release instant. The one exception is a palette
   color correction, which updates all rendering through stable palette IDs and color slots.
@@ -243,9 +263,11 @@ the core sequence and rewards.
 
 ## Open decisions ❓
 
-- Difficulty split inside a 24-puzzle core or bonus group (counts are not enforced yet).
-- Whether publishing should enforce exactly 24 puzzles and 6 palettes, or only warn.
-- Starter and reward palette group lineups (after the pack palette groups are done).
+- Difficulty split inside a 24-puzzle core or bonus group (the size is enforced at release; the split is not).
+- 2B: whether releasing a pack happens as part of scheduling its store product (proposed, so packs need no
+  separate publish step) and whether anything should lock a pack down earlier.
+- Player-side visibility: how, and when, players see content they do not own yet.
+- Pack palette group lineups for the store (2B).
 - What happens to existing visitors' saved designs that use shapes or palettes
   that become locked, and how to migrate legacy hex saves with duplicate colors.
 - Offline unlock policy: how long cached access lasts, and whether unlocks can be used before the server confirms them.
