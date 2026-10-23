@@ -127,6 +127,11 @@ the rules about generation, shared play, and keeping puzzle state out of Zen sti
   `PlayerPuzzle` carries its palette. The dark/light toggle lives in the app
   header (classic solid, so untinted) rather than on each board, so it exists
   on views without a board; it may move into a settings modal later.
+- A new puzzle swipes in from the right while the previous one swipes out to the left,
+  rather than reusing Zen's shrink-and-turn swap, because the target and tray change
+  along with the board. Only the target/tray/board unit (`PuzzlePlay`'s `contentRef`)
+  moves, so the controls beneath do not. The outgoing puzzle is an inert DOM copy
+  captured on unmount, which keeps the solved design intact without keeping two live sessions.
 - `size="sm"` remains a Modal variant but no player view uses it now.
 - Generate new seeds with `crypto.getRandomValues`, which works over local
   network HTTP. `crypto.randomUUID` requires a secure context and can prevent

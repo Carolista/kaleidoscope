@@ -1108,11 +1108,11 @@ describe('admin puzzle lab', () => {
 		fireEvent.click(
 			screen.getByRole('button', { name: 'Refresh palettes' }),
 		)
-		await screen.findByLabelText('Recipe')
+		// The Recipe field is there before and after the refresh, so wait on the result itself.
+		await waitFor(() => expect(tile).toHaveAttribute('fill', '#abcdef'))
 		expect(
 			screen.getByRole('button', { name: /^Select piece 1,.*on board$/ }),
 		).toBeDisabled()
-		expect(tile).toHaveAttribute('fill', '#abcdef')
 		for (const cell of screen
 			.getByRole('img', { name: 'Target design' })
 			.querySelectorAll('polygon')) {

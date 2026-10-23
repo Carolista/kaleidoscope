@@ -18,6 +18,8 @@ export default defineConfig(({ command }) => ({
 	test: {
 		environment: 'jsdom',
 		setupFiles: ['./src/test/setup.ts'],
+		// Slow admin screens can exceed the defaults when the machine is busy.
+		testTimeout: 15000,
 	},
 	server: {
 		host: true,

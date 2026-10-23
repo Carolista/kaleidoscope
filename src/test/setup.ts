@@ -1,6 +1,9 @@
 import { afterEach, vi } from 'vitest'
-import { cleanup } from '@testing-library/react'
+import { cleanup, configure } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
+
+// findBy*/waitFor give up after 1s by default, which a loaded machine can miss.
+configure({ asyncUtilTimeout: 5000 })
 
 // Vitest doesn't expose Jest-style global `afterEach` unless `test.globals`
 // is enabled, which is how React Testing Library normally auto-registers

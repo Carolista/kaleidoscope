@@ -12,6 +12,15 @@
 	display: none;
 }
 
+.stage {
+	position: relative;
+	width: 100%;
+}
+
+.stage[hidden] {
+	display: none;
+}
+
 .heading {
 	margin: 0;
 	font-family: 'Righteous', sans-serif;

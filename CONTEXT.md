@@ -289,11 +289,12 @@ the favicon replacing the first O. Letter color follows the app's theme accent;
 the six petal colors stay fixed. The star's side tips align with the lettering's
 upper/lower bounds, and spacing shifts it slightly toward the curved D for
 optical balance. The combined mark has one accessible heading name.
-The header places the logo at the left and a compact icon-only mode switch at
-the right. Solid paintbrush/puzzle-piece icons use square segments sized with
-the logo lettering; accessible names and tooltips retain the mode names. The
-dark/light toggle (a classic solid sun/moon, so no palette tint) sits just right
-of the mode switch in the header's `actions` slot, sized in the same `em`s so it
+The header places the logo at the left and a compact mode switch at the right. Its solid
+spa/simple-puzzle-piece icons are scaled so both show the same visible height, with natural padding
+around each; accessible names and tooltips retain the mode names. The active mode also shows its name
+(ZEN or PUZZLE, Righteous capitals the same height as the icon) beside its icon, hidden at 420px and
+narrower where the title leaves no room. The dark/light toggle (a classic solid sun/moon, so no palette
+tint) sits just left of the mode switch in the header's `actions` slot, sized in the same `em`s so it
 scales with the title; it is available on every view, board or not.
 
 On each page load, the logo starts centered over the theme's base color.
@@ -320,7 +321,11 @@ painted color, or accent drifting toward base when empty). Solving briefly fades
 no dialog, so the solved design stays in view. The Next puzzle button (the next unsolved
 puzzle in the set; absent when none) is always present so the icons beside it never shift,
 disabled until the puzzle is solved and again once clicked.
-The rotate icon restarts the current puzzle and the arrow returns to the set. The icons under
+Opening a puzzle, or choosing Next, swipes it in: the target, tray, and board (not the
+icon row, which stays put) fly in from the right while the previous puzzle's painted copy flies off
+to the left over 560ms (`usePuzzleSwipe`, same inert-clone technique as Zen's grid swap; skipped for
+reduced motion; `body` hides horizontal overflow so the travel adds no scrollbar).
+The reverse-rotate icon restarts the current puzzle and the left-from-bracket icon returns to the set. The icons under
 the board are tinted with the second color of the puzzle's own palette (`PlayerPuzzle.palette`);
 the back arrow on a set's puzzle grid is classic solid. Placement feedback remains in a
 nonvisual status region rather than visible instruction/status blocks.
@@ -597,7 +602,7 @@ symmetry engine. One representative per group is clickable.
 
 - Single column: header, grid, swatches, undo/redo, settings/actions, footer.
   Action order: editable area (touch only), palette, randomize, reset, shape,
-  image, help. (The dark/light toggle moved to the app header.) Keep help descriptions aligned with the toolbar.
+  image, help. (The dark/light toggle moved to the app header.) Keep help descriptions aligned with the toolbar. The help modal's first item (Paint Colors) shows the current palette as a compact `PaletteStrip` instead of an icon.
 - Pointer hover dims non-clickable cells. Touch uses a persisted editable-area
   toggle, initially on. The grid is capped at 560px with a 226px viewport allowance.
 - SVGs use `role="group"` with instructions; clickable cells are labeled buttons
@@ -685,7 +690,10 @@ symmetry engine. One representative per group is clickable.
 
 Logic/component tests use Vitest + RTL/jsdom; hooks use `renderHook`.
 [Test setup](./src/test/setup.ts) registers cleanup, polyfills dialog open/close,
-and stubs page scrolling and `ResizeObserver` for jsdom.
+and stubs page scrolling and `ResizeObserver` for jsdom. It also raises the RTL async timeout
+(`findBy*`/`waitFor`, 5s) and Vitest's test timeout (15s) so a busy machine does not fail slow admin
+screens; only a condition that was never reached should fail. Assert on the result you are waiting for
+(use `waitFor`), not on an element that also exists beforehand.
 Clear or seed storage and use deterministic state/randomness where needed.
 jsdom does not verify real layout, native focus trapping, or PNG rasterization.
 Browser checks are ad hoc; there is no maintained browser suite or coverage threshold.

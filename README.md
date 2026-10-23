@@ -167,12 +167,12 @@ The header switch opens a session-only proof of concept; it does not change or
 overwrite saved Zen designs. Pieces may be placed anywhere they fit within the
 six-tile symmetry wedge without overlapping. A puzzle is solved when all six
 tiles match the target colors, not merely when every piece has been placed.
-Use the rotate icon to restart the current puzzle. On completion, a small
-**Congrats!** dialog offers **Next Puzzle**. Closing it leaves the solved design
-visible, with a **Next puzzle** button below the board. Rotation, accounts, rewards, sets/packs, and puzzle
-persistence are not included yet.
+Use the reverse-rotate icon to restart the current puzzle. On completion, **Congrats!**
+briefly fades in and out over the solved design, which stays in view. A **Next puzzle**
+button below the board is disabled until then. The next puzzle swipes in from the right as the
+solved one swipes out to the left. Accounts, rewards, and packs are not included yet.
 
-Placed pieces are outlined on the board and disabled/desaturated in the tray;
+Placed pieces get a single thicker outline on the board and disabled/desaturated in the tray;
 move them directly from the board or return them by dragging back or
 double-clicking/double-tapping. Mirrored tiles
 stay muted until completion, when the full design is revealed and piece

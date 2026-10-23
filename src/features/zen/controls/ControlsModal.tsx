@@ -3,24 +3,20 @@ import {
 	faCircleInfo,
 	faEye,
 	faEyeSlash,
-	faFillDrip,
 	faHexagonImage,
 	faMagicWandSparkles,
 	faMoon,
 	faPalette,
+	faRotateReverse,
 	faShapes,
 	faSun,
 } from '@fortawesome/sharp-duotone-solid-svg-icons'
-import {
-	faRotateLeft,
-	faRotateRight,
-	faRotate,
-} from '@fortawesome/pro-solid-svg-icons'
+import { faRotateLeft, faRotateRight } from '@fortawesome/pro-solid-svg-icons'
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { useDuotoneIconTint } from '@/ui/theme'
+import { usePlayerTheme, useDuotoneIconTint } from '@/ui/theme'
 import { useIsTouchDevice } from '@/ui/hooks'
-import { Modal, ModalHeader } from '@/ui/components'
+import { Modal, ModalHeader, PaletteStrip } from '@/ui/components'
 import styles from './ControlsModal.module.css'
 
 export interface ControlsModalProps {
@@ -38,11 +34,14 @@ interface ControlItem {
 	// (mouse/trackpad users rely on hover instead, so never see this
 	// control in the toolbar).
 	readonly touchOnly?: boolean
+	// Shows the current palette in place of icons.
+	readonly showPalette?: boolean
 }
 
 const CONTROL_ITEMS: readonly ControlItem[] = [
 	{
-		icons: [faFillDrip],
+		icons: [],
+		showPalette: true,
 		label: 'Paint Colors',
 		description:
 			'Tap a swatch to select a paint color, then tap any tile in the grid to paint it that color.',
@@ -71,7 +70,7 @@ const CONTROL_ITEMS: readonly ControlItem[] = [
 			'Generate a random design using your current color palette.',
 	},
 	{
-		icons: [faRotate],
+		icons: [faRotateReverse],
 		label: 'Reset Design',
 		description: 'Clear your design and start over.',
 	},
@@ -105,6 +104,7 @@ function ControlsModal({ open, onClose }: ControlsModalProps) {
 	const isTouch = useIsTouchDevice()
 	const items = CONTROL_ITEMS.filter(item => !item.touchOnly || isTouch)
 	const duotoneTint = useDuotoneIconTint()
+	const { palette } = usePlayerTheme()
 
 	return (
 		<Modal
@@ -124,6 +124,12 @@ function ControlsModal({ open, onClose }: ControlsModalProps) {
 				{items.map(item => (
 					<li key={item.label} className={styles.item}>
 						<div className={styles.icons} aria-hidden="true">
+							{item.showPalette && (
+								<PaletteStrip
+									colors={palette.colors}
+									variant="compact"
+								/>
+							)}
 							{item.icons.map(icon => (
 								<FontAwesomeIcon
 									key={icon.iconName}

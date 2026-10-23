@@ -10,6 +10,13 @@
 	display: none;
 }
 
+.content {
+	display: grid;
+	justify-items: center;
+	gap: 1rem;
+	width: 100%;
+}
+
 .goalAndPieces {
 	display: grid;
 	grid-template-columns: auto minmax(0, 1fr);

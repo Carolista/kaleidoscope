@@ -3,10 +3,11 @@ import type { PlayerPuzzle, PlayerPuzzleSet } from '@/ui/content'
 import { PuzzlePlay, type PuzzlePlayHandle } from '@/ui/puzzle'
 import { DuotoneTintColorContext } from '@/ui/theme'
 import {
-	faArrowLeft,
-	faRotate,
+	faLeftFromBracket,
+	faRotateReverse,
 } from '@fortawesome/sharp-duotone-solid-svg-icons'
 import { useRef, useState } from 'react'
+import type { Ref } from 'react'
 import styles from './PuzzleMode.module.css'
 import { nextUnsolvedPuzzle } from './setProgress'
 
@@ -15,6 +16,7 @@ export default function PuzzleSession({
 	item,
 	solved,
 	hidden,
+	contentRef,
 	onSolved,
 	onChoose,
 	onBack,
@@ -23,6 +25,7 @@ export default function PuzzleSession({
 	readonly item: PlayerPuzzle
 	readonly solved: ReadonlySet<string>
 	readonly hidden: boolean
+	readonly contentRef: Ref<HTMLDivElement>
 	readonly onSolved: (puzzleId: string) => void
 	readonly onChoose: (puzzleId: string) => void
 	readonly onBack: () => void
@@ -45,6 +48,7 @@ export default function PuzzleSession({
 			puzzle={item.puzzle}
 			hidden={hidden}
 			solvedMessage="Puzzle solved! Your design matches the target."
+			contentRef={contentRef}
 			celebration="Congrats!"
 			onSolve={() => {
 				setJustSolved(true)
@@ -54,7 +58,7 @@ export default function PuzzleSession({
 			<DuotoneTintColorContext.Provider value={item.palette.colors[1]}>
 				<div className={styles.actions}>
 					<PlayerIconButton
-						icon={faArrowLeft}
+						icon={faLeftFromBracket}
 						label="Back to puzzle set"
 						onClick={onBack}
 					/>
@@ -71,7 +75,7 @@ export default function PuzzleSession({
 						</Button>
 					)}
 					<PlayerIconButton
-						icon={faRotate}
+						icon={faRotateReverse}
 						label="Restart"
 						onClick={() => {
 							setJustSolved(false)

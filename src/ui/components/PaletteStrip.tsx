@@ -5,7 +5,7 @@ export default function PaletteStrip({
 	variant = 'swatches',
 }: {
 	readonly colors: readonly string[]
-	readonly variant?: 'swatches' | 'continuous'
+	readonly variant?: 'swatches' | 'compact' | 'continuous'
 }) {
 	return (
 		<span

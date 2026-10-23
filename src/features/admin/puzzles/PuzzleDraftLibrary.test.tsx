@@ -989,11 +989,13 @@ describe('draft library', () => {
 			/>,
 		)
 		const filter = await screen.findByLabelText('Show group')
-		expect(
-			within(filter)
-				.getAllByRole('option')
-				.map(option => option.textContent),
-		).toEqual(['All groups', 'Alpha', 'Beta', 'October'])
+		await waitFor(() =>
+			expect(
+				within(filter)
+					.getAllByRole('option')
+					.map(option => option.textContent),
+			).toEqual(['All groups', 'Alpha', 'Beta', 'October']),
+		)
 		fireEvent.click(
 			screen.getByRole('checkbox', { name: 'Select draft First art' }),
 		)
