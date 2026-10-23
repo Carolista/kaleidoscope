@@ -52,7 +52,7 @@ Scheduled and Published item views list what has been released (palettes with Ed
 [PreparedPuzzleLibrary](./src/features/admin/puzzles/PreparedPuzzleLibrary.tsx): scheduled puzzles open in
 the regular editor until their release, live ones in a read-only view). They carry no release buttons: items are
 released through their groups. Group lists filter by purpose (puzzle groups also by
-shape and track); puzzle items filter by shape and track, and the Assigned view by purpose and group. Section/view changes use the
+shape and track); puzzle items filter by shape and track, and the Assigned view by purpose and group. Palette items (except Drafts) filter by purpose and group; choosing a purpose narrows the group choices to it and hides "No group". Section/view changes use the
 navigation guard and reset lower choices to their defaults.
 
 **Shapes** is a workbench for the grid sizes (n) and piece mixes behind both

@@ -125,7 +125,7 @@ Rules:
 - ✅ Puzzle groups: create with a purpose (Undecided/Core/Reward/Daily/Pack), shape, and track, edit them while unpublished, add members, drag to reorder, remove, delete (migration `20261020000000`).
 - ✅ Palettes: create, edit, duplicate, sandbox preview, usage details, single and bulk delete.
 - ✅ Palette groups (`palette_groups` table, purposes Undecided/Core/Reward/Pack): create, assign, reorder, delete.
-- ✅ Navigation: Puzzles | Palettes | Shapes | Progression | Release, then Groups | Items, then Unassigned | Assigned | Scheduled | Published. Group lists filter by purpose (and shape and track for puzzles); puzzle items filter by shape and track, and the Assigned view by purpose and group.
+- ✅ Navigation: Puzzles | Palettes | Shapes | Progression | Release, then Groups | Items, then Unassigned | Assigned | Scheduled | Published. Group lists filter by purpose (and shape and track for puzzles); puzzle items filter by shape and track, and the Assigned view by purpose and group; palette items filter by purpose and group.
 - ✅ Release tools (migrations `20261022020000`, `20261022030000`, `20261022040000`): `preview_release` and
   `apply_release` plan and run a release in one transaction; a shape's four core and bonus groups go out as a
   package from the **Release** section; daily, pack, and undecided groups and palette groups have buttons on

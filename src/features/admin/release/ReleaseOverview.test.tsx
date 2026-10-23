@@ -203,14 +203,16 @@ describe('release overview', () => {
 
 	it('summarizes how many groups are draft, scheduled, and live', async () => {
 		render(<ReleaseOverview client={client} />)
+		const puzzles = (await screen.findByText('Puzzle groups:'))
+			.parentElement
+		expect(puzzles).toHaveTextContent(
+			/Puzzle groups:\s*3 drafted\s*1 scheduled\s*1 live/,
+		)
 		expect(
-			await screen.findByText(
-				'Puzzle groups: 3 draft · 1 scheduled · 1 live',
-			),
-		).toBeInTheDocument()
-		expect(
-			screen.getByText('Palette groups: 3 draft · 0 scheduled · 0 live'),
-		).toBeInTheDocument()
+			screen.getByText('Palette groups:').parentElement,
+		).toHaveTextContent(
+			/Palette groups:\s*3 drafted\s*0 scheduled\s*0 live/,
+		)
 	})
 
 	it('offers package buttons by state, one set per shape', async () => {
