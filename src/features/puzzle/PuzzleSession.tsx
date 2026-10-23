@@ -1,14 +1,14 @@
-import { useId, useRef, useState } from 'react'
+import { Button, PlayerIconButton } from '@/ui/components'
+import type { PlayerPuzzle, PlayerPuzzleSet } from '@/ui/content'
+import { PuzzlePlay, type PuzzlePlayHandle } from '@/ui/puzzle'
+import { DuotoneTintColorContext } from '@/ui/theme'
 import {
 	faArrowLeft,
 	faRotate,
 } from '@fortawesome/sharp-duotone-solid-svg-icons'
-import { Button, Modal, PlayerIconButton } from '@/ui/components'
-import type { PlayerPuzzle, PlayerPuzzleSet } from '@/ui/content'
-import { PuzzlePlay, type PuzzlePlayHandle } from '@/ui/puzzle'
-import { DuotoneTintColorContext } from '@/ui/theme'
-import { nextUnsolvedPuzzle } from './setProgress'
+import { useRef, useState } from 'react'
 import styles from './PuzzleMode.module.css'
+import { nextUnsolvedPuzzle } from './setProgress'
 
 export default function PuzzleSession({
 	set,
@@ -28,15 +28,16 @@ export default function PuzzleSession({
 	readonly onBack: () => void
 }) {
 	const [justSolved, setJustSolved] = useState(false)
-	const [showCongrats, setShowCongrats] = useState(false)
-	const congratsTitleId = useId()
+	const [advancing, setAdvancing] = useState(false)
 	const play = useRef<PuzzlePlayHandle>(null)
 	// The puzzle just solved already counts, so "next" skips it.
-	const next = nextUnsolvedPuzzle(
+	const found = nextUnsolvedPuzzle(
 		set,
 		item.id,
 		justSolved ? new Set([...solved, item.id]) : solved,
 	)
+	// Wrapping back to this same puzzle means there is no next one, before or after solving.
+	const next = found?.id === item.id ? null : found
 
 	return (
 		<PuzzlePlay
@@ -44,9 +45,9 @@ export default function PuzzleSession({
 			puzzle={item.puzzle}
 			hidden={hidden}
 			solvedMessage="Puzzle solved! Your design matches the target."
+			celebration="Congrats!"
 			onSolve={() => {
 				setJustSolved(true)
-				setShowCongrats(true)
 				onSolved(item.id)
 			}}
 		>
@@ -57,8 +58,15 @@ export default function PuzzleSession({
 						label="Back to puzzle set"
 						onClick={onBack}
 					/>
-					{justSolved && next && (
-						<Button onClick={() => onChoose(next.id)}>
+					{next && (
+						// Always present so the icons beside it never shift.
+						<Button
+							disabled={!justSolved || advancing}
+							onClick={() => {
+								setAdvancing(true)
+								onChoose(next.id)
+							}}
+						>
 							Next puzzle
 						</Button>
 					)}
@@ -66,32 +74,13 @@ export default function PuzzleSession({
 						icon={faRotate}
 						label="Restart"
 						onClick={() => {
-							setShowCongrats(false)
 							setJustSolved(false)
+							setAdvancing(false)
 							play.current?.reset()
 						}}
 					/>
 				</div>
 			</DuotoneTintColorContext.Provider>
-			<Modal
-				open={showCongrats && !hidden}
-				onClose={() => setShowCongrats(false)}
-				labelledBy={congratsTitleId}
-				size="sm"
-				closeLabel="Close congratulations"
-				header={<h2 id={congratsTitleId}>Congrats!</h2>}
-			>
-				{next ? (
-					<Button onClick={() => onChoose(next.id)}>
-						Next Puzzle
-					</Button>
-				) : (
-					<>
-						<p>You solved every puzzle in {set.name}!</p>
-						<Button onClick={onBack}>Choose another puzzle</Button>
-					</>
-				)}
-			</Modal>
 		</PuzzlePlay>
 	)
 }

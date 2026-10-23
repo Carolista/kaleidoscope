@@ -101,20 +101,16 @@ describe('PuzzleMode', () => {
 		}
 	})
 
-	it('shows Next puzzle only after winning and hides it when the next puzzle starts', async () => {
+	it('keeps Next puzzle in place, disabled until the puzzle is solved', async () => {
 		const user = userEvent.setup()
 		renderPlaying()
 		expect(
-			screen.queryByRole('button', { name: 'Next puzzle' }),
-		).not.toBeInTheDocument()
+			screen.getByRole('button', { name: 'Next puzzle' }),
+		).toBeDisabled()
 		solvePuzzle()
-		await user.click(
-			screen.getByRole('button', { name: 'Close congratulations' }),
-		)
-		await user.click(screen.getByRole('button', { name: 'Next puzzle' }))
-		expect(
-			screen.queryByRole('button', { name: 'Next puzzle' }),
-		).not.toBeInTheDocument()
+		const next = screen.getByRole('button', { name: 'Next puzzle' })
+		expect(next).toBeEnabled()
+		await user.click(next)
 		expect(
 			screen.getAllByRole('button', { name: /of 6, empty$/ }),
 		).toHaveLength(6)
@@ -179,9 +175,6 @@ describe('PuzzleMode', () => {
 			),
 		).toEqual({ version: 1, solved: ['p1'] })
 		await user.click(
-			screen.getByRole('button', { name: 'Close congratulations' }),
-		)
-		await user.click(
 			screen.getByRole('button', { name: 'Back to puzzle set' }),
 		)
 		expect(
@@ -202,13 +195,12 @@ describe('PuzzleMode', () => {
 		)
 		renderPlaying()
 		solvePuzzle()
-		const dialog = screen.getByRole('dialog', { name: 'Congrats!' })
-		expect(dialog).toHaveTextContent('You solved every puzzle in Starter!')
+		expect(screen.getByRole('status')).toHaveTextContent('Puzzle solved!')
 		expect(
 			screen.queryByRole('button', { name: 'Next puzzle' }),
 		).not.toBeInTheDocument()
 		await user.click(
-			screen.getByRole('button', { name: 'Choose another puzzle' }),
+			screen.getByRole('button', { name: 'Back to puzzle set' }),
 		)
 		expect(screen.getByRole('heading', { name: 'Starter' })).toBeVisible()
 	})
@@ -217,7 +209,7 @@ describe('PuzzleMode', () => {
 		const user = userEvent.setup()
 		renderPlaying()
 		solvePuzzle()
-		await user.click(screen.getByRole('button', { name: 'Next Puzzle' }))
+		await user.click(screen.getByRole('button', { name: 'Next puzzle' }))
 		expect(
 			screen.getAllByRole('button', { name: /of 6, empty$/ }),
 		).toHaveLength(6)
@@ -304,11 +296,9 @@ describe('PuzzleMode', () => {
 			}
 		}
 		expect(screen.getByRole('status')).toHaveTextContent('Puzzle solved!')
-		expect(
-			screen.getByRole('dialog', { name: 'Congrats!' }),
-		).toBeInTheDocument()
-		await user.click(
-			screen.getByRole('button', { name: 'Close congratulations' }),
+		expect(screen.getByText('Congrats!')).toHaveAttribute(
+			'aria-hidden',
+			'true',
 		)
 		for (const [group, color] of Object.entries(puzzle.target)) {
 			expect(wedgeTiles[group]).toHaveAttribute('fill', color)
@@ -350,54 +340,22 @@ describe('PuzzleMode', () => {
 		expect(board.querySelectorAll('[role="button"]')).toHaveLength(6)
 	})
 
-	it.each(['close button', 'backdrop', 'Escape'])(
-		'keeps the solved puzzle after dismissing congratulations with %s',
-		async method => {
-			const user = userEvent.setup()
-			renderPlaying()
-			solvePuzzle()
-			const dialog = screen.getByRole('dialog', { name: 'Congrats!' })
-			if (method === 'close button') {
-				await user.click(
-					screen.getByRole('button', {
-						name: 'Close congratulations',
-					}),
-				)
-			} else if (method === 'backdrop') {
-				fireEvent.click(dialog)
-			} else {
-				fireEvent(dialog, new Event('cancel', { cancelable: true }))
-			}
-			expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-			expect(screen.getByRole('status')).toHaveTextContent(
-				'Puzzle solved!',
-			)
-			expect(targetColors()).toEqual(
-				[
-					...screen
-						.getByRole('group', { name: 'Puzzle board' })
-						.querySelectorAll('polygon'),
-				].map(cell => cell.getAttribute('fill')),
-			)
-			await user.click(
-				screen.getByRole('button', { name: 'Next puzzle' }),
-			)
-			expect(
-				screen.getAllByRole('button', { name: /of 6, empty$/ }),
-			).toHaveLength(6)
-		},
-	)
-
-	it('starts a new blank puzzle from the congratulations dialog', async () => {
+	it('shows a brief Congrats over the solved puzzle without a dialog, then starts a new blank puzzle', async () => {
 		const user = userEvent.setup()
 		renderPlaying()
-		expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+		expect(screen.queryByText('Congrats!')).not.toBeInTheDocument()
 		solvePuzzle()
-		await user.click(screen.getByRole('button', { name: 'Next Puzzle' }))
+		expect(screen.getByText('Congrats!')).toBeInTheDocument()
 		expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-		expect(
-			screen.queryByRole('button', { name: 'Next puzzle' }),
-		).not.toBeInTheDocument()
+		expect(targetColors()).toEqual(
+			[
+				...screen
+					.getByRole('group', { name: 'Puzzle board' })
+					.querySelectorAll('polygon'),
+			].map(cell => cell.getAttribute('fill')),
+		)
+		await user.click(screen.getByRole('button', { name: 'Next puzzle' }))
+		expect(screen.queryByText('Congrats!')).not.toBeInTheDocument()
 		expect(
 			screen.getAllByRole('button', { name: /of 6, empty$/ }),
 		).toHaveLength(6)
@@ -646,9 +604,6 @@ describe('PuzzleMode', () => {
 		expect(pieceButton(0)).toHaveAccessibleName(/on board/)
 		await user.click(screen.getByRole('button', { name: 'Restart' }))
 		solvePuzzle()
-		await user.click(
-			screen.getByRole('button', { name: 'Close congratulations' }),
-		)
 		await user.click(screen.getByRole('button', { name: 'Next puzzle' }))
 		expect(
 			screen.getAllByRole('button', { name: /of 6, empty$/ }),

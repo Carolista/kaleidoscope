@@ -291,7 +291,10 @@ upper/lower bounds, and spacing shifts it slightly toward the curved D for
 optical balance. The combined mark has one accessible heading name.
 The header places the logo at the left and a compact icon-only mode switch at
 the right. Solid paintbrush/puzzle-piece icons use square segments sized with
-the logo lettering; accessible names and tooltips retain the mode names.
+the logo lettering; accessible names and tooltips retain the mode names. The
+dark/light toggle (a classic solid sun/moon, so no palette tint) sits just right
+of the mode switch in the header's `actions` slot, sized in the same `em`s so it
+scales with the title; it is available on every view, board or not.
 
 On each page load, the logo starts centered over the theme's base color.
 The reusable `LogoStar` spins and scales in for 2 seconds; its animation-end
@@ -308,11 +311,18 @@ the first puzzle of each difficulty with "x of 8" below it. A set opens to its p
 difficulty subheadings, four to a row, as borderless solved images (no grid lines) with a round
 check badge at the top right once solved. Choosing one plays it.
 Play places the goal image and equal-scale tray pieces in a compact row
-above the full-width board. A small shared modal celebrates completion with a
-centered Mr Dafoe heading and Next Puzzle action (the next unsolved puzzle in the set, or
-"Choose another puzzle" when the set is done); dismissing it preserves the
-solved design. The on-page Next puzzle button appears only after completion.
-The rotate icon restarts the current puzzle and the arrow returns to the set. Placement feedback remains in a
+above the full-width board. Boards and pieces use the Zen look: empty tiles are
+`var(--accent)` with a `var(--base)` stroke, only the wedge is at full opacity until
+solved, and each placed piece gets a single thicker `var(--base)` outline (the selected
+piece adds a thin dashed accent line). Hovering a wedge tile uses a per-cell fill (brightened
+painted color, or accent drifting toward base when empty). Solving briefly fades "Congrats!"
+(Mr Dafoe, accent fill, base outline, about 85% of the board's width) over the board; there is
+no dialog, so the solved design stays in view. The Next puzzle button (the next unsolved
+puzzle in the set; absent when none) is always present so the icons beside it never shift,
+disabled until the puzzle is solved and again once clicked.
+The rotate icon restarts the current puzzle and the arrow returns to the set. The icons under
+the board are tinted with the second color of the puzzle's own palette (`PlayerPuzzle.palette`);
+the back arrow on a set's puzzle grid is classic solid. Placement feedback remains in a
 nonvisual status region rather than visible instruction/status blocks.
 
 `LogoStar` lives in `components/shared` with `arrive` (default) and `pulse`
@@ -358,7 +368,7 @@ changes should be applied to all four SVG assets.
   [main.tsx](./src/main.tsx) imports core CSS and disables automatic CSS injection.
   No Kit script or Kit dependency.
 - Self-hosted fonts: Righteous 400 (player header, text buttons, modal titles); Mr Dafoe 400
-  (intro Welcome/Congratulations headings); Urbanist 200, 400, 400 italic, and 700
+  (intro Welcome/Congratulations headings; the Puzzle Mode solve "Congrats!"); Urbanist 200, 400, 400 italic, and 700
   (body text and default bold headings).
 - Icon buttons use accessible labels and tooltips. Toggle labels/icons describe
   the destination. Player boxes are 2.5rem; undo/redo and admin use 1.875rem.
@@ -458,14 +468,14 @@ Test files and `src/test/` are exempt so tests can reach internals and mock exac
 | --- | --- |
 | [app/](./src/app/) | `AppEntry` (player/admin routing, navigation guard), `PlayerApp` (page, entrance animation, header, mode switch, footer), `useAdminRoute`, [layout/](./src/app/layout/) (Header, Footer), global [index.css](./src/app/index.css) |
 | [features/zen/](./src/features/zen/) | Zen Mode: `ZenMode`, [state/](./src/features/zen/state/) (reducer, history, Context, localStorage persistence, design randomization), [controls/](./src/features/zen/controls/) (toolbar, palette and shape pickers), [grid/](./src/features/zen/grid/) (shape adapters, `ShapeGrid`, `GridView`, cells), [export/](./src/features/zen/export/) (Save Image), [intro/](./src/features/zen/intro/) |
-| [features/puzzle/](./src/features/puzzle/) | Player Puzzle Mode: set list, difficulty grid of solved images, play session with congratulations and Next, and the device's solved-puzzle record (`puzzleProgress.ts`) |
+| [features/puzzle/](./src/features/puzzle/) | Player Puzzle Mode: set list, difficulty grid of solved images, play session with the Congrats overlay and Next, and the device's solved-puzzle record (`puzzleProgress.ts`) |
 | [features/admin/](./src/features/admin/) | Lazy-loaded admin portal. `shell/` (portal, workspace, navigation), `catalog/` (session cache), `common/` (layout, icon button, form), `groups/` (shared group editing), one folder per content area (`puzzles/`, `puzzle-groups/`, `palettes/`, `palette-groups/`), `services/` (Supabase reads/writes), `testing/` |
 | [ui/components/](./src/ui/components/) | Shared controls: buttons, `DarkModeToggle`, palette-tinted `Checkbox`, native `Modal`, `ModalHeader`, `ConfirmDialog` and its dismissal preferences, form fields, loading, palette strips/choices |
 | [ui/content/](./src/ui/content/) | Player content: `loadPlayerContent` (released core palettes, core puzzle sets, shape order), `PlayerContentProvider` (loads before the app starts), `usePlayerContent`, and the offline cache |
-| [ui/theme/](./src/ui/theme/) | `PlayerThemeContext` (dark mode, active palette, toggle) and `useDuotoneIconTint` |
+| [ui/theme/](./src/ui/theme/) | `PlayerThemeContext` (dark mode, active palette, toggle), `useDuotoneIconTint`, and `DuotoneTintColorContext` (lets a mode, such as a puzzle session, tint icons from its own color) |
 | [ui/hooks/](./src/ui/hooks/) | `useModalState`, `useIsTouchDevice` |
 | [ui/navigation/](./src/ui/navigation/) | App-wide unsaved-work navigation guard |
-| [ui/puzzle/](./src/ui/puzzle/) | Shared `PuzzlePlay` (target, tray, board, pointer/keyboard interaction) and shape-neutral `PuzzleBoard` |
+| [ui/puzzle/](./src/ui/puzzle/) | Shared `PuzzlePlay` (target, tray, board, optional `celebration` text, pointer/keyboard interaction) and shape-neutral `PuzzleBoard` |
 | [domain/shapes/](./src/domain/shapes/) | React-free shape catalog, sizes, registry, and one folder per shape (grid, layout, types). The catalog's `supportedGridShapes` order is the single shape order (unlock order, Circle Rings last); `PUZZLE_SHAPE_IDS`, `PUZZLE_SHAPE_LABELS`, and every shape menu derive from it |
 | [domain/geometry/](./src/domain/geometry/) | `Point`, shared geometry math, symmetry engine, cell grouping, SVG points |
 | [domain/puzzles/](./src/domain/puzzles/) | Pure seeded puzzle generation, authoring, stored-definition readers (`readAuthoredPuzzle` for admins, `readPlayablePuzzle` for players, which never sees seeds or solutions), placement validation, and completion; per-shape adapters in `puzzleShapes.ts` |
@@ -587,7 +597,7 @@ symmetry engine. One representative per group is clickable.
 
 - Single column: header, grid, swatches, undo/redo, settings/actions, footer.
   Action order: editable area (touch only), palette, randomize, reset, shape,
-  image, dark/light mode, help. Keep help descriptions aligned with the toolbar.
+  image, help. (The dark/light toggle moved to the app header.) Keep help descriptions aligned with the toolbar.
 - Pointer hover dims non-clickable cells. Touch uses a persisted editable-area
   toggle, initially on. The grid is capped at 560px with a 226px viewport allowance.
 - SVGs use `role="group"` with instructions; clickable cells are labeled buttons

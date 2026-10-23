@@ -3,9 +3,7 @@
 	flex-direction: column;
 	align-items: center;
 	gap: 1rem;
-	width: min(100%, 36rem);
-	margin-inline: auto;
-	padding: 1rem;
+	width: 100%;
 	font-family: var(--font-body);
 	color: var(--accent);
 }
@@ -102,9 +100,9 @@
 }
 
 .subheading {
-	margin: 0;
+	margin: 0.8rem 0 0.5rem;
 	font-family: 'Righteous', sans-serif;
-	font-size: 1.125rem;
+	font-size: 1.3rem;
 	font-weight: 400;
 }
 

@@ -111,11 +111,23 @@ the rules about generation, shared play, and keeping puzzle state out of Zen sti
   desaturated until returned.
 - Keep the goal image and uniformly scaled tray pieces together above the
   full-width board, without visible instructions or piece labels. Celebrate a
-  solve with the reusable small Modal variant: centered Mr Dafoe heading,
-  compact corner close control, and Next Puzzle action. Dismissal preserves the
-  solved board; the on-page next-puzzle action is available only after a solve.
-- Keep existing Modal defaults unchanged. `size="sm"` supplies the simplified
-  celebration layout, and CloseButton reuses IconButton's existing small size.
+  solve with a brief "Congrats!" fade (Mr Dafoe, accent fill, base outline) over
+  the board instead of a dialog, so players can appreciate the finished design.
+  `PuzzlePlay` takes it as an opt-in `celebration` prop; it is hidden from
+  assistive tech because the status message already announces the solve.
+- Keep the Next puzzle button rendered whenever the set has another unsolved
+  puzzle, disabled until solved and once clicked, so the icons beside it never
+  jump. The "set complete" message of the old dialog was dropped; players use
+  the back arrow.
+- Puzzle boards and pieces follow Zen: neutral fill `var(--accent)`, stroke
+  `var(--base)`. Placed pieces are told apart by one thicker base outline rather
+  than a double outline; wedge hover uses a per-cell fill like Zen.
+- Puzzle session icons take their tint from the puzzle's own palette (second
+  color, since the first can be dark) via `DuotoneTintColorContext`, so
+  `PlayerPuzzle` carries its palette. The dark/light toggle lives in the app
+  header (classic solid, so untinted) rather than on each board, so it exists
+  on views without a board; it may move into a settings modal later.
+- `size="sm"` remains a Modal variant but no player view uses it now.
 - Generate new seeds with `crypto.getRandomValues`, which works over local
   network HTTP. `crypto.randomUUID` requires a secure context and can prevent
   even Zen Mode from mounting when the puzzle component initializes.

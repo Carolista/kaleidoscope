@@ -30,8 +30,47 @@
 }
 
 .board {
+	position: relative;
+	container-type: inline-size;
 	width: 100%;
 	justify-self: center;
+}
+
+/* Sized from the board's width so the text spans most of it at any scale. */
+.celebration {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	place-items: center;
+	font-family: 'Mr Dafoe', cursive;
+	font-size: 22cqw;
+	line-height: 1;
+	white-space: nowrap;
+	color: var(--accent);
+	-webkit-text-stroke: 0.05em var(--base);
+	paint-order: stroke fill;
+	pointer-events: none;
+	animation: celebrate 1.6s ease-in-out both;
+}
+
+@keyframes celebrate {
+	0% {
+		opacity: 0;
+		scale: 0.9;
+	}
+	40% {
+		opacity: 1;
+	}
+	50% {
+		scale: 1;
+	}
+	60% {
+		opacity: 1;
+	}
+	100% {
+		opacity: 0;
+		scale: 0.9;
+	}
 }
 
 .tray {

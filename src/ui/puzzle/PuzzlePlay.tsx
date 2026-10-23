@@ -41,6 +41,7 @@ export default function PuzzlePlay({
 	puzzle: currentPuzzle,
 	hidden = false,
 	solvedMessage,
+	celebration,
 	onSolve,
 	trayAction,
 	children,
@@ -49,6 +50,8 @@ export default function PuzzlePlay({
 	readonly puzzle: Puzzle
 	readonly hidden?: boolean
 	readonly solvedMessage: string
+	// Briefly shown over the board when solved; the status message carries it for assistive tech.
+	readonly celebration?: string
 	readonly onSolve?: () => void
 	// Rendered beside the tray, e.g. an admin Restart.
 	readonly trayAction?: ReactNode
@@ -408,6 +411,11 @@ export default function PuzzlePlay({
 						})
 					}}
 				/>
+				{solved && celebration && (
+					<div className={styles.celebration} aria-hidden="true">
+						{celebration}
+					</div>
+				)}
 			</div>
 
 			<div role="status" className="visually-hidden">
