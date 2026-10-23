@@ -16,6 +16,7 @@ import {
 	bulkDeletePalettes,
 	type CatalogPalette,
 	managePaletteGroup,
+	PALETTE_GROUP_PURPOSES,
 	paletteGroupPurposeLabels,
 	type PaletteGroup,
 	releaseStateOf,
@@ -68,13 +69,17 @@ export default function PaletteLibrary({
 		(view === 'palettes' && paletteCatalog.error) || groupCatalog.error
 	const error = catalogError ? errorMessage(catalogError, fallbackError) : ''
 	const [status, setStatus] = useState('')
+	const [purposeFilter, setPurposeFilter] = useState('all')
 	const [filterChoice, setFilter] = useState('all')
 	const [targetChoice, setTargetGroup] = useState('')
-	// Drop choices that no longer exist after the catalog changes.
+	const groupOptions = groups.filter(
+		group => purposeFilter === 'all' || group.purpose === purposeFilter,
+	)
+	// Drop choices that no longer exist after the catalog or purpose changes.
 	const filter =
 		filterChoice === 'all' ||
-		filterChoice === 'ungrouped' ||
-		groups.some(group => group.row.id === filterChoice)
+		(filterChoice === 'ungrouped' && purposeFilter === 'all') ||
+		groupOptions.some(group => group.row.id === filterChoice)
 			? filterChoice
 			: 'all'
 	const targetGroup = groups.some(
@@ -113,6 +118,7 @@ export default function PaletteLibrary({
 	const filteredPalettes = palettes.filter(palette => {
 		const group = groupOf(palette.id)
 		return (
+			(purposeFilter === 'all' || group?.purpose === purposeFilter) &&
 			(filter === 'all' ||
 				(filter === 'ungrouped' ? !group : group?.row.id === filter)) &&
 			(!catalogStatus ||
@@ -322,27 +328,47 @@ export default function PaletteLibrary({
 					onClick={() => refresh()}
 				/>
 				{catalogStatus !== 'drafts' && (
-					<Select
-						id="palette-group-filter"
-						aria-label="Show palettes"
-						value={filter}
-						disabled={loading || busy}
-						onChange={event => {
-							setFilter(event.target.value)
-							selection.clear()
-						}}
-					>
-						<option value="all">All groups</option>
-						{catalogStatus !== 'assigned' && (
-							<option value="ungrouped">No group</option>
-						)}
-						{groups.map(group => (
-							<option key={group.row.id} value={group.row.id}>
-								{group.row.name} (
-								{paletteGroupPurposeLabels[group.purpose]})
-							</option>
-						))}
-					</Select>
+					<>
+						<Select
+							id="palette-purpose-filter"
+							aria-label="Show purpose"
+							value={purposeFilter}
+							disabled={loading || busy}
+							onChange={event => {
+								setPurposeFilter(event.target.value)
+								selection.clear()
+							}}
+						>
+							<option value="all">All purposes</option>
+							{PALETTE_GROUP_PURPOSES.map(purpose => (
+								<option key={purpose} value={purpose}>
+									{paletteGroupPurposeLabels[purpose]}
+								</option>
+							))}
+						</Select>
+						<Select
+							id="palette-group-filter"
+							aria-label="Show palettes"
+							value={filter}
+							disabled={loading || busy}
+							onChange={event => {
+								setFilter(event.target.value)
+								selection.clear()
+							}}
+						>
+							<option value="all">All groups</option>
+							{catalogStatus !== 'assigned' &&
+								purposeFilter === 'all' && (
+									<option value="ungrouped">No group</option>
+								)}
+							{groupOptions.map(group => (
+								<option key={group.row.id} value={group.row.id}>
+									{group.row.name} (
+									{paletteGroupPurposeLabels[group.purpose]})
+								</option>
+							))}
+						</Select>
+					</>
 				)}
 			</AdminSectionHeading>
 			<AdminFeedback error={error} status={status} />

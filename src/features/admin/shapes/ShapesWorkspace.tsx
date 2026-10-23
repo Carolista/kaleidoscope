@@ -34,14 +34,6 @@ export default function ShapesWorkspace({
 					}}
 				/>
 			</AdminSectionHeading>
-			<p>
-				Each size (S, M, L) of a shape has a grid size n, and each
-				puzzle recipe has a mix of piece sizes that must add up to the
-				cells to fill. Try values out on a shape with no puzzles and
-				play the sample. Nothing is saved or changes the app; once you
-				settle on values, they go into the code. Shapes that already
-				have puzzles are locked.
-			</p>
 			<AdminFeedback
 				error={
 					counts.error

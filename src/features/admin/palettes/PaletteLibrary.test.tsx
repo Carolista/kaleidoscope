@@ -197,6 +197,51 @@ describe('palette management', () => {
 		).not.toBeInTheDocument()
 	})
 
+	it('filters palettes by group purpose and narrows the group choices to match', async () => {
+		const reward = { ...samplePalette, id: 'reef', name: 'Reef' }
+		mocks.load.mockResolvedValue([samplePalette, reward])
+		mocks.groups.mockResolvedValue([
+			paletteGroup,
+			{
+				...paletteGroup,
+				row: {
+					...paletteGroup.row,
+					id: 'set-two',
+					name: 'Reward colors',
+					purpose: 'reward',
+				},
+				purpose: 'reward',
+				members: [reward],
+			},
+		])
+		setup()
+		await screen.findByRole('button', { name: 'Edit Cabo' })
+		fireEvent.change(screen.getByLabelText('Show palettes'), {
+			target: { value: 'set-one' },
+		})
+		fireEvent.change(screen.getByLabelText('Show purpose'), {
+			target: { value: 'reward' },
+		})
+		expect(screen.getByLabelText('Show palettes')).toHaveValue('all')
+		expect(
+			screen.queryByRole('option', { name: 'No group' }),
+		).not.toBeInTheDocument()
+		expect(
+			screen.queryByRole('option', { name: 'Warm colors (Undecided)' }),
+		).not.toBeInTheDocument()
+		expect(
+			screen.getByRole('option', { name: 'Reward colors (Reward)' }),
+		).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: 'Edit Reef' })).toBeVisible()
+		expect(
+			screen.queryByRole('button', { name: 'Edit Cabo' }),
+		).not.toBeInTheDocument()
+		fireEvent.change(screen.getByLabelText('Show purpose'), {
+			target: { value: 'all' },
+		})
+		expect(screen.getByRole('button', { name: 'Edit Cabo' })).toBeVisible()
+	})
+
 	it('unassigns selected palettes from each of their groups and hides the action for unassigned palettes', async () => {
 		const ember = { ...samplePalette, id: 'ember', name: 'Ember' }
 		const loose = { ...samplePalette, id: 'loose', name: 'Loose' }

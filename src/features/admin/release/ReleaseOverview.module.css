@@ -21,6 +21,12 @@
 	overflow-x: auto;
 }
 
+.summaryHeading {
+	font-weight: bold;
+	text-transform: uppercase;
+	margin-right: 1rem;
+}
+
 .table {
 	width: 100%;
 	border-collapse: collapse;
@@ -48,13 +54,14 @@
 
 .table td > .reward {
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 	gap: 0.5rem;
 }
 
 .detail {
 	opacity: 0.75;
 	font-size: 0.85em;
+	margin-top: 0.3rem;
 }
 
 .issue {

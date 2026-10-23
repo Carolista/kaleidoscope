@@ -19,7 +19,8 @@ import {
 } from '@/features/admin/services'
 import type { Database } from '@/lib/supabase'
 import { Loading } from '@/ui/components'
-import { faRotate } from '@fortawesome/pro-solid-svg-icons'
+import { faDot, faRotate } from '@fortawesome/pro-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { useState } from 'react'
 import ReleaseActions from './ReleaseActions'
@@ -31,7 +32,13 @@ import useReleaseDialog from './useReleaseDialog'
 const fallbackError = 'Unable to load the release overview.'
 
 function describeStates(counts: StateCounts) {
-	return `${counts.draft} draft · ${counts.scheduled} scheduled · ${counts.live} live`
+	const dot = <FontAwesomeIcon icon={faDot} aria-hidden="true" />
+	return (
+		<>
+			{counts.draft} drafted {dot} {counts.scheduled} scheduled {dot}{' '}
+			{counts.live} live{' '}
+		</>
+	)
 }
 
 // Everything that has to go out for launch and where it is:
@@ -74,13 +81,6 @@ export default function ReleaseOverview({
 					}}
 				/>
 			</AdminSectionHeading>
-			<p>
-				A shape's four core and bonus groups are released together as
-				one package, with their puzzles and reward palettes. Palette
-				groups and other puzzle groups are released one at a time, and
-				pack palette groups stay separate from the puzzles that use
-				their palettes.
-			</p>
 			<AdminFeedback
 				error={failure ? errorMessage(failure, fallbackError) : ''}
 				status={status}
@@ -93,7 +93,9 @@ export default function ReleaseOverview({
 					<>
 						<p className={styles.summary}>
 							<span>
-								Puzzle groups:{' '}
+								<span className={styles.summaryHeading}>
+									Puzzle groups:
+								</span>{' '}
 								{describeStates(
 									countStates(
 										puzzleGroups.map(group => group.row),
@@ -101,7 +103,9 @@ export default function ReleaseOverview({
 								)}
 							</span>
 							<span>
-								Palette groups:{' '}
+								<span className={styles.summaryHeading}>
+									Palette groups:
+								</span>{' '}
 								{describeStates(
 									countStates(
 										paletteGroups.map(group => group.row),

@@ -1,8 +1,4 @@
-import { faRotate } from '@fortawesome/pro-solid-svg-icons'
-import type { SupabaseClient } from '@supabase/supabase-js'
-import { useRef, useState } from 'react'
 import { isPuzzleShapeId } from '@/domain/puzzles'
-import type { Database } from '@/lib/supabase'
 import {
 	AdminFeedback,
 	AdminIconButton,
@@ -11,8 +7,12 @@ import {
 } from '@/features/admin/common'
 import { SortableGroupMembers, useStagedOrder } from '@/features/admin/groups'
 import { manageShapeProgression } from '@/features/admin/services'
+import type { Database } from '@/lib/supabase'
 import { Button, GridShapeIcon, Loading } from '@/ui/components'
 import { useUnsavedDraft } from '@/ui/navigation'
+import { faRotate } from '@fortawesome/pro-solid-svg-icons'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import { useRef, useState } from 'react'
 import { shapeName } from './labels'
 import styles from './ProgressionOrder.module.css'
 import useProgressionData from './useProgressionData'
@@ -77,10 +77,6 @@ export default function ProgressionOrder({
 					}}
 				/>
 			</AdminSectionHeading>
-			<p>
-				Players start with the first shape. Completing either core group
-				(basic or rotation) of a shape unlocks the next one.
-			</p>
 			<AdminFeedback
 				error={
 					error ||
