@@ -1,9 +1,19 @@
 import { render } from '@testing-library/react'
 import type { ReactElement } from 'react'
-import { ZenStateProvider } from '@/features/zen/state'
+import type { PlayerContent } from '@/ui/content'
+import { testContent } from './playerContent'
+import { TestZenStateProvider } from './TestZenStateProvider'
 
-// Wraps `render()` with the real `ZenStateProvider`, since nearly every
-// component reads from app state via context.
-export function renderWithProvider(ui: ReactElement) {
-	return render(ui, { wrapper: ZenStateProvider })
+// Wraps `render()` with the real `ZenStateProvider` over player content.
+export function renderWithProvider(
+	ui: ReactElement,
+	content: PlayerContent = testContent,
+) {
+	return render(ui, {
+		wrapper: ({ children }) => (
+			<TestZenStateProvider content={content}>
+				{children}
+			</TestZenStateProvider>
+		),
+	})
 }

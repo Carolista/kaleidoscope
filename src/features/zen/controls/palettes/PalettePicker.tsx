@@ -1,8 +1,6 @@
-import { palettes } from '@/domain/palettes'
 import { useZenState } from '@/features/zen/state'
+import { usePlayerContent } from '@/ui/content'
 import { PaletteChoices } from '@/ui/components'
-
-const choices = palettes.map(palette => ({ ...palette, id: palette.name }))
 
 export interface PalettePickerProps {
 	// Called right after a palette is selected, so the containing modal can
@@ -15,13 +13,14 @@ export interface PalettePickerProps {
 // SELECT_PALETTE).
 function PalettePicker({ onSelected }: PalettePickerProps) {
 	const { state, selectPalette } = useZenState()
+	const { palettes } = usePlayerContent()
 
 	return (
 		<PaletteChoices
-			palettes={choices}
-			selectedId={state.currentPalette.name}
+			palettes={palettes}
+			selectedId={state.currentPalette.id}
 			onSelect={id => {
-				const palette = palettes.find(palette => palette.name === id)
+				const palette = palettes.find(palette => palette.id === id)
 				if (!palette) throw new Error(`Unknown player palette: ${id}`)
 				selectPalette(palette)
 				onSelected?.()

@@ -2,13 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import { faXmark } from '@fortawesome/pro-solid-svg-icons'
 import { faPalette, faShapes } from '@fortawesome/sharp-duotone-solid-svg-icons'
-import { palettes } from '@/domain/palettes'
+import { palettes } from '@/test/playerContent'
 import { defaultGridSizes } from '@/domain/shapes'
-import {
-	ZenStateProvider,
-	useZenState,
-	savePersistedState,
-} from '@/features/zen/state'
+import { useZenState, savePersistedState } from '@/features/zen/state'
+import { TestZenStateProvider as ZenStateProvider } from '@/test/TestZenStateProvider'
 import * as colorMath from '@/domain/palettes'
 import { useDuotoneIconTint } from './useDuotoneIconTint'
 

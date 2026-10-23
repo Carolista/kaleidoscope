@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useReducer } from 'react'
 import type { ReactNode } from 'react'
-import type { Palette } from '@/domain/palettes'
+import type { PlayerPalette } from '@/domain/palettes'
 import type { GridShapeId, GridSize } from '@/domain/shapes'
 import { createInitialHistoryState, historyReducer } from './historyReducer'
 import { loadInitialZenState, savePersistedState } from './storageService'
+import { usePlayerContent } from '@/ui/content'
 import { PlayerThemeContext } from '@/ui/theme'
 import { ZenStateContext } from './zenStateContext'
 
@@ -12,8 +13,9 @@ export function ZenStateProvider({
 }: {
 	readonly children: ReactNode
 }) {
-	const [history, dispatch] = useReducer(historyReducer, undefined, () =>
-		createInitialHistoryState(loadInitialZenState()),
+	const content = usePlayerContent()
+	const [history, dispatch] = useReducer(historyReducer, content, value =>
+		createInitialHistoryState(loadInitialZenState(value)),
 	)
 	const { present: state } = history
 
@@ -22,7 +24,8 @@ export function ZenStateProvider({
 	}, [state])
 
 	const selectPalette = useCallback(
-		(palette: Palette) => dispatch({ type: 'SELECT_PALETTE', palette }),
+		(palette: PlayerPalette) =>
+			dispatch({ type: 'SELECT_PALETTE', palette }),
 		[],
 	)
 	const selectColor = useCallback(

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { palettes } from '@/domain/palettes'
+import { palettes } from '@/test/playerContent'
 import { generateHexagonCells } from '@/domain/shapes/hexagon'
 import {
 	generateTriangleCells,

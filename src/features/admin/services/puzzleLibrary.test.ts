@@ -142,7 +142,7 @@ describe('saved puzzle decoding', () => {
 		).toThrow()
 		expect(() =>
 			readAuthoredPuzzle({ ...row, shape_id: 'square' }, authoring),
-		).toThrow('unsupported authoring')
+		).toThrow('unsupported shape or recipe')
 	})
 })
 describe('draft library database requests', () => {

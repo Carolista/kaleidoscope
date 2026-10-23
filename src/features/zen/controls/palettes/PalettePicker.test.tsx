@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { ZenStateProvider } from '@/features/zen/state'
-import { palettes } from '@/domain/palettes'
+import { TestZenStateProvider as ZenStateProvider } from '@/test/TestZenStateProvider'
+import { palettes, testContent } from '@/test/playerContent'
+import { TestZenStateProvider } from '@/test/TestZenStateProvider'
 import PalettePicker from './PalettePicker'
 import ColorOptions from './ColorOptions'
 
@@ -30,6 +31,22 @@ describe('PalettePicker', () => {
 				}),
 			).toBeInTheDocument()
 		}
+	})
+
+	it('offers only the palettes the player has', () => {
+		render(
+			<TestZenStateProvider
+				content={{ ...testContent, palettes: palettes.slice(0, 2) }}
+			>
+				<PalettePicker />
+			</TestZenStateProvider>,
+		)
+		expect(screen.getAllByRole('button')).toHaveLength(2)
+		expect(
+			screen.getByRole('button', {
+				name: 'Select the Cabo color palette',
+			}),
+		).toBeInTheDocument()
 	})
 
 	it('marks exactly one palette as pressed, and switches which one on click', async () => {

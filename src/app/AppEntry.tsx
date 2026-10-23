@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { ZenStateProvider } from '@/features/zen'
 import { Loading } from '@/ui/components'
+import { PlayerContentProvider } from '@/ui/content'
 import PlayerApp from './PlayerApp'
 import styles from './AppEntry.module.css'
 import { NavigationGuardProvider } from '@/ui/navigation'
@@ -23,9 +24,11 @@ function Entry() {
 			<AdminPortal />
 		</Suspense>
 	) : (
-		<ZenStateProvider>
-			<PlayerApp />
-		</ZenStateProvider>
+		<PlayerContentProvider>
+			<ZenStateProvider>
+				<PlayerApp />
+			</ZenStateProvider>
+		</PlayerContentProvider>
 	)
 }
 

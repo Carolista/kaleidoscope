@@ -1,6 +1,6 @@
-import { palettes, getThemeColors } from '@/domain/palettes'
+import { getThemeColors } from '@/domain/palettes'
 import type { ZenState, BoardId, PaintMap } from './zenState'
-import type { Palette } from '@/domain/palettes'
+import type { PlayerPalette } from '@/domain/palettes'
 import type { GridShapeId, GridSize } from '@/domain/shapes'
 import {
 	availableGridSizes,
@@ -10,7 +10,7 @@ import {
 import { generateRandomShapeGroupColors } from './randomDesign'
 
 export type ZenAction =
-	| { readonly type: 'SELECT_PALETTE'; readonly palette: Palette }
+	| { readonly type: 'SELECT_PALETTE'; readonly palette: PlayerPalette }
 	| { readonly type: 'SELECT_COLOR'; readonly color: string }
 	| { readonly type: 'PAINT_SHAPE_GROUP'; readonly groupId: string }
 	| { readonly type: 'TOGGLE_DARK_MODE' }
@@ -28,14 +28,17 @@ export type ZenAction =
 			readonly size: GridSize
 	  }
 
-export function createInitialZenState(): ZenState {
+export function createInitialZenState(
+	palettes: readonly PlayerPalette[],
+	gridShape: GridShapeId = 'hexagon',
+): ZenState {
 	const currentPalette = palettes[0]
 	return {
 		currentPalette,
 		currentColor: currentPalette.colors[0],
 		darkMode: true,
 		showEditableArea: true,
-		gridShape: 'hexagon',
+		gridShape,
 		gridSizes: { ...defaultGridSizes },
 		shapeGroupColors: {},
 		savedBoards: {},

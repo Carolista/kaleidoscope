@@ -4,7 +4,8 @@ import { faPalette } from '@fortawesome/sharp-duotone-solid-svg-icons'
 import { faXmark } from '@fortawesome/pro-solid-svg-icons'
 import { renderWithProvider } from '@/test/renderWithProvider'
 import { useZenState } from '@/features/zen/state'
-import { withLightness, palettes } from '@/domain/palettes'
+import { withLightness } from '@/domain/palettes'
+import { palettes } from '@/test/playerContent'
 import PlayerIconButton from './PlayerIconButton'
 
 it('keeps palette tint reactive while leaving single-tone icons untinted', () => {

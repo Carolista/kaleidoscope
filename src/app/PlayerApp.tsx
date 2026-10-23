@@ -23,7 +23,7 @@ function PlayerApp() {
 	)
 	const [isFirstVisit] = useState(() => !hasPersistedDesign())
 	const [showIntro, setShowIntro] = useState(isFirstVisit)
-	const [mode, setMode] = useState<'zen' | 'puzzle'>('zen')
+	const [mode, setMode] = useState<'zen' | 'puzzle'>('puzzle')
 
 	useLayoutEffect(() => {
 		if (!canAnimateEntrance) return

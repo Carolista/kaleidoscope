@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { palettes } from '@/domain/palettes'
+import { palettes } from '@/test/playerContent'
 import {
 	coordinateKey,
 	generatePuzzle,
