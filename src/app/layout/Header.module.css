@@ -48,6 +48,20 @@
 	outline-offset: -3px;
 }
 
+.actions {
+	--icon-glyph-size: 0.5em;
+	display: flex;
+	flex-shrink: 0;
+	align-items: center;
+}
+
+/* Sized in the header's em, like the mode switch, so it scales with the title. */
+.actions button {
+	width: 0.78em;
+	height: 0.78em;
+	font-size: inherit;
+}
+
 .openingSwitch {
 	visibility: hidden;
 }

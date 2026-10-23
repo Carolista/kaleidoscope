@@ -31,6 +31,22 @@ describe('Header', () => {
 		expect(onModeChange).toHaveBeenCalledWith('puzzle')
 	})
 
+	it('shows page-wide actions after the mode switch', () => {
+		render(
+			<Header
+				mode="zen"
+				onModeChange={vi.fn()}
+				actions={<button type="button">Action</button>}
+			/>,
+		)
+		const mode = screen.getByRole('navigation', { name: 'Play mode' })
+		expect(
+			mode.compareDocumentPosition(
+				screen.getByRole('button', { name: 'Action' }),
+			) & Node.DOCUMENT_POSITION_FOLLOWING,
+		).toBeTruthy()
+	})
+
 	it('combines live lettering and a decorative star in one accessible heading', () => {
 		render(<Header />)
 		const heading = screen.getByRole('heading', {

@@ -1,4 +1,4 @@
-import type { Ref } from 'react'
+import type { ReactNode, Ref } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPaintbrush, faPuzzlePiece } from '@fortawesome/pro-solid-svg-icons'
 import styles from './Header.module.css'
@@ -11,6 +11,8 @@ interface HeaderProps {
 	readonly onStarSpinComplete?: () => void
 	readonly mode?: 'zen' | 'puzzle'
 	readonly onModeChange?: (mode: 'zen' | 'puzzle') => void
+	// Page-wide controls (e.g. the dark mode toggle), shown after the mode switch.
+	readonly actions?: ReactNode
 }
 
 function Header({
@@ -20,6 +22,7 @@ function Header({
 	onStarSpinComplete,
 	mode = 'zen',
 	onModeChange,
+	actions,
 }: HeaderProps) {
 	const titleClasses = [
 		styles.title,
@@ -79,6 +82,13 @@ function Header({
 						/>
 					</button>
 				</nav>
+			)}
+			{actions && (
+				<div
+					className={`${styles.actions}${isOpening ? ` ${styles.openingSwitch}` : ''}`}
+				>
+					{actions}
+				</div>
 			)}
 		</header>
 	)

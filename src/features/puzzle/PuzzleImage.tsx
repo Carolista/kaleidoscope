@@ -6,7 +6,6 @@ export default function PuzzleImage({ item }: { readonly item: PlayerPuzzle }) {
 	return (
 		<PuzzleBoard
 			target
-			gridlines={false}
 			shape={item.puzzle.shape}
 			gridSize={item.puzzle.gridSize}
 			colors={item.puzzle.target}

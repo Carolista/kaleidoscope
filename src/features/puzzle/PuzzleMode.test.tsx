@@ -260,10 +260,6 @@ describe('PuzzleMode', () => {
 		expect(actions.querySelector('button')).toHaveAccessibleName(
 			'Back to puzzle set',
 		)
-		expect(
-			screen.getByRole('button', { name: 'Switch to light mode' })
-				.parentElement,
-		).toBe(actions)
 		for (const svg of tray.querySelectorAll('svg')) {
 			const [, , width, height] = svg
 				.getAttribute('viewBox')!

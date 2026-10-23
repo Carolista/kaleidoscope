@@ -3,12 +3,7 @@ import {
 	faArrowLeft,
 	faRotate,
 } from '@fortawesome/sharp-duotone-solid-svg-icons'
-import {
-	Button,
-	DarkModeToggle,
-	Modal,
-	PlayerIconButton,
-} from '@/ui/components'
+import { Button, Modal, PlayerIconButton } from '@/ui/components'
 import type { PlayerPuzzle, PlayerPuzzleSet } from '@/ui/content'
 import { PuzzlePlay, type PuzzlePlayHandle } from '@/ui/puzzle'
 import { DuotoneTintColorContext } from '@/ui/theme'
@@ -62,7 +57,6 @@ export default function PuzzleSession({
 						label="Back to puzzle set"
 						onClick={onBack}
 					/>
-					<DarkModeToggle />
 					{justSolved && next && (
 						<Button onClick={() => onChoose(next.id)}>
 							Next puzzle

@@ -1,4 +1,4 @@
-import { faMoon, faSun } from '@fortawesome/sharp-duotone-solid-svg-icons'
+import { faMoon, faSun } from '@fortawesome/pro-solid-svg-icons'
 import { usePlayerTheme } from '@/ui/theme'
 import PlayerIconButton from './PlayerIconButton'
 
