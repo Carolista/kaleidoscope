@@ -161,7 +161,7 @@ describe('PuzzlePlay', () => {
 			}
 			expect(button).toHaveAccessibleName(/in tray/)
 			expect(button.querySelector('svg')!.innerHTML).toEqual(oriented)
-			expect(destination).toHaveAttribute('fill', 'var(--base)')
+			expect(destination).toHaveAttribute('fill', 'var(--accent)')
 		},
 	)
 
@@ -218,7 +218,7 @@ describe('PuzzlePlay', () => {
 			expect(screen.getByRole('status')).toHaveTextContent('Solved.')
 			const board = screen.getByRole('group', { name: 'Puzzle board' })
 			for (const polygon of board.querySelectorAll('polygon'))
-				expect(polygon).not.toHaveAttribute('fill', 'var(--base)')
+				expect(polygon).not.toHaveAttribute('fill', 'var(--accent)')
 		})
 
 		it('drops a rotated piece by the grabbed tile', async () => {

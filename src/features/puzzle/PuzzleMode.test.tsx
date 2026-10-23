@@ -298,7 +298,7 @@ describe('PuzzleMode', () => {
 			expect(wedgeTiles[group]).toHaveAttribute('fill', color)
 		}
 		expect(
-			board.querySelectorAll('polygon[fill="var(--base)"]'),
+			board.querySelectorAll('polygon[fill="var(--accent)"]'),
 		).toHaveLength(0)
 		expect(
 			board.querySelectorAll(`.${styles.mutedMirrorCell}`),
@@ -433,7 +433,7 @@ describe('PuzzleMode', () => {
 				pointerType,
 			)
 			expect(pieceButton(0)).toHaveAccessibleName(/in tray/)
-			expect(destination).toHaveAttribute('fill', 'var(--base)')
+			expect(destination).toHaveAttribute('fill', 'var(--accent)')
 		},
 	)
 
@@ -589,7 +589,7 @@ describe('PuzzleMode', () => {
 		expect(graphic.querySelectorAll('polygon')).toHaveLength(
 			piece.tiles.length,
 		)
-		expect(destination).toHaveAttribute('fill', 'var(--base)')
+		expect(destination).toHaveAttribute('fill', 'var(--accent)')
 		hitTest.mockReturnValue(null)
 		fireEvent.pointerMove(source, {
 			pointerId: 1,
