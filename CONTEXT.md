@@ -224,16 +224,6 @@ Live: https://codewithcarrie.com/kaleidoscope/
 The modern app lives in [src/](./src). Leave the original
 [2020 DOM app](./old-dom-app-2020/) unchanged.
 
-## Working agreements
-
-- Work in small, logical steps. The user reviews and makes commits unless asked otherwise.
-- Ask before decisions that change behavior or scope.
-- Prefer reusable, modular code and clear boundaries; avoid speculative abstractions.
-- Use focused tests during iteration. Do not batch full lint, formatting, tests, build, and browser verification until the user is ready to finalize.
-- Do not use browser tools for small in-progress tweaks. 
-- After file moves or renames, restart the dev server before browser verification.
-- Update CONTEXT, DECISIONS, & README documents only after review, not while a decision is still changing.
-
 ## Stack and commands
 
 React 19, TypeScript, Vite, CSS Modules, Vitest, React Testing Library/jsdom,
