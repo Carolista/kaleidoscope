@@ -76,7 +76,8 @@ remaining recommendations do not supersede the decisions below.
   Call sites retain their own placement and text sizing.
 - Use **palette** in code and UI; reserve **theme** for dark/light mode. Code
   originally said "scheme" and was renamed to match the UI and the database
-  (`palettes`). The persisted `schemeName` key keeps its name so saves still load.
+  (`palettes`). Designs saved before palettes had IDs name their palette in a
+  `schemeName` key, which is still read.
   Zen's state types are `ZenState`/`ZenStateProvider`/`useZenState`, so they are
   not mistaken for app-wide state.
   Geometry export names were not broadly renamed.
@@ -85,6 +86,9 @@ remaining recommendations do not supersede the decisions below.
   a mix of alias and `../../` imports.
 
 ## Puzzle Mode prototype
+
+Decisions made for the first prototype. Players now get published puzzles instead (see "Player content" below);
+the rules about generation, shared play, and keeping puzzle state out of Zen still hold.
 
 - Keep puzzle placements separate from Zen reducer/history/storage. The puzzle
   stays mounted across mode switches, but progress is intentionally session-only.
@@ -279,7 +283,7 @@ slot is a null group. Candidates are unpublished groups outside every slot whose
 the shape and track. Reward palettes must belong to a palette group with the reward purpose, and
 the editor shows palettes another group already awards in greyscale, with their names, and
 disables them. Slot cards show a gridline-free thumbnail of the group's first puzzle, read from
-the puzzle group catalog (unpublished groups only, so a published group would show none).
+the puzzle group catalog, which lists every group, released or not).
 The shape preview icon is a shared UI component because features cannot import each other. The pattern checks live on the Puzzles and Rewards page itself (a warning list
 under each shape, general warnings above the shapes, and a list of grouped puzzles whose palette
 no player can get), so there is no separate Checks view.
@@ -342,6 +346,47 @@ store, the product listing (price, description, contents, availability) is the n
 releasing it would release the groups it sells with the same dependency walk, so there is no separate publish step
 for packs and nothing needs locking down early. Releasing a pack group before the store would only freeze its
 contents and expose it to players early.
+
+**Reward palette groups are never released as groups.** They exist only to hold six palettes each (the group
+size rule) and a reward names exact palettes, not a group. A group that is released makes its palettes available to
+acquire; a reward palette becomes available only when the shape package that awards it is released, as an individual
+palette. So a reward palette group shows how many palettes are live ("2 of 6 live", yellow until all are, then green),
+has no release buttons, and is left out of the palette-group release counts.
+
+**Release status marks.** Where release buttons are missing or need explaining, a small mark shows the state: green
+circle-check (live), blue calendar-check (scheduled), orange exclamation (a draft blocked from release), yellow
+circle-check (a reward palette group partly out). There is no "failed" mark: a database rule forces `published_at`
+and `release_at` to be both set or both empty and a release is one transaction, so a failed attempt leaves the item
+an untouched draft and reports its error in the release dialog. Group libraries list every group; a group that is
+scheduled or live is read-only (it locks when scheduled, unlike an individual puzzle, which stays editable until its
+release instant) and uses the eye icon.
+
+### Player content
+
+**Players see only what they have.** The player app loads one set of content before it starts: the palettes of released
+core palette groups (these are Zen's palettes), the released core puzzle sets, and the unlocked shapes (for guests, the
+first shape in the unlock order). A way to show what could be unlocked or bought comes later; for now locked content is
+simply absent. The database stays the authority (guest reads are limited to released content and the first shape's
+core groups); the app filters again by release state so drafts never appear even under elevated access.
+
+**Players never read authoring data.** Seeds and known solutions stay admin-only, so the player reads a puzzle through its
+stored definition and its own palette alone (`readPlayablePuzzle`); a puzzle's ID stands in for its seed.
+
+**The player has its own Supabase client.** It stores no session, so it always reads as a guest, even where an admin is
+signed in. Accounts will need a second, signed-in player client.
+
+**Offline and empty.** The last successful load is cached; with no network the cache is used, and with no cache the
+player sees the error and can retry. Zen cannot start without a palette, so with nothing released the app says so
+instead of opening. The bundled palette list was removed so a corrected palette cannot disagree with a stale copy;
+designs are saved by palette ID.
+
+**Puzzle Mode is the primary mode.** The app opens in Puzzle Mode; the Zen intro shows the first time Zen is opened.
+Zen is limited to unlocked shapes, the released core palettes, and (later) earned reward palettes.
+
+**Puzzle browsing is picture first.** Sets and puzzles are shown as solved images with minimal text: a set card shows
+the first puzzle of each difficulty with its progress; a set shows its puzzles under difficulty subheadings, borderless,
+four to a row, with a round check badge on solved ones. Sections come from each puzzle's own difficulty, not a fixed
+count. Progress is the device's list of solved puzzle IDs and is never merged into an account automatically.
 
 ### Puzzle shapes
 

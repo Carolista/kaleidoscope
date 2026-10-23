@@ -237,6 +237,49 @@ describe('draft library', () => {
 			).toBeInTheDocument()
 		},
 	)
+	it('offers only draft groups for assignment, not scheduled or live ones', async () => {
+		const row = (id: string, release: object) => ({
+			row: {
+				id,
+				name: id,
+				purpose: 'core',
+				track: 'rotation',
+				shape_id: 'hexagon',
+				selection_mode: 'any',
+				published_at: null,
+				release_at: null,
+				...release,
+			},
+			purpose: 'core',
+			track: 'rotation',
+			members: [],
+		})
+		mocks.loadGroups.mockResolvedValue([
+			row('open', {}),
+			row('scheduled', {
+				published_at: '2026-01-01T00:00:00Z',
+				release_at: '2999-01-01T00:00:00Z',
+			}),
+			row('live', {
+				published_at: '2000-01-01T00:00:00Z',
+				release_at: '2000-01-01T00:00:00Z',
+			}),
+		])
+		setup()
+		fireEvent.click(
+			await screen.findByRole('checkbox', {
+				name: 'Select draft Saved art',
+			}),
+		)
+		fireEvent.click(screen.getByRole('button', { name: 'Assign to group' }))
+		const picker = await screen.findByLabelText('Draft group')
+		expect(
+			within(picker)
+				.getAllByRole('option')
+				.map(option => option.getAttribute('value')),
+		).toEqual(['', 'open'])
+	})
+
 	it('assigns selected puzzles to a draft group atomically, preserves failed selections, and shows membership after reload', async () => {
 		setup()
 		fireEvent.click(

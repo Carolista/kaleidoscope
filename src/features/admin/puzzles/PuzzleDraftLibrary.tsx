@@ -128,7 +128,10 @@ export default function PuzzleDraftLibrary({
 		client,
 		action?.kind === 'group' || groupFilterActive,
 	)
-	const draftGroups: readonly PuzzleGroup[] = groupCatalog.data ?? []
+	// Released groups are locked, so only drafts can receive puzzles.
+	const draftGroups: readonly PuzzleGroup[] = (
+		groupCatalog.data ?? []
+	).filter(group => !group.row.published_at && !group.row.release_at)
 	const groupsLoading = groupCatalog.loading
 	const groupsError =
 		action?.kind === 'group' && groupCatalog.error

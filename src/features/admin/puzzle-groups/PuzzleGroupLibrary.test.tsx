@@ -1009,6 +1009,37 @@ describe('releasing groups', () => {
 		).not.toBeInTheDocument()
 	})
 
+	it('keeps released groups visible but read-only, and undeletable', async () => {
+		const live = {
+			...livePack,
+			row: { ...livePack.row, id: 'live', name: 'Live group' },
+		}
+		mocks.load.mockResolvedValue([live, draftGroup])
+		setup()
+		expect(
+			await screen.findByRole('button', {
+				name: 'Delete group First group',
+			}),
+		).toBeEnabled()
+		expect(
+			screen.getByRole('button', { name: 'Delete group Live group' }),
+		).toBeDisabled()
+		fireEvent.click(
+			screen.getByRole('button', { name: 'View group Live group' }),
+		)
+		expect(
+			screen.getByRole('heading', {
+				name: 'Group: Live group (read-only)',
+			}),
+		).toBeInTheDocument()
+		expect(screen.getByLabelText('Group name')).toBeDisabled()
+		expect(screen.getByLabelText('Purpose')).toBeDisabled()
+		expect(
+			screen.queryByRole('button', { name: 'Save' }),
+		).not.toBeInTheDocument()
+		expect(isProtected()).toBe(false)
+	})
+
 	it('leaves core and bonus groups to the Release tab, though it shows their state', async () => {
 		mocks.load.mockResolvedValue([
 			{
@@ -1023,9 +1054,14 @@ describe('releasing groups', () => {
 		setup()
 		expect(await screen.findByText(/^Scheduled for /)).toBeInTheDocument()
 		expect(
+			screen.getByRole('img', { name: 'Scheduled' }),
+		).toBeInTheDocument()
+		expect(
 			screen.queryByRole('button', { name: /chedule/ }),
 		).not.toBeInTheDocument()
-		await open()
+		fireEvent.click(
+			screen.getByRole('button', { name: 'View group First group' }),
+		)
 		expect(
 			screen.queryByRole('button', { name: /chedule/ }),
 		).not.toBeInTheDocument()

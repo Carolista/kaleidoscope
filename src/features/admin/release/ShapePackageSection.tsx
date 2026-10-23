@@ -45,6 +45,11 @@ export default function ShapePackageSection({
 					id={shapeId}
 					name={`${label} package`}
 					row={pkg.row ?? { published_at: null, release_at: null }}
+					issue={
+						pkg.issues.length
+							? `${pkg.issues.length} problem${pkg.issues.length === 1 ? '' : 's'} to fix before releasing`
+							: undefined
+					}
 					disabled={disabled || !pkg.row}
 					onStart={onStart}
 				/>

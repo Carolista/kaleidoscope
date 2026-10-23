@@ -845,7 +845,7 @@ describe('palette management', () => {
 			screen.getByRole('button', { name: 'Delete group Warm colors' }),
 		).toBeDisabled()
 		fireEvent.click(
-			screen.getByRole('button', { name: 'Edit group Warm colors' }),
+			screen.getByRole('button', { name: 'View group Warm colors' }),
 		)
 		expect(screen.getByLabelText('Group name')).toBeDisabled()
 		expect(screen.getByLabelText('Purpose')).toBeDisabled()

@@ -632,14 +632,12 @@ describe('admin puzzle lab', () => {
 			if (table === 'puzzle_groups')
 				return {
 					select: () => ({
-						is: () => ({
-							order: () => ({
-								range: () =>
-									Promise.resolve({
-										data: [groupRow],
-										error: null,
-									}),
-							}),
+						order: () => ({
+							range: () =>
+								Promise.resolve({
+									data: [groupRow],
+									error: null,
+								}),
 						}),
 					}),
 				}

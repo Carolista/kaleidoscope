@@ -111,13 +111,23 @@ describe('PuzzleMode', () => {
 		)
 		renderBrowser()
 		expect(
-			screen.getByRole('heading', { name: 'Puzzle sets' }),
+			screen.getByRole('heading', { name: 'Puzzle Sets' }),
 		).toBeInTheDocument()
 		const set = screen.getByRole('button', { name: /Starter/ })
-		expect(set).toHaveTextContent('Hexagon · Basic')
-		expect(set).toHaveTextContent('1 of 2 solved')
+		expect(set).toHaveTextContent('Basic')
+		expect(set).toHaveTextContent('1 of 2')
+		// No shape name or wording, just a preview and progress per difficulty.
+		expect(set).not.toHaveTextContent(/Hexagon|solved/)
+		expect(set.querySelectorAll('svg')).toHaveLength(2)
+		expect(set).toHaveTextContent('0 of 1')
+		expect(set).toHaveTextContent('1 of 1')
 		await user.click(set)
 		expect(screen.getByRole('heading', { name: 'Starter' })).toBeVisible()
+		expect(
+			screen
+				.getAllByRole('heading', { level: 3 })
+				.map(item => item.textContent),
+		).toEqual(['Easy', 'Moderate'])
 		expect(
 			screen.getByRole('button', { name: 'Puzzle 1, Easy' }),
 		).toBeInTheDocument()
@@ -128,7 +138,7 @@ describe('PuzzleMode', () => {
 			screen.getByRole('button', { name: 'All puzzle sets' }),
 		)
 		expect(
-			screen.getByRole('heading', { name: 'Puzzle sets' }),
+			screen.getByRole('heading', { name: 'Puzzle Sets' }),
 		).toBeInTheDocument()
 	})
 
@@ -161,7 +171,7 @@ describe('PuzzleMode', () => {
 		renderBrowser()
 		expect(
 			screen.getByRole('button', { name: /Starter/ }),
-		).toHaveTextContent('1 of 2 solved')
+		).toHaveTextContent('1 of 2')
 	})
 
 	it('finishes the set when no unsolved puzzle is left', async () => {

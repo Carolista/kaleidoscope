@@ -1,6 +1,6 @@
-import { PUZZLE_SHAPE_LABELS } from '@/domain/puzzles'
 import type { PlayerPuzzleSet } from '@/ui/content'
-import { solvedCount } from './setProgress'
+import PuzzleImage from './PuzzleImage'
+import { difficultySections, solvedCount } from './setProgress'
 import styles from './PuzzleMode.module.css'
 
 const trackLabels = {
@@ -25,7 +25,7 @@ export default function PuzzleSetList({
 		)
 	return (
 		<>
-			<h2 className={styles.heading}>Puzzle sets</h2>
+			<h2 className={styles.heading}>Puzzle Sets</h2>
 			<ul className={styles.setList}>
 				{sets.map(set => (
 					<li key={set.id}>
@@ -34,14 +34,41 @@ export default function PuzzleSetList({
 							className={styles.setButton}
 							onClick={() => onChoose(set.id)}
 						>
-							<span className={styles.setName}>{set.name}</span>
-							<span>
-								{PUZZLE_SHAPE_LABELS[set.shape]} ·{' '}
-								{trackLabels[set.track]}
+							<span className={styles.setText}>
+								<span className={styles.setName}>
+									{set.name}
+								</span>
+								<span>{trackLabels[set.track]}</span>
+								<span>
+									{solvedCount(set.puzzles, solved)} of{' '}
+									{set.puzzles.length}
+								</span>
 							</span>
-							<span>
-								{solvedCount(set, solved)} of{' '}
-								{set.puzzles.length} solved
+							<span className={styles.previews}>
+								{difficultySections(set).map(section => (
+									<span
+										key={section.difficulty}
+										className={styles.preview}
+									>
+										<span
+											className={styles.previewImage}
+											aria-hidden="true"
+										>
+											<PuzzleImage
+												item={section.puzzles[0].item}
+											/>
+										</span>
+										<span>
+											{solvedCount(
+												section.puzzles.map(
+													entry => entry.item,
+												),
+												solved,
+											)}{' '}
+											of {section.puzzles.length}
+										</span>
+									</span>
+								))}
 							</span>
 						</button>
 					</li>

@@ -16,27 +16,23 @@ Status key: ✅ done · 👀 ready for review · 🔜 next · ⬜ not started ·
 
 ## Where we are now
 
-**Phase 2A: finishing the admin portal** (branch `62-admin-can-schedule-and-publish-assets`, issue #62).
+**Phase 2A: connecting the player app to released content** (branch `62-admin-can-schedule-and-publish-assets` merged; player work in progress).
 
 Supabase is set up and hosted, the admin can sign in, and the admin can generate,
-save, and organize puzzles in all six shapes, and palettes. The 2A content is
-authored: all 24 core and bonus puzzle groups with their reward palettes are set
-in Progression, and 12 core palettes are chosen as the Zen starters. Nothing is
-released to players yet.
-
-The live app currently has **Zen Mode only**, with every shape and a limited set
-of palettes. Launching Puzzle Mode makes it the primary feature and makes access
-more restrictive (see "Launch impact" below).
+save, organize, and release puzzles in all six shapes, and palettes. The 2A content is
+authored and the Hexagon core and bonus puzzle groups and the two Zen core palette
+groups are released. The player app now reads released content as a guest: Puzzle Mode
+(the landing mode) lists the released core sets and plays their puzzles, and Zen offers
+Hexagon and the released core palettes.
 
 **Next up, in order:**
 
-1. 👀 #62: Release tools (the Release section, shape packages, group release buttons, and the
-   Scheduled and Published views) are built and in review. Players can only read released
-   content, so every player-side step depends on them.
-2. #59: Zen starter palettes from the database (the first player read of published content).
-3. #57: accounts and guest import (A4), before any progression is stored.
-4. #58 with A5 (#28, #26): Puzzle Mode becomes primary with its tutorial first; the
-   Zen tutorial shows the first time a player switches to Zen.
+1. Finish the Puzzle Mode gameplay tweaks from the POC (in progress).
+2. Bonus groups and reward palettes for guests: let guests read the first shape's reward groups, and earn
+   them locally by completing core groups (needs a database policy change and local reward logic).
+3. #57: accounts and guest import (A4), before any progression is stored; then later shapes.
+4. Puzzle Mode tutorial and resume (A5); the Zen randomizer stays visible but should be locked until all
+   12 core and 12 bonus groups are solved.
 
 ---
 
@@ -48,9 +44,9 @@ more restrictive (see "Launch impact" below).
 | --- | ------------------------------------------------------------- | -------------- |
 | A1  | Product and content rules                                     | ✅ mostly      |
 | A2  | Supabase foundation: schema, RLS, Auth, admin role, types     | ✅             |
-| A3  | Admin portal: everything needed for 2A content                | 🔜 in progress |
+| A3  | Admin portal: everything needed for 2A content                | ✅ (daily groups and palette correction remain) |
 | A4  | Player accounts, explicit guest import, offline/cloud sync    | ⬜             |
-| A5  | Content access and puzzle-set progression in Puzzle and Zen   | ⬜             |
+| A5  | Content access and puzzle-set progression in Puzzle and Zen   | 🔜 started: guest reads, set browsing, Zen limits |
 | A6  | Harden, verify, and launch Puzzle Mode                        | ⬜             |
 
 **2A is done when** the admin side is complete and players can use Puzzle Mode
@@ -132,6 +128,7 @@ Rules:
   their cards; the Scheduled and Published item views list what has been released; cancelling returns unneeded
   palettes to draft. Hard rules are blockers (24 puzzles, 6 palettes, a reward palette, all four slots),
   the rest are warnings. See DECISIONS.md, Releases.
+- ✅ Release view polish: group summaries split into core and bonus, other puzzle groups, palette groups, and reward palettes ("N of M live"); status marks (green live, blue scheduled, orange blocked, yellow partly released reward palettes); reward palette groups are never released as groups; puzzle and palette group libraries list released groups read-only with an eye icon.
 - ✅ UI audit parts 1–6 (shared controls, loading, dialogs, unsaved-work guard, palette and layout components, CSS cleanup).
 - ✅ Unsaved-work safety: a token refresh no longer remounts the workspace (the admin-role check is keyed to the user ID), and unsaved edits in the new-puzzle, puzzle-draft, and palette editors are autosaved to localStorage with an explicit Restore or Discard after a reload (`src/features/admin/drafts`, see CONTEXT.md). Other admin forms (group dialogs, progression slots, group edit forms) don't persist yet; reuse `useDraftRecovery` for them and for any new release-tool editors.
 
@@ -179,26 +176,25 @@ remaining pack palette groups wait for the 2B store.
 
 **A5: Access and progression**
 
-- One access layer used by the palette picker, shape picker, and puzzle catalog,
-  in both Puzzle Mode and Zen Mode.
-- Puzzle Mode is the default mode and its tutorial comes first; the Zen tutorial
-  shows only the first time a player switches from Puzzle to Zen (#58).
-- Replace player-side random puzzle generation with published puzzles.
-- The first introductory sequence is fixed. After that, every puzzle in an unlocked set is selectable.
+- ✅ One access layer for palettes, shapes, and puzzle sets in Zen and Puzzle Mode (`ui/content`); guests see only
+  released core content and Hexagon. Locked content is simply hidden for now.
+- ✅ Puzzle Mode is the default mode; the Zen tutorial shows the first time Zen is opened. (Puzzle Mode's own tutorial is not built.)
+- ✅ Player-side random puzzle generation is replaced by published puzzles.
+- The first introductory sequence is fixed. After that, every puzzle in an unlocked set is selectable (selectable today; the fixed sequence is not built).
 - Solving either core group of a shape (basic or rotation) unlocks the next shape and its two core groups. The basic core group also unlocks the basic bonus group; the rotation core group unlocks both bonus groups. Reward palettes come from completing groups, without duplicate rewards.
 - Grant the Zen randomizer permanently after all 12 core and 12 bonus groups are solved.
 - Validate completions and grant rewards on the server, idempotently.
-- Migrate existing Zen saves from hex colors to palette slots.
-- Puzzle Mode has no resume today: the current puzzle, placements, and rotations
-  live in React state, and a reload generates a new random puzzle. Once puzzles
-  come from published sets, save the puzzle ID plus placements and rotations so a
-  reload resumes the same puzzle (rebuild from the ID or seed rather than storing
+- ✅ Zen saves use palette IDs (older saves still load by palette name).
+- Puzzle Mode has no resume: the current puzzle, placements, and rotations
+  live in React state, and a reload returns to the set list (solved puzzles are kept).
+  Save the puzzle ID plus placements and rotations so a
+  reload resumes the same puzzle (rebuild from the stored definition rather than storing
   solutions). Build this on the A4 guest-storage format so it isn't done twice.
 
 **A6: Launch impact and release**
 
-- Today's Zen Mode offers every shape. After launch, Zen offers Hexagon plus
-  whatever has been unlocked, and a limited starter palette list.
+- ✅ Zen offers Hexagon plus whatever has been unlocked, and only the released core palettes (later also earned
+  reward palettes). Saves on a locked shape or an unavailable palette simply start fresh (superseding old saves is fine).
 - Existing visitors' saved designs may use shapes or palettes that become locked.
   Decide how that looks before launch (see "Open decisions").
 - Test RLS against forged requests, the critical player journeys, offline use and

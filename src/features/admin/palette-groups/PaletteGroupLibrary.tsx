@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import {
+	faEye,
 	faPenToSquare,
 	faPlusLarge,
 	faRotate,
@@ -33,15 +34,18 @@ import type { Database } from '@/lib/supabase'
 import {
 	managePaletteGroup,
 	paletteGroupPurposeLabels,
+	paletteProgress,
 	PALETTE_GROUP_PURPOSES,
 	type PaletteGroup,
 	type PaletteGroupAction,
 	type PaletteGroupPurpose,
 } from '@/features/admin/services'
+import { useCatalog } from '@/features/admin/catalog'
 import { useUnsavedDraft } from '@/ui/navigation'
 import {
 	ReleaseActions,
 	releaseStateLabel,
+	RewardGroupMark,
 	useReleaseDialog,
 } from '@/features/admin/release'
 
@@ -88,6 +92,27 @@ export default function PaletteGroupLibrary({
 		setStatus(message)
 	})
 	const working = useRef(false)
+	const paletteCatalog = useCatalog('palettes', client)
+	const paletteStates = new Map(
+		(paletteCatalog.data ?? []).map(palette => [palette.id, palette]),
+	)
+	// Reward palettes are released with what awards them, so their group has no release buttons.
+	function releaseControls(group: PaletteGroup, disabled: boolean) {
+		return group.purpose === 'reward' ? (
+			<RewardGroupMark
+				progress={paletteProgress([group], paletteStates)}
+			/>
+		) : (
+			<ReleaseActions
+				kind="palette_group"
+				id={group.row.id}
+				name={group.row.name}
+				row={group.row}
+				disabled={disabled}
+				onStart={release.start}
+			/>
+		)
+	}
 	const selected = groups.find(group => group.row.id === editing?.id)
 	const readOnly = !!selected?.row.published_at || !!selected?.row.release_at
 	const unavailable = busy || loading || !!catalogError
@@ -187,16 +212,7 @@ export default function PaletteGroupLibrary({
 						: 'Palette groups'
 				}
 			>
-				{selected && (
-					<ReleaseActions
-						kind="palette_group"
-						id={selected.row.id}
-						name={selected.row.name}
-						row={selected.row}
-						disabled={unavailable || dirty}
-						onStart={release.start}
-					/>
-				)}
+				{selected && releaseControls(selected, unavailable || dirty)}
 				{!editing && (
 					<>
 						<AdminIconButton
@@ -362,17 +378,18 @@ export default function PaletteGroupLibrary({
 							}
 							actions={
 								<>
-									<ReleaseActions
-										kind="palette_group"
-										id={group.row.id}
-										name={group.row.name}
-										row={group.row}
-										disabled={unavailable || !!deleting}
-										onStart={release.start}
-									/>
+									{releaseControls(
+										group,
+										unavailable || !!deleting,
+									)}
 									<AdminIconButton
-										icon={faPenToSquare}
-										label={`Edit group ${group.row.name}`}
+										icon={
+											group.row.published_at ||
+											group.row.release_at
+												? faEye
+												: faPenToSquare
+										}
+										label={`${group.row.published_at || group.row.release_at ? 'View' : 'Edit'} group ${group.row.name}`}
 										tone="edit"
 										disabled={unavailable || !!deleting}
 										onClick={() => {

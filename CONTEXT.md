@@ -14,11 +14,12 @@ A coloring toy: paint one tile and its symmetry group updates across the grid.
 Includes preset palettes, six shapes with three sizes each, dark/light mode, undo/redo, autosave,
 and PNG download/share.
 
-The header switches between the existing Zen Mode and a session-only Puzzle Mode
-prototype. Puzzle Mode uses the small hexagon, Cabo palette, and connected
-1/2/3-tile pieces placed in the six-tile symmetry wedge. Its independent local
-React state survives mode switches but not reloads; it never persists over Zen
-designs. See [README.md](./README.md#puzzle-mode-prototype) for scope.
+The app opens in Puzzle Mode, the primary feature; the header switches to Zen Mode. Before
+either starts, the app loads what this player may use from Supabase as a guest (see
+Player content below). Puzzle Mode lists the released core puzzle sets, then a set's
+puzzles by difficulty, and plays one on the shared `PuzzlePlay` surface; solved puzzle IDs stay
+on the device. Its independent local React state survives mode switches but not reloads; it never
+persists over Zen designs.
 
 The separate `#/admin` portal uses Supabase password Auth, generated database
 types, and a database-backed singleton admin check. Its puzzle lab authors
@@ -89,7 +90,20 @@ A shape's four core and bonus groups (basic and rotation core, basic and rotatio
 buttons (Schedule, Reschedule, Unschedule), a list of what blocks it slot by slot, and a table of the four slots
 with group, puzzle count, reward palette, "Also unlocks", and state. Below are the palette groups (with
 count problems) and every other puzzle group (daily, pack, undecided), each with its own buttons. Core and bonus
-groups show their state elsewhere but never have release buttons there. All release buttons open the shared
+groups show their state elsewhere but never have release buttons there. A summary above the shapes counts
+core and bonus groups, other puzzle groups, and palette groups by state (drafted, scheduled, live), plus reward
+palettes ("N of M live").
+**Reward palette groups** exist only to hold six palettes each; they are never released as groups. Their
+status is how many palettes are live ("2 of 6 live"), they have no release buttons, and their palettes go out with
+the shape package that awards them. Status marks (a shared
+[ReleaseStatusIcon](./src/features/admin/release/ReleaseStatusIcon.tsx), colors `--admin-green`, `--admin-yellow`,
+`--admin-orange` in [AdminPortal.module.css](./src/features/admin/shell/AdminPortal.module.css)) sit where the
+buttons would: a green circle-check when live (in place of the buttons), a blue calendar-check beside the
+Reschedule and Unschedule buttons when scheduled, an orange exclamation (hover for the reason) on a draft that
+something blocks, and a yellow circle-check on a reward palette group while only some palettes are out, turning
+green when all are live. Puzzle and palette group libraries list every group; scheduled and live ones show a blue
+eye ("View group") instead of the pencil, are read-only, and cannot be deleted. Puzzles > Items offers only draft
+groups when assigning puzzles. All release buttons open the shared
 [ReleaseDialog](./src/features/admin/release/ReleaseDialog.tsx): a local-time date and time (or Release now, never
 the default, with a stronger warning), a preview of everything that will change (palettes, palette groups, puzzle
 groups, and a collapsed puzzle list, with notes such as "moves earlier, from …"), blockers that disable the button, and
@@ -205,9 +219,9 @@ membership is removed on deletion. Failed usage reads offer retry and block
 deletion. The database rechecks under the catalog lock.
 Writes use loaded name/colors/revision conflict checks and retry-stable IDs.
 Unsaved palette edits use the same admin navigation/sign-out/reload guards.
-The initial migration already seeded all 19 original palettes as database drafts;
-Zen still uses its local catalog unchanged. Palette distribution and release
-tools remain deferred.
+The initial migration seeded 19 original palettes as database drafts; Zen now reads
+its palettes from the database (see Player content).
+Palette distribution and release tools are described under Release.
 
 In rotation-enabled playtests, click/tap a tray piece to rotate 60 degrees
 (180 for diamond star and pinwheel, whose tiles only realign after a half turn;
@@ -288,11 +302,17 @@ cut the fade short. Reduced-motion users see the final layout immediately;
 the entrance is also skipped when the Web Animations API is unavailable.
 The animation measures its final bounds, including the left-aligned destination.
 
-Puzzle Mode places the goal image and equal-scale tray pieces in a compact row
+Puzzle Mode first shows **Puzzle Sets**: each released core set is a light-bordered card with
+its name, track (Basic or Rotation), and "x of 24" at the left, and at the right the solved image of
+the first puzzle of each difficulty with "x of 8" below it. A set opens to its puzzles under
+difficulty subheadings, four to a row, as borderless solved images (no grid lines) with a round
+check badge at the top right once solved. Choosing one plays it.
+Play places the goal image and equal-scale tray pieces in a compact row
 above the full-width board. A small shared modal celebrates completion with a
-centered Mr Dafoe heading and Next Puzzle action; dismissing it preserves the
+centered Mr Dafoe heading and Next Puzzle action (the next unsolved puzzle in the set, or
+"Choose another puzzle" when the set is done); dismissing it preserves the
 solved design. The on-page Next puzzle button appears only after completion.
-The rotate icon restarts the current puzzle. Placement feedback remains in a
+The rotate icon restarts the current puzzle and the arrow returns to the set. Placement feedback remains in a
 nonvisual status region rather than visible instruction/status blocks.
 
 `LogoStar` lives in `components/shared` with `arrive` (default) and `pulse`
@@ -328,8 +348,8 @@ changes should be applied to all four SVG assets.
   `@/domain/shapes`); inside a folder use `./`. Test mocks target the exact
   module file (`vi.mock('@/features/admin/services/puzzleSets')`). The admin
   barrel's default export is the portal, which `AppEntry` lazy-loads.
-- **Palette** in code, file names, and user-facing text. The only exception is the
-  persisted design record's `schemeName` key, kept so existing saves still load.
+- **Palette** in code, file names, and user-facing text. Older saves may still name a palette
+  by `schemeName`; current saves use `paletteId`.
   **Theme** refers to dark/light mode, not palettes.
 - Keep persisted shape IDs stable. Import across folders with the single `@/`
   alias for `src/` (kept aligned in [Vite](./vite.config.ts) and
@@ -437,19 +457,20 @@ Test files and `src/test/` are exempt so tests can reach internals and mock exac
 | --- | --- |
 | [app/](./src/app/) | `AppEntry` (player/admin routing, navigation guard), `PlayerApp` (page, entrance animation, header, mode switch, footer), `useAdminRoute`, [layout/](./src/app/layout/) (Header, Footer), global [index.css](./src/app/index.css) |
 | [features/zen/](./src/features/zen/) | Zen Mode: `ZenMode`, [state/](./src/features/zen/state/) (reducer, history, Context, localStorage persistence, design randomization), [controls/](./src/features/zen/controls/) (toolbar, palette and shape pickers), [grid/](./src/features/zen/grid/) (shape adapters, `ShapeGrid`, `GridView`, cells), [export/](./src/features/zen/export/) (Save Image), [intro/](./src/features/zen/intro/) |
-| [features/puzzle/](./src/features/puzzle/) | Player Puzzle Mode: seeded puzzles, Restart/Next, congratulations |
+| [features/puzzle/](./src/features/puzzle/) | Player Puzzle Mode: set list, difficulty grid of solved images, play session with congratulations and Next, and the device's solved-puzzle record (`puzzleProgress.ts`) |
 | [features/admin/](./src/features/admin/) | Lazy-loaded admin portal. `shell/` (portal, workspace, navigation), `catalog/` (session cache), `common/` (layout, icon button, form), `groups/` (shared group editing), one folder per content area (`puzzles/`, `puzzle-groups/`, `palettes/`, `palette-groups/`), `services/` (Supabase reads/writes), `testing/` |
 | [ui/components/](./src/ui/components/) | Shared controls: buttons, `DarkModeToggle`, palette-tinted `Checkbox`, native `Modal`, `ModalHeader`, `ConfirmDialog` and its dismissal preferences, form fields, loading, palette strips/choices |
+| [ui/content/](./src/ui/content/) | Player content: `loadPlayerContent` (released core palettes, core puzzle sets, shape order), `PlayerContentProvider` (loads before the app starts), `usePlayerContent`, and the offline cache |
 | [ui/theme/](./src/ui/theme/) | `PlayerThemeContext` (dark mode, active palette, toggle) and `useDuotoneIconTint` |
 | [ui/hooks/](./src/ui/hooks/) | `useModalState`, `useIsTouchDevice` |
 | [ui/navigation/](./src/ui/navigation/) | App-wide unsaved-work navigation guard |
 | [ui/puzzle/](./src/ui/puzzle/) | Shared `PuzzlePlay` (target, tray, board, pointer/keyboard interaction) and shape-neutral `PuzzleBoard` |
 | [domain/shapes/](./src/domain/shapes/) | React-free shape catalog, sizes, registry, and one folder per shape (grid, layout, types). The catalog's `supportedGridShapes` order is the single shape order (unlock order, Circle Rings last); `PUZZLE_SHAPE_IDS`, `PUZZLE_SHAPE_LABELS`, and every shape menu derive from it |
 | [domain/geometry/](./src/domain/geometry/) | `Point`, shared geometry math, symmetry engine, cell grouping, SVG points |
-| [domain/puzzles/](./src/domain/puzzles/) | Pure seeded puzzle generation, authoring, stored-definition readers, placement validation, and completion; per-shape adapters in `puzzleShapes.ts` |
-| [domain/palettes/](./src/domain/palettes/) | Local palette catalog, palette type, color math, light/dark theme colors |
-| [lib/supabase/](./src/lib/supabase/) | Supabase browser client and generated database types |
-| [test/](./src/test/) | Vitest setup and shared render/interaction helpers |
+| [domain/puzzles/](./src/domain/puzzles/) | Pure seeded puzzle generation, authoring, stored-definition readers (`readAuthoredPuzzle` for admins, `readPlayablePuzzle` for players, which never sees seeds or solutions), placement validation, and completion; per-shape adapters in `puzzleShapes.ts` |
+| [domain/palettes/](./src/domain/palettes/) | Palette types (`Palette`, `PlayerPalette` with an ID), color math, light/dark theme colors; no bundled palette list |
+| [lib/supabase/](./src/lib/supabase/) | Supabase browser clients (`getSupabaseClient` for the admin's session, `getGuestClient` for players, with no stored session) and generated database types |
+| [test/](./src/test/) | Vitest setup, shared render/interaction helpers, and `playerContent.ts` (sample palettes and content for tests) |
 
 Shape adapters supply geometry to `GridView`; it owns numbering, painting,
 highlighting, announcements, and SVG references. An optional `interaction`
@@ -465,6 +486,26 @@ Import a shape through its folder barrel (`@/domain/shapes/hexagon`) and shared
 shape data through `@/domain/shapes`. Files inside `domain/shapes` import siblings
 directly, never their own barrel, to avoid cycles.
 React rendering remains separate from geometry and storage.
+
+### Player content
+
+Before the player app starts, [PlayerContentProvider](./src/ui/content/PlayerContentProvider.tsx) loads one
+[PlayerContent](./src/ui/content/playerContent.ts) with the guest client, which keeps no session (so an admin
+signed in on the same browser still reads exactly what a guest can). Reads rely on the database's own rules
+(released content only; guests play only the first shape's core groups) and are filtered again for release state
+in [loadPlayerContent](./src/ui/content/loadPlayerContent.ts):
+- **palettes:** members of released core palette groups, by group name then position (these are Zen's palettes);
+- **puzzle sets:** released core puzzle groups of a basic or rotation track, each puzzle rendered with its own
+  palette through `readPlayablePuzzle` (a puzzle that fails to read is skipped and logged); sets with none are dropped;
+  ordered by shape unlock order, basic before rotation;
+- **unlocked shapes:** only the first shape in `shape_progression` for guests (a Zen design on a locked shape
+  starts fresh).
+The load is network first. A success is cached in `kaleidoscope:content`; if the network fails the last cache is
+used, and with no cache the player sees the error with Try again. With no released palettes it shows "Nothing has been
+released yet" with Check again, since Zen needs a palette. Content does not change during a visit.
+Solved puzzles are stored on the device as `{ version: 1, solved: [puzzle IDs] }` in `kaleidoscope:puzzle-progress`
+and are never merged into an account automatically. Bonus (reward) groups, reward palettes, later shapes, resume, and
+accounts are not built yet.
 
 ### Grid sizes
 
@@ -522,19 +563,21 @@ symmetry engine. One representative per group is clickable.
   selected palette colors by position, preserving available and neutral selections.
 - Theme toggles do not remap historical snapshots, so undo across a toggle can
   restore older literal neutral colors without changing the current theme.
-- Autosave writes version 5 to `kaleidoscope:design` on state changes. It saves
-  palette name (stored as `schemeName`), selected color, dark mode, shape, per-shape sizes,
+- Autosave writes version 6 to `kaleidoscope:design` on state changes. It saves
+  the palette ID (`paletteId`), selected color, dark mode, shape, per-shape sizes,
   editable-area preference, and all board paint maps in one record.
   `shapeGroupColors` holds active paint; `savedBoards` holds inactive paint keyed
   by stable `shape:size` IDs (for example, `triangle:sm`), never duplicating the
   active board.
-- Versions 1-4 remain loadable. Their single paint map belongs only to the original
+- Versions 1-5 remain loadable, naming their palette by `schemeName`, which is matched to a
+  current palette by name. Their single paint map belongs only to the original
   effective active board; other boards start empty. Missing size data restores the active shape's
   legacy size. Earlier placeholder medium values for Hexagram (v1), Circle Rings
   (v1-2), and Pinwheel (v1-3) migrate to large to preserve their previous grids.
 - Loading rejects malformed records, arrays, invalid six-digit hex colors,
-  unknown versions/shapes/palettes, invalid board keys, and duplicate active-board
-  entries; fallback is a fresh design. Missing historical
+  unknown versions/shapes, invalid board keys, and duplicate active-board
+  entries; fallback is a fresh design. A saved palette that is no longer available, or a
+  shape the player has not unlocked, also starts fresh. Missing historical
   shape/visibility fields default to hexagon/true. Storage failures never crash the app.
 - Colors retain case and need not belong to the current palette. Unknown group IDs
   are retained; no palette-color migration is implemented.

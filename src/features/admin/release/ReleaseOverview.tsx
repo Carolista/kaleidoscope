@@ -11,6 +11,7 @@ import {
 	otherPuzzleGroups,
 	paletteGroupIssue,
 	paletteGroupPurposeLabels,
+	paletteProgress,
 	puzzleGroupPurposeLabels,
 	puzzleGroupTrackLabels,
 	slotReleases,
@@ -24,8 +25,13 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { useState } from 'react'
 import ReleaseActions from './ReleaseActions'
+import { RewardGroupMark } from './ReleaseStatusIcon'
 import styles from './ReleaseOverview.module.css'
-import { releaseStateText, shapeLabel } from './releaseText'
+import {
+	describePaletteProgress,
+	releaseStateText,
+	shapeLabel,
+} from './releaseText'
 import ShapePackageSection from './ShapePackageSection'
 import useReleaseDialog from './useReleaseDialog'
 
@@ -56,6 +62,13 @@ export default function ReleaseOverview({
 	const progression = data.progression
 	const puzzleGroups = groupCatalog.data
 	const paletteGroups = sortPaletteGroups(data.paletteGroups ?? [])
+	// Reward groups only hold palettes; those are released with what awards them.
+	const rewardPaletteGroups = paletteGroups.filter(
+		group => group.purpose === 'reward',
+	)
+	const releasedPaletteGroups = paletteGroups.filter(
+		group => group.purpose !== 'reward',
+	)
 	const palettes = new Map(
 		(data.palettes ?? []).map(palette => [palette.id, palette]),
 	)
@@ -94,12 +107,25 @@ export default function ReleaseOverview({
 						<p className={styles.summary}>
 							<span>
 								<span className={styles.summaryHeading}>
-									Puzzle groups:
+									Core &amp; bonus groups:
 								</span>{' '}
 								{describeStates(
 									countStates(
-										puzzleGroups.map(group => group.row),
+										puzzleGroups
+											.filter(
+												group =>
+													!others.includes(group),
+											)
+											.map(group => group.row),
 									),
+								)}
+							</span>
+							<span>
+								<span className={styles.summaryHeading}>
+									Other puzzle groups:
+								</span>{' '}
+								{describeStates(
+									countStates(others.map(group => group.row)),
 								)}
 							</span>
 							<span>
@@ -108,7 +134,20 @@ export default function ReleaseOverview({
 								</span>{' '}
 								{describeStates(
 									countStates(
-										paletteGroups.map(group => group.row),
+										releasedPaletteGroups.map(
+											group => group.row,
+										),
+									),
+								)}
+							</span>
+							<span>
+								<span className={styles.summaryHeading}>
+									Reward palettes:
+								</span>{' '}
+								{describePaletteProgress(
+									paletteProgress(
+										rewardPaletteGroups,
+										palettes,
 									),
 								)}
 							</span>
@@ -182,6 +221,13 @@ export default function ReleaseOverview({
 											{paletteGroups.map(group => {
 												const issue =
 													paletteGroupIssue(group)
+												const progress =
+													group.purpose === 'reward'
+														? paletteProgress(
+																[group],
+																palettes,
+															)
+														: null
 												return (
 													<tr key={group.row.id}>
 														<th scope="row">
@@ -211,26 +257,48 @@ export default function ReleaseOverview({
 															)}
 														</td>
 														<td>
-															{releaseStateText(
-																group.row,
-															)}
+															{progress
+																? describePaletteProgress(
+																		progress,
+																	)
+																: releaseStateText(
+																		group.row,
+																	)}
 														</td>
 														<td>
-															<ReleaseActions
-																kind="palette_group"
-																id={
-																	group.row.id
-																}
-																name={
-																	group.row
-																		.name
-																}
-																row={group.row}
-																disabled={busy}
-																onStart={
-																	release.start
-																}
-															/>
+															{progress ? (
+																<RewardGroupMark
+																	progress={
+																		progress
+																	}
+																/>
+															) : (
+																<ReleaseActions
+																	kind="palette_group"
+																	id={
+																		group
+																			.row
+																			.id
+																	}
+																	name={
+																		group
+																			.row
+																			.name
+																	}
+																	row={
+																		group.row
+																	}
+																	issue={
+																		issue
+																	}
+																	disabled={
+																		busy
+																	}
+																	onStart={
+																		release.start
+																	}
+																/>
+															)}
 														</td>
 													</tr>
 												)
@@ -342,6 +410,12 @@ export default function ReleaseOverview({
 																group.row.name
 															}
 															row={group.row}
+															issue={
+																group.purpose ===
+																'undecided'
+																	? 'Choose a purpose.'
+																	: undefined
+															}
 															disabled={busy}
 															onStart={
 																release.start

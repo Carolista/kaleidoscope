@@ -6,7 +6,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { PUZZLE_DIFFICULTY_LABELS } from '@/domain/puzzles'
 import { PlayerIconButton } from '@/ui/components'
 import type { PlayerPuzzleSet } from '@/ui/content'
-import { solvedCount } from './setProgress'
+import PuzzleImage from './PuzzleImage'
+import { difficultySections, solvedCount } from './setProgress'
 import styles from './PuzzleMode.module.css'
 
 export default function PuzzleGrid({
@@ -31,37 +32,52 @@ export default function PuzzleGrid({
 				<h2 className={styles.heading}>{set.name}</h2>
 			</div>
 			<p className={styles.progress}>
-				{solvedCount(set, solved)} of {set.puzzles.length} solved
+				{solvedCount(set.puzzles, solved)} of {set.puzzles.length}
 			</p>
-			<ol className={styles.puzzleGrid}>
-				{set.puzzles.map((item, index) => {
-					const done = solved.has(item.id)
-					return (
-						<li key={item.id}>
-							<button
-								type="button"
-								className={`${styles.puzzleButton}${done ? ` ${styles.solved}` : ''}`}
-								aria-label={`Puzzle ${index + 1}, ${PUZZLE_DIFFICULTY_LABELS[item.difficulty]}${done ? ', solved' : ''}`}
-								onClick={() => onChoose(item.id)}
-							>
-								<span className={styles.number}>
-									{index + 1}
-								</span>
-								<span className={styles.difficulty}>
-									{PUZZLE_DIFFICULTY_LABELS[item.difficulty]}
-								</span>
-								{done && (
-									<FontAwesomeIcon
-										icon={faCheck}
-										aria-hidden="true"
-										className={styles.check}
-									/>
-								)}
-							</button>
-						</li>
-					)
-				})}
-			</ol>
+			{difficultySections(set).map(section => {
+				const label = PUZZLE_DIFFICULTY_LABELS[section.difficulty]
+				return (
+					<section
+						key={section.difficulty}
+						className={styles.section}
+						aria-label={label}
+					>
+						<h3 className={styles.subheading}>{label}</h3>
+						<ul className={styles.puzzleGrid}>
+							{section.puzzles.map(({ item, number }) => {
+								const done = solved.has(item.id)
+								return (
+									<li key={item.id}>
+										<button
+											type="button"
+											className={styles.puzzleButton}
+											aria-label={`Puzzle ${number}, ${label}${done ? ', solved' : ''}`}
+											onClick={() => onChoose(item.id)}
+										>
+											<span
+												className={styles.puzzleImage}
+												aria-hidden="true"
+											>
+												<PuzzleImage item={item} />
+											</span>
+											{done && (
+												<span
+													className={styles.check}
+													aria-hidden="true"
+												>
+													<FontAwesomeIcon
+														icon={faCheck}
+													/>
+												</span>
+											)}
+										</button>
+									</li>
+								)
+							})}
+						</ul>
+					</section>
+				)
+			})}
 		</>
 	)
 }

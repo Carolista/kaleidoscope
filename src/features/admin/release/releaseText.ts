@@ -112,3 +112,14 @@ export function releaseStateText(row: {
 }): string {
 	return releaseStateOf(row) === 'draft' ? 'Draft' : releaseStateLabel(row)
 }
+
+// "2 of 6 live", with any scheduled palettes added, for palettes released one by one.
+export function describePaletteProgress(progress: {
+	readonly live: number
+	readonly scheduled: number
+	readonly total: number
+}): string {
+	return `${progress.live} of ${progress.total} live${
+		progress.scheduled ? ` · ${progress.scheduled} scheduled` : ''
+	}`
+}
