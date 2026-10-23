@@ -6,6 +6,7 @@ export interface PlayerPuzzle {
 	readonly id: string
 	readonly name: string
 	readonly difficulty: PuzzleDifficulty
+	readonly palette: PlayerPalette
 	readonly puzzle: Puzzle
 }
 

@@ -1,14 +1,12 @@
-import {
-	faArrowLeft,
-	faCheck,
-} from '@fortawesome/sharp-duotone-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { PUZZLE_DIFFICULTY_LABELS } from '@/domain/puzzles'
 import { PlayerIconButton } from '@/ui/components'
 import type { PlayerPuzzleSet } from '@/ui/content'
+import { faArrowLeft } from '@fortawesome/pro-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faCheck } from '@fortawesome/sharp-duotone-solid-svg-icons'
 import PuzzleImage from './PuzzleImage'
-import { difficultySections, solvedCount } from './setProgress'
 import styles from './PuzzleMode.module.css'
+import { difficultySections, solvedCount } from './setProgress'
 
 export default function PuzzleGrid({
 	set,

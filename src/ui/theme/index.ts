@@ -3,4 +3,7 @@ export {
 	usePlayerTheme,
 	type PlayerTheme,
 } from './playerTheme'
-export { useDuotoneIconTint } from './useDuotoneIconTint'
+export {
+	DuotoneTintColorContext,
+	useDuotoneIconTint,
+} from './useDuotoneIconTint'

@@ -11,6 +11,7 @@ import {
 } from '@/ui/components'
 import type { PlayerPuzzle, PlayerPuzzleSet } from '@/ui/content'
 import { PuzzlePlay, type PuzzlePlayHandle } from '@/ui/puzzle'
+import { DuotoneTintColorContext } from '@/ui/theme'
 import { nextUnsolvedPuzzle } from './setProgress'
 import styles from './PuzzleMode.module.css'
 
@@ -54,28 +55,30 @@ export default function PuzzleSession({
 				onSolved(item.id)
 			}}
 		>
-			<div className={styles.actions}>
-				<PlayerIconButton
-					icon={faArrowLeft}
-					label="Back to puzzle set"
-					onClick={onBack}
-				/>
-				<DarkModeToggle />
-				{justSolved && next && (
-					<Button onClick={() => onChoose(next.id)}>
-						Next puzzle
-					</Button>
-				)}
-				<PlayerIconButton
-					icon={faRotate}
-					label="Restart"
-					onClick={() => {
-						setShowCongrats(false)
-						setJustSolved(false)
-						play.current?.reset()
-					}}
-				/>
-			</div>
+			<DuotoneTintColorContext.Provider value={item.palette.colors[1]}>
+				<div className={styles.actions}>
+					<PlayerIconButton
+						icon={faArrowLeft}
+						label="Back to puzzle set"
+						onClick={onBack}
+					/>
+					<DarkModeToggle />
+					{justSolved && next && (
+						<Button onClick={() => onChoose(next.id)}>
+							Next puzzle
+						</Button>
+					)}
+					<PlayerIconButton
+						icon={faRotate}
+						label="Restart"
+						onClick={() => {
+							setShowCongrats(false)
+							setJustSolved(false)
+							play.current?.reset()
+						}}
+					/>
+				</div>
+			</DuotoneTintColorContext.Provider>
 			<Modal
 				open={showCongrats && !hidden}
 				onClose={() => setShowCongrats(false)}

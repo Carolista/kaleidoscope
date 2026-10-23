@@ -110,6 +110,7 @@ async function loadPuzzleSets(
 							id: row.id,
 							name: row.name,
 							difficulty,
+							palette,
 							puzzle: readPlayablePuzzle(row, palette),
 						},
 					]

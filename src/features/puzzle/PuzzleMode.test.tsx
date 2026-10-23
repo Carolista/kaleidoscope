@@ -5,6 +5,7 @@ import { renderWithProvider } from '@/test/renderWithProvider'
 import { palettes, testContent } from '@/test/playerContent'
 import type { PlayerContent } from '@/ui/content'
 import { generateHexagonCells } from '@/domain/shapes/hexagon'
+import { withLightness } from '@/domain/palettes'
 import { coordinateKey, generatePuzzle, pieceCells } from '@/domain/puzzles'
 import PuzzleMode from './PuzzleMode'
 import styles from '@/ui/puzzle/PuzzleBoard.module.css'
@@ -27,11 +28,18 @@ const content: PlayerContent = {
 			shape: 'hexagon',
 			track: 'basic',
 			puzzles: [
-				{ id: 'p1', name: 'One', difficulty: 'easy', puzzle },
+				{
+					id: 'p1',
+					name: 'One',
+					difficulty: 'easy',
+					palette: palettes[1],
+					puzzle,
+				},
 				{
 					id: 'p2',
 					name: 'Two',
 					difficulty: 'moderate',
+					palette: palettes[1],
 					puzzle: generatePuzzle('ui-puzzle-two', palettes[1]),
 				},
 			],
@@ -80,6 +88,18 @@ describe('PuzzleMode', () => {
 			expect(pieceButton(0)).toHaveAccessibleName(/in tray/)
 		},
 	)
+
+	it("tints the session's icons from the puzzle's palette, not the zen palette", () => {
+		renderPlaying()
+		for (const name of ['Restart', 'Back to puzzle set']) {
+			expect(
+				screen
+					.getByRole('button', { name })
+					.querySelector('svg')
+					?.style.getPropertyValue('--fa-secondary-color'),
+			).toBe(withLightness(palettes[1].colors[1], 50))
+		}
+	})
 
 	it('shows Next puzzle only after winning and hides it when the next puzzle starts', async () => {
 		const user = userEvent.setup()
