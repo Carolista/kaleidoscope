@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { palettes } from '@/domain/palettes'
+import { palettes } from '@/test/playerContent'
 import { renderWithProvider } from '@/test/renderWithProvider'
 import IntroSequence from './IntroSequence'
 

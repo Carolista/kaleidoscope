@@ -1,7 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { ZenStateProvider, useZenState } from '@/features/zen/state'
+import { useZenState } from '@/features/zen/state'
+import {
+	TestZenStateProvider,
+	TestZenStateProvider as ZenStateProvider,
+} from '@/test/TestZenStateProvider'
+import { testContent } from '@/test/playerContent'
 import { gridShapes, gridSizeOptions } from '@/domain/shapes'
 import GridShapePicker from './GridShapePicker'
 
@@ -43,6 +48,23 @@ describe('GridShapePicker', () => {
 		expect(
 			screen.getByRole('button', { name: 'Hexagon (M)' }),
 		).toHaveAttribute('aria-pressed', 'true')
+	})
+
+	it('offers only the shapes the player has unlocked', () => {
+		render(
+			<TestZenStateProvider
+				content={{ ...testContent, unlockedShapes: ['hexagon'] }}
+			>
+				<GridShapePicker />
+			</TestZenStateProvider>,
+		)
+		expect(screen.getAllByRole('button')).toHaveLength(3)
+		expect(
+			screen.getByRole('button', { name: 'Hexagon (M)' }),
+		).toBeInTheDocument()
+		expect(
+			screen.queryByRole('button', { name: 'Triangle (M)' }),
+		).not.toBeInTheDocument()
 	})
 
 	it('switches immediately, closes via callback, and restores independent shape and size designs', async () => {

@@ -30,6 +30,7 @@ import {
 	AdminSelectionBar,
 	useCheckedIds,
 	errorMessage,
+	SeparatorDot,
 } from '@/features/admin/common'
 import { useUnsavedDraft } from '@/ui/navigation'
 import PaletteEditor from './PaletteEditor'
@@ -621,7 +622,7 @@ export default function PaletteLibrary({
 									)}
 									{group && (
 										<span>
-											{group.row.name} ·{' '}
+											{group.row.name} <SeparatorDot />{' '}
 											{
 												paletteGroupPurposeLabels[
 													group.purpose

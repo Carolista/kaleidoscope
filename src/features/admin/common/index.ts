@@ -12,5 +12,6 @@ export {
 	AdminGroupForm,
 	AdminTag,
 } from './AdminLayout'
+export { default as SeparatorDot } from './SeparatorDot'
 export { default as useCheckedIds } from './useCheckedIds'
 export { errorMessage } from './errorMessage'

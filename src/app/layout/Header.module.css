@@ -10,6 +10,7 @@
 }
 
 .modeSwitch {
+	--icon-visible-height: 0.42em;
 	display: flex;
 	flex-shrink: 0;
 	margin-left: auto;
@@ -24,8 +25,7 @@
 	align-items: center;
 	justify-content: center;
 	height: 100%;
-	aspect-ratio: 1;
-	padding: 0;
+	padding: 0 0.12em;
 	font-size: inherit;
 	border: none;
 	background: transparent;
@@ -38,14 +38,54 @@
 	width: 0.55em;
 }
 
+/* The puzzle piece fills 384 of its 512 viewBox units vertically, the spa 448,
+   so it is scaled up to show the same visible height (and the same as the label). */
+.modeSwitch .puzzleIcon {
+	height: 0.56em;
+	width: 0.7em;
+}
+
 .modeSwitch button[aria-pressed='true'] {
 	background: var(--accent);
 	color: var(--base);
 }
 
+/* Only the active mode shows its name, beside its icon. */
+.modeSwitch button[aria-pressed='true'] {
+	gap: 0.12em;
+	padding-inline-end: 0.2em;
+}
+
+.modeLabel {
+	font-family: 'Righteous', sans-serif;
+	/* Righteous capitals are 0.7em tall; match them to the icons' visible height. */
+	font-size: calc(var(--icon-visible-height, 0.42em) / 0.7);
+	line-height: 1;
+	white-space: nowrap;
+}
+
 .modeSwitch button:focus-visible {
 	outline: 2px dashed currentColor;
 	outline-offset: -3px;
+}
+
+.actions {
+	--icon-glyph-size: 0.5em;
+	display: flex;
+	margin-left: auto;
+	flex-shrink: 0;
+	align-items: center;
+}
+
+.actions + .modeSwitch {
+	margin-left: 0;
+}
+
+/* Sized in the header's em, like the mode switch, so it scales with the title. */
+.actions button {
+	width: 0.78em;
+	height: 0.78em;
+	font-size: inherit;
 }
 
 .openingSwitch {
@@ -98,5 +138,17 @@
 @media screen and (max-width: 480px) {
 	.openingTitle {
 		--title-size: inherit;
+	}
+}
+
+/* The title cannot shrink further, so on narrow screens the active mode is
+   shown by its filled button alone. */
+@media screen and (max-width: 420px) {
+	.modeLabel {
+		display: none;
+	}
+
+	.modeSwitch button[aria-pressed='true'] {
+		padding-inline-end: 0.12em;
 	}
 }

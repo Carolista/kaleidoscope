@@ -1,3 +1,4 @@
+import { createContext, useContext } from 'react'
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core'
 import { withLightness } from '@/domain/palettes'
 import { usePlayerTheme } from './playerTheme'
@@ -17,6 +18,10 @@ const SECONDARY_TINT_LIGHTNESS_PERCENT: Readonly<
 	Record<'light' | 'dark', number>
 > = { light: 70, dark: 50 }
 
+// Lets a mode tint its icons from its own content (e.g. a puzzle's palette)
+// instead of the player's active palette.
+export const DuotoneTintColorContext = createContext<string | null>(null)
+
 // A duotone icon's path data is a 2-element array (secondary layer, then
 // primary layer); a single-tone icon (e.g. a classic solid icon) is just
 // one path string. Icons from a non-duotone set (like `faXmark` pulled
@@ -35,9 +40,10 @@ function isDuotoneIcon(icon: IconDefinition) {
 // mapping over an array of icons.
 export function useDuotoneIconTint() {
 	const { darkMode, palette } = usePlayerTheme()
+	const override = useContext(DuotoneTintColorContext)
 	// The richest/darkest color in the active palette is always first.
 	const secondaryColor = withLightness(
-		palette.colors[0],
+		override ?? palette.colors[0],
 		SECONDARY_TINT_LIGHTNESS_PERCENT[darkMode ? 'dark' : 'light'],
 	)
 	const tint = {

@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useIsTouchDevice } from '@/ui/hooks'
 import { buildExportClone } from '@/features/zen/export/imageExportService'
-import { ZenStateProvider } from '@/features/zen/state'
+import { TestZenStateProvider as ZenStateProvider } from '@/test/TestZenStateProvider'
 import {
 	CIRCLE_RINGS_GRID_SIZES,
 	computeGridAspectRatio,

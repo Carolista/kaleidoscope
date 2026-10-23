@@ -49,7 +49,7 @@ Today, the application reflects how my engineering approach has evolved. It has 
 - **Mouse, touch, and keyboard interaction:** Hover reveals the editable wedge on mouse and trackpad; touch users can toggle it. Grid tiles can also be reached with Tab and painted with Enter or Space. Focus outlines remain visible for keyboard navigation without lingering after mouse clicks or taps.
 - **Mobile-friendly modals:** Dialogs gently drift into focus and fade away on close, with animations skipped for reduced-motion preferences. Titles and close controls stay visible while content scrolls, with edge indicators for more options and background scrolling locked through closing.
 - **Automatic save:** All board patterns, your active board, per-shape size choices, and preferences are restored from browser storage on your next visit. Undo history starts fresh each session.
-- **Puzzle Mode prototype:** Switch between Zen Mode and a small hexagon puzzle. Arrange three connected pieces to match a Cabo-palette target, with mirrored placement, mouse/touch dragging, and keyboard-friendly select-and-place controls. Puzzle progress survives mode switches but is intentionally not saved across reloads.
+- **Puzzle Mode:** The app opens in Puzzle Mode. Choose a released puzzle set, see its puzzles as solved pictures grouped by difficulty, and play one: arrange the pieces to match the target, with mirrored placement, mouse/touch dragging, keyboard-friendly select-and-place controls, and rotation where a set allows it. Solved puzzles are remembered on your device. Zen Mode offers the shapes and palettes you have unlocked.
 
 <!-- ## Visuals -->
 
@@ -70,8 +70,8 @@ This project has been a chance to build both a creative user experience and the 
 
 The database foundation and Dashboard setup instructions are documented
 in [supabase/README.md](./supabase/README.md). Admin sign-in is available at
-`#/admin` after local configuration; the player prototype below remains local
-and unchanged.
+`#/admin` after local configuration. The player app reads released content from the same
+project as a guest (palettes, puzzle sets, and shape order); it has no sign-in yet.
 
 The admin **puzzle lab** authors puzzles in all six shapes with all six size/rotation recipes, a visual
 Supabase palette picker, and one-click randomization. Previously previewed seeds
@@ -157,7 +157,7 @@ The editor's blue **Save** sits beside the name. Usage lists linked puzzle previ
 and distribution references; only unused drafts can be deleted, from the library,
 with confirmation. Scheduled/live palettes are read-only
 but can be duplicated. Saving a palette refreshes the colors used by puzzle
-authoring and set previews. Zen's local palettes and randomizer remain unchanged.
+authoring and set previews. Zen's palettes come from the database's released core palette groups.
 
 Playtest placements remain memory-only. Publishing, player progress,
 and changes to Zen saves are not included. See
@@ -167,12 +167,12 @@ The header switch opens a session-only proof of concept; it does not change or
 overwrite saved Zen designs. Pieces may be placed anywhere they fit within the
 six-tile symmetry wedge without overlapping. A puzzle is solved when all six
 tiles match the target colors, not merely when every piece has been placed.
-Use the rotate icon to restart the current puzzle. On completion, a small
-**Congrats!** dialog offers **Next Puzzle**. Closing it leaves the solved design
-visible, with a **Next puzzle** button below the board. Rotation, accounts, rewards, sets/packs, and puzzle
-persistence are not included yet.
+Use the reverse-rotate icon to restart the current puzzle. On completion, **Congrats!**
+briefly fades in and out over the solved design, which stays in view. A **Next puzzle**
+button below the board is disabled until then. The next puzzle swipes in from the right as the
+solved one swipes out to the left. Accounts, rewards, and packs are not included yet.
 
-Placed pieces are outlined on the board and disabled/desaturated in the tray;
+Placed pieces get a single thicker outline on the board and disabled/desaturated in the tray;
 move them directly from the board or return them by dragging back or
 double-clicking/double-tapping. Mirrored tiles
 stay muted until completion, when the full design is revealed and piece
@@ -184,9 +184,9 @@ readers.
 
 [`generatePuzzle(seed, palette, recipe, shape)`](./src/domain/puzzles/puzzle.ts) produces a
 serializable, deterministic puzzle definition with the target, fixed-orientation
-colored piece offsets, and a known solution. Player Puzzle Mode uses its defaults:
-the small hexagon with connected pieces of one, two, and three tiles; the UI passes
-the Cabo palette. Future set/pack authoring can call this pure generator with explicit
+colored piece offsets, and a known solution. The admin lab and Shapes workbench use its defaults:
+the small hexagon with connected pieces of one, two, and three tiles. Players no longer generate
+puzzles: they play stored, released definitions. Future set/pack authoring can call this pure generator with explicit
 seeds and store the generated definitions. Save the complete versioned
 definition, not just a seed, so a future generator change cannot alter a
 published puzzle. The admin lab wraps the expanded generator with a version-2

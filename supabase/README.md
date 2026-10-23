@@ -1,8 +1,9 @@
 # Supabase foundation
 
 The admin sign-in entry point uses Supabase Auth and the generated database types.
-The player app still uses its local catalogs and storage. No image bucket,
-payment integration, or player progress/sync operations are included.
+The player app reads released content (core palettes, core puzzle sets, shape order) as a guest through a
+separate client that keeps no session; see CONTEXT.md, Player content. Guests cannot read `puzzle_authoring`.
+No image bucket, payment integration, or player progress/sync operations are included.
 
 ## Connect admin sign-in
 
@@ -86,7 +87,7 @@ The first-rotation player-set tutorial is planned for later.
 **Refresh palettes** fetches current catalog colors. Active previews resolve
 their stable palette ID and ordered color slots against that result, so corrections
 update targets and pieces together without changing placement/layout. Failed reads
-show an error instead of silently falling back to the local player catalog.
+show an error instead of silently falling back to a bundled palette list (the player app no longer has one).
 
 After generating, enter a **Puzzle name** and press **Save draft**. Apply the
 draft-saving migration below first. The save atomically creates an unpublished,

@@ -19,6 +19,7 @@ import {
 	AdminItemCard,
 	AdminSectionHeading,
 	errorMessage,
+	SeparatorDot,
 } from '@/features/admin/common'
 import { compareGroupOrder } from '@/features/admin/groups'
 import { releaseStateLabel } from '@/features/admin/release'
@@ -304,13 +305,20 @@ export default function PreparedPuzzleLibrary({
 							>
 								<strong>{draft.row.name}</strong>
 								<span>
-									{PUZZLE_SHAPE_LABELS[draft.puzzle.shape]} ·{' '}
-									{draft.puzzle.recipe.label}
+									{PUZZLE_SHAPE_LABELS[draft.puzzle.shape]}{' '}
+									<SeparatorDot /> {draft.puzzle.recipe.label}
 								</span>
 								<span>
-									{draft.groupPurpose
-										? `${puzzleGroupPurposeLabels[draft.groupPurpose]} · `
-										: ''}
+									{draft.groupPurpose && (
+										<>
+											{
+												puzzleGroupPurposeLabels[
+													draft.groupPurpose
+												]
+											}{' '}
+											<SeparatorDot />{' '}
+										</>
+									)}
 									{draft.groupName ?? 'Unassigned'}
 								</span>
 								<span>{releaseStateLabel(draft.row)}</span>

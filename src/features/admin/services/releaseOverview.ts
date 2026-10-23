@@ -115,6 +115,27 @@ export interface StateCounts {
 	readonly live: number
 }
 
+// How many palettes of some groups have gone out. Reward palettes are released
+// one by one with what awards them, never as groups, so this is their status.
+export function paletteProgress(
+	groups: readonly PaletteGroup[],
+	palettes: ReadonlyMap<
+		string,
+		{
+			readonly published_at: string | null
+			readonly release_at: string | null
+		}
+	>,
+): StateCounts & { readonly total: number } {
+	const counts = { draft: 0, scheduled: 0, live: 0 }
+	for (const group of groups)
+		for (const member of group.members) {
+			const palette = palettes.get(member.id)
+			counts[palette ? releaseStateOf(palette) : 'draft']++
+		}
+	return { ...counts, total: counts.draft + counts.scheduled + counts.live }
+}
+
 export function countStates(
 	rows: readonly {
 		readonly published_at: string | null

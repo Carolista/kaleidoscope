@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { ZenStateProvider, useZenState } from '@/features/zen/state'
+import { useZenState } from '@/features/zen/state'
+import { TestZenStateProvider as ZenStateProvider } from '@/test/TestZenStateProvider'
 import ResetDesignButton from './ResetDesignButton'
 
 // Paints one group so we can observe whether reset actually clears it.

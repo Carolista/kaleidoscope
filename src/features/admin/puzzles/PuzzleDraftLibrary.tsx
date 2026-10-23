@@ -37,6 +37,7 @@ import {
 	AdminSelectionBar,
 	useCheckedIds,
 	errorMessage,
+	SeparatorDot,
 } from '@/features/admin/common'
 import {
 	Button,
@@ -128,7 +129,10 @@ export default function PuzzleDraftLibrary({
 		client,
 		action?.kind === 'group' || groupFilterActive,
 	)
-	const draftGroups: readonly PuzzleGroup[] = groupCatalog.data ?? []
+	// Released groups are locked, so only drafts can receive puzzles.
+	const draftGroups: readonly PuzzleGroup[] = (
+		groupCatalog.data ?? []
+	).filter(group => !group.row.published_at && !group.row.release_at)
 	const groupsLoading = groupCatalog.loading
 	const groupsError =
 		action?.kind === 'group' && groupCatalog.error
@@ -758,12 +762,20 @@ export default function PuzzleDraftLibrary({
 												draft.puzzle.shape
 											]
 										}{' '}
-										· {draft.puzzle.recipe.label}
+										<SeparatorDot />{' '}
+										{draft.puzzle.recipe.label}
 									</span>
 									<span>
-										{draft.groupPurpose
-											? `${puzzleGroupPurposeLabels[draft.groupPurpose]} · `
-											: ''}
+										{draft.groupPurpose && (
+											<>
+												{
+													puzzleGroupPurposeLabels[
+														draft.groupPurpose
+													]
+												}{' '}
+												<SeparatorDot />{' '}
+											</>
+										)}
 										{draft.groupName ??
 											(draft.assigned
 												? 'Assigned'

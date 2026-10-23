@@ -1,19 +1,27 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { ZenStateProvider, savePersistedState } from '@/features/zen/state'
+import { savePersistedState } from '@/features/zen/state'
+import { TestZenStateProvider as ZenStateProvider } from '@/test/TestZenStateProvider'
 import App from './PlayerApp'
 import styles from './PlayerApp.module.css'
 import headerStyles from '@/app/layout/Header.module.css'
 import { useIsTouchDevice } from '@/ui/hooks'
 import { supportedGridShapes, defaultGridSizes } from '@/domain/shapes'
 import { PINWHEEL_GRID_SIZES } from '@/domain/shapes/pinwheel'
-import { palettes } from '@/domain/palettes'
+import { palettes } from '@/test/playerContent'
 
 vi.mock('@/ui/hooks/useIsTouchDevice')
 const mockUseIsTouchDevice = vi.mocked(useIsTouchDevice)
 
+// The app lands on Puzzle Mode; most of these tests are about Zen, so open it.
 function renderApp() {
+	const view = renderLanding()
+	fireEvent.click(screen.getByRole('button', { name: 'Zen Mode' }))
+	return view
+}
+
+function renderLanding() {
 	return render(<App />, { wrapper: ZenStateProvider })
 }
 
@@ -63,8 +71,8 @@ describe('App', () => {
 		const savedZenDesign = localStorage.getItem('kaleidoscope:design')
 		await user.click(screen.getByRole('button', { name: 'Puzzle Mode' }))
 		expect(
-			screen.getByRole('img', { name: 'Target design' }),
-		).toBeInTheDocument()
+			screen.getByRole('region', { name: 'Puzzle Mode' }),
+		).toBeVisible()
 		expect(
 			screen.queryByRole('group', { name: 'Controls' }),
 		).not.toBeInTheDocument()
@@ -75,8 +83,24 @@ describe('App', () => {
 		).toBeInTheDocument()
 		expect(localStorage.getItem('kaleidoscope:design')).toBe(savedZenDesign)
 		expect(
-			screen.queryByRole('img', { name: 'Target design' }),
+			screen.queryByRole('region', { name: 'Puzzle Mode' }),
 		).not.toBeInTheDocument()
+	})
+
+	it('lands on Puzzle Mode and shows the Zen intro the first time Zen is opened', async () => {
+		mockUseIsTouchDevice.mockReturnValue(false)
+		const user = userEvent.setup()
+		renderLanding()
+		expect(
+			screen.getByRole('region', { name: 'Puzzle Mode' }),
+		).toBeVisible()
+		expect(
+			screen.queryByRole('heading', { name: 'Welcome!' }),
+		).not.toBeInTheDocument()
+		await user.click(screen.getByRole('button', { name: 'Zen Mode' }))
+		expect(
+			screen.getByRole('heading', { name: 'Welcome!' }),
+		).toBeInTheDocument()
 	})
 
 	it('moves the centered logo and reveals the page after the star finishes spinning', () => {

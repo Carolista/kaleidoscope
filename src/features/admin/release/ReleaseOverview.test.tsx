@@ -196,23 +196,28 @@ describe('release overview', () => {
 		render(<ReleaseOverview client={client} />)
 		await screen.findByRole('table', { name: 'Hexagon release status' })
 		expect(
-			screen.getByText('4 of 4 groups · Partly scheduled'),
+			screen.getByText('4 of 4 groups Partly scheduled'),
 		).toBeInTheDocument()
-		expect(screen.getByText('1 of 4 groups · Draft')).toBeInTheDocument()
+		expect(screen.getByText('1 of 4 groups Draft')).toBeInTheDocument()
 	})
 
 	it('summarizes how many groups are draft, scheduled, and live', async () => {
 		render(<ReleaseOverview client={client} />)
-		const puzzles = (await screen.findByText('Puzzle groups:'))
-			.parentElement
-		expect(puzzles).toHaveTextContent(
-			/Puzzle groups:\s*3 drafted\s*1 scheduled\s*1 live/,
-		)
+		const summary = await screen.findByRole('table', {
+			name: 'Release summary',
+		})
 		expect(
-			screen.getByText('Palette groups:').parentElement,
-		).toHaveTextContent(
-			/Palette groups:\s*3 drafted\s*0 scheduled\s*0 live/,
-		)
+			within(summary)
+				.getAllByRole('columnheader')
+				.map(header => header.textContent),
+		).toEqual(['Content', 'Drafted', 'Scheduled', 'Live'])
+		const cells = (name: RegExp) =>
+			within(within(summary).getByRole('row', { name }))
+				.getAllByRole('cell')
+				.map(cell => cell.textContent)
+		expect(cells(/Core & Bonus Groups/)).toEqual(['2', '1', '1'])
+		expect(cells(/Other Puzzle Groups/)).toEqual(['1', '0', '0'])
+		expect(cells(/Palette Groups/)).toEqual(['2', '0', '0'])
 	})
 
 	it('offers package buttons by state, one set per shape', async () => {
@@ -276,8 +281,93 @@ describe('release overview', () => {
 			within(rows[2]).getByText('Choose a purpose.'),
 		).toBeInTheDocument()
 		expect(
-			within(rows[0]).getByRole('button', {
-				name: 'Schedule palette group Earned palettes',
+			within(rows[0]).queryByRole('button', {
+				name: /palette group Earned palettes/,
+			}),
+		).not.toBeInTheDocument()
+		expect(within(rows[0]).getByText('0 of 3 live')).toBeInTheDocument()
+		expect(
+			within(rows[1]).getByRole('button', {
+				name: 'Schedule palette group Sold palettes',
+			}),
+		).toBeInTheDocument()
+	})
+
+	it('reports reward palettes by how many have gone out, never as a group release', async () => {
+		mocks.palettes.mockResolvedValue(
+			palettes.map(palette =>
+				palette.id === 'cabo'
+					? { ...palette, ...live }
+					: palette.id === 'tahiti'
+						? { ...palette, ...scheduled }
+						: palette,
+			),
+		)
+		render(<ReleaseOverview client={client} />)
+		const table = await screen.findByRole('table', {
+			name: 'Palette group release status',
+		})
+		expect(
+			within(table).getByText('1 of 3 live 1 scheduled'),
+		).toBeInTheDocument()
+		const reward = within(
+			screen.getByRole('table', { name: 'Release summary' }),
+		).getByRole('row', { name: /Reward Palettes/ })
+		const rewardCell = within(reward).getByRole('cell')
+		expect(rewardCell).toHaveAttribute('colspan', '3')
+		expect(rewardCell).toHaveTextContent(/1 of 3 live\s*1 scheduled/)
+	})
+
+	it('marks what is live, scheduled, partly released, or blocked', async () => {
+		mocks.palettes.mockResolvedValue(
+			palettes.map(palette =>
+				palette.id === 'cabo'
+					? { ...palette, ...live }
+					: palette.id === 'tahiti'
+						? { ...palette, ...scheduled }
+						: palette,
+			),
+		)
+		render(<ReleaseOverview client={client} />)
+		const groups = await screen.findByRole('table', {
+			name: 'Palette group release status',
+		})
+		const [earned, sold, maybe] = within(groups)
+			.getAllByRole('row')
+			.slice(1)
+		expect(
+			within(earned).getByRole('img', { name: 'Partly released' }),
+		).toBeInTheDocument()
+		expect(within(sold).queryByRole('img')).not.toBeInTheDocument()
+		expect(
+			within(maybe).getByRole('img', { name: 'Choose a purpose.' }),
+		).toBeInTheDocument()
+		expect(
+			screen.getAllByRole('img', { name: 'Scheduled' }).length,
+		).toBeGreaterThan(0)
+		expect(
+			screen.getByRole('img', {
+				name: /problems? to fix before releasing/,
+			}),
+		).toBeInTheDocument()
+	})
+
+	it('marks a reward palette group green once every palette is live', async () => {
+		mocks.palettes.mockResolvedValue(
+			palettes.map(palette => ({ ...palette, ...live })),
+		)
+		render(<ReleaseOverview client={client} />)
+		const groups = await screen.findByRole('table', {
+			name: 'Palette group release status',
+		})
+		const [earned, sold] = within(groups).getAllByRole('row').slice(1)
+		expect(
+			within(earned).getByRole('img', { name: 'All palettes live' }),
+		).toBeInTheDocument()
+		expect(within(earned).getByText('3 of 3 live')).toBeInTheDocument()
+		expect(
+			within(sold).getByRole('button', {
+				name: 'Schedule palette group Sold palettes',
 			}),
 		).toBeInTheDocument()
 	})

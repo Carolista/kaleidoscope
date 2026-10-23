@@ -128,7 +128,6 @@ export async function loadPuzzleGroups(
 		const { data, error } = await client
 			.from('puzzle_groups')
 			.select('*')
-			.is('published_at', null)
 			.order('id')
 			.range(offset, offset + 999)
 		if (error)

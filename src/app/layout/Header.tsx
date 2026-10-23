@@ -1,6 +1,6 @@
-import type { Ref } from 'react'
+import type { ReactNode, Ref } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPaintbrush, faPuzzlePiece } from '@fortawesome/pro-solid-svg-icons'
+import { faSpa, faPuzzlePieceSimple } from '@fortawesome/pro-solid-svg-icons'
 import styles from './Header.module.css'
 import { LogoStar } from '@/ui/components'
 
@@ -11,6 +11,8 @@ interface HeaderProps {
 	readonly onStarSpinComplete?: () => void
 	readonly mode?: 'zen' | 'puzzle'
 	readonly onModeChange?: (mode: 'zen' | 'puzzle') => void
+	// Page-wide controls (e.g. the dark mode toggle), shown after the mode switch.
+	readonly actions?: ReactNode
 }
 
 function Header({
@@ -20,6 +22,7 @@ function Header({
 	onStarSpinComplete,
 	mode = 'zen',
 	onModeChange,
+	actions,
 }: HeaderProps) {
 	const titleClasses = [
 		styles.title,
@@ -47,6 +50,13 @@ function Header({
 					SCOPE
 				</span>
 			</h1>
+			{actions && (
+				<div
+					className={`${styles.actions}${isOpening ? ` ${styles.openingSwitch}` : ''}`}
+				>
+					{actions}
+				</div>
+			)}
 			{onModeChange && (
 				<nav
 					aria-label="Play mode"
@@ -60,10 +70,15 @@ function Header({
 						onClick={() => onModeChange('zen')}
 						disabled={isOpening}
 					>
-						<FontAwesomeIcon
-							icon={faPaintbrush}
-							aria-hidden="true"
-						/>
+						<FontAwesomeIcon icon={faSpa} aria-hidden="true" />
+						{mode === 'zen' && (
+							<span
+								className={styles.modeLabel}
+								aria-hidden="true"
+							>
+								ZEN
+							</span>
+						)}
 					</button>
 					<button
 						type="button"
@@ -74,9 +89,18 @@ function Header({
 						disabled={isOpening}
 					>
 						<FontAwesomeIcon
-							icon={faPuzzlePiece}
+							icon={faPuzzlePieceSimple}
+							className={styles.puzzleIcon}
 							aria-hidden="true"
 						/>
+						{mode === 'puzzle' && (
+							<span
+								className={styles.modeLabel}
+								aria-hidden="true"
+							>
+								PUZZLE
+							</span>
+						)}
 					</button>
 				</nav>
 			)}

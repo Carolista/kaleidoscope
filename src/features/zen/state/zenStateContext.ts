@@ -1,11 +1,11 @@
 import { createContext } from 'react'
 import type { ZenState } from './zenState'
-import type { Palette } from '@/domain/palettes'
+import type { PlayerPalette } from '@/domain/palettes'
 import type { GridShapeId, GridSize } from '@/domain/shapes'
 
 export interface ZenStateContextValue {
 	readonly state: ZenState
-	readonly selectPalette: (palette: Palette) => void
+	readonly selectPalette: (palette: PlayerPalette) => void
 	readonly selectColor: (color: string) => void
 	readonly paintShapeGroup: (groupId: string) => void
 	readonly toggleDarkMode: () => void

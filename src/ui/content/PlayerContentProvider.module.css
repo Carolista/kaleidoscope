@@ -1,0 +1,23 @@
+.gate {
+	--accent: #ffffff;
+
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 1rem;
+	min-height: 100dvh;
+	padding: 1rem;
+	font-family: var(--font-body);
+	color: var(--accent);
+	text-align: center;
+}
+
+.light {
+	--accent: #222222;
+}
+
+.gate p {
+	max-width: 32rem;
+	margin: 0;
+}

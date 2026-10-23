@@ -12,7 +12,6 @@ import { SaveImageButton } from '@/features/zen/export'
 import { GridTransition, ShapeGrid } from '@/features/zen/grid'
 import { IntroSequence } from '@/features/zen/intro'
 import { useZenState } from '@/features/zen/state'
-import { DarkModeToggle } from '@/ui/components'
 import styles from './ZenMode.module.css'
 
 export default function ZenMode({
@@ -63,7 +62,6 @@ export default function ZenMode({
 					<div className={styles.buttonRow}>
 						<GridShapeButton />
 						<SaveImageButton svgRef={svgRef} />
-						<DarkModeToggle />
 						<ControlsInfoButton initialOpen={isFirstVisit} />
 					</div>
 				</div>

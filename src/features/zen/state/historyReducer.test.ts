@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { palettes } from '@/domain/palettes'
+import { palettes } from '@/test/playerContent'
 import { defaultGridSizes, getGroupIdsForShape } from '@/domain/shapes'
 import type { ZenState } from './zenState'
 import type { ZenAction } from './zenReducer'
@@ -177,7 +177,7 @@ describe('historyReducer', () => {
 
 	it.each([
 		{ ...palettes[0], name: 'Renamed palette' },
-		{ name: palettes[0].name, colors: palettes[1].colors },
+		{ ...palettes[0], colors: palettes[1].colors },
 	])(
 		'records a real palette change to $name even when one field matches',
 		palette => {
@@ -412,6 +412,7 @@ describe('historyReducer', () => {
 	it('preserves a selected color already present at another position in the restored palette', () => {
 		const originalPalette = palettes[0]
 		const nextPalette = {
+			id: 'overlapping',
 			name: 'Overlapping palette',
 			colors: [
 				originalPalette.colors[1],

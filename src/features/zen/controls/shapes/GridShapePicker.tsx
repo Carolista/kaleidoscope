@@ -5,6 +5,7 @@ import {
 } from '@/domain/shapes'
 import { useZenState } from '@/features/zen/state'
 import type { GridShapeId, GridSize } from '@/domain/shapes'
+import { usePlayerContent } from '@/ui/content'
 import { GridShapeIcon } from '@/ui/components'
 import styles from './GridShapePicker.module.css'
 
@@ -16,6 +17,10 @@ export interface GridShapePickerProps {
 
 function GridShapePicker({ onSelected }: GridShapePickerProps) {
 	const { state, selectGridShape, selectGridSize } = useZenState()
+	const { unlockedShapes } = usePlayerContent()
+	const options = gridShapes.filter(option =>
+		unlockedShapes.includes(option.id),
+	)
 
 	function chooseSize(shape: GridShapeId, size: GridSize) {
 		if (shape === state.gridShape) {
@@ -31,7 +36,7 @@ function GridShapePicker({ onSelected }: GridShapePickerProps) {
 	return (
 		<>
 			<ul className={styles.list}>
-				{gridShapes.map(option => (
+				{options.map(option => (
 					<li key={option.id} className={styles.row}>
 						<div
 							className={styles.sizes}

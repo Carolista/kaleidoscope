@@ -1,5 +1,9 @@
 import type { Json, Tables } from '@/lib/supabase'
-import { PUZZLE_RECIPES, type PuzzlePlacement } from './puzzle'
+import {
+	PUZZLE_RECIPES,
+	type PuzzlePlacement,
+	type PuzzleRecipe,
+} from './puzzle'
 import {
 	PUZZLE_GENERATOR_VERSIONS,
 	puzzleGeometry,
@@ -62,10 +66,12 @@ export function readPuzzleTarget(
 	return { shape, gridSize, target }
 }
 
-export function readAuthoredPuzzle(
-	row: Tables<'puzzles'>,
-	authoring: Tables<'puzzle_authoring'> | null,
-): AuthoredPuzzle {
+// Reads everything a player needs from a stored puzzle, without its authoring data.
+export function readPuzzleDefinition(row: Tables<'puzzles'>): {
+	readonly shape: PuzzleShapeId
+	readonly recipe: PuzzleRecipe
+	readonly definition: PuzzleDefinition
+} {
 	const recipe = PUZZLE_RECIPES.find(
 		value =>
 			value.size === row.board_size &&
@@ -73,13 +79,9 @@ export function readAuthoredPuzzle(
 			value.difficulty === row.difficulty,
 	)
 	const shape = row.shape_id
-	if (!isPuzzleShapeId(shape) || !recipe || !authoring)
+	if (!isPuzzleShapeId(shape) || !recipe)
 		throw new Error(
-			`Puzzle "${row.name}" has missing or unsupported authoring data.`,
-		)
-	if (authoring.generator_version !== PUZZLE_GENERATOR_VERSIONS[shape])
-		throw new Error(
-			`Puzzle "${row.name}" uses an unsupported generator version.`,
+			`Puzzle "${row.name}" has an unsupported shape or recipe.`,
 		)
 	const source = object(row.definition)
 	const { gridSize, target } = readPuzzleTarget(shape, row.definition)
@@ -116,6 +118,30 @@ export function readAuthoredPuzzle(
 		new Set(pieces.map(piece => piece.id)).size !== pieces.length
 	)
 		throw new Error('Saved puzzle has empty content or duplicate pieces.')
+	return {
+		shape,
+		recipe,
+		definition: {
+			version: 2,
+			geometry: puzzleGeometry(shape, gridSize),
+			target,
+			pieces,
+		},
+	}
+}
+
+export function readAuthoredPuzzle(
+	row: Tables<'puzzles'>,
+	authoring: Tables<'puzzle_authoring'> | null,
+): AuthoredPuzzle {
+	const { shape, recipe, definition } = readPuzzleDefinition(row)
+	if (!authoring)
+		throw new Error(`Puzzle "${row.name}" has missing authoring data.`)
+	if (authoring.generator_version !== PUZZLE_GENERATOR_VERSIONS[shape])
+		throw new Error(
+			`Puzzle "${row.name}" uses an unsupported generator version.`,
+		)
+	const pieces = definition.pieces
 	const solution = object(authoring.known_solution)
 	const knownSolution: Record<string, PuzzlePlacement> = {}
 	for (const piece of pieces) {
@@ -141,12 +167,7 @@ export function readAuthoredPuzzle(
 		recipe,
 		seed: authoring.seed,
 		generatorVersion: PUZZLE_GENERATOR_VERSIONS[shape],
-		definition: {
-			version: 2,
-			geometry: puzzleGeometry(shape, gridSize),
-			target,
-			pieces,
-		},
+		definition,
 		knownSolution,
 	}
 }

@@ -45,6 +45,32 @@ it('creates a single typed client with isolated auth storage', async () => {
 	)
 })
 
+it('creates a separate guest client that keeps no session', async () => {
+	vi.stubEnv('VITE_SUPABASE_URL', 'https://example.supabase.co')
+	vi.stubEnv('VITE_SUPABASE_PUBLISHABLE_KEY', 'sb_publishable_example')
+	const { getGuestClient, getSupabaseClient } =
+		await import('./supabaseClient')
+	expect(getGuestClient()).toBe(getGuestClient())
+	getSupabaseClient()
+	expect(createClient).toHaveBeenCalledTimes(2)
+	expect(createClient).toHaveBeenCalledWith(
+		'https://example.supabase.co',
+		'sb_publishable_example',
+		{
+			auth: {
+				persistSession: false,
+				autoRefreshToken: false,
+				detectSessionInUrl: false,
+			},
+		},
+	)
+})
+
+it('reports missing configuration for guests with player wording', async () => {
+	const { getGuestClient } = await import('./supabaseClient')
+	expect(getGuestClient).toThrow('Loading puzzles requires')
+})
+
 it('requires HTTPS outside localhost', async () => {
 	vi.stubEnv('VITE_SUPABASE_URL', 'http://example.supabase.co')
 	vi.stubEnv('VITE_SUPABASE_PUBLISHABLE_KEY', 'sb_publishable_example')

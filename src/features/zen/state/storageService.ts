@@ -1,6 +1,6 @@
 import type { ZenState } from './zenState'
 import type { GridShapeId } from '@/domain/shapes'
-import { palettes } from '@/domain/palettes'
+import type { PlayerPalette } from '@/domain/palettes'
 import {
 	isGridShapeId,
 	availableGridSizes,
@@ -18,7 +18,14 @@ const LEGACY_STORAGE_VERSION = 1
 const PREVIOUS_STORAGE_VERSION = 2
 const CIRCLE_RINGS_STORAGE_VERSION = 3
 const PINWHEEL_STORAGE_VERSION = 4
-const STORAGE_VERSION = 5
+const SAVED_BOARDS_STORAGE_VERSION = 5
+const STORAGE_VERSION = 6
+
+// What Zen needs from the player's content to restore a saved design.
+export interface ZenContent {
+	readonly palettes: readonly PlayerPalette[]
+	readonly unlockedShapes: readonly GridShapeId[]
+}
 
 interface PersistedDesign {
 	readonly version:
@@ -26,9 +33,11 @@ interface PersistedDesign {
 		| typeof PREVIOUS_STORAGE_VERSION
 		| typeof CIRCLE_RINGS_STORAGE_VERSION
 		| typeof PINWHEEL_STORAGE_VERSION
+		| typeof SAVED_BOARDS_STORAGE_VERSION
 		| typeof STORAGE_VERSION
-	// Stored key from before "scheme" was renamed to "palette"; keep it so saves load.
-	readonly schemeName: string
+	// Designs saved before palettes had IDs name their palette instead.
+	readonly schemeName?: string
+	readonly paletteId?: string
 	readonly currentColor: string
 	readonly darkMode: boolean
 	// Optional so designs saved before this field existed still load
@@ -48,7 +57,7 @@ interface PersistedDesign {
 function toPersistedDesign(state: ZenState): PersistedDesign {
 	return {
 		version: STORAGE_VERSION,
-		schemeName: state.currentPalette.name,
+		paletteId: state.currentPalette.id,
 		currentColor: state.currentColor,
 		darkMode: state.darkMode,
 		showEditableArea: state.showEditableArea,
@@ -59,14 +68,21 @@ function toPersistedDesign(state: ZenState): PersistedDesign {
 	}
 }
 
-// The palette is persisted by name and re-linked to the live `palettes` catalog
-// on load, rather than persisting the palette object itself, so a design
-// saved by one version of the app still works if a palette's colors are
-// ever tweaked later.
-function fromPersistedDesign(data: PersistedDesign): ZenState | null {
-	const palette = palettes.find(s => s.name === data.schemeName)
+// The palette is persisted by ID and re-linked to the player's palettes on
+// load, rather than persisting the palette object itself, so a design
+// saved earlier still works if a palette's colors are ever corrected.
+function fromPersistedDesign(
+	data: PersistedDesign,
+	{ palettes, unlockedShapes }: ZenContent,
+): ZenState | null {
+	const palette = palettes.find(item =>
+		data.paletteId === undefined
+			? item.name === data.schemeName
+			: item.id === data.paletteId,
+	)
 	if (!palette) return null
 	const gridShape = data.gridShape ?? 'hexagon'
+	if (!unlockedShapes.includes(gridShape)) return null
 	const gridSizes = data.gridSizes
 		? { ...defaultGridSizes, ...data.gridSizes }
 		: { ...defaultGridSizes, [gridShape]: legacyGridSizes[gridShape] }
@@ -99,7 +115,9 @@ function fromPersistedDesign(data: PersistedDesign): ZenState | null {
 		gridSizes,
 		shapeGroupColors: { ...data.shapeGroupColors },
 		savedBoards:
-			data.version === STORAGE_VERSION ? { ...data.savedBoards } : {},
+			data.version >= SAVED_BOARDS_STORAGE_VERSION
+				? { ...data.savedBoards }
+				: {},
 	}
 }
 
@@ -148,8 +166,10 @@ function isPersistedDesign(data: unknown): data is PersistedDesign {
 			data.version === PREVIOUS_STORAGE_VERSION ||
 			data.version === CIRCLE_RINGS_STORAGE_VERSION ||
 			data.version === PINWHEEL_STORAGE_VERSION ||
+			data.version === SAVED_BOARDS_STORAGE_VERSION ||
 			data.version === STORAGE_VERSION) &&
-		typeof data.schemeName === 'string' &&
+		(typeof data.paletteId === 'string' ||
+			typeof data.schemeName === 'string') &&
 		isHexColor(data.currentColor) &&
 		typeof data.darkMode === 'boolean' &&
 		(data.showEditableArea === undefined ||
@@ -165,27 +185,30 @@ function isPersistedDesign(data: unknown): data is PersistedDesign {
 				))) &&
 		isRecord(data.shapeGroupColors) &&
 		Object.values(data.shapeGroupColors).every(isHexColor) &&
-		(data.version !== STORAGE_VERSION || hasValidSavedBoards(data))
+		(data.version < SAVED_BOARDS_STORAGE_VERSION ||
+			hasValidSavedBoards(data))
 	)
 }
 
 // Falls back to a fresh initial state (same as a first-ever visit)
 // whenever there's nothing usable to restore: no saved design, corrupted
 // JSON, malformed paint maps/colors, an unrecognized shape/version, or a
-// palette name that no longer exists. Also swallows any storage access error
-// (e.g. disabled localStorage in a private-browsing mode) rather than crashing
-// the app.
-export function loadInitialZenState(): ZenState {
+// palette that is no longer available, or a shape the player has not unlocked.
+// Also swallows any storage access error (e.g. disabled localStorage in a
+// private-browsing mode) rather than crashing the app.
+export function loadInitialZenState(content: ZenContent): ZenState {
+	const initial = () =>
+		createInitialZenState(content.palettes, content.unlockedShapes[0])
 	try {
 		const raw = localStorage.getItem(STORAGE_KEY)
-		if (!raw) return createInitialZenState()
+		if (!raw) return initial()
 
 		const parsed: unknown = JSON.parse(raw)
-		if (!isPersistedDesign(parsed)) return createInitialZenState()
+		if (!isPersistedDesign(parsed)) return initial()
 
-		return fromPersistedDesign(parsed) ?? createInitialZenState()
+		return fromPersistedDesign(parsed, content) ?? initial()
 	} catch {
-		return createInitialZenState()
+		return initial()
 	}
 }
 

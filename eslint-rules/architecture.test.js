@@ -74,7 +74,7 @@ describe('architecture/use-barrels', () => {
 		expect(
 			rulesHit(
 				'features/zen/X.ts',
-				"import { palettes } from '@/domain/palettes/catalog'",
+				"import { withLightness } from '@/domain/palettes/colorMath'",
 			),
 		).toContain('architecture/use-barrels')
 	})

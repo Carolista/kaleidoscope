@@ -68,7 +68,14 @@ export const PUZZLE_RECIPES = [
 ] as const
 
 export type PuzzleRecipe = (typeof PUZZLE_RECIPES)[number]
+export type PuzzleDifficulty = PuzzleRecipe['difficulty']
 
+export const PUZZLE_DIFFICULTY_LABELS: Record<PuzzleDifficulty, string> = {
+	easy: 'Easy',
+	moderate: 'Moderate',
+	hard: 'Hard',
+	super_hard: 'Challenging',
+}
 export interface Puzzle {
 	readonly version: 1
 	readonly shape: PuzzleShapeId

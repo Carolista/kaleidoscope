@@ -1,7 +1,8 @@
 import { useMemo } from 'react'
-import type { PointerEvent, Ref } from 'react'
+import type { CSSProperties, PointerEvent, Ref } from 'react'
 import type { AxialCoord } from '@/domain/shapes/hexagon'
 import { pointsToSvgAttr, polygonBoundingBox } from '@/domain/geometry'
+import { brightenAndSaturate } from '@/domain/palettes'
 import {
 	coordinateKey,
 	pieceCells,
@@ -224,11 +225,18 @@ export default function PuzzleBoard({
 					<polygon
 						key={`${cell.transform ?? 0}:${coordinateKey(cell)}`}
 						points={polygonPoints(shape, cell)}
-						fill={fill ?? 'var(--base)'}
+						fill={fill ?? 'var(--accent)'}
 						style={
-							gridlines
-								? undefined
-								: { stroke: fill ?? 'var(--base)' }
+							{
+								...(gridlines
+									? undefined
+									: { stroke: fill ?? 'var(--accent)' }),
+								...(interactive && {
+									'--hover-fill': fill
+										? brightenAndSaturate(fill)
+										: undefined,
+								}),
+							} as CSSProperties
 						}
 						className={
 							target || solved
@@ -307,7 +315,9 @@ export default function PuzzleBoard({
 						aria-hidden="true"
 					>
 						<path d={outline} className={styles.outlineHalo} />
-						<path d={outline} className={styles.outlineEdge} />
+						{piece.id === selectedId && (
+							<path d={outline} className={styles.outlineEdge} />
+						)}
 					</g>
 				))}
 		</svg>

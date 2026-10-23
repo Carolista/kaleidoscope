@@ -93,7 +93,7 @@ describe('palette usage', () => {
 				{
 					id: 'puzzle',
 					name: 'Saved art',
-					context: 'Core · First group',
+					context: ['Core', 'First group'],
 					preview: {
 						shape: 'hexagon',
 						gridSize: 4,
@@ -102,7 +102,7 @@ describe('palette usage', () => {
 				},
 			],
 			rewards: ['First group'],
-			groups: ['Autumn pack · Pack'],
+			groups: [['Autumn pack', 'Pack']],
 			preparedGroups: 0,
 			grants: 2,
 			corrections: 3,
@@ -196,9 +196,9 @@ describe('palette usage', () => {
 		})
 		const usage = await loadPaletteUsage(client, 'cabo')
 		expect(usage.puzzles.map(value => value.context)).toEqual([
-			'Daily · October',
-			'Unassigned',
-			'Unassigned',
+			['Daily', 'October'],
+			['Unassigned'],
+			['Unassigned'],
 		])
 		expect(usage.puzzles[1].preview).toBeNull()
 		expect(usage.puzzles[2].preview).toEqual({
@@ -289,11 +289,11 @@ describe('palette usage', () => {
 			{
 				...empty,
 				puzzles: [
-					{ id: 'p', name: 'P', context: 'Daily', preview: null },
+					{ id: 'p', name: 'P', context: ['Daily'], preview: null },
 				],
 			},
 			{ ...empty, rewards: ['Reward'] },
-			{ ...empty, groups: ['Pack · Pack'] },
+			{ ...empty, groups: [['Pack', 'Pack']] },
 			{ ...empty, grants: 1 },
 			{ ...empty, corrections: 1 },
 		])

@@ -404,9 +404,7 @@ describe('puzzle group workspace', () => {
 			name: 'Group First group',
 		})
 		expect(card).toHaveClass(layoutStyles.groupCard)
-		expect(
-			within(card).getByText('Core · Hexagon · Basic'),
-		).toBeInTheDocument()
+		expect(within(card).getByText('Core Hexagon Basic')).toBeInTheDocument()
 		expect(within(card).getByText('2 puzzles')).toBeInTheDocument()
 		expect(
 			card.querySelector('svg polygon[fill="#112233"]'),
@@ -430,8 +428,8 @@ describe('puzzle group workspace', () => {
 		).toHaveAttribute('title', 'New group')
 	})
 	it.each([
-		['reward', 'rotation', 'Reward · Hexagon · Rotation'],
-		['pack', 'mixed', 'Pack · Hexagon · Mixed'],
+		['reward', 'rotation', 'Reward Hexagon Rotation'],
+		['pack', 'mixed', 'Pack Hexagon Mixed'],
 	] as const)(
 		'labels %s groups and explicitly shows empty groups',
 		async (purpose, track, label) => {
@@ -465,7 +463,7 @@ describe('puzzle group workspace', () => {
 			},
 		])
 		setup()
-		await screen.findByText('Daily · All shapes')
+		await screen.findByText('Daily All shapes')
 	})
 	it('confirms deletion, allows cancellation, and retains confirmation after failure for retry', async () => {
 		setup()
@@ -699,7 +697,7 @@ describe('puzzle group workspace', () => {
 		expect(isProtected()).toBe(false)
 		fireEvent.click(screen.getByRole('button', { name: 'Groups tab' }))
 		expect(
-			await screen.findByText('Pack · Triangle · Mixed'),
+			await screen.findByText('Pack Triangle Mixed'),
 		).toBeInTheDocument()
 	})
 	it('drops the shape and track when a group becomes daily', async () => {
@@ -1009,6 +1007,37 @@ describe('releasing groups', () => {
 		).not.toBeInTheDocument()
 	})
 
+	it('keeps released groups visible but read-only, and undeletable', async () => {
+		const live = {
+			...livePack,
+			row: { ...livePack.row, id: 'live', name: 'Live group' },
+		}
+		mocks.load.mockResolvedValue([live, draftGroup])
+		setup()
+		expect(
+			await screen.findByRole('button', {
+				name: 'Delete group First group',
+			}),
+		).toBeEnabled()
+		expect(
+			screen.getByRole('button', { name: 'Delete group Live group' }),
+		).toBeDisabled()
+		fireEvent.click(
+			screen.getByRole('button', { name: 'View group Live group' }),
+		)
+		expect(
+			screen.getByRole('heading', {
+				name: 'Group: Live group (read-only)',
+			}),
+		).toBeInTheDocument()
+		expect(screen.getByLabelText('Group name')).toBeDisabled()
+		expect(screen.getByLabelText('Purpose')).toBeDisabled()
+		expect(
+			screen.queryByRole('button', { name: 'Save' }),
+		).not.toBeInTheDocument()
+		expect(isProtected()).toBe(false)
+	})
+
 	it('leaves core and bonus groups to the Release tab, though it shows their state', async () => {
 		mocks.load.mockResolvedValue([
 			{
@@ -1023,9 +1052,14 @@ describe('releasing groups', () => {
 		setup()
 		expect(await screen.findByText(/^Scheduled for /)).toBeInTheDocument()
 		expect(
+			screen.getByRole('img', { name: 'Scheduled' }),
+		).toBeInTheDocument()
+		expect(
 			screen.queryByRole('button', { name: /chedule/ }),
 		).not.toBeInTheDocument()
-		await open()
+		fireEvent.click(
+			screen.getByRole('button', { name: 'View group First group' }),
+		)
 		expect(
 			screen.queryByRole('button', { name: /chedule/ }),
 		).not.toBeInTheDocument()

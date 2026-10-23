@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { palettes } from '@/domain/palettes'
+import { palettes, testContent } from '@/test/playerContent'
 import {
 	supportedGridShapes,
 	defaultGridSizes,
@@ -8,10 +8,12 @@ import {
 import type { ZenState } from './zenState'
 import { zenReducer } from './zenReducer'
 import {
-	loadInitialZenState,
+	loadInitialZenState as loadWithContent,
 	savePersistedState,
 	hasPersistedDesign,
 } from './storageService'
+
+const loadInitialZenState = () => loadWithContent(testContent)
 
 const STORAGE_KEY = 'kaleidoscope:design'
 
@@ -114,6 +116,65 @@ describe('storageService', () => {
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
 		expect(loadInitialZenState().savedBoards).toEqual({})
 		expect(loadInitialZenState().darkMode).toBe(true)
+	})
+
+	it('saves the palette by ID and restores it from the current palettes', () => {
+		savePersistedState(
+			baseState({
+				currentPalette: palettes[2],
+				currentColor: palettes[2].colors[0],
+			}),
+		)
+		const payload = JSON.parse(localStorage.getItem(STORAGE_KEY)!)
+		expect(payload).toMatchObject({ version: 6, paletteId: 'club-neon' })
+		expect(payload).not.toHaveProperty('schemeName')
+		const corrected = { ...palettes[2], colors: palettes[3].colors }
+		const restored = loadWithContent({
+			...testContent,
+			palettes: [palettes[0], corrected],
+		})
+		expect(restored.currentPalette).toBe(corrected)
+	})
+
+	it('still restores designs saved by palette name before palettes had IDs', () => {
+		savePersistedState(baseState({ currentPalette: palettes[1] }))
+		const legacy = JSON.parse(localStorage.getItem(STORAGE_KEY)!)
+		delete legacy.paletteId
+		legacy.schemeName = palettes[1].name
+		legacy.version = 5
+		localStorage.setItem(STORAGE_KEY, JSON.stringify(legacy))
+		expect(loadInitialZenState().currentPalette).toBe(palettes[1])
+	})
+
+	it('starts fresh when the saved palette is no longer available', () => {
+		savePersistedState(
+			baseState({
+				currentPalette: palettes[2],
+				shapeGroupColors: { '0': palettes[2].colors[0] },
+			}),
+		)
+		const state = loadWithContent({
+			...testContent,
+			palettes: palettes.slice(0, 2),
+		})
+		expect(state.currentPalette).toBe(palettes[0])
+		expect(state.shapeGroupColors).toEqual({})
+	})
+
+	it('starts fresh on the first unlocked shape when the saved shape is locked', () => {
+		savePersistedState(
+			baseState({
+				gridShape: 'triangle',
+				shapeGroupColors: { '0': palettes[0].colors[0] },
+			}),
+		)
+		const state = loadWithContent({
+			...testContent,
+			unlockedShapes: ['hexagon'],
+		})
+		expect(state.gridShape).toBe('hexagon')
+		expect(state.shapeGroupColors).toEqual({})
+		expect(loadInitialZenState().gridShape).toBe('triangle')
 	})
 
 	it('loadInitialZenState falls back to a fresh random state when nothing is saved', () => {

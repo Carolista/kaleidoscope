@@ -147,7 +147,7 @@ describe('palette management', () => {
 		])
 		setup()
 		await screen.findByRole('button', { name: 'Edit Cabo' })
-		expect(screen.getByText('Warm colors · Undecided')).toBeInTheDocument()
+		expect(screen.getByText('Warm colors Undecided')).toBeInTheDocument()
 		fireEvent.change(screen.getByLabelText('Show palettes'), {
 			target: { value: 'ungrouped' },
 		})
@@ -845,7 +845,7 @@ describe('palette management', () => {
 			screen.getByRole('button', { name: 'Delete group Warm colors' }),
 		).toBeDisabled()
 		fireEvent.click(
-			screen.getByRole('button', { name: 'Edit group Warm colors' }),
+			screen.getByRole('button', { name: 'View group Warm colors' }),
 		)
 		expect(screen.getByLabelText('Group name')).toBeDisabled()
 		expect(screen.getByLabelText('Purpose')).toBeDisabled()
@@ -1132,7 +1132,7 @@ describe('palette management', () => {
 				{
 					id: 'puzzle',
 					name: 'Linked art',
-					context: 'Core · First group',
+					context: ['Core', 'First group'],
 					preview: {
 						shape: 'hexagon',
 						gridSize: 3,
@@ -1141,7 +1141,7 @@ describe('palette management', () => {
 				},
 			],
 			rewards: ['First group'],
-			groups: ['Earth tones · Pack'],
+			groups: [['Earth tones', 'Pack']],
 			grants: 2,
 			corrections: 3,
 		})
@@ -1153,7 +1153,7 @@ describe('palette management', () => {
 			await screen.findByText(/This palette is in use/),
 		).toBeInTheDocument()
 		expect(screen.getByText('First group')).toBeInTheDocument()
-		expect(screen.getByText('Earth tones · Pack')).toBeInTheDocument()
+		expect(screen.getByText('Earth tones Pack')).toBeInTheDocument()
 		expect(screen.getByText('Ownership grants: 2')).toBeInTheDocument()
 		expect(
 			screen.getByText('Correction history records: 3'),

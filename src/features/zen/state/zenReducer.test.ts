@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { palettes } from '@/domain/palettes'
+import { palettes } from '@/test/playerContent'
 import {
 	defaultGridSizes,
 	supportedGridShapes,
@@ -10,7 +10,7 @@ import type { ZenState } from './zenState'
 
 describe('createInitialZenState', () => {
 	it('uses the first palette and defaults current color to its first color', () => {
-		const state = createInitialZenState()
+		const state = createInitialZenState(palettes)
 		expect(state.currentPalette).toBe(palettes[0])
 		expect(state.currentColor).toBe(palettes[0].colors[0])
 		expect(state.darkMode).toBe(true)
@@ -18,6 +18,12 @@ describe('createInitialZenState', () => {
 		expect(state.gridShape).toBe('hexagon')
 		expect(state.gridSizes).toEqual(defaultGridSizes)
 		expect(state.shapeGroupColors).toEqual({})
+	})
+
+	it('starts on the given shape', () => {
+		expect(createInitialZenState(palettes, 'triangle').gridShape).toBe(
+			'triangle',
+		)
 	})
 })
 

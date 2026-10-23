@@ -1,4 +1,5 @@
 import {
+	faEye,
 	faPenToSquare,
 	faPlusLarge,
 	faRotate,
@@ -32,6 +33,7 @@ import {
 	AdminGroupCard,
 	AdminGroupForm,
 	errorMessage,
+	SeparatorDot,
 } from '@/features/admin/common'
 import { ConfirmDialog, Loading, Select } from '@/ui/components'
 import {
@@ -149,6 +151,7 @@ export default function PuzzleGroupLibrary({
 		setStatus(message)
 	})
 	const selected = groups.find(group => group.row.id === selectedId)
+	const readOnly = !!selected?.row.published_at || !!selected?.row.release_at
 	const order = useStagedOrder(
 		selected?.members ?? [],
 		member => member.puzzleId,
@@ -159,6 +162,7 @@ export default function PuzzleGroupLibrary({
 	const nameDirty = !!selected && name.trim() !== selected.row.name
 	const dirty =
 		!!selected &&
+		!readOnly &&
 		(name !== selected.row.name || detailsDirty || order.dirty)
 	useUnsavedDraft({ dirty, pending: busy })
 	useEffect(() => {
@@ -227,7 +231,7 @@ export default function PuzzleGroupLibrary({
 		}
 	}
 	function save() {
-		if (!selected) return
+		if (!selected || readOnly) return
 		if (!name.trim()) {
 			setError('Enter a group name.')
 			return
@@ -275,7 +279,9 @@ export default function PuzzleGroupLibrary({
 			<AdminSectionHeading
 				id="puzzle-groups-title"
 				title={
-					selected ? `Group: ${selected.row.name}` : 'Puzzle groups'
+					selected
+						? `Group: ${selected.row.name}${readOnly ? ' (read-only)' : ''}`
+						: 'Puzzle groups'
 				}
 			>
 				{selected && (
@@ -432,6 +438,7 @@ export default function PuzzleGroupLibrary({
 						nameId="group-name"
 						name={name}
 						disabled={busy}
+						readOnly={readOnly}
 						saveDisabled={
 							!nameDirty && !detailsDirty && !order.dirty
 						}
@@ -443,7 +450,7 @@ export default function PuzzleGroupLibrary({
 							purposes={puzzleGroupPurposeLabels}
 							value={details}
 							puzzleDetails
-							disabled={busy}
+							disabled={busy || readOnly}
 							onChange={setDetails}
 						/>
 					</AdminGroupForm>
@@ -454,7 +461,7 @@ export default function PuzzleGroupLibrary({
 							id: member.puzzleId,
 						}))}
 						noun="puzzles"
-						disabled={busy}
+						disabled={busy || readOnly}
 						preview={member => (
 							<div
 								className={styles.groupMemberThumbnail}
@@ -526,8 +533,13 @@ export default function PuzzleGroupLibrary({
 										onStart={release.start}
 									/>
 									<AdminIconButton
-										icon={faPenToSquare}
-										label={`Edit group ${group.row.name}`}
+										icon={
+											group.row.published_at ||
+											group.row.release_at
+												? faEye
+												: faPenToSquare
+										}
+										label={`${group.row.published_at || group.row.release_at ? 'View' : 'Edit'} group ${group.row.name}`}
 										tone="edit"
 										disabled={busy || !!deleting}
 										onClick={() => {
@@ -543,7 +555,12 @@ export default function PuzzleGroupLibrary({
 										icon={faTrashCan}
 										label={`Delete group ${group.row.name}`}
 										tone="delete"
-										disabled={busy || !!deleting}
+										disabled={
+											busy ||
+											!!deleting ||
+											!!group.row.published_at ||
+											!!group.row.release_at
+										}
 										onClick={() => {
 											setDeleting(group)
 											setDeleteError('')
@@ -555,11 +572,16 @@ export default function PuzzleGroupLibrary({
 						>
 							<strong>{group.row.name}</strong>
 							<span>
-								{puzzleGroupPurposeLabels[group.purpose]} ·{' '}
+								{puzzleGroupPurposeLabels[group.purpose]}{' '}
+								<SeparatorDot />{' '}
 								{shapeLabel(group.row.shape_id)}
-								{group.track
-									? ` · ${puzzleGroupTrackLabels[group.track]}`
-									: ''}
+								{group.track && (
+									<>
+										{' '}
+										<SeparatorDot />{' '}
+										{puzzleGroupTrackLabels[group.track]}
+									</>
+								)}
 							</span>
 							<span>
 								{group.members.length}{' '}

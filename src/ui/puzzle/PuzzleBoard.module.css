@@ -1,7 +1,7 @@
 .gridGraphic {
 	display: block;
 	width: 90%;
-	margin: auto;
+	margin: 0 auto 2rem;
 	overflow: visible;
 }
 
@@ -9,8 +9,8 @@
 .mirrorCell,
 .wedgeCell,
 .pieceTile {
-	stroke: var(--accent);
-	stroke-width: 0.6;
+	stroke: var(--base);
+	stroke-width: 1;
 	stroke-linejoin: round;
 }
 
@@ -28,27 +28,24 @@
 
 .outlineHalo {
 	stroke: var(--base);
-	stroke-width: 4;
-}
-
-.outlineEdge {
-	stroke: var(--accent);
-	stroke-width: 1.5;
+	stroke-width: 3;
 }
 
 .selectedOutline .outlineEdge {
-	stroke-width: 2.5;
+	stroke: var(--accent);
+	stroke-width: 1;
 	stroke-dasharray: 3 2;
 }
 
 .wedgeCell {
-	stroke-width: 1.5;
 	cursor: pointer;
 	touch-action: none;
 }
 
 .wedgeCell:hover {
-	fill: #808080;
+	/* Empty tiles drift from accent toward base; painted tiles get a
+	   per-cell --hover-fill, as in zen. */
+	fill: var(--hover-fill, color-mix(in srgb, var(--accent) 65%, var(--base)));
 }
 
 .wedgeCell:focus:not(:focus-visible) {

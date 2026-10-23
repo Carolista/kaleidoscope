@@ -1,9 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { fireEvent, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProvider } from '@/test/renderWithProvider'
-import { palettes } from '@/domain/palettes'
+import { palettes, testContent } from '@/test/playerContent'
+import type { PlayerContent } from '@/ui/content'
 import { generateHexagonCells } from '@/domain/shapes/hexagon'
+import { withLightness } from '@/domain/palettes'
 import { coordinateKey, generatePuzzle, pieceCells } from '@/domain/puzzles'
 import PuzzleMode from './PuzzleMode'
 import styles from '@/ui/puzzle/PuzzleBoard.module.css'
@@ -17,6 +19,45 @@ import {
 
 const seed = 'ui-puzzle'
 const puzzle = generatePuzzle(seed, palettes[1])
+const content: PlayerContent = {
+	...testContent,
+	puzzleSets: [
+		{
+			id: 'set-one',
+			name: 'Starter',
+			shape: 'hexagon',
+			track: 'basic',
+			puzzles: [
+				{
+					id: 'p1',
+					name: 'One',
+					difficulty: 'easy',
+					palette: palettes[1],
+					puzzle,
+				},
+				{
+					id: 'p2',
+					name: 'Two',
+					difficulty: 'moderate',
+					palette: palettes[1],
+					puzzle: generatePuzzle('ui-puzzle-two', palettes[1]),
+				},
+			],
+		},
+	],
+}
+
+function renderBrowser(ui = <PuzzleMode />) {
+	return renderWithProvider(ui, content)
+}
+
+// Opens the first puzzle of the only set, as a player would.
+function renderPlaying() {
+	const view = renderBrowser()
+	fireEvent.click(screen.getByRole('button', { name: /Starter/ }))
+	fireEvent.click(screen.getByRole('button', { name: /^Puzzle 1,/ }))
+	return view
+}
 function solvePuzzle() {
 	for (const [index, piece] of puzzle.pieces.entries()) {
 		dragTo(
@@ -38,7 +79,7 @@ describe('PuzzleMode', () => {
 	it.each(['Delete', 'Backspace'])(
 		'returns a focused board piece with %s',
 		key => {
-			renderWithProvider(<PuzzleMode initialSeed={seed} />)
+			renderPlaying()
 			const destination = tileAt(
 				coordinateKey(puzzle.solution[puzzle.pieces[0].id]),
 			)
@@ -48,20 +89,28 @@ describe('PuzzleMode', () => {
 		},
 	)
 
-	it('shows Next puzzle only after winning and hides it when the next puzzle starts', async () => {
+	it("tints the session's icons from the puzzle's palette, not the zen palette", () => {
+		renderPlaying()
+		for (const name of ['Restart', 'Back to puzzle set']) {
+			expect(
+				screen
+					.getByRole('button', { name })
+					.querySelector('svg')
+					?.style.getPropertyValue('--fa-secondary-color'),
+			).toBe(withLightness(palettes[1].colors[1], 50))
+		}
+	})
+
+	it('keeps Next puzzle in place, disabled until the puzzle is solved', async () => {
 		const user = userEvent.setup()
-		renderWithProvider(<PuzzleMode initialSeed={seed} />)
+		renderPlaying()
 		expect(
-			screen.queryByRole('button', { name: 'Next puzzle' }),
-		).not.toBeInTheDocument()
+			screen.getByRole('button', { name: 'Next puzzle' }),
+		).toBeDisabled()
 		solvePuzzle()
-		await user.click(
-			screen.getByRole('button', { name: 'Close congratulations' }),
-		)
-		await user.click(screen.getByRole('button', { name: 'Next puzzle' }))
-		expect(
-			screen.queryByRole('button', { name: 'Next puzzle' }),
-		).not.toBeInTheDocument()
+		const next = screen.getByRole('button', { name: 'Next puzzle' })
+		expect(next).toBeEnabled()
+		await user.click(next)
 		expect(
 			screen.getAllByRole('button', { name: /of 6, empty$/ }),
 		).toHaveLength(6)
@@ -70,35 +119,114 @@ describe('PuzzleMode', () => {
 	beforeEach(() => localStorage.clear())
 	stubPointerHitTesting()
 
-	it('loads and generates new puzzles without secure-context-only randomUUID', async () => {
+	it('lists the available sets with their progress and opens one as a numbered grid', async () => {
 		const user = userEvent.setup()
-		const getRandomValues = vi.fn(crypto.getRandomValues.bind(crypto))
-		vi.stubGlobal('crypto', {
-			getRandomValues,
-		})
-		try {
-			const initialRender = renderWithProvider(<PuzzleMode />)
-			expect(getRandomValues).toHaveBeenCalledOnce()
-			initialRender.unmount()
-			renderWithProvider(<PuzzleMode initialSeed={seed} />)
-			solvePuzzle()
-			await user.click(
-				screen.getByRole('button', { name: 'Close congratulations' }),
-			)
-			await user.click(
-				screen.getByRole('button', { name: 'Next puzzle' }),
-			)
-			expect(getRandomValues).toHaveBeenCalledTimes(2)
-			expect(
-				screen.getAllByRole('button', { name: /of 6, empty$/ }),
-			).toHaveLength(6)
-		} finally {
-			vi.unstubAllGlobals()
-		}
+		localStorage.setItem(
+			'kaleidoscope:puzzle-progress',
+			JSON.stringify({ version: 1, solved: ['p2', 'gone'] }),
+		)
+		renderBrowser()
+		expect(
+			screen.getByRole('heading', { name: 'Puzzle Sets' }),
+		).toBeInTheDocument()
+		const set = screen.getByRole('button', { name: /Starter/ })
+		expect(set).toHaveTextContent('Basic')
+		expect(set).toHaveTextContent('1 of 2')
+		// No shape name or wording, just a preview and progress per difficulty.
+		expect(set).not.toHaveTextContent(/Hexagon|solved/)
+		expect(set.querySelectorAll('svg')).toHaveLength(2)
+		expect(set).toHaveTextContent('0 of 1')
+		expect(set).toHaveTextContent('1 of 1')
+		await user.click(set)
+		expect(screen.getByRole('heading', { name: 'Starter' })).toBeVisible()
+		expect(
+			screen
+				.getAllByRole('heading', { level: 3 })
+				.map(item => item.textContent),
+		).toEqual(['Easy', 'Moderate'])
+		expect(
+			screen.getByRole('button', { name: 'Puzzle 1, Easy' }),
+		).toBeInTheDocument()
+		expect(
+			screen.getByRole('button', { name: 'Puzzle 2, Moderate, solved' }),
+		).toBeInTheDocument()
+		await user.click(
+			screen.getByRole('button', { name: 'All puzzle sets' }),
+		)
+		expect(
+			screen.getByRole('heading', { name: 'Puzzle Sets' }),
+		).toBeInTheDocument()
+	})
+
+	it('says so when nothing has been released', () => {
+		renderWithProvider(<PuzzleMode />, { ...testContent, puzzleSets: [] })
+		expect(
+			screen.getByText(/No puzzles are available yet/),
+		).toBeInTheDocument()
+	})
+
+	it('remembers a solved puzzle on this device and marks it in the grid', async () => {
+		const user = userEvent.setup()
+		const view = renderPlaying()
+		solvePuzzle()
+		expect(
+			JSON.parse(
+				localStorage.getItem('kaleidoscope:puzzle-progress') ?? '{}',
+			),
+		).toEqual({ version: 1, solved: ['p1'] })
+		await user.click(
+			screen.getByRole('button', { name: 'Back to puzzle set' }),
+		)
+		expect(
+			screen.getByRole('button', { name: 'Puzzle 1, Easy, solved' }),
+		).toBeInTheDocument()
+		view.unmount()
+		renderBrowser()
+		expect(
+			screen.getByRole('button', { name: /Starter/ }),
+		).toHaveTextContent('1 of 2')
+	})
+
+	it('finishes the set when no unsolved puzzle is left', async () => {
+		const user = userEvent.setup()
+		localStorage.setItem(
+			'kaleidoscope:puzzle-progress',
+			JSON.stringify({ version: 1, solved: ['p2'] }),
+		)
+		renderPlaying()
+		solvePuzzle()
+		expect(screen.getByRole('status')).toHaveTextContent('Puzzle solved!')
+		expect(
+			screen.queryByRole('button', { name: 'Next puzzle' }),
+		).not.toBeInTheDocument()
+		await user.click(
+			screen.getByRole('button', { name: 'Back to puzzle set' }),
+		)
+		expect(screen.getByRole('heading', { name: 'Starter' })).toBeVisible()
+	})
+
+	it('moves to the next puzzle in the set without repeating a solved one', async () => {
+		const user = userEvent.setup()
+		renderPlaying()
+		solvePuzzle()
+		await user.click(screen.getByRole('button', { name: 'Next puzzle' }))
+		expect(
+			screen.getAllByRole('button', { name: /of 6, empty$/ }),
+		).toHaveLength(6)
+		expect(targetColors()).toEqual(
+			generateHexagonCells(
+				content.puzzleSets[0].puzzles[1].puzzle.gridSize,
+			).map(
+				cell =>
+					content.puzzleSets[0].puzzles[1].puzzle.target[
+						cell.groupId
+					],
+			),
+		)
 	})
 
 	it('shows the target, six blank wedge tiles, and three fixed-orientation pieces', () => {
-		renderWithProvider(<PuzzleMode initialSeed={seed} />)
+		renderPlaying()
 		expect(
 			screen.getByRole('img', { name: 'Target design' }),
 		).toBeInTheDocument()
@@ -122,7 +250,7 @@ describe('PuzzleMode', () => {
 			name: 'Restart',
 		}).parentElement!
 		expect(actions.querySelector('button')).toHaveAccessibleName(
-			'Switch to light mode',
+			'Back to puzzle set',
 		)
 		for (const svg of tray.querySelectorAll('svg')) {
 			const [, , width, height] = svg
@@ -149,7 +277,7 @@ describe('PuzzleMode', () => {
 
 	it('solves by keyboard selection/placement and mirrors every placed tile', async () => {
 		const user = userEvent.setup()
-		renderWithProvider(<PuzzleMode initialSeed={seed} />)
+		renderPlaying()
 		const board = screen.getByRole('group', { name: 'Puzzle board' })
 		const wedgeTiles = Object.fromEntries(
 			Object.keys(puzzle.target).map(key => [key, tileAt(key)]),
@@ -168,17 +296,15 @@ describe('PuzzleMode', () => {
 			}
 		}
 		expect(screen.getByRole('status')).toHaveTextContent('Puzzle solved!')
-		expect(
-			screen.getByRole('dialog', { name: 'Congrats!' }),
-		).toBeInTheDocument()
-		await user.click(
-			screen.getByRole('button', { name: 'Close congratulations' }),
+		expect(screen.getByText('Congrats!')).toHaveAttribute(
+			'aria-hidden',
+			'true',
 		)
 		for (const [group, color] of Object.entries(puzzle.target)) {
 			expect(wedgeTiles[group]).toHaveAttribute('fill', color)
 		}
 		expect(
-			board.querySelectorAll('polygon[fill="var(--base)"]'),
+			board.querySelectorAll('polygon[fill="var(--accent)"]'),
 		).toHaveLength(0)
 		expect(
 			board.querySelectorAll(`.${styles.mutedMirrorCell}`),
@@ -214,54 +340,22 @@ describe('PuzzleMode', () => {
 		expect(board.querySelectorAll('[role="button"]')).toHaveLength(6)
 	})
 
-	it.each(['close button', 'backdrop', 'Escape'])(
-		'keeps the solved puzzle after dismissing congratulations with %s',
-		async method => {
-			const user = userEvent.setup()
-			renderWithProvider(<PuzzleMode initialSeed={seed} />)
-			solvePuzzle()
-			const dialog = screen.getByRole('dialog', { name: 'Congrats!' })
-			if (method === 'close button') {
-				await user.click(
-					screen.getByRole('button', {
-						name: 'Close congratulations',
-					}),
-				)
-			} else if (method === 'backdrop') {
-				fireEvent.click(dialog)
-			} else {
-				fireEvent(dialog, new Event('cancel', { cancelable: true }))
-			}
-			expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-			expect(screen.getByRole('status')).toHaveTextContent(
-				'Puzzle solved!',
-			)
-			expect(targetColors()).toEqual(
-				[
-					...screen
-						.getByRole('group', { name: 'Puzzle board' })
-						.querySelectorAll('polygon'),
-				].map(cell => cell.getAttribute('fill')),
-			)
-			await user.click(
-				screen.getByRole('button', { name: 'Next puzzle' }),
-			)
-			expect(
-				screen.getAllByRole('button', { name: /of 6, empty$/ }),
-			).toHaveLength(6)
-		},
-	)
-
-	it('starts a new blank puzzle from the congratulations dialog', async () => {
+	it('shows a brief Congrats over the solved puzzle without a dialog, then starts a new blank puzzle', async () => {
 		const user = userEvent.setup()
-		renderWithProvider(<PuzzleMode initialSeed={seed} />)
-		expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+		renderPlaying()
+		expect(screen.queryByText('Congrats!')).not.toBeInTheDocument()
 		solvePuzzle()
-		await user.click(screen.getByRole('button', { name: 'Next Puzzle' }))
+		expect(screen.getByText('Congrats!')).toBeInTheDocument()
 		expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-		expect(
-			screen.queryByRole('button', { name: 'Next puzzle' }),
-		).not.toBeInTheDocument()
+		expect(targetColors()).toEqual(
+			[
+				...screen
+					.getByRole('group', { name: 'Puzzle board' })
+					.querySelectorAll('polygon'),
+			].map(cell => cell.getAttribute('fill')),
+		)
+		await user.click(screen.getByRole('button', { name: 'Next puzzle' }))
+		expect(screen.queryByText('Congrats!')).not.toBeInTheDocument()
 		expect(
 			screen.getAllByRole('button', { name: /of 6, empty$/ }),
 		).toHaveLength(6)
@@ -269,7 +363,7 @@ describe('PuzzleMode', () => {
 
 	it('accepts a fitting wrong placement, lets it be returned, and restarts', async () => {
 		const user = userEvent.setup()
-		renderWithProvider(<PuzzleMode initialSeed={seed} />)
+		renderPlaying()
 		const singleIndex = puzzle.pieces.findIndex(
 			piece => piece.tiles.length === 1,
 		)
@@ -301,7 +395,7 @@ describe('PuzzleMode', () => {
 	it.each(['mouse', 'touch'])(
 		'supports dragging with %s, previews the drop, and returns pieces to the tray',
 		pointerType => {
-			renderWithProvider(<PuzzleMode initialSeed={seed} />)
+			renderPlaying()
 			const piece = puzzle.pieces[0]
 			const destination = tileAt(coordinateKey(puzzle.solution[piece.id]))
 			dragTo(pieceButton(0), destination, pointerType)
@@ -313,12 +407,12 @@ describe('PuzzleMode', () => {
 				pointerType,
 			)
 			expect(pieceButton(0)).toHaveAccessibleName(/in tray/)
-			expect(destination).toHaveAttribute('fill', 'var(--base)')
+			expect(destination).toHaveAttribute('fill', 'var(--accent)')
 		},
 	)
 
 	it('keeps an existing placement after an invalid drop or pointer cancellation', () => {
-		renderWithProvider(<PuzzleMode initialSeed={seed} />)
+		renderPlaying()
 		const piece = puzzle.pieces[0]
 		const destination = tileAt(coordinateKey(puzzle.solution[piece.id]))
 		dragTo(pieceButton(0), destination)
@@ -340,7 +434,7 @@ describe('PuzzleMode', () => {
 
 	it('rejects overlapping and outside-wedge placements with explicit feedback', async () => {
 		const user = userEvent.setup()
-		renderWithProvider(<PuzzleMode initialSeed={seed} />)
+		renderPlaying()
 		const singleIndex = puzzle.pieces.findIndex(
 			piece => piece.tiles.length === 1,
 		)
@@ -376,7 +470,7 @@ describe('PuzzleMode', () => {
 
 	it('disables placed tray pieces and outlines connected pieces without internal edges', async () => {
 		const user = userEvent.setup()
-		renderWithProvider(<PuzzleMode initialSeed={seed} />)
+		renderPlaying()
 		const index = puzzle.pieces.findIndex(piece => piece.tiles.length === 2)
 		const piece = puzzle.pieces[index]
 		const anchor = tileAt(coordinateKey(puzzle.solution[piece.id]))
@@ -419,7 +513,7 @@ describe('PuzzleMode', () => {
 	})
 
 	it('preserves the grabbed tile offset when dragging a placed multi-tile piece', () => {
-		renderWithProvider(<PuzzleMode initialSeed={seed} />)
+		renderPlaying()
 		const index = puzzle.pieces.findIndex(piece => piece.tiles.length > 1)
 		const piece = puzzle.pieces[index]
 		const anchor = puzzle.solution[piece.id]
@@ -437,7 +531,7 @@ describe('PuzzleMode', () => {
 	})
 
 	it('drags an opaque piece under the pointer at board scale without a grid preview', () => {
-		renderWithProvider(<PuzzleMode initialSeed={seed} />)
+		renderPlaying()
 		const piece = puzzle.pieces[0]
 		const source = pieceButton(0)
 		const board = screen.getByRole('group', { name: 'Puzzle board' })
@@ -469,7 +563,7 @@ describe('PuzzleMode', () => {
 		expect(graphic.querySelectorAll('polygon')).toHaveLength(
 			piece.tiles.length,
 		)
-		expect(destination).toHaveAttribute('fill', 'var(--base)')
+		expect(destination).toHaveAttribute('fill', 'var(--accent)')
 		hitTest.mockReturnValue(null)
 		fireEvent.pointerMove(source, {
 			pointerId: 1,
@@ -495,24 +589,21 @@ describe('PuzzleMode', () => {
 		).not.toBeInTheDocument()
 	})
 
-	it('keeps progress while hidden and starts a new blank seeded puzzle on request', async () => {
+	it('keeps progress while hidden and moves to the next puzzle in the set', async () => {
 		const user = userEvent.setup()
-		const view = renderWithProvider(<PuzzleMode initialSeed={seed} />)
+		const view = renderPlaying()
 		await user.click(pieceButton(0))
 		await user.click(
 			tileAt(coordinateKey(puzzle.solution[puzzle.pieces[0].id])),
 		)
-		view.rerender(<PuzzleMode initialSeed={seed} hidden />)
+		view.rerender(<PuzzleMode hidden />)
 		expect(
 			screen.queryByRole('region', { name: 'Puzzle Mode' }),
 		).not.toBeInTheDocument()
-		view.rerender(<PuzzleMode initialSeed={seed} />)
+		view.rerender(<PuzzleMode />)
 		expect(pieceButton(0)).toHaveAccessibleName(/on board/)
 		await user.click(screen.getByRole('button', { name: 'Restart' }))
 		solvePuzzle()
-		await user.click(
-			screen.getByRole('button', { name: 'Close congratulations' }),
-		)
 		await user.click(screen.getByRole('button', { name: 'Next puzzle' }))
 		expect(
 			screen.getAllByRole('button', { name: /of 6, empty$/ }),

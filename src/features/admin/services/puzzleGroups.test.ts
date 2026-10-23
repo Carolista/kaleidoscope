@@ -330,7 +330,7 @@ describe('puzzle group requests', () => {
 		}))
 		const groups = await loadPuzzleGroups(client({ from }))
 		expect(groups).toHaveLength(1001)
-		expect(query.is).toHaveBeenCalledWith('published_at', null)
+		expect(query.is).not.toHaveBeenCalled()
 		expect(groupsRange.mock.calls).toEqual([
 			[0, 999],
 			[1000, 1999],

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { ZenStateProvider } from '@/features/zen/state'
+import { TestZenStateProvider as ZenStateProvider } from '@/test/TestZenStateProvider'
 import {
 	HEXAGRAM_GRID_SIZES,
 	computeGridAspectRatio,

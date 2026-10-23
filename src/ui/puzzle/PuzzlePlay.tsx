@@ -41,6 +41,8 @@ export default function PuzzlePlay({
 	puzzle: currentPuzzle,
 	hidden = false,
 	solvedMessage,
+	celebration,
+	contentRef,
 	onSolve,
 	trayAction,
 	children,
@@ -49,6 +51,10 @@ export default function PuzzlePlay({
 	readonly puzzle: Puzzle
 	readonly hidden?: boolean
 	readonly solvedMessage: string
+	// Briefly shown over the board when solved; the status message carries it for assistive tech.
+	readonly celebration?: string
+	// The target, tray, and board, for callers that animate them as one unit.
+	readonly contentRef?: Ref<HTMLDivElement>
 	readonly onSolve?: () => void
 	// Rendered beside the tray, e.g. an admin Restart.
 	readonly trayAction?: ReactNode
@@ -329,85 +335,96 @@ export default function PuzzlePlay({
 				setMessage('Drag cancelled. Your piece has not moved.')
 			}}
 		>
-			<div className={styles.goalAndPieces}>
-				<figure className={styles.target}>
+			<div ref={contentRef} className={styles.content}>
+				<div className={styles.goalAndPieces}>
+					<figure className={styles.target}>
+						<PuzzleBoard
+							shape={currentPuzzle.shape}
+							gridSize={currentPuzzle.gridSize}
+							colors={currentPuzzle.target}
+							target
+						/>
+					</figure>
+					<div
+						className={styles.tray}
+						role="group"
+						aria-label="Puzzle pieces"
+						data-puzzle-tray=""
+					>
+						{displayPieces.map((piece, index) => (
+							<button
+								type="button"
+								key={piece.id}
+								className={styles.piece}
+								aria-label={`Select piece ${index + 1}, ${piece.tiles.length} ${piece.tiles.length === 1 ? 'tile' : 'tiles'}, ${placements[piece.id] ? 'on board' : 'in tray'}`}
+								aria-pressed={selectedId === piece.id}
+								aria-description={
+									currentPuzzle.rotationAllowed
+										? `Click or tap to rotate ${rotationDegrees} degrees; drag to move. Keyboard: Enter or Space rotates, then activate a board tile to place.`
+										: undefined
+								}
+								disabled={Boolean(placements[piece.id])}
+								onClick={() => activateTrayPiece(piece.id)}
+								onPointerDown={event => {
+									const tileIndex =
+										event.target instanceof Element
+											? Number(
+													event.target
+														.closest(
+															'[data-piece-tile]',
+														)
+														?.getAttribute(
+															'data-piece-tile',
+														) ?? 0,
+												)
+											: 0
+									startDrag(
+										event,
+										piece,
+										piece.tiles[tileIndex],
+									)
+								}}
+							>
+								<PieceGraphic
+									shape={currentPuzzle.shape}
+									piece={piece}
+								/>
+							</button>
+						))}
+					</div>
+					{trayAction}
+				</div>
+				<div className={styles.board}>
 					<PuzzleBoard
+						svgRef={boardRef}
 						shape={currentPuzzle.shape}
 						gridSize={currentPuzzle.gridSize}
-						colors={currentPuzzle.target}
-						target
+						colors={colors}
+						solved={solved}
+						pieces={currentPuzzle.pieces}
+						placements={placements}
+						selectedId={selectedId}
+						onActivate={activateCell}
+						onReturn={cell => {
+							const piece = pieceAt(cell)
+							if (piece) returnToTray(piece.id)
+						}}
+						onGrab={(event, cell) => {
+							const piece = pieceAt(cell)
+							if (!piece) return
+							const anchor = placements[piece.id]
+							startDrag(event, piece, {
+								q: cell.q - anchor.q,
+								r: cell.r - anchor.r,
+							})
+						}}
 					/>
-				</figure>
-				<div
-					className={styles.tray}
-					role="group"
-					aria-label="Puzzle pieces"
-					data-puzzle-tray=""
-				>
-					{displayPieces.map((piece, index) => (
-						<button
-							type="button"
-							key={piece.id}
-							className={styles.piece}
-							aria-label={`Select piece ${index + 1}, ${piece.tiles.length} ${piece.tiles.length === 1 ? 'tile' : 'tiles'}, ${placements[piece.id] ? 'on board' : 'in tray'}`}
-							aria-pressed={selectedId === piece.id}
-							aria-description={
-								currentPuzzle.rotationAllowed
-									? `Click or tap to rotate ${rotationDegrees} degrees; drag to move. Keyboard: Enter or Space rotates, then activate a board tile to place.`
-									: undefined
-							}
-							disabled={Boolean(placements[piece.id])}
-							onClick={() => activateTrayPiece(piece.id)}
-							onPointerDown={event => {
-								const tileIndex =
-									event.target instanceof Element
-										? Number(
-												event.target
-													.closest(
-														'[data-piece-tile]',
-													)
-													?.getAttribute(
-														'data-piece-tile',
-													) ?? 0,
-											)
-										: 0
-								startDrag(event, piece, piece.tiles[tileIndex])
-							}}
-						>
-							<PieceGraphic
-								shape={currentPuzzle.shape}
-								piece={piece}
-							/>
-						</button>
-					))}
+					{solved && celebration && (
+						<div className={styles.celebration} aria-hidden="true">
+							{celebration}
+						</div>
+					)}
 				</div>
-				{trayAction}
-			</div>
-			<div className={styles.board}>
-				<PuzzleBoard
-					svgRef={boardRef}
-					shape={currentPuzzle.shape}
-					gridSize={currentPuzzle.gridSize}
-					colors={colors}
-					solved={solved}
-					pieces={currentPuzzle.pieces}
-					placements={placements}
-					selectedId={selectedId}
-					onActivate={activateCell}
-					onReturn={cell => {
-						const piece = pieceAt(cell)
-						if (piece) returnToTray(piece.id)
-					}}
-					onGrab={(event, cell) => {
-						const piece = pieceAt(cell)
-						if (!piece) return
-						const anchor = placements[piece.id]
-						startDrag(event, piece, {
-							q: cell.q - anchor.q,
-							r: cell.r - anchor.r,
-						})
-					}}
-				/>
 			</div>
 
 			<div role="status" className="visually-hidden">

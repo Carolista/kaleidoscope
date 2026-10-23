@@ -1,0 +1,25 @@
+.icon {
+	display: flex;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	width: 1.875rem;
+	height: 1.875rem;
+	font-size: 1.25rem;
+}
+
+.live {
+	color: var(--admin-green);
+}
+
+.scheduled {
+	color: var(--admin-blue);
+}
+
+.partial {
+	color: var(--admin-yellow);
+}
+
+.blocked {
+	color: var(--admin-orange);
+}

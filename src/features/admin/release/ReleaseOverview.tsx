@@ -4,6 +4,7 @@ import {
 	AdminIconButton,
 	AdminSectionHeading,
 	errorMessage,
+	SeparatorDot,
 } from '@/features/admin/common'
 import { useProgressionData } from '@/features/admin/progression'
 import {
@@ -11,6 +12,7 @@ import {
 	otherPuzzleGroups,
 	paletteGroupIssue,
 	paletteGroupPurposeLabels,
+	paletteProgress,
 	puzzleGroupPurposeLabels,
 	puzzleGroupTrackLabels,
 	slotReleases,
@@ -19,24 +21,52 @@ import {
 } from '@/features/admin/services'
 import type { Database } from '@/lib/supabase'
 import { Loading } from '@/ui/components'
-import { faDot, faRotate } from '@fortawesome/pro-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faRotate } from '@fortawesome/pro-solid-svg-icons'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { useState } from 'react'
 import ReleaseActions from './ReleaseActions'
 import styles from './ReleaseOverview.module.css'
+import { RewardGroupMark } from './ReleaseStatusIcon'
 import { releaseStateText, shapeLabel } from './releaseText'
 import ShapePackageSection from './ShapePackageSection'
 import useReleaseDialog from './useReleaseDialog'
 
 const fallbackError = 'Unable to load the release overview.'
 
-function describeStates(counts: StateCounts) {
-	const dot = <FontAwesomeIcon icon={faDot} aria-hidden="true" />
+const summaryColumns = ['Drafted', 'Scheduled', 'Live'] as const
+
+function StateCountsRow({
+	label,
+	counts,
+}: {
+	readonly label: string
+	readonly counts: StateCounts
+}) {
+	return (
+		<tr>
+			<th scope="row">{label}</th>
+			<td>{counts.draft}</td>
+			<td>{counts.scheduled}</td>
+			<td>{counts.live}</td>
+		</tr>
+	)
+}
+
+// "2 of 6 live", with any scheduled palettes added, for palettes released one by one.
+function describePaletteProgress(progress: {
+	readonly live: number
+	readonly scheduled: number
+	readonly total: number
+}) {
 	return (
 		<>
-			{counts.draft} drafted {dot} {counts.scheduled} scheduled {dot}{' '}
-			{counts.live} live{' '}
+			{progress.live} of {progress.total} live
+			{progress.scheduled > 0 && (
+				<>
+					{' '}
+					<SeparatorDot /> {progress.scheduled} scheduled
+				</>
+			)}
 		</>
 	)
 }
@@ -56,6 +86,13 @@ export default function ReleaseOverview({
 	const progression = data.progression
 	const puzzleGroups = groupCatalog.data
 	const paletteGroups = sortPaletteGroups(data.paletteGroups ?? [])
+	// Reward groups only hold palettes; those are released with what awards them.
+	const rewardPaletteGroups = paletteGroups.filter(
+		group => group.purpose === 'reward',
+	)
+	const releasedPaletteGroups = paletteGroups.filter(
+		group => group.purpose !== 'reward',
+	)
 	const palettes = new Map(
 		(data.palettes ?? []).map(palette => [palette.id, palette]),
 	)
@@ -91,28 +128,61 @@ export default function ReleaseOverview({
 				progression &&
 				puzzleGroups && (
 					<>
-						<p className={styles.summary}>
-							<span>
-								<span className={styles.summaryHeading}>
-									Puzzle groups:
-								</span>{' '}
-								{describeStates(
-									countStates(
-										puzzleGroups.map(group => group.row),
-									),
-								)}
-							</span>
-							<span>
-								<span className={styles.summaryHeading}>
-									Palette groups:
-								</span>{' '}
-								{describeStates(
-									countStates(
-										paletteGroups.map(group => group.row),
-									),
-								)}
-							</span>
-						</p>
+						<div className={`${styles.block} ${styles.scroll}`}>
+							<table
+								className={styles.table}
+								aria-label="Release summary"
+							>
+								<thead className={styles.summary}>
+									<tr>
+										<th scope="col">Content</th>
+										{summaryColumns.map(column => (
+											<th key={column} scope="col">
+												{column}
+											</th>
+										))}
+									</tr>
+								</thead>
+								<tbody>
+									<StateCountsRow
+										label="Core & Bonus Groups"
+										counts={countStates(
+											puzzleGroups
+												.filter(
+													group =>
+														!others.includes(group),
+												)
+												.map(group => group.row),
+										)}
+									/>
+									<StateCountsRow
+										label="Other Puzzle Groups"
+										counts={countStates(
+											others.map(group => group.row),
+										)}
+									/>
+									<StateCountsRow
+										label="Palette Groups"
+										counts={countStates(
+											releasedPaletteGroups.map(
+												group => group.row,
+											),
+										)}
+									/>
+									<tr>
+										<th scope="row">Reward Palettes</th>
+										<td colSpan={3}>
+											{describePaletteProgress(
+												paletteProgress(
+													rewardPaletteGroups,
+													palettes,
+												),
+											)}
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
 						{progression.shapeIds.map(shapeId => (
 							<ShapePackageSection
 								key={shapeId}
@@ -182,6 +252,13 @@ export default function ReleaseOverview({
 											{paletteGroups.map(group => {
 												const issue =
 													paletteGroupIssue(group)
+												const progress =
+													group.purpose === 'reward'
+														? paletteProgress(
+																[group],
+																palettes,
+															)
+														: null
 												return (
 													<tr key={group.row.id}>
 														<th scope="row">
@@ -211,26 +288,48 @@ export default function ReleaseOverview({
 															)}
 														</td>
 														<td>
-															{releaseStateText(
-																group.row,
-															)}
+															{progress
+																? describePaletteProgress(
+																		progress,
+																	)
+																: releaseStateText(
+																		group.row,
+																	)}
 														</td>
 														<td>
-															<ReleaseActions
-																kind="palette_group"
-																id={
-																	group.row.id
-																}
-																name={
-																	group.row
-																		.name
-																}
-																row={group.row}
-																disabled={busy}
-																onStart={
-																	release.start
-																}
-															/>
+															{progress ? (
+																<RewardGroupMark
+																	progress={
+																		progress
+																	}
+																/>
+															) : (
+																<ReleaseActions
+																	kind="palette_group"
+																	id={
+																		group
+																			.row
+																			.id
+																	}
+																	name={
+																		group
+																			.row
+																			.name
+																	}
+																	row={
+																		group.row
+																	}
+																	issue={
+																		issue
+																	}
+																	disabled={
+																		busy
+																	}
+																	onStart={
+																		release.start
+																	}
+																/>
+															)}
 														</td>
 													</tr>
 												)
@@ -322,9 +421,18 @@ export default function ReleaseOverview({
 														{shapeLabel(
 															group.row.shape_id,
 														)}
-														{group.track
-															? ` · ${puzzleGroupTrackLabels[group.track]}`
-															: ''}
+														{group.track && (
+															<>
+																{' '}
+																<SeparatorDot />{' '}
+																{
+																	puzzleGroupTrackLabels[
+																		group
+																			.track
+																	]
+																}
+															</>
+														)}
 													</td>
 													<td>
 														{group.members.length}
@@ -342,6 +450,12 @@ export default function ReleaseOverview({
 																group.row.name
 															}
 															row={group.row}
+															issue={
+																group.purpose ===
+																'undecided'
+																	? 'Choose a purpose.'
+																	: undefined
+															}
 															disabled={busy}
 															onStart={
 																release.start
