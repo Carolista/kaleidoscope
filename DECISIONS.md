@@ -302,6 +302,10 @@ whose palette no player can get); the release tools turn the hard rules into blo
 
 ### Releases
 
+**The release summary is a table.** Rows for core and bonus groups, other puzzle groups, and palette groups
+show drafted, scheduled, and live counts in columns; reward palettes are counted per palette, not per group,
+so that row spans the state columns with "N of M live".
+
 **Release means the content exists and is locked, not that players see it.** `published_at` approves content
 and `release_at` is when it goes live; a scheduled item stays editable until its release instant, a live one never
 changes (except a palette color correction). What a player is shown is a separate rule in the player app. The plan is
@@ -755,6 +759,11 @@ replacing the earlier Kit-script approach. Import core CSS once and disable
 automatic injection. The unused Kit package and registry entry were removed.
 Duotone secondary layers use the first palette color normalized to lightness
 50 in dark mode or 70 in light mode, fully opaque; single-tone icons skip tint.
+
+**Separator dots:** the `·` character was too small to read, so admin labels separate parts
+with the decorative `faDot` icon through a shared `SeparatorDot`. Because an icon cannot sit
+inside a string, services such as palette usage return label parts rather than joined text, and
+the screen reader hears the parts without a separator.
 
 **Background flicker constraint:** set literal background colors without transitions.
 The synchronous `index.html` bootstrap handles pre-mount paint; `App` renders

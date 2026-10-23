@@ -86,13 +86,13 @@ that are in no core, reward, or pack palette group; warnings never block anythin
 
 **Release** ([ReleaseOverview](./src/features/admin/release/ReleaseOverview.tsx)) is where content goes out.
 A shape's four core and bonus groups (basic and rotation core, basic and rotation bonus) are released as one
-**package**: each shape gets one box in unlock order with its status ("4 of 4 groups · Draft"), the package
+**package**: each shape gets one box in unlock order with its status ("4 of 4 groups", a dot, then "Draft"), the package
 buttons (Schedule, Reschedule, Unschedule), a list of what blocks it slot by slot, and a table of the four slots
 with group, puzzle count, reward palette, "Also unlocks", and state. Below are the palette groups (with
 count problems) and every other puzzle group (daily, pack, undecided), each with its own buttons. Core and bonus
-groups show their state elsewhere but never have release buttons there. A summary above the shapes counts
-core and bonus groups, other puzzle groups, and palette groups by state (drafted, scheduled, live), plus reward
-palettes ("N of M live").
+groups show their state elsewhere but never have release buttons there. A summary table above the shapes has a row each for
+core and bonus groups, other puzzle groups, and palette groups with drafted, scheduled, and live counts; the reward
+palettes row spans those columns with "N of M live".
 **Reward palette groups** exist only to hold six palettes each; they are never released as groups. Their
 status is how many palettes are live ("2 of 6 live"), they have no release buttons, and their palettes go out with
 the shape package that awards them. Status marks (a shared
@@ -428,6 +428,7 @@ changes should be applied to all four SVG assets.
 | Guard edited/pending navigation | [useUnsavedDraft](./src/ui/navigation/useUnsavedDraft.ts) with [useNavigationGuard](./src/ui/navigation/useNavigationGuard.ts); first destination wins |
 | Decorative palette / palette selection | [PaletteStrip](./src/ui/components/PaletteStrip.tsx) / [PaletteChoices](./src/ui/components/PaletteChoices.tsx); not painting buttons |
 | Section / gallery / ordered members | [AdminLayout](./src/features/admin/common/AdminLayout.tsx); retain domain card layouts and local async ownership |
+| Inline separator between label parts | [SeparatorDot](./src/features/admin/common/SeparatorDot.tsx) (decorative `faDot`), never a `·` character; services return label parts and the component places the dot |
 | Error text from a caught value | [errorMessage](./src/features/admin/common/errorMessage.ts)`(cause, fallback)`; one `fallbackError` constant per library |
 | Admin editor vs library | Editors live in their own files (`PuzzleDraftEditor`, `PaletteEditor`) next to the library that opens them |
 

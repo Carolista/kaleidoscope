@@ -1,7 +1,5 @@
-.summary {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 0.25rem 1.5rem;
+.summary th {
+	text-transform: uppercase;
 }
 
 .block {
@@ -19,12 +17,6 @@
 /* Wide tables scroll inside their box instead of stretching the page. */
 .scroll {
 	overflow-x: auto;
-}
-
-.summaryHeading {
-	font-weight: bold;
-	text-transform: uppercase;
-	margin-right: 1rem;
 }
 
 .table {

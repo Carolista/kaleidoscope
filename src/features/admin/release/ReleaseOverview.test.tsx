@@ -196,28 +196,28 @@ describe('release overview', () => {
 		render(<ReleaseOverview client={client} />)
 		await screen.findByRole('table', { name: 'Hexagon release status' })
 		expect(
-			screen.getByText('4 of 4 groups · Partly scheduled'),
+			screen.getByText('4 of 4 groups Partly scheduled'),
 		).toBeInTheDocument()
-		expect(screen.getByText('1 of 4 groups · Draft')).toBeInTheDocument()
+		expect(screen.getByText('1 of 4 groups Draft')).toBeInTheDocument()
 	})
 
 	it('summarizes how many groups are draft, scheduled, and live', async () => {
 		render(<ReleaseOverview client={client} />)
-		const core = (await screen.findByText('Core & bonus groups:'))
-			.parentElement
-		expect(core).toHaveTextContent(
-			/Core & bonus groups:\s*2 drafted\s*1 scheduled\s*1 live/,
-		)
+		const summary = await screen.findByRole('table', {
+			name: 'Release summary',
+		})
 		expect(
-			screen.getByText('Other puzzle groups:').parentElement,
-		).toHaveTextContent(
-			/Other puzzle groups:\s*1 drafted\s*0 scheduled\s*0 live/,
-		)
-		expect(
-			screen.getByText('Palette groups:').parentElement,
-		).toHaveTextContent(
-			/Palette groups:\s*2 drafted\s*0 scheduled\s*0 live/,
-		)
+			within(summary)
+				.getAllByRole('columnheader')
+				.map(header => header.textContent),
+		).toEqual(['Content', 'Drafted', 'Scheduled', 'Live'])
+		const cells = (name: RegExp) =>
+			within(within(summary).getByRole('row', { name }))
+				.getAllByRole('cell')
+				.map(cell => cell.textContent)
+		expect(cells(/Core & Bonus Groups/)).toEqual(['2', '1', '1'])
+		expect(cells(/Other Puzzle Groups/)).toEqual(['1', '0', '0'])
+		expect(cells(/Palette Groups/)).toEqual(['2', '0', '0'])
 	})
 
 	it('offers package buttons by state, one set per shape', async () => {
@@ -308,11 +308,14 @@ describe('release overview', () => {
 			name: 'Palette group release status',
 		})
 		expect(
-			within(table).getByText('1 of 3 live · 1 scheduled'),
+			within(table).getByText('1 of 3 live 1 scheduled'),
 		).toBeInTheDocument()
-		expect(
-			screen.getByText('Reward palettes:').parentElement,
-		).toHaveTextContent(/Reward palettes:\s*1 of 3 live · 1 scheduled/)
+		const reward = within(
+			screen.getByRole('table', { name: 'Release summary' }),
+		).getByRole('row', { name: /Reward Palettes/ })
+		const rewardCell = within(reward).getByRole('cell')
+		expect(rewardCell).toHaveAttribute('colspan', '3')
+		expect(rewardCell).toHaveTextContent(/1 of 3 live\s*1 scheduled/)
 	})
 
 	it('marks what is live, scheduled, partly released, or blocked', async () => {

@@ -233,7 +233,7 @@ describe('draft library', () => {
 			])
 			setup()
 			expect(
-				await screen.findByText(`${label} · My group`),
+				await screen.findByText(`${label} My group`),
 			).toBeInTheDocument()
 		},
 	)
@@ -323,7 +323,7 @@ describe('draft library', () => {
 			'group',
 			{ kind: 'append', puzzleIds: ['draft-id'] },
 		)
-		await screen.findByText(/Core · First group/)
+		await screen.findByText(/Core\s*First group/)
 		expect(
 			screen.queryByRole('group', { name: 'Bulk draft actions' }),
 		).not.toBeInTheDocument()
@@ -399,10 +399,8 @@ describe('draft library', () => {
 			group('october', 'daily', null, null),
 		])
 		setup()
-		expect(
-			await screen.findByText('Triangle · EASY (S)'),
-		).toBeInTheDocument()
-		expect(screen.getByText('Hexagon · MODERATE (S+)')).toBeInTheDocument()
+		expect(await screen.findByText('Triangle EASY (S)')).toBeInTheDocument()
+		expect(screen.getByText('Hexagon MODERATE (S+)')).toBeInTheDocument()
 		const options = () =>
 			within(screen.getByLabelText('Draft group'))
 				.getAllByRole('option')

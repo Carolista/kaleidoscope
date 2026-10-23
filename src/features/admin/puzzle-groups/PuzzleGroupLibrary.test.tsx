@@ -404,9 +404,7 @@ describe('puzzle group workspace', () => {
 			name: 'Group First group',
 		})
 		expect(card).toHaveClass(layoutStyles.groupCard)
-		expect(
-			within(card).getByText('Core · Hexagon · Basic'),
-		).toBeInTheDocument()
+		expect(within(card).getByText('Core Hexagon Basic')).toBeInTheDocument()
 		expect(within(card).getByText('2 puzzles')).toBeInTheDocument()
 		expect(
 			card.querySelector('svg polygon[fill="#112233"]'),
@@ -430,8 +428,8 @@ describe('puzzle group workspace', () => {
 		).toHaveAttribute('title', 'New group')
 	})
 	it.each([
-		['reward', 'rotation', 'Reward · Hexagon · Rotation'],
-		['pack', 'mixed', 'Pack · Hexagon · Mixed'],
+		['reward', 'rotation', 'Reward Hexagon Rotation'],
+		['pack', 'mixed', 'Pack Hexagon Mixed'],
 	] as const)(
 		'labels %s groups and explicitly shows empty groups',
 		async (purpose, track, label) => {
@@ -465,7 +463,7 @@ describe('puzzle group workspace', () => {
 			},
 		])
 		setup()
-		await screen.findByText('Daily · All shapes')
+		await screen.findByText('Daily All shapes')
 	})
 	it('confirms deletion, allows cancellation, and retains confirmation after failure for retry', async () => {
 		setup()
@@ -699,7 +697,7 @@ describe('puzzle group workspace', () => {
 		expect(isProtected()).toBe(false)
 		fireEvent.click(screen.getByRole('button', { name: 'Groups tab' }))
 		expect(
-			await screen.findByText('Pack · Triangle · Mixed'),
+			await screen.findByText('Pack Triangle Mixed'),
 		).toBeInTheDocument()
 	})
 	it('drops the shape and track when a group becomes daily', async () => {

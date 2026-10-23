@@ -128,7 +128,7 @@ Rules:
   their cards; the Scheduled and Published item views list what has been released; cancelling returns unneeded
   palettes to draft. Hard rules are blockers (24 puzzles, 6 palettes, a reward palette, all four slots),
   the rest are warnings. See DECISIONS.md, Releases.
-- ✅ Release view polish: group summaries split into core and bonus, other puzzle groups, palette groups, and reward palettes ("N of M live"); status marks (green live, blue scheduled, orange blocked, yellow partly released reward palettes); reward palette groups are never released as groups; puzzle and palette group libraries list released groups read-only with an eye icon.
+- ✅ Release view polish: a summary table of core and bonus groups, other puzzle groups, palette groups (drafted, scheduled, live counts), and reward palettes ("N of M live"); a Font Awesome dot replaces the `·` separator across admin labels; status marks (green live, blue scheduled, orange blocked, yellow partly released reward palettes); reward palette groups are never released as groups; puzzle and palette group libraries list released groups read-only with an eye icon.
 - ✅ UI audit parts 1–6 (shared controls, loading, dialogs, unsaved-work guard, palette and layout components, CSS cleanup).
 - ✅ Unsaved-work safety: a token refresh no longer remounts the workspace (the admin-role check is keyed to the user ID), and unsaved edits in the new-puzzle, puzzle-draft, and palette editors are autosaved to localStorage with an explicit Restore or Discard after a reload (`src/features/admin/drafts`, see CONTEXT.md). Other admin forms (group dialogs, progression slots, group edit forms) don't persist yet; reuse `useDraftRecovery` for them and for any new release-tool editors.
 

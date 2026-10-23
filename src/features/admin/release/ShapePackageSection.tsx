@@ -1,4 +1,5 @@
 import type { Palette } from '@/domain/palettes'
+import { SeparatorDot } from '@/features/admin/common'
 import { packageRelease, type SlotRelease } from '@/features/admin/services'
 import { PaletteStrip } from '@/ui/components'
 import ReleaseActions from './ReleaseActions'
@@ -38,7 +39,8 @@ export default function ShapePackageSection({
 			<div className={styles.packageHeading}>
 				<h3 id={`release-${shapeId}`}>{label}</h3>
 				<span>
-					{pkg.filled} of {slots.length} groups · {status}
+					{pkg.filled} of {slots.length} groups <SeparatorDot />{' '}
+					{status}
 				</span>
 				<ReleaseActions
 					kind="shape_package"

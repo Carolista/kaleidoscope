@@ -1,7 +1,23 @@
 import type { Palette } from '@/domain/palettes'
+import { SeparatorDot } from '@/features/admin/common'
 import { paletteIsUsed, type PaletteUsage } from '@/features/admin/services'
+import { Fragment } from 'react'
 import { PuzzleBoard } from '@/ui/puzzle'
 import styles from './PaletteUsageDetails.module.css'
+
+function DotSeparated({ parts }: { readonly parts: readonly string[] }) {
+	return parts.map((part, index) => (
+		<Fragment key={index}>
+			{index > 0 && (
+				<>
+					{' '}
+					<SeparatorDot />{' '}
+				</>
+			)}
+			{part}
+		</Fragment>
+	))
+}
 
 export default function PaletteUsageDetails({
 	usage,
@@ -17,8 +33,10 @@ export default function PaletteUsageDetails({
 				<>
 					<h4>Palette groups</h4>
 					<ul>
-						{usage.groups.map((name, index) => (
-							<li key={index}>{name}</li>
+						{usage.groups.map((parts, index) => (
+							<li key={index}>
+								<DotSeparated parts={parts} />
+							</li>
 						))}
 					</ul>
 				</>
@@ -64,7 +82,7 @@ export default function PaletteUsageDetails({
 								<span>
 									<strong>{puzzle.name}</strong>
 									<br />
-									{puzzle.context}
+									<DotSeparated parts={puzzle.context} />
 								</span>
 							</li>
 						))}

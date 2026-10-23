@@ -37,6 +37,7 @@ import {
 	AdminSelectionBar,
 	useCheckedIds,
 	errorMessage,
+	SeparatorDot,
 } from '@/features/admin/common'
 import {
 	Button,
@@ -761,12 +762,20 @@ export default function PuzzleDraftLibrary({
 												draft.puzzle.shape
 											]
 										}{' '}
-										· {draft.puzzle.recipe.label}
+										<SeparatorDot />{' '}
+										{draft.puzzle.recipe.label}
 									</span>
 									<span>
-										{draft.groupPurpose
-											? `${puzzleGroupPurposeLabels[draft.groupPurpose]} · `
-											: ''}
+										{draft.groupPurpose && (
+											<>
+												{
+													puzzleGroupPurposeLabels[
+														draft.groupPurpose
+													]
+												}{' '}
+												<SeparatorDot />{' '}
+											</>
+										)}
 										{draft.groupName ??
 											(draft.assigned
 												? 'Assigned'

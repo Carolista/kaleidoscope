@@ -8,15 +8,16 @@ import {
 	puzzleGroupPurposeLabels,
 } from './groupDetails'
 
+// Label parts are shown joined by a separator dot.
 export interface PaletteUsage {
 	readonly puzzles: readonly {
 		readonly id: string
 		readonly name: string
-		readonly context: string
+		readonly context: readonly string[]
 		readonly preview: ReturnType<typeof readPuzzleTarget> | null
 	}[]
 	readonly rewards: readonly string[]
-	readonly groups: readonly string[]
+	readonly groups: readonly (readonly string[])[]
 	readonly preparedGroups?: number
 	readonly grants: number
 	readonly corrections: number
@@ -61,8 +62,13 @@ export async function loadPaletteUsage(
 				name: row.name,
 				context:
 					group?.puzzle_groups && purpose
-						? `${isPuzzleGroupPurpose(purpose) ? puzzleGroupPurposeLabels[purpose] : purpose} · ${group.puzzle_groups.name}`
-						: 'Unassigned',
+						? [
+								isPuzzleGroupPurpose(purpose)
+									? puzzleGroupPurposeLabels[purpose]
+									: purpose,
+								group.puzzle_groups.name,
+							]
+						: ['Unassigned'],
 				preview: isPuzzleShapeId(row.shape_id)
 					? readPuzzleTarget(row.shape_id, row.definition)
 					: null,
@@ -94,7 +100,7 @@ export async function loadPaletteUsage(
 		}
 		if (data.length < 1000) break
 	}
-	const groups: string[] = []
+	const groups: string[][] = []
 	let preparedGroups = 0
 	for (let offset = 0; ; offset += 1000) {
 		const { data, error } = await client
@@ -114,9 +120,12 @@ export async function loadPaletteUsage(
 				throw new Error(
 					'A palette group could not be resolved. Refresh the catalog.',
 				)
-			groups.push(
-				`${group.name} · ${isPaletteGroupPurpose(group.purpose) ? paletteGroupPurposeLabels[group.purpose] : group.purpose}`,
-			)
+			groups.push([
+				group.name,
+				isPaletteGroupPurpose(group.purpose)
+					? paletteGroupPurposeLabels[group.purpose]
+					: group.purpose,
+			])
 			if (group.published_at || group.release_at) preparedGroups++
 		}
 		if (data.length < 1000) break

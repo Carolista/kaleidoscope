@@ -33,6 +33,7 @@ import {
 	AdminGroupCard,
 	AdminGroupForm,
 	errorMessage,
+	SeparatorDot,
 } from '@/features/admin/common'
 import { ConfirmDialog, Loading, Select } from '@/ui/components'
 import {
@@ -571,11 +572,16 @@ export default function PuzzleGroupLibrary({
 						>
 							<strong>{group.row.name}</strong>
 							<span>
-								{puzzleGroupPurposeLabels[group.purpose]} ·{' '}
+								{puzzleGroupPurposeLabels[group.purpose]}{' '}
+								<SeparatorDot />{' '}
 								{shapeLabel(group.row.shape_id)}
-								{group.track
-									? ` · ${puzzleGroupTrackLabels[group.track]}`
-									: ''}
+								{group.track && (
+									<>
+										{' '}
+										<SeparatorDot />{' '}
+										{puzzleGroupTrackLabels[group.track]}
+									</>
+								)}
 							</span>
 							<span>
 								{group.members.length}{' '}
