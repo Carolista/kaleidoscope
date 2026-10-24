@@ -14,6 +14,14 @@ describe('LogoStar', () => {
 		).toHaveAttribute('alt', '')
 	})
 
+	it('joins an arrival spin already under way when told how far along it is', () => {
+		const { rerender } = render(<LogoStar />)
+		const star = screen.getByRole('presentation', { hidden: true })
+		expect(star.style.animationDelay).toBe('')
+		rerender(<LogoStar elapsedMs={750.4} />)
+		expect(star.style.animationDelay).toBe('-750ms')
+	})
+
 	it('preserves the default entrance and reports when it finishes', () => {
 		const onSpinComplete = vi.fn()
 		render(

@@ -46,6 +46,37 @@ describe('PlayerContentProvider', () => {
 		expect(await screen.findByText('Club Neon')).toBeInTheDocument()
 	})
 
+	it('shows a gate supplied by the app instead of its own page, so the frame can appear first', async () => {
+		const user = userEvent.setup()
+		const load = vi
+			.fn<() => Promise<typeof fresh>>()
+			.mockRejectedValueOnce(new Error('Network down'))
+			.mockResolvedValue(fresh)
+		render(
+			<PlayerContentProvider
+				load={load}
+				gate={gate => (
+					<p>
+						{gate.status === 'failed'
+							? `Gate: ${gate.message}`
+							: `Gate: ${gate.status}`}
+						{gate.status === 'failed' && (
+							<button onClick={gate.retry}>Retry now</button>
+						)}
+					</p>
+				)}
+			>
+				<Names />
+			</PlayerContentProvider>,
+		)
+		expect(screen.getByText('Gate: loading')).toBeInTheDocument()
+		expect(
+			await screen.findByText(/Gate: Network down/),
+		).toBeInTheDocument()
+		await user.click(screen.getByRole('button', { name: 'Retry now' }))
+		expect(await screen.findByText('Tahiti, Cabo')).toBeInTheDocument()
+	})
+
 	it('reports a failure with nothing saved and retries on request', async () => {
 		const user = userEvent.setup()
 		const load = vi

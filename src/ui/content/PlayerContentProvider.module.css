@@ -17,7 +17,17 @@
 	--accent: #222222;
 }
 
-.gate p {
+.gate p,
+.message p {
 	max-width: 32rem;
 	margin: 0;
+}
+
+.message {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 1rem;
+	font-family: var(--font-body);
+	text-align: center;
 }

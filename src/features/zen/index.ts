@@ -1,2 +1,6 @@
-export { ZenStateProvider, hasPersistedDesign } from './state'
+export {
+	ZenStateProvider,
+	hasPersistedDesign,
+	readPersistedDarkMode,
+} from './state'
 export { default as ZenMode } from './ZenMode'

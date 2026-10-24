@@ -4,6 +4,7 @@ import { ZenStateProvider } from '@/features/zen'
 import { Loading } from '@/ui/components'
 import { PlayerContentProvider } from '@/ui/content'
 import PlayerApp from './PlayerApp'
+import ProvisionalTheme from './ProvisionalTheme'
 import styles from './AppEntry.module.css'
 import { NavigationGuardProvider } from '@/ui/navigation'
 import useAdminRoute from './useAdminRoute'
@@ -26,7 +27,13 @@ function Entry() {
 		</Suspense>
 	) : (
 		<AccountProvider>
-			<PlayerContentProvider>
+			<PlayerContentProvider
+				gate={gate => (
+					<ProvisionalTheme>
+						<PlayerApp gate={gate} />
+					</ProvisionalTheme>
+				)}
+			>
 				<ZenStateProvider>
 					<PlayerApp />
 				</ZenStateProvider>

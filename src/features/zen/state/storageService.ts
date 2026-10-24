@@ -223,6 +223,24 @@ export function hasPersistedDesign(): boolean {
 	}
 }
 
+// The saved theme alone, for the page frame before the design has loaded. Matches
+// the script in index.html: dark unless a saved design says otherwise.
+export function readPersistedDarkMode(): boolean {
+	try {
+		const parsed: unknown = JSON.parse(
+			localStorage.getItem(STORAGE_KEY) ?? 'null',
+		)
+		return !(
+			typeof parsed === 'object' &&
+			parsed !== null &&
+			'darkMode' in parsed &&
+			parsed.darkMode === false
+		)
+	} catch {
+		return true
+	}
+}
+
 export function savePersistedState(state: ZenState): void {
 	try {
 		localStorage.setItem(

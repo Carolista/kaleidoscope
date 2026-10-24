@@ -6,18 +6,36 @@ import { HomeScreen } from '@/features/home'
 import { PuzzleMode } from '@/features/puzzle'
 import { hasPersistedDesign, ZenMode } from '@/features/zen'
 import { DarkModeToggle } from '@/ui/components'
+import type { ContentGate } from '@/ui/content'
+import { ContentGateView } from '@/ui/content'
 import { usePlayerTheme } from '@/ui/theme'
+import {
+	markEntranceSpinFinished,
+	markEntranceStarted,
+	readEntranceHandoff,
+} from './entranceHandoff'
 import { Footer, Header, releaseOpeningTitle } from './layout'
 import styles from './PlayerApp.module.css'
 
-function PlayerApp() {
+// With `gate`, the player's content is not ready yet: only the frame is shown, with
+// the gate's message in place of the modes. The frame is rebuilt once content
+// arrives, and carries the opening animation on from where this one got to.
+function PlayerApp({ gate }: { readonly gate?: ContentGate }) {
 	const { darkMode } = usePlayerTheme()
 	const { base, accent } = getThemeColors(darkMode)
 	const titleRef = useRef<HTMLHeadingElement>(null)
 	const titleAnimationRef = useRef<Animation | null>(null)
 	const entranceStartedRef = useRef(false)
+	const [handoff] = useState(() => {
+		if (gate) {
+			markEntranceStarted()
+			return null
+		}
+		return readEntranceHandoff()
+	})
 	const [canAnimateEntrance] = useState(
 		() =>
+			!handoff?.settled &&
 			!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches &&
 			typeof Element.prototype.animate === 'function',
 	)
@@ -79,6 +97,7 @@ function PlayerApp() {
 		}
 
 		entranceStartedRef.current = true
+		if (gate) markEntranceSpinFinished()
 		const start = title.getBoundingClientRect()
 		releaseOpeningTitle(title)
 		const target = title.getBoundingClientRect()
@@ -129,43 +148,50 @@ function PlayerApp() {
 				isOpening={entrance === 'opening'}
 				isMoving={entrance === 'moving'}
 				onStarSpinComplete={handleStarSpinComplete}
+				starElapsedMs={handoff?.elapsedMs}
 				mode={mode}
-				onModeChange={setMode}
-				onHome={() => setMode('home')}
+				onModeChange={gate ? undefined : setMode}
+				onHome={gate ? undefined : () => setMode('home')}
 				actions={
 					<>
 						<AccountControl onOpen={() => setAccountOpen(true)} />
-						<DarkModeToggle />
+						{!gate && <DarkModeToggle />}
 					</>
 				}
 			/>
 			<main className={styles.app}>
-				{mode === 'home' && (
-					<HomeScreen
-						signedIn={account.status === 'signedIn'}
-						firstName={account.firstName}
-						onSignIn={
-							account.status === 'signedOut'
-								? () => setAccountOpen(true)
-								: undefined
-						}
-						onOpenPuzzle={() => setMode('puzzle')}
-						onOpenZen={() => setMode('zen')}
-					/>
-				)}
-				<PuzzleMode
-					hidden={mode !== 'puzzle'}
-					onOpenZen={() => setMode('zen')}
-				/>
-				{mode === 'zen' && (
-					<ZenMode
-						isFirstVisit={isFirstVisit}
-						showIntro={showIntro}
-						onIntroComplete={() => setShowIntro(false)}
-					/>
+				{gate ? (
+					<ContentGateView gate={gate} />
+				) : (
+					<>
+						{mode === 'home' && (
+							<HomeScreen
+								signedIn={account.status === 'signedIn'}
+								firstName={account.firstName}
+								onSignIn={
+									account.status === 'signedOut'
+										? () => setAccountOpen(true)
+										: undefined
+								}
+								onOpenPuzzle={() => setMode('puzzle')}
+								onOpenZen={() => setMode('zen')}
+							/>
+						)}
+						<PuzzleMode
+							hidden={mode !== 'puzzle'}
+							onOpenZen={() => setMode('zen')}
+						/>
+						{mode === 'zen' && (
+							<ZenMode
+								isFirstVisit={isFirstVisit}
+								showIntro={showIntro}
+								onIntroComplete={() => setShowIntro(false)}
+							/>
+						)}
+					</>
 				)}
 			</main>
-			{(mode !== 'zen' || !showIntro) && <Footer />}
+			{(gate || mode !== 'zen' || !showIntro) && <Footer />}
 			<AccountDialog
 				open={accountOpen}
 				onClose={() => setAccountOpen(false)}

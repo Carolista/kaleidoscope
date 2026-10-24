@@ -393,16 +393,28 @@ core groups); the app filters again by release state so drafts never appear even
 **Players never read authoring data.** Seeds and known solutions stay admin-only, so the player reads a puzzle through its
 stored definition and its own palette alone (`readPlayablePuzzle`); a puzzle's ID stands in for its seed.
 
-**The player has its own Supabase client.** It stores no session, so it always reads as a guest, even where an admin is
-signed in. Accounts will need a second, signed-in player client.
+**The player has its own Supabase clients.** Content reads use a client that stores no session, so they always read as a
+guest, even where an admin is signed in. Accounts use a second client (`getPlayerClient`) with its own storage key, so a player's
+session never mixes with the admin's or with content reads. Content will switch to the signed-in client once progress is stored per account.
 
 **Offline and empty.** The last successful load is cached; with no network the cache is used, and with no cache the
 player sees the error and can retry. Zen cannot start without a palette, so with nothing released the app says so
 instead of opening. The bundled palette list was removed so a corrected palette cannot disagree with a stale copy;
 designs are saved by palette ID.
 
-**Puzzle Mode is the primary mode.** The app opens in Puzzle Mode and teaches itself on first use (see Puzzle tutorials); the Zen intro shows the first time Zen is opened.
+**Home is the landing screen; Puzzle Mode is still the primary mode.** Now that Zen and both puzzle tracks teach themselves on first use
+(see Puzzle tutorials), the app shows the full picture up front: a greeting, then a card each for Puzzle and Zen (in that order), and lets the
+player choose. Every visit opens on Home; the title returns there from anywhere, and the Zen/Puzzle switch is unchanged. A third card joins in Phase 4,
+and no placeholder is shown until then. Cards show a palette's colors as diagonal bands above a solid caption, so text never sits on the colors
+and any palette stays legible; custom graphics may replace the bands later. The Zen intro still shows the first time Zen is opened.
 Zen is limited to unlocked shapes, the released core palettes, and earned reward palettes.
+
+**The frame appears before content, and the loader lives in the page.** The big logo animation is the app's entrance, so it must not wait on the network:
+a full-page spinner before it looked like a different loader, then a replacement. The frame is rendered at once (`PlayerApp` with a `gate`) with the
+saved light/dark mode and no theme or mode controls, and the loading, failure, and nothing-released messages sit in the main area. When content is
+ready the real app takes over, and a small handoff record lets the star continue its spin instead of restarting. The alternatives were a shared page frame above the
+providers (it needs Zen's dark mode and the header controls, which live below them) and a provisional Zen state (it risks overwriting the saved design).
+The cost is one remount, which is invisible unless it lands while the title is mid-move (it then snaps into place).
 
 **Puzzle browsing is picture first.** Sets and puzzles are shown as solved images with minimal text: a set card shows
 the first puzzle of each difficulty with its progress; a set shows its puzzles under difficulty subheadings, borderless,
@@ -423,6 +435,32 @@ playing a puzzle in a palette still grants nothing.
 modal ("Reward earned", "Hooray!") showing the palette strip and name and/or the new set's pictures, each with a link to
 use it now (Zen Mode, or the set). The Zen link only switches mode; it does not change the player's current palette,
 which would alter their design.
+
+### Accounts
+
+**Email is the credential; the first name is for greeting.** Signup is email and password with a first name, so the game can greet players. There is no
+username. The name lives in the Supabase user metadata, not a `profiles` row, which needs no migration and nothing to keep in sync; the
+`profiles` table stays for when a public identity is needed (Phase 4). Because the name is typed at signup, it never appears in an auth email: the address
+might belong to someone else, so a user-supplied string in a message that looks official would be a phishing aid.
+
+**Accounts are optional until the Hexagon sets are done.** Guests keep playing, and the account button is always in the header. The forced step is later:
+finishing all four Hexagon sets opens a dialog explaining that Triangle needs an account, which can be dismissed so the player can keep playing Hexagon and Zen as a guest (not built yet).
+
+**Passwords can be reset, and links fail gracefully.** A reset always answers the same way, whether or not the address has an account. A confirmation or reset link that
+has expired or was already used (mail scanners often use it first) returns to the app with an error in the URL; the dialog says so and offers to start again. PKCE links must be
+opened in the browser that asked for them. Closing the new-password dialog early leaves the player signed in with the old password; there is no "change password" in the account view yet.
+
+**Auth email goes through custom SMTP with branded templates.** Supabase's built-in sender is generic and rate-limited, and templates can only be edited with custom SMTP.
+Microsoft 365 was tried and rejected: its SMTP AUTH is off by default (here for the whole tenant), port 465 is unsupported, and Microsoft is phasing out basic-auth SMTP.
+A transactional service (Resend) sends from the project's domain; the mailboxes stay on Microsoft 365. Templates are kept in `supabase/email-templates/` and pasted into the dashboard.
+The logo is a hosted PNG, since email clients strip inline SVG.
+
+**The dialog is hosted by the page, and holds still while it closes.** Inside the header it inherited the header's title-sized font and button sizing. After a success,
+the dialog keeps its content and stays disabled until the close animation ends, since the account state changes first and the content would otherwise swap mid-fade.
+Results from requests finished after it was closed are ignored. A timed-out request is shown as a plain message because supabase-js reports the response body as `{}`.
+
+**Modal scroll areas pad out focus outlines.** The shared Modal's scroller clips overflow, which cut off focus outlines at its edges (seen in the account dialog and the admin
+progression modal). It has 6px of padding cancelled by an equal negative margin, so layout is unchanged.
 
 ### Puzzle tutorials
 

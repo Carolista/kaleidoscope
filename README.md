@@ -49,7 +49,8 @@ Today, the application reflects how my engineering approach has evolved. It has 
 - **Mouse, touch, and keyboard interaction:** Hover reveals the editable wedge on mouse and trackpad; touch users can toggle it. Grid tiles can also be reached with Tab and painted with Enter or Space. Focus outlines remain visible for keyboard navigation without lingering after mouse clicks or taps.
 - **Mobile-friendly modals:** Dialogs gently drift into focus and fade away on close, with animations skipped for reduced-motion preferences. Titles and close controls stay visible while content scrolls, with edge indicators for more options and background scrolling locked through closing.
 - **Automatic save:** All board patterns, your active board, per-shape size choices, and preferences are restored from browser storage on your next visit. Undo history starts fresh each session.
-- **Puzzle Mode:** The app opens in Puzzle Mode. Choose a released puzzle set, see its puzzles as solved pictures grouped by difficulty, and play one: arrange the pieces to match the target, with mirrored placement, mouse/touch dragging, keyboard-friendly select-and-place controls, and rotation where a set allows it. Solved puzzles are remembered on your device. Zen Mode offers the shapes and palettes you have unlocked.
+- **Home, accounts:** The app opens on a Home screen with a greeting and a card each for Puzzle Mode and Zen Mode (the title takes you back). You can play as a guest, or create an account with email and password at any time and reset a forgotten password by email.
+- **Puzzle Mode:** Choose a released puzzle set, see its puzzles as solved pictures grouped by difficulty, and play one: arrange the pieces to match the target, with mirrored placement, mouse/touch dragging, keyboard-friendly select-and-place controls, and rotation where a set allows it. Solved puzzles are remembered on your device. Zen Mode offers the shapes and palettes you have unlocked.
 
 <!-- ## Visuals -->
 
@@ -71,7 +72,8 @@ This project has been a chance to build both a creative user experience and the 
 The database foundation and Dashboard setup instructions are documented
 in [supabase/README.md](./supabase/README.md). Admin sign-in is available at
 `#/admin` after local configuration. The player app reads released content from the same
-project as a guest (palettes, puzzle sets, and shape order); it has no sign-in yet.
+project as a guest (palettes, puzzle sets, and shape order). Players can also create an account and sign in
+(see [Player accounts and auth email](./supabase/README.md#player-accounts-and-auth-email)); progress is not saved to an account yet.
 
 The admin **puzzle lab** authors puzzles in all six shapes with all six size/rotation recipes, a visual
 Supabase palette picker, and one-click randomization. Previously previewed seeds

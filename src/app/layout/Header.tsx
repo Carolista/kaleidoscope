@@ -13,6 +13,8 @@ interface HeaderProps {
 	readonly onModeChange?: (mode: 'zen' | 'puzzle') => void
 	// Makes the title a button that returns to the home screen.
 	readonly onHome?: () => void
+	// How far into its arrival spin the star already is (see LogoStar).
+	readonly starElapsedMs?: number
 	// Page-wide controls (e.g. the dark mode toggle), shown after the mode switch.
 	readonly actions?: ReactNode
 }
@@ -25,6 +27,7 @@ function Header({
 	mode = 'zen',
 	onModeChange,
 	onHome,
+	starElapsedMs,
 	actions,
 }: HeaderProps) {
 	const titleClasses = [
@@ -42,6 +45,7 @@ function Header({
 			<LogoStar
 				className={styles.star}
 				onSpinComplete={onStarSpinComplete}
+				elapsedMs={starElapsedMs}
 			/>
 			<span className={styles.letters} aria-hidden="true">
 				SCOPE
