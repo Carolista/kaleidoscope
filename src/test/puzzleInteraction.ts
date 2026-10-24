@@ -39,6 +39,14 @@ export function stubPointerHitTesting() {
 	})
 }
 
+// Players who finished the tutorials go straight to the puzzles.
+export function markPuzzleIntrosSeen() {
+	localStorage.setItem(
+		'kaleidoscope:puzzle-intro',
+		JSON.stringify({ version: 1, seen: ['basic', 'rotation'] }),
+	)
+}
+
 export function tileAt(key: string) {
 	const tile = screen
 		.getByRole('group', { name: 'Puzzle board' })

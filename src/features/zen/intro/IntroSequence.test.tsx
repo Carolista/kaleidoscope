@@ -1,23 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { palettes } from '@/test/playerContent'
+import { palettes, testContent } from '@/test/playerContent'
 import { renderWithProvider } from '@/test/renderWithProvider'
+import { getThemeColors, INTRO_PALETTE_IDS } from '@/domain/palettes'
 import IntroSequence from './IntroSequence'
 
 const FIRST_PALETTE_COLORS = palettes[0].colors
 
+// Picks a color, then the first tile still open to paint.
 async function placeColor(
 	user: ReturnType<typeof userEvent.setup>,
 	colorNumber: number,
-	tileNumber: number,
 ) {
 	await user.click(
 		screen.getByRole('button', { name: `Color ${colorNumber}` }),
 	)
-	await user.click(
-		screen.getByRole('button', { name: `Paint tile ${tileNumber} of 5` }),
-	)
+	await user.click(screen.getAllByRole('button', { name: /^Paint tile/ })[0])
 }
 
 describe('IntroSequence', () => {
@@ -25,7 +24,7 @@ describe('IntroSequence', () => {
 		localStorage.clear()
 	})
 
-	it('starts with the welcome message, the first palette, and no paintable tiles', () => {
+	it('starts with the welcome message, the Harmony palette, and no paintable tiles', () => {
 		renderWithProvider(<IntroSequence onContinue={vi.fn()} />)
 
 		expect(
@@ -50,15 +49,33 @@ describe('IntroSequence', () => {
 		).not.toBeInTheDocument()
 	})
 
-	it('offers exactly five paintable tiles once a color is chosen', async () => {
+	it('uses the Zen intro palette when it is available', () => {
+		const harmony = { ...palettes[3], id: INTRO_PALETTE_IDS.zen }
+		renderWithProvider(<IntroSequence onContinue={vi.fn()} />, {
+			...testContent,
+			palettes: [palettes[0], harmony],
+		})
+		expect(screen.getByRole('button', { name: 'Color 1' })).toHaveStyle({
+			backgroundColor: harmony.colors[0],
+		})
+	})
+
+	it('offers exactly five paintable tiles of six once a color is chosen, with the center already base color', async () => {
 		const user = userEvent.setup()
 		renderWithProvider(<IntroSequence onContinue={vi.fn()} />)
 
 		await user.click(screen.getByRole('button', { name: 'Color 1' }))
 
 		expect(
-			screen.getAllByRole('button', { name: /^Paint tile \d of 5$/ }),
+			screen.getAllByRole('button', { name: /^Paint tile \d of 6$/ }),
 		).toHaveLength(5)
+		const { base } = getThemeColors(true)
+		const fills = [
+			...screen
+				.getByRole('group', { name: 'Kaleidoscope hexagon grid' })
+				.querySelectorAll('polygon'),
+		].map(cell => cell.getAttribute('fill'))
+		expect(fills.filter(fill => fill === base)).not.toHaveLength(0)
 		expect(screen.getByRole('button', { name: 'Color 1' })).toHaveAttribute(
 			'aria-pressed',
 			'true',
@@ -69,7 +86,7 @@ describe('IntroSequence', () => {
 		const user = userEvent.setup()
 		renderWithProvider(<IntroSequence onContinue={vi.fn()} />)
 
-		await placeColor(user, 1, 1)
+		await placeColor(user, 1)
 
 		expect(screen.getByRole('button', { name: 'Color 1' })).toBeDisabled()
 		expect(screen.getByRole('button', { name: 'Color 2' })).toBeEnabled()
@@ -81,7 +98,7 @@ describe('IntroSequence', () => {
 			screen.queryByRole('button', { name: /^Paint tile/ }),
 		).not.toBeInTheDocument()
 
-		await placeColor(user, 2, 2)
+		await placeColor(user, 2)
 
 		expect(
 			screen.getByText(
@@ -94,11 +111,11 @@ describe('IntroSequence', () => {
 		const user = userEvent.setup()
 		renderWithProvider(<IntroSequence onContinue={vi.fn()} />)
 
-		await placeColor(user, 1, 1)
+		await placeColor(user, 1)
 		await user.click(screen.getByRole('button', { name: 'Color 2' }))
 
 		expect(
-			screen.getAllByRole('button', { name: /^Paint tile \d of 5$/ }),
+			screen.getAllByRole('button', { name: /^Paint tile \d of 6$/ }),
 		).toHaveLength(4)
 	})
 
@@ -108,7 +125,7 @@ describe('IntroSequence', () => {
 		renderWithProvider(<IntroSequence onContinue={onContinue} />)
 
 		for (let i = 1; i <= 5; i++) {
-			await placeColor(user, i, i)
+			await placeColor(user, i)
 		}
 
 		expect(
@@ -126,7 +143,7 @@ describe('IntroSequence', () => {
 		const user = userEvent.setup()
 		renderWithProvider(<IntroSequence onContinue={vi.fn()} />)
 
-		await placeColor(user, 1, 1)
+		await placeColor(user, 1)
 
 		const saved = JSON.parse(
 			localStorage.getItem('kaleidoscope:design') ?? '{}',

@@ -6,6 +6,7 @@ import type { PlayerContent } from '@/ui/content'
 import { coordinateKey, generatePuzzle } from '@/domain/puzzles'
 import {
 	dragTo,
+	markPuzzleIntrosSeen,
 	pieceButton,
 	stubPointerHitTesting,
 	tileAt,
@@ -55,6 +56,7 @@ describe('puzzle swipe', () => {
 
 	beforeEach(() => {
 		localStorage.clear()
+		markPuzzleIntrosSeen()
 		animations.length = 0
 		Element.prototype.animate = vi.fn(() => {
 			const animation: FakeAnimation = { cancel: vi.fn(), onfinish: null }

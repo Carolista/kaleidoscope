@@ -193,7 +193,7 @@ describe('App', () => {
 		for (let i = 1; i <= 5; i++) {
 			await user.click(screen.getByRole('button', { name: `Color ${i}` }))
 			await user.click(
-				screen.getByRole('button', { name: `Paint tile ${i} of 5` }),
+				screen.getAllByRole('button', { name: /^Paint tile/ })[0],
 			)
 		}
 		await user.click(screen.getByRole('button', { name: 'Continue' }))
@@ -288,7 +288,7 @@ describe('App', () => {
 		for (let i = 1; i <= 5; i++) {
 			await user.click(screen.getByRole('button', { name: `Color ${i}` }))
 			await user.click(
-				screen.getByRole('button', { name: `Paint tile ${i} of 5` }),
+				screen.getAllByRole('button', { name: /^Paint tile/ })[0],
 			)
 		}
 		await user.click(screen.getByRole('button', { name: 'Continue' }))

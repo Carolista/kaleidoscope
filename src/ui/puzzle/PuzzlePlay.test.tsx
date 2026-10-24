@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { palettes } from '@/test/playerContent'
@@ -46,6 +46,40 @@ describe('PuzzlePlay', () => {
 		).toBe(restart)
 		expect(screen.getByRole('status')).toHaveClass('visually-hidden')
 	})
+	it('reports how many pieces are placed and whether any is turned', async () => {
+		const user = userEvent.setup()
+		const onProgress = vi.fn()
+		const rotated = generatePuzzle(
+			'tray-progress',
+			palettes[1],
+			PUZZLE_RECIPES[1],
+		)
+		render(
+			<PuzzlePlay
+				puzzle={rotated}
+				solvedMessage="Solved."
+				onProgress={onProgress}
+			/>,
+		)
+		expect(onProgress).toHaveBeenLastCalledWith({
+			placed: 0,
+			rotated: false,
+		})
+		await user.click(pieceButton(0))
+		expect(onProgress).toHaveBeenLastCalledWith({
+			placed: 0,
+			rotated: true,
+		})
+		dragTo(
+			pieceButton(0),
+			tileAt(coordinateKey(rotated.solution[rotated.pieces[0].id])),
+		)
+		expect(onProgress).toHaveBeenLastCalledWith({
+			placed: 1,
+			rotated: true,
+		})
+	})
+
 	it('rotates only tray pieces on click or keyboard activation, keeping square slots stable', async () => {
 		const user = userEvent.setup()
 		const recipe = PUZZLE_RECIPES.find(

@@ -1,5 +1,11 @@
 import type { PointerEvent, ReactNode, Ref } from 'react'
-import { useImperativeHandle, useRef, useState } from 'react'
+import {
+	useEffect,
+	useEffectEvent,
+	useImperativeHandle,
+	useRef,
+	useState,
+} from 'react'
 import {
 	anchorAt,
 	coordinateKey,
@@ -31,6 +37,12 @@ interface DragState {
 	readonly moved: boolean
 }
 
+export interface PuzzleProgress {
+	readonly placed: number
+	// Whether any piece currently sits in a turned orientation.
+	readonly rotated: boolean
+}
+
 export interface PuzzlePlayHandle {
 	// Clears placements, rotations, and selection for the current puzzle.
 	readonly reset: () => void
@@ -44,7 +56,9 @@ export default function PuzzlePlay({
 	celebration,
 	contentRef,
 	onSolve,
+	onProgress,
 	trayAction,
+	aboveBoard,
 	children,
 }: {
 	readonly ref?: Ref<PuzzlePlayHandle>
@@ -56,8 +70,12 @@ export default function PuzzlePlay({
 	// The target, tray, and board, for callers that animate them as one unit.
 	readonly contentRef?: Ref<HTMLDivElement>
 	readonly onSolve?: () => void
+	// Reports how far along the player is, e.g. for step-by-step guidance.
+	readonly onProgress?: (progress: PuzzleProgress) => void
 	// Rendered beside the tray, e.g. an admin Restart.
 	readonly trayAction?: ReactNode
+	// Rendered between the target/tray and the board, e.g. tutorial guidance.
+	readonly aboveBoard?: ReactNode
 	// Rendered below the board, e.g. player actions and dialogs.
 	readonly children?: ReactNode
 }) {
@@ -84,6 +102,15 @@ export default function PuzzlePlay({
 	const rotationDegrees = rotationStep * 60
 	const colors = getPuzzleColors(currentPuzzle, placements)
 	const solved = isPuzzleSolved(currentPuzzle, placements)
+	const placedCount = Object.keys(placements).length
+	const anyRotated = Object.values(rotations).some(turns => turns !== 0)
+	const reportProgress = useEffectEvent(() =>
+		onProgress?.({ placed: placedCount, rotated: anyRotated }),
+	)
+
+	useEffect(() => {
+		reportProgress()
+	}, [placedCount, anyRotated])
 
 	function selectPiece(id: string) {
 		if (solved) return
@@ -394,6 +421,7 @@ export default function PuzzlePlay({
 					</div>
 					{trayAction}
 				</div>
+				{aboveBoard}
 				<div className={styles.board}>
 					<PuzzleBoard
 						svgRef={boardRef}

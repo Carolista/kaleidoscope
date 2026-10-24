@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
 	TRIANGLE_GRID_SIZES,
-	TRIANGLE_INTRO_GRID_SIZE,
 	TRIANGLE_GRID_SIZE,
 	computeGridAspectRatio,
 	generateTriangleCells,
@@ -59,13 +58,6 @@ describe('generateTriangleCells', () => {
 			)
 		},
 	)
-
-	it('keeps a separate intro grid with five paintable groups, whatever the small size is', () => {
-		expect(TRIANGLE_INTRO_GRID_SIZE).toBe(4)
-		expect(getGroupIds(TRIANGLE_INTRO_GRID_SIZE)).toHaveLength(5)
-		expect(TRIANGLE_GRID_SIZES.sm).toBe(5)
-		expect(getGroupIds(TRIANGLE_GRID_SIZES.sm)).toHaveLength(7)
-	})
 })
 
 describe('getGroupIds', () => {

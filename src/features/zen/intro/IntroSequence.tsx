@@ -1,14 +1,22 @@
-import { TriangleGrid } from '@/features/zen/grid'
+import { HexagonGrid } from '@/features/zen/grid'
 import { Button } from '@/ui/components'
 import { useZenState } from '@/features/zen/state'
 import { useState } from 'react'
-import { TRIANGLE_INTRO_GRID_SIZE } from '@/domain/shapes/triangle'
+import { getThemeColors } from '@/domain/palettes'
+import {
+	generateHexagonCells,
+	HEXAGON_GRID_RADII,
+} from '@/domain/shapes/hexagon'
 import { ColorSwatches } from '@/features/zen/controls/palettes'
 import styles from './IntroSequence.module.css'
 
-// The intro demonstrates the smallest selectable triangle size (5 groups).
-const INTRO_GRID_SIZE = TRIANGLE_INTRO_GRID_SIZE
+// The intro uses the smallest hexagon: six tiles, with the center already base
+// color so the player fills the other five, one per palette color.
+const INTRO_RADIUS = HEXAGON_GRID_RADII.sm
 const INTRO_TILE_COUNT = 5
+const CENTER_GROUP_ID = generateHexagonCells(INTRO_RADIUS).find(
+	cell => cell.q === 0 && cell.r === 0,
+)!.groupId
 
 interface IntroSequenceProps {
 	readonly onContinue: () => void
@@ -25,6 +33,7 @@ function IntroSequence({ onContinue }: IntroSequenceProps) {
 		selectedColor: null,
 		groupColors: {},
 	})
+	const { base } = getThemeColors(state.darkMode)
 	const usedColors = Object.values(design.groupColors)
 	const complete = usedColors.length === INTRO_TILE_COUNT
 	const options = state.currentPalette.colors.map((color, i) => ({
@@ -92,12 +101,16 @@ function IntroSequence({ onContinue }: IntroSequenceProps) {
 				</>
 			)}
 			<div className={styles.grid}>
-				<TriangleGrid
-					gridSize={INTRO_GRID_SIZE}
+				<HexagonGrid
+					radius={INTRO_RADIUS}
 					interaction={{
-						groupColors: design.groupColors,
+						groupColors: {
+							...design.groupColors,
+							[CENTER_GROUP_ID]: base,
+						},
 						onPaint: paint,
 						isPaintable: groupId =>
+							groupId !== CENTER_GROUP_ID &&
 							design.selectedColor !== null &&
 							design.groupColors[groupId] === undefined,
 						highlightEditableArea: !complete,

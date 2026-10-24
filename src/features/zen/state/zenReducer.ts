@@ -1,4 +1,4 @@
-import { getThemeColors } from '@/domain/palettes'
+import { findIntroPalette, getThemeColors } from '@/domain/palettes'
 import type { ZenState, BoardId, PaintMap } from './zenState'
 import type { PlayerPalette } from '@/domain/palettes'
 import type { GridShapeId, GridSize } from '@/domain/shapes'
@@ -32,7 +32,7 @@ export function createInitialZenState(
 	palettes: readonly PlayerPalette[],
 	gridShape: GridShapeId = 'hexagon',
 ): ZenState {
-	const currentPalette = palettes[0]
+	const currentPalette = findIntroPalette(palettes, 'zen')
 	return {
 		currentPalette,
 		currentColor: currentPalette.colors[0],
