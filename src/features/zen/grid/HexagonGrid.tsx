@@ -10,7 +10,7 @@ import {
 } from '@/domain/shapes/hexagon'
 import type { HexagonLayout } from '@/domain/shapes/hexagon'
 import GridView from './GridView'
-import type { GridCell } from './GridView'
+import type { GridCell, GridInteraction } from './GridView'
 
 export interface HexagonGridProps {
 	readonly radius?: number
@@ -18,6 +18,7 @@ export interface HexagonGridProps {
 	readonly hexSize?: number
 	// Exposes the rendered <svg> element, e.g. for image export.
 	readonly svgRef?: Ref<SVGSVGElement>
+	readonly interaction?: GridInteraction
 }
 
 const DEFAULT_HEX_SIZE = 16
@@ -26,6 +27,7 @@ function HexagonGrid({
 	radius = HEXAGON_GRID_RADIUS,
 	hexSize = DEFAULT_HEX_SIZE,
 	svgRef,
+	interaction,
 }: HexagonGridProps) {
 	const layout: HexagonLayout = useMemo(
 		() => ({ orientation: 'flat', size: hexSize }),
@@ -57,6 +59,7 @@ function HexagonGrid({
 			cells={polygons}
 			viewBox={viewBox}
 			svgRef={svgRef}
+			interaction={interaction}
 			sizingAspectRatio={sizingAspectRatio}
 			label="Kaleidoscope hexagon grid"
 			instructions="Tab to move between hexagons. Press Enter or Space to paint the focused hexagon with the current color."

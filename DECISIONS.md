@@ -166,7 +166,7 @@ Tray clicks/taps rotate 60 degrees; dragging moves. Return board pieces via
 double-click/double-tap or dragging back, preserving orientation; no board rotation
 or separate rotate/return buttons. Keyboard equivalents remain available.
 Stable square containers reserve all orientations at consistent tile scale,
-with one subtle selected/focus border. The first-rotation set tutorial is deferred.
+with one subtle selected/focus border. Players meet rotation through a first-use tutorial (see Puzzle tutorials).
 The admin lab does not mount Zen state or write player progress. Named drafts
 save public definitions and private authoring atomically, with idempotent retry
 IDs. A puzzle has no intended use of its own: its purpose comes from the group it
@@ -401,13 +401,33 @@ player sees the error and can retry. Zen cannot start without a palette, so with
 instead of opening. The bundled palette list was removed so a corrected palette cannot disagree with a stale copy;
 designs are saved by palette ID.
 
-**Puzzle Mode is the primary mode.** The app opens in Puzzle Mode; the Zen intro shows the first time Zen is opened.
+**Puzzle Mode is the primary mode.** The app opens in Puzzle Mode and teaches itself on first use (see Puzzle tutorials); the Zen intro shows the first time Zen is opened.
 Zen is limited to unlocked shapes, the released core palettes, and (later) earned reward palettes.
 
 **Puzzle browsing is picture first.** Sets and puzzles are shown as solved images with minimal text: a set card shows
 the first puzzle of each difficulty with its progress; a set shows its puzzles under difficulty subheadings, borderless,
 four to a row, with a round check badge on solved ones. Sections come from each puzzle's own difficulty, not a fixed
 count. Progress is the device's list of solved puzzle IDs and is never merged into an account automatically.
+
+### Puzzle tutorials
+
+**Each track teaches itself the first time a player meets it.** Basic puzzles at the first Puzzle
+Mode visit, turning at the first rotation set, so guests and (later) accounts get the same onboarding
+before any rewards or unlocks. Like Zen's, each is learn-by-doing and has no skip or replay.
+
+**A fixed mini puzzle, not coaching on a real one.** The small hexagon with one hard-coded seed keeps
+the lesson identical for everyone and independent of released content or tuning. It runs on the shared
+`PuzzlePlay`, with guidance in an `aboveBoard` slot just above the board (not below, as in Zen, where
+the palette sits below) so phone players need not scroll to see the next step. Continue takes the same
+slot after the solve for the same reason.
+
+**Seen means completed, tracked separately.** Unlike Zen's key-exists rule, puzzles write nothing
+until play, so completion has its own versioned key, written on Continue. Solved puzzles already on
+the device in that track also count, so returning players are not taught again.
+
+**Each tutorial has its own palette, chosen for distinct hues.** Soft gradations are hard to tell
+apart on a first puzzle. Palettes are chosen by database ID from the released core palettes, since
+guests cannot read others; a missing ID falls back to the first palette rather than failing.
 
 ### Puzzle shapes
 
@@ -420,8 +440,8 @@ cells to fill and pieces within 6 tiles, and generation gives up on a mix it can
 quickly), but nothing is saved: values that work are copied into the code. The workbench shows
 a mix per recipe, though the code still keeps one per size, so two recipes of a size share a mix
 until they are split. Tuning the first round moved triangle small to size 5 ([3, 2, 2]), circle
-rings large to 5 rings, and pinwheel to 3 x 2, 3 x 3, and 4 x 3. The Zen intro keeps its own
-size-4 triangle (five groups, one per palette color).
+rings large to 5 rings, and pinwheel to 3 x 2, 3 x 3, and 4 x 3. The Zen intro now
+uses the small hexagon, so tuning other shapes does not change it.
 
 Puzzle Mode was always meant to offer the Zen shapes, so the engine, board, and
 authoring RPCs are shape-neutral. Each shape supplies one adapter in
@@ -542,8 +562,7 @@ Hexagon padding and circle-radius bounds remain separate from polygon bounds.
 
 - **Hexagon:** radii 3/4/6; medium is the default. Large uses radius 6
   rather than the former radius 7 to keep density more manageable.
-- **Triangle:** equilateral size-5/7/10 lattices with D3 symmetry. The intro keeps its
-  own size-4 grid; large preserves the previous regular grid; medium is the default.
+- **Triangle:** equilateral size-5/7/10 lattices with D3 symmetry. Large preserves the previous regular grid; medium is the default.
 - **Diamond star:** whole rhombi, not half-diamond triangle slivers.
   Three/four/five subdivisions per axis are available; medium retains the
   previous 96 cells/10 groups. Widening the point angle
@@ -653,8 +672,8 @@ The first-visit rule uses **storage-key existence**, checked before autosave,
 not successful restoration or a separate "seen" preference. Autosave can
 write a design without painting; help remains manually accessible.
 
-A first visit always starts with the first palette in the data rather than a
-random one, so the intro is identical for everyone. Returning users get their
+A first visit always starts with the Zen tutorial palette (Harmony, falling back to the first
+palette in the data) rather than a random one, so the intro is identical for everyone. Returning users get their
 saved palette, so random initial selection was removed.
 
 ## Interaction and accessibility
@@ -732,8 +751,9 @@ saved palette, so random initial selection was removed.
 - General controls help replaced touch-only introductory help. Keep its content
   aligned with available toolbar actions.
 - First visits get a learn-by-doing intro before the help modal: place five colors
-  on a small triangle grid (one more tile than the hexagon prototype's four, for
-  more visual interest), then Continue reveals the app with help open. The intro
+  on the smallest hexagon, whose center tile is already base color so the six-tile grid
+  needs only the palette's five colors (the grid was a size-4 triangle while Zen offered every
+  shape; hexagon is the first unlocked shape), then Continue reveals the app with help open. The intro
   paints locally rather than through app state, so it never touches the saved
   design or undo history, and Continue starts a fresh full-size design. Used
   swatches are disabled so every tile gets a distinct color.

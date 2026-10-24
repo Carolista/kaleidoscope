@@ -12,6 +12,7 @@ import styles from '@/ui/puzzle/PuzzleBoard.module.css'
 import {
 	dragTo,
 	hitTest,
+	markPuzzleIntrosSeen,
 	pieceButton,
 	stubPointerHitTesting,
 	tileAt,
@@ -116,7 +117,10 @@ describe('PuzzleMode', () => {
 		).toHaveLength(6)
 	})
 
-	beforeEach(() => localStorage.clear())
+	beforeEach(() => {
+		localStorage.clear()
+		markPuzzleIntrosSeen()
+	})
 	stubPointerHitTesting()
 
 	it('lists the available sets with their progress and opens one as a numbered grid', async () => {
