@@ -11,6 +11,7 @@ import {
 	loadInitialZenState as loadWithContent,
 	savePersistedState,
 	hasPersistedDesign,
+	readPersistedDarkMode,
 } from './storageService'
 
 const loadInitialZenState = () => loadWithContent(testContent)
@@ -551,6 +552,16 @@ describe('storageService', () => {
 
 	it('hasPersistedDesign is false when nothing has been saved', () => {
 		expect(hasPersistedDesign()).toBe(false)
+	})
+
+	it('reads the saved theme alone, defaulting to dark', () => {
+		expect(readPersistedDarkMode()).toBe(true)
+		savePersistedState(baseState({ darkMode: false }))
+		expect(readPersistedDarkMode()).toBe(false)
+		savePersistedState(baseState({ darkMode: true }))
+		expect(readPersistedDarkMode()).toBe(true)
+		localStorage.setItem(STORAGE_KEY, 'not json')
+		expect(readPersistedDarkMode()).toBe(true)
 	})
 
 	it('hasPersistedDesign is true once a design has been saved', () => {

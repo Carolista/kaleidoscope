@@ -1,0 +1,129 @@
+<!--
+	Supabase Auth "Confirm sign up" email.
+	Paste into Authentication > Emails > Templates > Confirm sign up (HTML body).
+	Subject: Confirm your Kaleidoscope account
+	Deliberately omits the player's first name: it is typed at signup and the
+	address may belong to someone else, so it should not appear in our email.
+-->
+<!doctype html>
+<html lang="en">
+	<body
+		style="
+			margin: 0;
+			padding: 0;
+			background: #f4f1ec;
+			font-family: Helvetica, Arial, sans-serif;
+			color: #222222;
+		"
+	>
+		<table
+			role="presentation"
+			width="100%"
+			cellpadding="0"
+			cellspacing="0"
+			style="background: #f4f1ec; padding: 32px 16px"
+		>
+			<tr>
+				<td align="center">
+					<table
+						role="presentation"
+						width="100%"
+						cellpadding="0"
+						cellspacing="0"
+						style="
+							max-width: 480px;
+							background: #ffffff;
+							border: 2px solid #222222;
+							border-radius: 6px;
+						"
+					>
+						<tr>
+							<td align="center" style="padding: 32px 32px 8px">
+								<img
+									src="https://codewithcarrie.com/kaleidoscope/screenshots/kaleidoscope-header.png"
+									alt="Kaleidoscope"
+									width="320"
+									style="
+										display: block;
+										width: 320px;
+										max-width: 100%;
+										height: auto;
+									"
+								/>
+							</td>
+						</tr>
+						<tr>
+							<td
+								style="
+									padding: 16px 32px 8px;
+									font-size: 16px;
+									line-height: 1.5;
+								"
+							>
+								<p style="margin: 0 0 16px">
+									Welcome to
+									<strong>Kaleidoscope Puzzle</strong>!
+									Confirm your email address to finish
+									creating your account, and then you can get
+									right back to puzzling.
+								</p>
+								<p>
+									There are many more shapes, puzzle sets, and
+									color palettes to be unlocked! Whether it's
+									exercising your brain in Puzzle Mode or
+									relaxing in Zen Mode, we hope you continue
+									to enjoy every moment.
+								</p>
+							</td>
+						</tr>
+						<tr>
+							<td align="center" style="padding: 8px 32px 24px">
+								<a
+									href="{{ .ConfirmationURL }}"
+									style="
+										display: inline-block;
+										padding: 12px 24px;
+										background: #222222;
+										color: #ffffff;
+										text-decoration: none;
+										font-size: 15px;
+										font-weight: bold;
+										letter-spacing: 1px;
+										border-radius: 4px;
+									"
+									>CONFIRM MY EMAIL</a
+								>
+							</td>
+						</tr>
+						<tr>
+							<td
+								style="
+									padding: 0 32px 32px;
+									font-size: 13px;
+									line-height: 1.5;
+									color: #666666;
+								"
+							>
+								<p style="margin: 0 0 12px">
+									Button not working? Copy this link into your
+									browser:<br /><a
+										href="{{ .ConfirmationURL }}"
+										style="
+											color: #666666;
+											word-break: break-all;
+										"
+										>{{ .ConfirmationURL }}</a
+									>
+								</p>
+								<p style="margin: 0">
+									If you didn't create a Kaleidoscope Puzzle
+									account, you can ignore this email.
+								</p>
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+	</body>
+</html>

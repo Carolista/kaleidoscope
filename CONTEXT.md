@@ -14,9 +14,12 @@ A coloring toy: paint one tile and its symmetry group updates across the grid.
 Includes preset palettes, six shapes with three sizes each, dark/light mode, undo/redo, autosave,
 and PNG download/share.
 
-The app opens in Puzzle Mode, the primary feature; the header switches to Zen Mode. Before
-either starts, the app loads what this player may use from Supabase as a guest (see
-Player content below). Puzzle Mode lists the core puzzle sets and any bonus sets earned, then a set's
+The app opens on a Home screen: a greeting, then a card for Puzzle Mode (the primary feature) and one for Zen
+Mode. The KALEID★SCOPE title returns Home from anywhere, and the header's Zen/Puzzle switch stays as it was.
+The greeting is "Hi, Ada!" for a signed-in player (or "Welcome back!" without a first name) and "Welcome!" for a guest, with a link
+to sign in or create an account. The page frame (header and the logo's opening animation) appears immediately; the app loads
+what this player may use from Supabase as a guest in the meantime (see Player content below), and shows a loading message in
+place of the screens only if that is not done when the logo has moved up. Puzzle Mode lists the core puzzle sets and any bonus sets earned, then a set's
 puzzles by difficulty, and plays one on the shared `PuzzlePlay` surface; solved puzzle IDs stay
 on the device. Solving the last puzzle of a set that earns something opens a "Reward earned" dialog
 (see Player content). Its independent local React state survives mode switches but not reloads; it never
@@ -491,7 +494,9 @@ Test files and `src/test/` are exempt so tests can reach internals and mock exac
 
 | Location | Responsibility |
 | --- | --- |
-| [app/](./src/app/) | `AppEntry` (player/admin routing, navigation guard), `PlayerApp` (page, entrance animation, header, mode switch, footer), `useAdminRoute`, [layout/](./src/app/layout/) (Header, Footer), global [index.css](./src/app/index.css) |
+| [app/](./src/app/) | `AppEntry` (player/admin routing, navigation guard), `PlayerApp` (page, entrance animation, header, home/mode switching, footer; with a `gate` it shows only the frame while content loads), `ProvisionalTheme` (the saved light/dark mode before Zen's state exists), `entranceHandoff` (carries the opening animation from the loading frame to the real one), `useAdminRoute`, [layout/](./src/app/layout/) (Header, Footer), global [index.css](./src/app/index.css) |
+| [features/account/](./src/features/account/) | Player accounts: `AccountProvider` (session, sign-up/in/out, password reset, reset and expired-link state; `useAccount`), `AccountDialog` (every account view), `AccountControl` (the header button). Hosted by `PlayerApp`, not the header |
+| [features/home/](./src/features/home/) | `HomeScreen`: the greeting and one card per area (Puzzle, then Zen) |
 | [features/zen/](./src/features/zen/) | Zen Mode: `ZenMode`, [state/](./src/features/zen/state/) (reducer, history, Context, localStorage persistence, design randomization), [controls/](./src/features/zen/controls/) (toolbar, palette and shape pickers), [grid/](./src/features/zen/grid/) (shape adapters, `ShapeGrid`, `GridView`, cells), [export/](./src/features/zen/export/) (Save Image), [intro/](./src/features/zen/intro/) |
 | [features/puzzle/](./src/features/puzzle/) | Player Puzzle Mode: set list, difficulty grid of solved images, play session with the Congrats overlay and Next, the first-use tutorials (`intro/`), the reward dialog (`RewardModal`), and the device's completed-tutorial record (`introProgress.ts`) |
 | [features/admin/](./src/features/admin/) | Lazy-loaded admin portal. `shell/` (portal, workspace, navigation), `catalog/` (session cache), `common/` (layout, icon button, form), `groups/` (shared group editing), one folder per content area (`puzzles/`, `puzzle-groups/`, `palettes/`, `palette-groups/`), `services/` (Supabase reads/writes), `testing/` |
@@ -505,7 +510,7 @@ Test files and `src/test/` are exempt so tests can reach internals and mock exac
 | [domain/geometry/](./src/domain/geometry/) | `Point`, shared geometry math, symmetry engine, cell grouping, SVG points |
 | [domain/puzzles/](./src/domain/puzzles/) | Pure seeded puzzle generation, authoring, stored-definition readers (`readAuthoredPuzzle` for admins, `readPlayablePuzzle` for players, which never sees seeds or solutions), placement validation, and completion; per-shape adapters in `puzzleShapes.ts` |
 | [domain/palettes/](./src/domain/palettes/) | Palette types (`Palette`, `PlayerPalette` with an ID), color math, light/dark theme colors, tutorial palette IDs (`introPalettes.ts`); no bundled palette list |
-| [lib/supabase/](./src/lib/supabase/) | Supabase browser clients (`getSupabaseClient` for the admin's session, `getGuestClient` for players, with no stored session) and generated database types |
+| [lib/supabase/](./src/lib/supabase/) | Supabase browser clients (`getSupabaseClient` for the admin's session, `getGuestClient` for content reads, with no stored session, `getPlayerClient` for the signed-in player under its own storage key with PKCE) and generated database types |
 | [test/](./src/test/) | Vitest setup, shared render/interaction helpers, and `playerContent.ts` (sample palettes and content for tests) |
 
 Shape adapters supply geometry to `GridView`; it owns numbering, painting,
@@ -525,7 +530,7 @@ React rendering remains separate from geometry and storage.
 
 ### Player content
 
-Before the player app starts, [PlayerContentProvider](./src/ui/content/PlayerContentProvider.tsx) loads one
+Before the player app can show anything, [PlayerContentProvider](./src/ui/content/PlayerContentProvider.tsx) loads one
 [PlayerContent](./src/ui/content/playerContent.ts) with the guest client, which keeps no session (so an admin
 signed in on the same browser still reads exactly what a guest can). Reads rely on the database's own rules
 (released content only; guests play only the first shape's core and bonus groups) and are filtered again for release state
@@ -541,6 +546,10 @@ in [loadPlayerContent](./src/ui/content/loadPlayerContent.ts):
 The load is network first. A success is cached in `kaleidoscope:content`; if the network fails the last cache is
 used, and with no cache the player sees the error with Try again. With no released palettes it shows "Nothing has been
 released yet" with Check again, since Zen needs a palette. The catalog does not change during a visit.
+Until content is ready the provider shows its `gate`: `AppEntry` supplies the app's own frame (`PlayerApp` with a `gate`, under
+`ProvisionalTheme`), so the loading, error, and nothing-released messages (`ContentGateView`) appear in the page's main area
+under the opening logo; with no `gate` they take a page of their own. The real app replaces the frame once content is ready and
+continues the opening animation from where it was (`entranceHandoff`; the star joins its spin part-way).
 Solved puzzles are stored on the device as `{ version: 1, solved: [puzzle IDs] }` in `kaleidoscope:puzzle-progress`
 and are never merged into an account automatically. The cache format is version 2 (it gained `rewards`; older caches
 are ignored).
@@ -554,7 +563,23 @@ and a reward palette already in the core list is not added twice. Reward palette
 [RewardModal](./src/features/puzzle/RewardModal.tsx): "Reward earned" and "Hooray!" (Mr Dafoe), then the new palettes
 (a color strip and name, with "Try it out in Zen Mode now", which switches mode) and/or the new bonus sets (the first
 puzzle image of each difficulty and the name, with "Go to puzzle set now", which opens that set). Later shapes, resume,
-and accounts are not built yet.
+and saving progress to an account are not built yet.
+
+### Accounts
+
+Players can create an account at any time; guests play on without one. The header's account button opens
+[AccountDialog](./src/features/account/AccountDialog.tsx), which (hosted at page level so it does not inherit the header's sizing) handles:
+- **Sign in / create an account** with email and password; signup also asks for a first name, stored as `first_name` in the
+  Supabase user metadata (no profile row or migration). Whether the email must be confirmed is a Supabase dashboard setting; the dialog handles both
+  ("Check your email" or signed in straight away), and an address that already has an account is reported.
+- **Forgot password:** asks for an email and always answers "If this address has an account, we sent it a link". Following the link (PKCE, back to the app root) signs the
+  player in and opens "Choose a new password" (with confirmation); closing that early leaves them signed in with the old password.
+- **Expired or already-used email links** return with an error in the URL; the dialog opens on Sign in saying so, and the URL is cleaned.
+- **Signed in:** a greeting, the email, and Sign out (this device only).
+Server failures show a plain message (a gateway timeout arrives as the text `{}`), and a result that arrives after the dialog was closed is
+ignored. After a successful sign-in, sign-up, or sign-out the dialog keeps its content and stays disabled until it has finished fading out.
+`getPlayerClient` keeps its own session; content still loads with the guest client, and no guest progress is read or moved by any of this.
+Without Supabase configured the account button is hidden. Auth emails use the templates in [supabase/email-templates/](./supabase/email-templates/), sent through custom SMTP (see supabase/README.md).
 
 ### Grid sizes
 

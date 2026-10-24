@@ -21,15 +21,18 @@ Status key: ✅ done · 👀 ready for review · 🔜 next · ⬜ not started ·
 Supabase is set up and hosted, the admin can sign in, and the admin can generate,
 save, organize, and release puzzles in all six shapes, and palettes. The 2A content is
 authored and the Hexagon core and bonus puzzle groups and the two Zen core palette
-groups are released. The player app now reads released content as a guest: Puzzle Mode
-(the landing mode) lists the released core sets and plays their puzzles, Zen offers
+groups are released. The player app now reads released content as a guest: the app opens on
+a Home screen (greeting, then Puzzle and Zen cards), Puzzle Mode lists the released core sets and plays their puzzles, Zen offers
 Hexagon and the released core palettes, and guests earn the Hexagon bonus sets and reward
-palettes locally by completing sets.
+palettes locally by completing sets. Players can create an account, sign in, and reset a password
+(progress is not saved to an account yet), and the page frame appears before content loads.
 
 **Next up, in order:**
 
 1. Finish the Puzzle Mode gameplay tweaks from the POC (in progress).
-2. #57: accounts and guest import (A4), before any progression is stored; then later shapes.
+2. #57, the rest of A4: explicit guest import and server-stored progress per account, then the
+   dismissible prompt after all four Hexagon sets that unlocks Triangle for accounts (a guest can keep playing). The Triangle
+   core and bonus content must be published before that can be tested.
 3. Puzzle Mode resume (A5); the Zen randomizer stays visible but should be locked until all
    12 core and 12 bonus groups are solved.
 
@@ -44,7 +47,7 @@ palettes locally by completing sets.
 | A1  | Product and content rules                                     | ✅ mostly      |
 | A2  | Supabase foundation: schema, RLS, Auth, admin role, types     | ✅             |
 | A3  | Admin portal: everything needed for 2A content                | ✅ (daily groups and palette correction remain) |
-| A4  | Player accounts, explicit guest import, offline/cloud sync    | ⬜             |
+| A4  | Player accounts, explicit guest import, offline/cloud sync    | 🔜 started: sign-up, sign-in, password reset; import and sync remain |
 | A5  | Content access and puzzle-set progression in Puzzle and Zen   | 🔜 started: guest reads, set browsing, Zen limits |
 | A6  | Harden, verify, and launch Puzzle Mode                        | ⬜             |
 
@@ -166,18 +169,25 @@ remaining pack palette groups wait for the 2B store.
 
 **A4: Accounts and sync**
 
+- ✅ Sign-up (email, password, first name), sign-in, sign-out, and password reset with branded auth emails through custom SMTP;
+  expired-link handling; a signed-in player client (no migration was needed).
+- ✅ A Home screen greets the player (by first name when signed in) and offers Puzzle and Zen; the title returns Home. The page frame and
+  logo animation appear before content loads.
 - The app stays usable without an account. Signup is available at any time.
+- After all four Hexagon sets are solved, a dismissible dialog explains that Triangle needs an account; guests can keep playing Hexagon and Zen.
 - Never merge guest progress automatically. Offer an explicit import on both
   signup and sign-in, and keep the guest save if the player declines.
 - Keep guest storage separate from per-account caches.
 - Sync automatically when the player is back online. Merge completions, and
   ask only when two devices changed the same unfinished puzzle.
+- Small follow-ups: a "change password" action for signed-in players; the header is a few pixels too wide on screens narrower
+  than about 356px since the account button was added.
 
 **A5: Access and progression**
 
 - ✅ One access layer for palettes, shapes, and puzzle sets in Zen and Puzzle Mode (`ui/content`); guests see only
   released core content and Hexagon. Locked content is simply hidden for now.
-- ✅ Puzzle Mode is the default mode; the Zen tutorial shows the first time Zen is opened, and Puzzle Mode teaches basic and rotation puzzles the first time each is used.
+- ✅ Puzzle Mode teaches itself on first use, as does Zen (the Zen tutorial shows the first time Zen is opened, and Puzzle Mode teaches basic and rotation puzzles the first time each is used). The app opens on Home, from which either is one tap.
 - ✅ Player-side random puzzle generation is replaced by published puzzles.
 - The first introductory sequence is fixed. After that, every puzzle in an unlocked set is selectable (selectable today; the fixed sequence is not built).
 - ✅ Guests earn rewards locally (migration `20261023000000`): completing the basic core group unlocks the basic bonus

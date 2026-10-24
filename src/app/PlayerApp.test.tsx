@@ -1,9 +1,15 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { savePersistedState } from '@/features/zen/state'
 import { TestZenStateProvider as ZenStateProvider } from '@/test/TestZenStateProvider'
 import App from './PlayerApp'
+import ProvisionalTheme from './ProvisionalTheme'
+import {
+	markEntranceSpinFinished,
+	markEntranceStarted,
+	resetEntranceHandoff,
+} from './entranceHandoff'
 import styles from './PlayerApp.module.css'
 import headerStyles from '@/app/layout/Header.module.css'
 import { useIsTouchDevice } from '@/ui/hooks'
@@ -14,7 +20,7 @@ import { palettes } from '@/test/playerContent'
 vi.mock('@/ui/hooks/useIsTouchDevice')
 const mockUseIsTouchDevice = vi.mocked(useIsTouchDevice)
 
-// The app lands on Puzzle Mode; most of these tests are about Zen, so open it.
+// The app lands on Home; most of these tests are about Zen, so open it.
 function renderApp() {
 	const view = renderLanding()
 	fireEvent.click(screen.getByRole('button', { name: 'Zen Mode' }))
@@ -87,20 +93,42 @@ describe('App', () => {
 		).not.toBeInTheDocument()
 	})
 
-	it('lands on Puzzle Mode and shows the Zen intro the first time Zen is opened', async () => {
+	it('lands on Home, and the Zen card shows the intro the first time Zen is opened', async () => {
 		mockUseIsTouchDevice.mockReturnValue(false)
 		const user = userEvent.setup()
 		renderLanding()
+		expect(screen.getByRole('region', { name: 'Home' })).toBeVisible()
+		expect(
+			screen.getByLabelText('Puzzle Mode', { selector: 'section' }),
+		).not.toBeVisible()
+		await user.click(screen.getByRole('button', { name: 'Zen' }))
+		expect(
+			screen.queryByRole('region', { name: 'Home' }),
+		).not.toBeInTheDocument()
+		expect(
+			screen.getByRole('heading', { name: 'Welcome!' }),
+		).toBeInTheDocument()
+	})
+
+	it('opens Puzzle Mode from its card and returns Home from the logo', async () => {
+		mockUseIsTouchDevice.mockReturnValue(false)
+		const user = userEvent.setup()
+		renderLanding()
+		await user.click(screen.getByRole('button', { name: 'Puzzle' }))
 		expect(
 			screen.getByRole('region', { name: 'Puzzle Mode' }),
 		).toBeVisible()
 		expect(
-			screen.queryByRole('heading', { name: 'Welcome!' }),
+			screen.queryByRole('region', { name: 'Home' }),
 		).not.toBeInTheDocument()
-		await user.click(screen.getByRole('button', { name: 'Zen Mode' }))
+		await user.click(screen.getByRole('button', { name: 'Home' }))
+		expect(screen.getByRole('region', { name: 'Home' })).toBeVisible()
 		expect(
-			screen.getByRole('heading', { name: 'Welcome!' }),
-		).toBeInTheDocument()
+			screen.getByRole('button', { name: 'Puzzle Mode' }),
+		).toHaveAttribute('aria-pressed', 'false')
+		expect(
+			screen.getByRole('button', { name: 'Zen Mode' }),
+		).toHaveAttribute('aria-pressed', 'false')
 	})
 
 	it('moves the centered logo and reveals the page after the star finishes spinning', () => {
@@ -183,6 +211,108 @@ describe('App', () => {
 			}
 			vi.unstubAllGlobals()
 		}
+	})
+
+	it('shows the frame with a loading message in place of the modes while content loads', () => {
+		render(
+			<ProvisionalTheme>
+				<App gate={{ status: 'loading' }} />
+			</ProvisionalTheme>,
+		)
+		expect(
+			screen.getByRole('heading', { name: 'Kaleidoscope' }),
+		).toBeInTheDocument()
+		expect(screen.getByRole('main')).toContainElement(
+			screen.getByRole('status'),
+		)
+		expect(screen.getByRole('status')).toHaveTextContent(
+			'Loading Kaleidoscope',
+		)
+		expect(
+			screen.queryByRole('button', { name: 'Zen Mode' }),
+		).not.toBeInTheDocument()
+		expect(
+			screen.queryByRole('button', { name: 'Home' }),
+		).not.toBeInTheDocument()
+		expect(
+			screen.queryByRole('button', { name: /Switch to/ }),
+		).not.toBeInTheDocument()
+		expect(screen.getByRole('contentinfo')).toBeInTheDocument()
+	})
+
+	it('offers a retry in the frame when content cannot load', async () => {
+		const retry = vi.fn()
+		render(
+			<ProvisionalTheme>
+				<App gate={{ status: 'failed', message: 'Offline', retry }} />
+			</ProvisionalTheme>,
+		)
+		expect(screen.getByRole('alert')).toHaveTextContent('Offline')
+		await userEvent
+			.setup()
+			.click(screen.getByRole('button', { name: 'Try again' }))
+		expect(retry).toHaveBeenCalledOnce()
+	})
+
+	describe('opening handed over from the loading frame', () => {
+		const originalAnimate = Element.prototype.animate
+
+		beforeEach(() => {
+			Object.defineProperty(Element.prototype, 'animate', {
+				configurable: true,
+				value: vi.fn(),
+			})
+			vi.stubGlobal('matchMedia', () => ({ matches: false }))
+			mockUseIsTouchDevice.mockReturnValue(false)
+		})
+
+		afterEach(() => {
+			resetEntranceHandoff()
+			vi.unstubAllGlobals()
+			if (originalAnimate) {
+				Object.defineProperty(Element.prototype, 'animate', {
+					configurable: true,
+					value: originalAnimate,
+				})
+			} else {
+				delete (Element.prototype as Partial<Element>).animate
+			}
+		})
+
+		it('plays the whole opening when nothing was shown before', () => {
+			renderLanding()
+			expect(screen.getByRole('main').parentElement).toHaveClass(
+				styles.opening,
+			)
+		})
+
+		it('does not replay an opening that had already moved the title up', () => {
+			markEntranceStarted()
+			markEntranceSpinFinished()
+			renderLanding()
+			const page = screen.getByRole('main').parentElement
+			expect(page).not.toHaveClass(styles.opening)
+			expect(
+				screen.getByRole('heading', { name: 'Kaleidoscope' }),
+			).not.toHaveClass(headerStyles.openingTitle)
+		})
+
+		it('joins a spin already under way', () => {
+			const now = vi.spyOn(performance, 'now')
+			now.mockReturnValue(1000)
+			markEntranceStarted()
+			now.mockReturnValue(1700)
+			renderLanding()
+			expect(screen.getByRole('main').parentElement).toHaveClass(
+				styles.opening,
+			)
+			expect(
+				screen
+					.getByRole('heading', { name: 'Kaleidoscope' })
+					.querySelector('img')!.style.animationDelay,
+			).toBe('-700ms')
+			now.mockRestore()
+		})
 	})
 
 	it('reveals the full app with the controls modal open after completing the intro', async () => {

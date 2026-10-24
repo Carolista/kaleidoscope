@@ -44,7 +44,11 @@
 }
 
 .scroller {
-	width: 100%;
+	/* Padding gives focus outlines (up to 5px past a control) room inside the
+	   clipped scroll area; the equal negative margin keeps the layout unchanged. */
+	width: calc(100% + 12px);
+	margin: -6px;
+	padding: 6px;
 	min-height: 0;
 	overflow-y: auto;
 	overscroll-behavior: contain;
