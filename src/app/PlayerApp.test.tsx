@@ -14,7 +14,7 @@ import { palettes } from '@/test/playerContent'
 vi.mock('@/ui/hooks/useIsTouchDevice')
 const mockUseIsTouchDevice = vi.mocked(useIsTouchDevice)
 
-// The app lands on Puzzle Mode; most of these tests are about Zen, so open it.
+// The app lands on Home; most of these tests are about Zen, so open it.
 function renderApp() {
 	const view = renderLanding()
 	fireEvent.click(screen.getByRole('button', { name: 'Zen Mode' }))
@@ -87,20 +87,42 @@ describe('App', () => {
 		).not.toBeInTheDocument()
 	})
 
-	it('lands on Puzzle Mode and shows the Zen intro the first time Zen is opened', async () => {
+	it('lands on Home, and the Zen card shows the intro the first time Zen is opened', async () => {
 		mockUseIsTouchDevice.mockReturnValue(false)
 		const user = userEvent.setup()
 		renderLanding()
+		expect(screen.getByRole('region', { name: 'Home' })).toBeVisible()
+		expect(
+			screen.getByLabelText('Puzzle Mode', { selector: 'section' }),
+		).not.toBeVisible()
+		await user.click(screen.getByRole('button', { name: 'Zen' }))
+		expect(
+			screen.queryByRole('region', { name: 'Home' }),
+		).not.toBeInTheDocument()
+		expect(
+			screen.getByRole('heading', { name: 'Welcome!' }),
+		).toBeInTheDocument()
+	})
+
+	it('opens Puzzle Mode from its card and returns Home from the logo', async () => {
+		mockUseIsTouchDevice.mockReturnValue(false)
+		const user = userEvent.setup()
+		renderLanding()
+		await user.click(screen.getByRole('button', { name: 'Puzzle' }))
 		expect(
 			screen.getByRole('region', { name: 'Puzzle Mode' }),
 		).toBeVisible()
 		expect(
-			screen.queryByRole('heading', { name: 'Welcome!' }),
+			screen.queryByRole('region', { name: 'Home' }),
 		).not.toBeInTheDocument()
-		await user.click(screen.getByRole('button', { name: 'Zen Mode' }))
+		await user.click(screen.getByRole('button', { name: 'Home' }))
+		expect(screen.getByRole('region', { name: 'Home' })).toBeVisible()
 		expect(
-			screen.getByRole('heading', { name: 'Welcome!' }),
-		).toBeInTheDocument()
+			screen.getByRole('button', { name: 'Puzzle Mode' }),
+		).toHaveAttribute('aria-pressed', 'false')
+		expect(
+			screen.getByRole('button', { name: 'Zen Mode' }),
+		).toHaveAttribute('aria-pressed', 'false')
 	})
 
 	it('moves the centered logo and reveals the page after the star finishes spinning', () => {

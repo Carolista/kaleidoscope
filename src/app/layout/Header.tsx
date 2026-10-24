@@ -9,8 +9,10 @@ interface HeaderProps {
 	readonly isOpening?: boolean
 	readonly isMoving?: boolean
 	readonly onStarSpinComplete?: () => void
-	readonly mode?: 'zen' | 'puzzle'
+	readonly mode?: 'home' | 'zen' | 'puzzle'
 	readonly onModeChange?: (mode: 'zen' | 'puzzle') => void
+	// Makes the title a button that returns to the home screen.
+	readonly onHome?: () => void
 	// Page-wide controls (e.g. the dark mode toggle), shown after the mode switch.
 	readonly actions?: ReactNode
 }
@@ -22,6 +24,7 @@ function Header({
 	onStarSpinComplete,
 	mode = 'zen',
 	onModeChange,
+	onHome,
 	actions,
 }: HeaderProps) {
 	const titleClasses = [
@@ -31,6 +34,20 @@ function Header({
 	]
 		.filter(Boolean)
 		.join(' ')
+	const lettering = (
+		<>
+			<span className={styles.letters} aria-hidden="true">
+				KALEID
+			</span>
+			<LogoStar
+				className={styles.star}
+				onSpinComplete={onStarSpinComplete}
+			/>
+			<span className={styles.letters} aria-hidden="true">
+				SCOPE
+			</span>
+		</>
+	)
 
 	return (
 		<header className={styles.header}>
@@ -39,16 +56,22 @@ function Header({
 				className={titleClasses}
 				aria-label="Kaleidoscope"
 			>
-				<span className={styles.letters} aria-hidden="true">
-					KALEID
-				</span>
-				<LogoStar
-					className={styles.star}
-					onSpinComplete={onStarSpinComplete}
-				/>
-				<span className={styles.letters} aria-hidden="true">
-					SCOPE
-				</span>
+				{onHome ? (
+					<button
+						type="button"
+						className={styles.homeButton}
+						aria-label="Home"
+						title="Home"
+						onClick={() => {
+							// The title is not a control until it has settled into the header.
+							if (!isOpening && !isMoving) onHome()
+						}}
+					>
+						{lettering}
+					</button>
+				) : (
+					lettering
+				)}
 			</h1>
 			{actions && (
 				<div

@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react'
 import { useLayoutEffect, useRef, useState } from 'react'
 import { getThemeColors } from '@/domain/palettes'
 import { AccountControl, AccountDialog, useAccount } from '@/features/account'
+import { HomeScreen } from '@/features/home'
 import { PuzzleMode } from '@/features/puzzle'
 import { hasPersistedDesign, ZenMode } from '@/features/zen'
 import { DarkModeToggle } from '@/ui/components'
@@ -25,7 +26,7 @@ function PlayerApp() {
 	)
 	const [isFirstVisit] = useState(() => !hasPersistedDesign())
 	const [showIntro, setShowIntro] = useState(isFirstVisit)
-	const [mode, setMode] = useState<'zen' | 'puzzle'>('puzzle')
+	const [mode, setMode] = useState<'home' | 'zen' | 'puzzle'>('home')
 	const [accountOpen, setAccountOpen] = useState(false)
 	const account = useAccount()
 	// Following a password-reset link, or landing on an expired one, opens the dialog.
@@ -130,6 +131,7 @@ function PlayerApp() {
 				onStarSpinComplete={handleStarSpinComplete}
 				mode={mode}
 				onModeChange={setMode}
+				onHome={() => setMode('home')}
 				actions={
 					<>
 						<AccountControl onOpen={() => setAccountOpen(true)} />
@@ -138,6 +140,19 @@ function PlayerApp() {
 				}
 			/>
 			<main className={styles.app}>
+				{mode === 'home' && (
+					<HomeScreen
+						signedIn={account.status === 'signedIn'}
+						firstName={account.firstName}
+						onSignIn={
+							account.status === 'signedOut'
+								? () => setAccountOpen(true)
+								: undefined
+						}
+						onOpenPuzzle={() => setMode('puzzle')}
+						onOpenZen={() => setMode('zen')}
+					/>
+				)}
 				<PuzzleMode
 					hidden={mode !== 'puzzle'}
 					onOpenZen={() => setMode('zen')}
@@ -150,7 +165,7 @@ function PlayerApp() {
 					/>
 				)}
 			</main>
-			{(mode === 'puzzle' || !showIntro) && <Footer />}
+			{(mode !== 'zen' || !showIntro) && <Footer />}
 			<AccountDialog
 				open={accountOpen}
 				onClose={() => setAccountOpen(false)}
