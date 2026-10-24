@@ -231,7 +231,7 @@ it back to return it to the tray, preserving orientation. Keyboard: Enter/Space
 rotates/selects in tray, board activation places, Delete/Backspace on an occupied
 tile returns its piece. Rotation happens only in the tray. Containers stay square
 across all orientations, with one subtle selected/focus border and normal disabled
-cursor. A first-rotation player-set tutorial is planned, not implemented.
+cursor. Players get a short tutorial the first time they meet turning pieces (see Puzzle tutorials).
 
 Live: https://codewithcarrie.com/kaleidoscope/
 
@@ -310,7 +310,8 @@ Puzzle Mode first shows **Puzzle Sets**: each released core set is a light-borde
 its name, track (Basic or Rotation), and "x of 24" at the left, and at the right the solved image of
 the first puzzle of each difficulty with "x of 8" below it. A set opens to its puzzles under
 difficulty subheadings, four to a row, as borderless solved images (no grid lines) with a round
-check badge at the top right once solved. Choosing one plays it.
+check badge at the top right once solved. Choosing one plays it. On narrow screens the card's
+text sits top left and the three images wrap to the bottom right.
 Play places the goal image and equal-scale tray pieces in a compact row
 above the full-width board. Boards and pieces use the Zen look: empty tiles are
 `var(--accent)` with a `var(--base)` stroke, only the wedge is at full opacity until
@@ -325,10 +326,27 @@ Opening a puzzle, or choosing Next, swipes it in: the target, tray, and board (n
 icon row, which stays put) fly in from the right while the previous puzzle's painted copy flies off
 to the left over 560ms (`usePuzzleSwipe`, same inert-clone technique as Zen's grid swap; skipped for
 reduced motion; `body` hides horizontal overflow so the travel adds no scrollbar).
+The icon row sits 2rem below the board (the board graphic itself has no bottom margin).
 The reverse-rotate icon restarts the current puzzle and the left-from-bracket icon returns to the set. The icons under
 the board are tinted with the second color of the puzzle's own palette (`PlayerPuzzle.palette`);
 the back arrow on a set's puzzle grid is classic solid. Placement feedback remains in a
 nonvisual status region rather than visible instruction/status blocks.
+
+**Puzzle tutorials.** Puzzle Mode teaches each track once, in
+[features/puzzle/intro/](./src/features/puzzle/intro/). The first time Puzzle Mode opens, a
+**Welcome!** tutorial replaces the set list; the first time a rotation set is opened, a second one
+replaces that set's puzzle grid. Both are a fixed small-hexagon puzzle (seed `intro-3`: pieces of
+3, 2, and 1 tiles, five colors; rotation turns the two larger pieces) played on the shared
+`PuzzlePlay`, built from the track's tutorial palette (Mindfulness for basic, Stillness for
+rotation). Guidance sits just above the board and changes with progress (`PuzzlePlay`'s `onProgress`
+reports pieces placed and whether any is turned; `aboveBoard` is the slot). The slot reserves three
+lines and shows **Continue** in the same place after the solve, under a **Congratulations!** heading.
+Completion is stored in `kaleidoscope:puzzle-intro` (`{ version: 1, seen: [...] }`) only on Continue,
+so an unfinished tutorial repeats on reload. A device that has already solved a puzzle in a track
+counts as having seen it. Nothing is shown when no puzzles or palettes are released.
+Tutorial palettes are looked up by ID in [introPalettes.ts](./src/domain/palettes/introPalettes.ts) among
+the released core palettes, falling back to the first palette; a palette that is not in a released
+core group (so not readable by guests) is never found. Zen's intro uses Harmony.
 
 `LogoStar` lives in `components/shared` with `arrive` (default) and `pulse`
 animation modes; wordmark sizing and optical spacing stay in `Header`.
@@ -473,25 +491,25 @@ Test files and `src/test/` are exempt so tests can reach internals and mock exac
 | --- | --- |
 | [app/](./src/app/) | `AppEntry` (player/admin routing, navigation guard), `PlayerApp` (page, entrance animation, header, mode switch, footer), `useAdminRoute`, [layout/](./src/app/layout/) (Header, Footer), global [index.css](./src/app/index.css) |
 | [features/zen/](./src/features/zen/) | Zen Mode: `ZenMode`, [state/](./src/features/zen/state/) (reducer, history, Context, localStorage persistence, design randomization), [controls/](./src/features/zen/controls/) (toolbar, palette and shape pickers), [grid/](./src/features/zen/grid/) (shape adapters, `ShapeGrid`, `GridView`, cells), [export/](./src/features/zen/export/) (Save Image), [intro/](./src/features/zen/intro/) |
-| [features/puzzle/](./src/features/puzzle/) | Player Puzzle Mode: set list, difficulty grid of solved images, play session with the Congrats overlay and Next, and the device's solved-puzzle record (`puzzleProgress.ts`) |
+| [features/puzzle/](./src/features/puzzle/) | Player Puzzle Mode: set list, difficulty grid of solved images, play session with the Congrats overlay and Next, the first-use tutorials (`intro/`), and the device's solved-puzzle (`puzzleProgress.ts`) and completed-tutorial (`introProgress.ts`) records |
 | [features/admin/](./src/features/admin/) | Lazy-loaded admin portal. `shell/` (portal, workspace, navigation), `catalog/` (session cache), `common/` (layout, icon button, form), `groups/` (shared group editing), one folder per content area (`puzzles/`, `puzzle-groups/`, `palettes/`, `palette-groups/`), `services/` (Supabase reads/writes), `testing/` |
 | [ui/components/](./src/ui/components/) | Shared controls: buttons, `DarkModeToggle`, palette-tinted `Checkbox`, native `Modal`, `ModalHeader`, `ConfirmDialog` and its dismissal preferences, form fields, loading, palette strips/choices |
 | [ui/content/](./src/ui/content/) | Player content: `loadPlayerContent` (released core palettes, core puzzle sets, shape order), `PlayerContentProvider` (loads before the app starts), `usePlayerContent`, and the offline cache |
 | [ui/theme/](./src/ui/theme/) | `PlayerThemeContext` (dark mode, active palette, toggle), `useDuotoneIconTint`, and `DuotoneTintColorContext` (lets a mode, such as a puzzle session, tint icons from its own color) |
 | [ui/hooks/](./src/ui/hooks/) | `useModalState`, `useIsTouchDevice` |
 | [ui/navigation/](./src/ui/navigation/) | App-wide unsaved-work navigation guard |
-| [ui/puzzle/](./src/ui/puzzle/) | Shared `PuzzlePlay` (target, tray, board, optional `celebration` text, pointer/keyboard interaction) and shape-neutral `PuzzleBoard` |
+| [ui/puzzle/](./src/ui/puzzle/) | Shared `PuzzlePlay` (target, tray, board, optional `celebration` text, `onProgress`, `aboveBoard` slot, pointer/keyboard interaction) and shape-neutral `PuzzleBoard` |
 | [domain/shapes/](./src/domain/shapes/) | React-free shape catalog, sizes, registry, and one folder per shape (grid, layout, types). The catalog's `supportedGridShapes` order is the single shape order (unlock order, Circle Rings last); `PUZZLE_SHAPE_IDS`, `PUZZLE_SHAPE_LABELS`, and every shape menu derive from it |
 | [domain/geometry/](./src/domain/geometry/) | `Point`, shared geometry math, symmetry engine, cell grouping, SVG points |
 | [domain/puzzles/](./src/domain/puzzles/) | Pure seeded puzzle generation, authoring, stored-definition readers (`readAuthoredPuzzle` for admins, `readPlayablePuzzle` for players, which never sees seeds or solutions), placement validation, and completion; per-shape adapters in `puzzleShapes.ts` |
-| [domain/palettes/](./src/domain/palettes/) | Palette types (`Palette`, `PlayerPalette` with an ID), color math, light/dark theme colors; no bundled palette list |
+| [domain/palettes/](./src/domain/palettes/) | Palette types (`Palette`, `PlayerPalette` with an ID), color math, light/dark theme colors, tutorial palette IDs (`introPalettes.ts`); no bundled palette list |
 | [lib/supabase/](./src/lib/supabase/) | Supabase browser clients (`getSupabaseClient` for the admin's session, `getGuestClient` for players, with no stored session) and generated database types |
 | [test/](./src/test/) | Vitest setup, shared render/interaction helpers, and `playerContent.ts` (sample palettes and content for tests) |
 
 Shape adapters supply geometry to `GridView`; it owns numbering, painting,
 highlighting, announcements, and SVG references. An optional `interaction`
-prop (supported by `TriangleGrid`) replaces app-state paint colors, paint handling,
-paintable groups, and highlighting; the intro uses it for its local design. Helpers preserve generated
+prop (supported by `TriangleGrid` and `HexagonGrid`) replaces app-state paint colors, paint handling,
+paintable groups, and highlighting; the Zen intro uses it on `HexagonGrid` for its local design. Helpers preserve generated
 cell/group ordering. `averagePoint` is a vertex average, not an area-weighted centroid.
 
 [catalog.ts](./src/domain/shapes/catalog.ts) defines supported IDs, labels, order,
@@ -548,16 +566,17 @@ Default app grids:
 | Circle rings | D6 | 5 rings + center | 91 | 12 |
 | Pinwheel | C8, rotation only | 4 x 3 per spoke (rows x columns) | 96 | 12 |
 
-The Zen intro keeps its own triangle of size 4 (five groups, one per palette
-color), so tuning the small triangle does not change it.
+The Zen intro uses the small hexagon (radius 3, six groups), so tuning another
+shape does not change it.
 
 Hexagons use axial-coordinate symmetry; other shapes use the shared geometric
 symmetry engine. One representative per group is clickable.
 
 ### State and persistence
 
-- New designs start in dark mode with the first palette in
-  [catalog.ts](./src/domain/palettes/catalog.ts) and its first color selected.
+- New designs start in dark mode with the Zen tutorial palette (Harmony, by ID in
+  [introPalettes.ts](./src/domain/palettes/introPalettes.ts); the first loaded palette if it is
+  unavailable) and its first color selected.
 - Painting toggles a group back to accent when its current color is selected again.
   Unpainted groups also display accent.
 - Each of the 18 shape/size combinations has an independent paint map. Switching
@@ -649,8 +668,9 @@ symmetry engine. One representative per group is clickable.
   its export session and preview URLs alive until the exit completes.
 - When the design storage key is absent at startup (checked before autosave; key
   existence, not payload validity), `App` shows the first-visit intro instead of the
-  grid, controls, and footer. Intro state is local: a size-4 triangle grid with its
-  5 paintable tiles, and the first palette's five colors. Choosing a swatch and a tile
+  grid, controls, and footer. Intro state is local: the small hexagon (radius 3) whose
+  center tile is already the theme's base color, leaving 5 paintable tiles, and the starting
+  palette's five colors. Choosing a swatch and a tile
   permanently paints that tile and disables that swatch; after five, dimming is
   released and **Continue** replaces the swatches. Continue shows the regular app
   with a fresh design and the help modal open. Nothing is saved until then. The

@@ -31,7 +31,7 @@ Hexagon and the released core palettes.
 2. Bonus groups and reward palettes for guests: let guests read the first shape's reward groups, and earn
    them locally by completing core groups (needs a database policy change and local reward logic).
 3. #57: accounts and guest import (A4), before any progression is stored; then later shapes.
-4. Puzzle Mode tutorial and resume (A5); the Zen randomizer stays visible but should be locked until all
+4. Puzzle Mode resume (A5); the Zen randomizer stays visible but should be locked until all
    12 core and 12 bonus groups are solved.
 
 ---
@@ -178,7 +178,7 @@ remaining pack palette groups wait for the 2B store.
 
 - ✅ One access layer for palettes, shapes, and puzzle sets in Zen and Puzzle Mode (`ui/content`); guests see only
   released core content and Hexagon. Locked content is simply hidden for now.
-- ✅ Puzzle Mode is the default mode; the Zen tutorial shows the first time Zen is opened. (Puzzle Mode's own tutorial is not built.)
+- ✅ Puzzle Mode is the default mode; the Zen tutorial shows the first time Zen is opened, and Puzzle Mode teaches basic and rotation puzzles the first time each is used.
 - ✅ Player-side random puzzle generation is replaced by published puzzles.
 - The first introductory sequence is fixed. After that, every puzzle in an unlocked set is selectable (selectable today; the fixed sequence is not built).
 - Solving either core group of a shape (basic or rotation) unlocks the next shape and its two core groups. The basic core group also unlocks the basic bonus group; the rotation core group unlocks both bonus groups. Reward palettes come from completing groups, without duplicate rewards.
