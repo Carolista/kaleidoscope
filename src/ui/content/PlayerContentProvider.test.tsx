@@ -88,9 +88,13 @@ describe('content cache', () => {
 		for (const raw of [
 			'not json',
 			'null',
-			JSON.stringify({ version: 2, content: fresh }),
-			JSON.stringify({ version: 1 }),
-			JSON.stringify({ version: 1, content: { palettes: [] } }),
+			JSON.stringify({ version: 1, content: fresh }),
+			JSON.stringify({ version: 2 }),
+			JSON.stringify({ version: 2, content: { palettes: [] } }),
+			JSON.stringify({
+				version: 2,
+				content: { palettes: [], unlockedShapes: [], puzzleSets: [] },
+			}),
 		]) {
 			localStorage.setItem('kaleidoscope:content', raw)
 			expect(readCachedContent()).toBeNull()

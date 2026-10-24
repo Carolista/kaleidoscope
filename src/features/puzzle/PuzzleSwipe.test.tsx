@@ -24,6 +24,7 @@ const content: PlayerContent = {
 			name: 'Starter',
 			shape: 'hexagon',
 			track: 'basic',
+			kind: 'core',
 			puzzles: [
 				{
 					id: 'p1',

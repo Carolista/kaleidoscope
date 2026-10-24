@@ -34,7 +34,6 @@
 .selectedOutline .outlineEdge {
 	stroke: var(--accent);
 	stroke-width: 1;
-	stroke-dasharray: 3 2;
 }
 
 .wedgeCell {

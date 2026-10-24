@@ -402,12 +402,27 @@ instead of opening. The bundled palette list was removed so a corrected palette 
 designs are saved by palette ID.
 
 **Puzzle Mode is the primary mode.** The app opens in Puzzle Mode and teaches itself on first use (see Puzzle tutorials); the Zen intro shows the first time Zen is opened.
-Zen is limited to unlocked shapes, the released core palettes, and (later) earned reward palettes.
+Zen is limited to unlocked shapes, the released core palettes, and earned reward palettes.
 
 **Puzzle browsing is picture first.** Sets and puzzles are shown as solved images with minimal text: a set card shows
 the first puzzle of each difficulty with its progress; a set shows its puzzles under difficulty subheadings, borderless,
 four to a row, with a round check badge on solved ones. Sections come from each puzzle's own difficulty, not a fixed
 count. Progress is the device's list of solved puzzle IDs and is never merged into an account automatically.
+
+**Guests earn rewards on the device.** A guest has no account to hold grants, so the database lets anonymous readers
+read released bonus (reward) groups of the first shape, the same as core groups (`can_play_puzzle_group`); signed-in players
+still need a grant, and later shapes still need an account. The app derives what is earned from the solved puzzle IDs
+instead of storing grants: a set is complete when all its puzzles are solved, completion grants its reward palettes and
+bonus sets, and a bonus set can award more. Deriving keeps one source of truth and keeps the unmerged guest save
+simple, and the later account import only has to carry solved IDs. The tradeoff is that a guest can read the first shape's
+bonus puzzles by editing requests; that is accepted because guests are local-only anyway and later shapes stay gated.
+Bonus sets stay hidden until earned (see "Players see only what they have"). Earned palettes are Zen palettes;
+playing a puzzle in a palette still grants nothing.
+
+**Rewards are announced in a dialog, not a line of text.** What a solve earns is a moment worth stopping for, so it opens a
+modal ("Reward earned", "Hooray!") showing the palette strip and name and/or the new set's pictures, each with a link to
+use it now (Zen Mode, or the set). The Zen link only switches mode; it does not change the player's current palette,
+which would alter their design.
 
 ### Puzzle tutorials
 

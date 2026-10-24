@@ -126,7 +126,10 @@ function PlayerApp() {
 				actions={<DarkModeToggle />}
 			/>
 			<main className={styles.app}>
-				<PuzzleMode hidden={mode !== 'puzzle'} />
+				<PuzzleMode
+					hidden={mode !== 'puzzle'}
+					onOpenZen={() => setMode('zen')}
+				/>
 				{mode === 'zen' && (
 					<ZenMode
 						isFirstVisit={isFirstVisit}

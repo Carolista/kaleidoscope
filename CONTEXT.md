@@ -16,9 +16,10 @@ and PNG download/share.
 
 The app opens in Puzzle Mode, the primary feature; the header switches to Zen Mode. Before
 either starts, the app loads what this player may use from Supabase as a guest (see
-Player content below). Puzzle Mode lists the released core puzzle sets, then a set's
+Player content below). Puzzle Mode lists the core puzzle sets and any bonus sets earned, then a set's
 puzzles by difficulty, and plays one on the shared `PuzzlePlay` surface; solved puzzle IDs stay
-on the device. Its independent local React state survives mode switches but not reloads; it never
+on the device. Solving the last puzzle of a set that earns something opens a "Reward earned" dialog
+(see Player content). Its independent local React state survives mode switches but not reloads; it never
 persists over Zen designs.
 
 The separate `#/admin` portal uses Supabase password Auth, generated database
@@ -316,10 +317,11 @@ Play places the goal image and equal-scale tray pieces in a compact row
 above the full-width board. Boards and pieces use the Zen look: empty tiles are
 `var(--accent)` with a `var(--base)` stroke, only the wedge is at full opacity until
 solved, and each placed piece gets a single thicker `var(--base)` outline (the selected
-piece adds a thin dashed accent line). Hovering a wedge tile uses a per-cell fill (brightened
+piece adds a thin solid accent line, drawn above the other outlines so shared edges stay visible; clicking
+another placed piece moves the selection to it). Hovering a wedge tile uses a per-cell fill (brightened
 painted color, or accent drifting toward base when empty). Solving briefly fades "Congrats!"
 (Mr Dafoe, accent fill, base outline, about 85% of the board's width) over the board; there is
-no dialog, so the solved design stays in view. The Next puzzle button (the next unsolved
+no dialog for the solve itself, so the solved design stays in view (a set that earns something then opens the reward dialog). The Next puzzle button (the next unsolved
 puzzle in the set; absent when none) is always present so the icons beside it never shift,
 disabled until the puzzle is solved and again once clicked.
 Opening a puzzle, or choosing Next, swipes it in: the target, tray, and board (not the
@@ -491,10 +493,10 @@ Test files and `src/test/` are exempt so tests can reach internals and mock exac
 | --- | --- |
 | [app/](./src/app/) | `AppEntry` (player/admin routing, navigation guard), `PlayerApp` (page, entrance animation, header, mode switch, footer), `useAdminRoute`, [layout/](./src/app/layout/) (Header, Footer), global [index.css](./src/app/index.css) |
 | [features/zen/](./src/features/zen/) | Zen Mode: `ZenMode`, [state/](./src/features/zen/state/) (reducer, history, Context, localStorage persistence, design randomization), [controls/](./src/features/zen/controls/) (toolbar, palette and shape pickers), [grid/](./src/features/zen/grid/) (shape adapters, `ShapeGrid`, `GridView`, cells), [export/](./src/features/zen/export/) (Save Image), [intro/](./src/features/zen/intro/) |
-| [features/puzzle/](./src/features/puzzle/) | Player Puzzle Mode: set list, difficulty grid of solved images, play session with the Congrats overlay and Next, the first-use tutorials (`intro/`), and the device's solved-puzzle (`puzzleProgress.ts`) and completed-tutorial (`introProgress.ts`) records |
+| [features/puzzle/](./src/features/puzzle/) | Player Puzzle Mode: set list, difficulty grid of solved images, play session with the Congrats overlay and Next, the first-use tutorials (`intro/`), the reward dialog (`RewardModal`), and the device's completed-tutorial record (`introProgress.ts`) |
 | [features/admin/](./src/features/admin/) | Lazy-loaded admin portal. `shell/` (portal, workspace, navigation), `catalog/` (session cache), `common/` (layout, icon button, form), `groups/` (shared group editing), one folder per content area (`puzzles/`, `puzzle-groups/`, `palettes/`, `palette-groups/`), `services/` (Supabase reads/writes), `testing/` |
 | [ui/components/](./src/ui/components/) | Shared controls: buttons, `DarkModeToggle`, palette-tinted `Checkbox`, native `Modal`, `ModalHeader`, `ConfirmDialog` and its dismissal preferences, form fields, loading, palette strips/choices |
-| [ui/content/](./src/ui/content/) | Player content: `loadPlayerContent` (released core palettes, core puzzle sets, shape order), `PlayerContentProvider` (loads before the app starts), `usePlayerContent`, and the offline cache |
+| [ui/content/](./src/ui/content/) | Player content: `loadPlayerContent` (released core palettes, core and bonus puzzle sets, rewards, shape order), `PlayerContentProvider` (loads before the app starts), `PlayerProgressProvider` (the device's solved puzzles, `usePlayerProgress`, and `usePlayerContent` over what has been earned, via `rewards.ts`), `solvedPuzzles.ts` (the solved-puzzle record), and the offline cache |
 | [ui/theme/](./src/ui/theme/) | `PlayerThemeContext` (dark mode, active palette, toggle), `useDuotoneIconTint`, and `DuotoneTintColorContext` (lets a mode, such as a puzzle session, tint icons from its own color) |
 | [ui/hooks/](./src/ui/hooks/) | `useModalState`, `useIsTouchDevice` |
 | [ui/navigation/](./src/ui/navigation/) | App-wide unsaved-work navigation guard |
@@ -526,20 +528,33 @@ React rendering remains separate from geometry and storage.
 Before the player app starts, [PlayerContentProvider](./src/ui/content/PlayerContentProvider.tsx) loads one
 [PlayerContent](./src/ui/content/playerContent.ts) with the guest client, which keeps no session (so an admin
 signed in on the same browser still reads exactly what a guest can). Reads rely on the database's own rules
-(released content only; guests play only the first shape's core groups) and are filtered again for release state
+(released content only; guests play only the first shape's core and bonus groups) and are filtered again for release state
 in [loadPlayerContent](./src/ui/content/loadPlayerContent.ts):
 - **palettes:** members of released core palette groups, by group name then position (these are Zen's palettes);
-- **puzzle sets:** released core puzzle groups of a basic or rotation track, each puzzle rendered with its own
-  palette through `readPlayablePuzzle` (a puzzle that fails to read is skipped and logged); sets with none are dropped;
-  ordered by shape unlock order, basic before rotation;
+- **puzzle sets:** released core and reward (bonus) puzzle groups of a basic or rotation track, each puzzle rendered
+  with its own palette through `readPlayablePuzzle` (a puzzle that fails to read is skipped and logged); sets with none
+  are dropped; ordered by shape unlock order, core before bonus, then basic before rotation;
+- **rewards:** from `reward_rules`, what completing a set gives: its reward palettes (readable once released) and the
+  bonus sets the database links to it. Only rewards of sets that loaded are kept, in set order;
 - **unlocked shapes:** only the first shape in `shape_progression` for guests (a Zen design on a locked shape
   starts fresh).
 The load is network first. A success is cached in `kaleidoscope:content`; if the network fails the last cache is
 used, and with no cache the player sees the error with Try again. With no released palettes it shows "Nothing has been
-released yet" with Check again, since Zen needs a palette. Content does not change during a visit.
+released yet" with Check again, since Zen needs a palette. The catalog does not change during a visit.
 Solved puzzles are stored on the device as `{ version: 1, solved: [puzzle IDs] }` in `kaleidoscope:puzzle-progress`
-and are never merged into an account automatically. Bonus (reward) groups, reward palettes, later shapes, resume, and
-accounts are not built yet.
+and are never merged into an account automatically. The cache format is version 2 (it gained `rewards`; older caches
+are ignored).
+
+**Earned content.** [PlayerProgressProvider](./src/ui/content/PlayerProgressProvider.tsx) keeps the solved puzzles and
+gives every mode the same `usePlayerContent()`: [availableContent](./src/ui/content/rewards.ts) keeps all core sets and
+palettes, plus the bonus sets and reward palettes earned. A set counts as complete when every puzzle in it is solved; a
+completed open set grants its reward, repeating so a bonus set can award more. Nothing is stored beyond the solved IDs,
+and a reward palette already in the core list is not added twice. Reward palettes follow the core ones in Zen's picker.
+`markSolved` returns what the solve newly earned (`newRewards`), and Puzzle Mode shows it in
+[RewardModal](./src/features/puzzle/RewardModal.tsx): "Reward earned" and "Hooray!" (Mr Dafoe), then the new palettes
+(a color strip and name, with "Try it out in Zen Mode now", which switches mode) and/or the new bonus sets (the first
+puzzle image of each difficulty and the name, with "Go to puzzle set now", which opens that set). Later shapes, resume,
+and accounts are not built yet.
 
 ### Grid sizes
 

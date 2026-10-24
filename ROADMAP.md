@@ -22,16 +22,15 @@ Supabase is set up and hosted, the admin can sign in, and the admin can generate
 save, organize, and release puzzles in all six shapes, and palettes. The 2A content is
 authored and the Hexagon core and bonus puzzle groups and the two Zen core palette
 groups are released. The player app now reads released content as a guest: Puzzle Mode
-(the landing mode) lists the released core sets and plays their puzzles, and Zen offers
-Hexagon and the released core palettes.
+(the landing mode) lists the released core sets and plays their puzzles, Zen offers
+Hexagon and the released core palettes, and guests earn the Hexagon bonus sets and reward
+palettes locally by completing sets.
 
 **Next up, in order:**
 
 1. Finish the Puzzle Mode gameplay tweaks from the POC (in progress).
-2. Bonus groups and reward palettes for guests: let guests read the first shape's reward groups, and earn
-   them locally by completing core groups (needs a database policy change and local reward logic).
-3. #57: accounts and guest import (A4), before any progression is stored; then later shapes.
-4. Puzzle Mode resume (A5); the Zen randomizer stays visible but should be locked until all
+2. #57: accounts and guest import (A4), before any progression is stored; then later shapes.
+3. Puzzle Mode resume (A5); the Zen randomizer stays visible but should be locked until all
    12 core and 12 bonus groups are solved.
 
 ---
@@ -181,7 +180,11 @@ remaining pack palette groups wait for the 2B store.
 - ✅ Puzzle Mode is the default mode; the Zen tutorial shows the first time Zen is opened, and Puzzle Mode teaches basic and rotation puzzles the first time each is used.
 - ✅ Player-side random puzzle generation is replaced by published puzzles.
 - The first introductory sequence is fixed. After that, every puzzle in an unlocked set is selectable (selectable today; the fixed sequence is not built).
-- Solving either core group of a shape (basic or rotation) unlocks the next shape and its two core groups. The basic core group also unlocks the basic bonus group; the rotation core group unlocks both bonus groups. Reward palettes come from completing groups, without duplicate rewards.
+- ✅ Guests earn rewards locally (migration `20261023000000`): completing the basic core group unlocks the basic bonus
+  set and its palette, the rotation core group unlocks both bonus sets and its palette, and each bonus set awards a
+  palette. Earned state is derived from the solved puzzle IDs, bonus sets stay hidden until earned, reward palettes
+  join Zen's palette picker, and a "Reward earned" dialog announces what a solve just earned.
+- Solving either core group of a shape (basic or rotation) unlocks the next shape and its two core groups (accounts only; guests stay on the first shape). Reward palettes come from completing groups, without duplicate rewards.
 - Grant the Zen randomizer permanently after all 12 core and 12 bonus groups are solved.
 - Validate completions and grant rewards on the server, idempotently.
 - ✅ Zen saves use palette IDs (older saves still load by palette name).
@@ -193,8 +196,7 @@ remaining pack palette groups wait for the 2B store.
 
 **A6: Launch impact and release**
 
-- ✅ Zen offers Hexagon plus whatever has been unlocked, and only the released core palettes (later also earned
-  reward palettes). Saves on a locked shape or an unavailable palette simply start fresh (superseding old saves is fine).
+- ✅ Zen offers Hexagon plus whatever has been unlocked, the released core palettes, and earned reward palettes. Saves on a locked shape or an unavailable palette simply start fresh (superseding old saves is fine).
 - Existing visitors' saved designs may use shapes or palettes that become locked.
   Decide how that looks before launch (see "Open decisions").
 - Test RLS against forged requests, the critical player journeys, offline use and

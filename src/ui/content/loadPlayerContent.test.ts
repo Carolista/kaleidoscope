@@ -69,6 +69,7 @@ function fakeClient(
 			const query = {
 				select: () => query,
 				eq: () => query,
+				in: () => query,
 				order: () => query,
 				then: (resolve: (value: typeof result) => unknown) =>
 					Promise.resolve(result).then(resolve),
@@ -156,6 +157,7 @@ describe('loadPlayerContent', () => {
 			palettes: [],
 			unlockedShapes: ['hexagon'],
 			puzzleSets: [],
+			rewards: [],
 		})
 	})
 
@@ -187,6 +189,7 @@ describe('loadPlayerContent', () => {
 			id: 'set',
 			shape: 'hexagon',
 			track: 'basic',
+			kind: 'core',
 		})
 		expect(set.puzzles.map(item => item.id)).toEqual(['third'])
 		expect(set.puzzles[0]).toMatchObject({
@@ -197,9 +200,72 @@ describe('loadPlayerContent', () => {
 		expect(consoleError).toHaveBeenCalledOnce()
 	})
 
+	it('loads bonus sets after their core set and the rewards that link them', async () => {
+		const content = await loadPlayerContent(
+			fakeClient({
+				puzzle_groups: [
+					group('bonus', [puzzle('b')], { purpose: 'reward' }),
+					group('core-rotation', [puzzle('r')], {
+						track: 'rotation',
+					}),
+					group('core', [puzzle('c')], { purpose: 'core' }),
+					group('lost-bonus', [null], { purpose: 'reward' }),
+				],
+				reward_rules: [
+					{
+						group_id: 'core-rotation',
+						reward_palettes: [{ palettes: palette('p2') }],
+						reward_puzzle_groups: [
+							{ group_id: 'bonus' },
+							{ group_id: 'lost-bonus' },
+						],
+					},
+					{
+						group_id: 'core',
+						reward_palettes: [
+							{ palettes: palette('p1') },
+							{ palettes: palette('draft', draft) },
+						],
+						reward_puzzle_groups: [{ group_id: 'bonus' }],
+					},
+					{
+						group_id: 'elsewhere',
+						reward_palettes: [{ palettes: palette('p3') }],
+						reward_puzzle_groups: [],
+					},
+					{
+						group_id: 'empty',
+						reward_palettes: [],
+						reward_puzzle_groups: [],
+					},
+				],
+			}),
+		)
+		expect(
+			content.puzzleSets.map(set => [set.id, set.kind, set.track]),
+		).toEqual([
+			['core', 'core', 'basic'],
+			['core-rotation', 'core', 'rotation'],
+			['bonus', 'bonus', 'basic'],
+		])
+		expect(
+			content.rewards.map(reward => [
+				reward.setId,
+				reward.palettes.map(item => item.id),
+				reward.bonusSetIds,
+			]),
+		).toEqual([
+			['core', ['p1'], ['bonus']],
+			['core-rotation', ['p2'], ['bonus']],
+		])
+	})
+
 	it('reports a failed read', async () => {
 		await expect(
 			loadPlayerContent(fakeClient({}, 'puzzle_groups')),
 		).rejects.toThrow('puzzle_groups failed')
+		await expect(
+			loadPlayerContent(fakeClient({}, 'reward_rules')),
+		).rejects.toThrow('reward_rules failed')
 	})
 })

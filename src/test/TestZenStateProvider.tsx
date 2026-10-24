@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { ZenStateProvider } from '@/features/zen/state'
-import { PlayerContentContext, type PlayerContent } from '@/ui/content'
+import { PlayerProgressProvider, type PlayerContent } from '@/ui/content'
 import { testContent } from './playerContent'
 
 // The real `ZenStateProvider` over loaded player content, since nearly every
@@ -13,8 +13,8 @@ export function TestZenStateProvider({
 	readonly content?: PlayerContent
 }) {
 	return (
-		<PlayerContentContext.Provider value={content}>
+		<PlayerProgressProvider content={content}>
 			<ZenStateProvider>{children}</ZenStateProvider>
-		</PlayerContentContext.Provider>
+		</PlayerProgressProvider>
 	)
 }
