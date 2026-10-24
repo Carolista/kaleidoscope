@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProvider } from '@/test/renderWithProvider'
@@ -28,6 +28,7 @@ const content: PlayerContent = {
 			name: 'Starter',
 			shape: 'hexagon',
 			track: 'basic',
+			kind: 'core',
 			puzzles: [
 				{
 					id: 'p1',
@@ -207,6 +208,99 @@ describe('PuzzleMode', () => {
 			screen.getByRole('button', { name: 'Back to puzzle set' }),
 		)
 		expect(screen.getByRole('heading', { name: 'Starter' })).toBeVisible()
+	})
+
+	it('hides a bonus set until its core set is complete, then announces and lists it', async () => {
+		const user = userEvent.setup()
+		const bonusContent: PlayerContent = {
+			...content,
+			puzzleSets: [
+				...content.puzzleSets,
+				{
+					id: 'set-bonus',
+					name: 'Extra',
+					shape: 'hexagon',
+					track: 'basic',
+					kind: 'bonus',
+					puzzles: [
+						{
+							id: 'bonus-1',
+							name: 'Bonus',
+							difficulty: 'easy',
+							palette: palettes[1],
+							puzzle: generatePuzzle('ui-bonus', palettes[1]),
+						},
+					],
+				},
+			],
+			rewards: [
+				{
+					setId: 'set-one',
+					palettes: [
+						{ ...palettes[5], id: 'earned', name: 'Earned' },
+					],
+					bonusSetIds: ['set-bonus'],
+				},
+			],
+		}
+		localStorage.setItem(
+			'kaleidoscope:puzzle-progress',
+			JSON.stringify({ version: 1, solved: ['p2'] }),
+		)
+		renderWithProvider(<PuzzleMode />, bonusContent)
+		expect(
+			screen.queryByRole('button', { name: /Extra/ }),
+		).not.toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: /Starter/ }))
+		fireEvent.click(screen.getByRole('button', { name: /^Puzzle 1,/ }))
+		solvePuzzle()
+		const reward = screen.getByRole('dialog', { name: 'Reward earned' })
+		expect(reward).toHaveTextContent('Hooray!')
+		expect(reward).toHaveTextContent('New palette unlocked:')
+		expect(reward).toHaveTextContent('Earned')
+		expect(reward).toHaveTextContent('New puzzle set unlocked:')
+		expect(reward).toHaveTextContent('Extra')
+		await user.click(
+			screen.getByRole('button', { name: 'Go to puzzle set now' }),
+		)
+		expect(screen.getByRole('heading', { name: 'Extra' })).toBeVisible()
+		await user.click(
+			screen.getByRole('button', { name: 'All puzzle sets' }),
+		)
+		expect(screen.getByRole('button', { name: /Extra/ })).toHaveTextContent(
+			'Basic bonus',
+		)
+	})
+
+	it('sends the player to Zen Mode from a palette reward', async () => {
+		const user = userEvent.setup()
+		const onOpenZen = vi.fn()
+		localStorage.setItem(
+			'kaleidoscope:puzzle-progress',
+			JSON.stringify({ version: 1, solved: ['p2'] }),
+		)
+		renderWithProvider(<PuzzleMode onOpenZen={onOpenZen} />, {
+			...content,
+			rewards: [
+				{
+					setId: 'set-one',
+					palettes: [
+						{ ...palettes[5], id: 'earned', name: 'Earned' },
+					],
+					bonusSetIds: [],
+				},
+			],
+		})
+		fireEvent.click(screen.getByRole('button', { name: /Starter/ }))
+		fireEvent.click(screen.getByRole('button', { name: /^Puzzle 1,/ }))
+		solvePuzzle()
+		expect(
+			screen.queryByText('New puzzle set unlocked:'),
+		).not.toBeInTheDocument()
+		await user.click(
+			screen.getByRole('button', { name: 'Try it out in Zen Mode now' }),
+		)
+		expect(onOpenZen).toHaveBeenCalledOnce()
 	})
 
 	it('moves to the next puzzle in the set without repeating a solved one', async () => {
@@ -514,6 +608,40 @@ describe('PuzzleMode', () => {
 		expect(
 			board.querySelector('[data-piece-outline]'),
 		).not.toBeInTheDocument()
+	})
+
+	it('moves the selection to another placed piece when it is clicked', async () => {
+		const user = userEvent.setup()
+		renderPlaying()
+		const [first, second] = puzzle.pieces
+		for (const [index, piece] of [first, second].entries())
+			dragTo(
+				pieceButton(index),
+				tileAt(coordinateKey(puzzle.solution[piece.id])),
+			)
+		const board = screen.getByRole('group', { name: 'Puzzle board' })
+		const outlineOf = (id: string) =>
+			board.querySelector(`[data-piece-outline="${id}"]`)
+		await user.click(tileAt(coordinateKey(puzzle.solution[first.id])))
+		expect(outlineOf(first.id)).toHaveClass(styles.selectedOutline)
+		await user.click(tileAt(coordinateKey(puzzle.solution[second.id])))
+		expect(outlineOf(second.id)).toHaveClass(styles.selectedOutline)
+		expect(outlineOf(first.id)).not.toHaveClass(styles.selectedOutline)
+	})
+
+	it('draws the selected piece outline above the other pieces', async () => {
+		const user = userEvent.setup()
+		renderPlaying()
+		const [first, second] = puzzle.pieces
+		for (const [index, piece] of [first, second].entries())
+			dragTo(
+				pieceButton(index),
+				tileAt(coordinateKey(puzzle.solution[piece.id])),
+			)
+		const board = screen.getByRole('group', { name: 'Puzzle board' })
+		await user.click(tileAt(coordinateKey(puzzle.solution[first.id])))
+		const drawn = [...board.querySelectorAll('[data-piece-outline]')]
+		expect(drawn.at(-1)).toHaveAttribute('data-piece-outline', first.id)
 	})
 
 	it('preserves the grabbed tile offset when dragging a placed multi-tile piece', () => {

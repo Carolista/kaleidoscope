@@ -747,6 +747,21 @@ No tables or columns change. Both functions are admin-only (`security invoker`, 
 - The hard rules are 24 puzzles per core and bonus puzzle group, 6 palettes per core and reward palette group,
   a reward palette for each core and bonus group, and all four slots filled for a package.
 
+## Apply guest bonus groups
+
+After the release tools:
+
+1. Run [20261023000000_guest_bonus_groups.sql](./migrations/20261023000000_guest_bonus_groups.sql) once in SQL
+   Editor as `postgres`.
+2. Run [guest_bonus_groups.sql](./tests/guest_bonus_groups.sql) as `postgres`, without an automatic RLS wrapper.
+   Expect **6 PASS results**; fixtures roll back. Released content already fills the bonus slots, so the test inserts its
+   own groups with the slot index and guard triggers set aside inside the transaction.
+
+No tables, columns, or types change. The migration replaces `private.can_play_puzzle_group` so a guest (no signed-in
+user) can read a released reward (bonus) group of the first shape, as they already could a core group. Signed-in players
+still need a `puzzle_group_grants` row, packs are unchanged, and `has_shape` still limits guests to the first shape.
+The app derives the guest's earned rewards from solved puzzles on the device.
+
 ## Bootstrap the one admin
 
 An ordinary app user cannot make themselves an admin. There is no public

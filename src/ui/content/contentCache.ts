@@ -1,7 +1,7 @@
 import type { PlayerContent } from './playerContent'
 
 const STORAGE_KEY = 'kaleidoscope:content'
-const STORAGE_VERSION = 1
+const STORAGE_VERSION = 2
 
 // The last successful load, so a player who is offline still has something to play.
 export function readCachedContent(): PlayerContent | null {
@@ -21,7 +21,8 @@ export function readCachedContent(): PlayerContent | null {
 		return content &&
 			Array.isArray(content.palettes) &&
 			Array.isArray(content.unlockedShapes) &&
-			Array.isArray(content.puzzleSets)
+			Array.isArray(content.puzzleSets) &&
+			Array.isArray(content.rewards)
 			? (content as PlayerContent)
 			: null
 	} catch {

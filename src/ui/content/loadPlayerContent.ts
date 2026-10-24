@@ -7,6 +7,7 @@ import type {
 	PlayerContent,
 	PlayerPuzzle,
 	PlayerPuzzleSet,
+	PlayerReward,
 } from './playerContent'
 
 interface Released {
@@ -82,9 +83,9 @@ async function loadPuzzleSets(
 	const { data, error } = await client
 		.from('puzzle_groups')
 		.select(
-			'id, name, shape_id, track, published_at, release_at, puzzle_group_members(position, puzzles(*, palettes(id, name, colors, published_at, release_at)))',
+			'id, name, purpose, shape_id, track, published_at, release_at, puzzle_group_members(position, puzzles(*, palettes(id, name, colors, published_at, release_at)))',
 		)
-		.eq('purpose', 'core')
+		.in('purpose', ['core', 'reward'])
 	if (error) throw new Error(error.message)
 	return data.flatMap(group => {
 		const { shape_id: shape, track } = group
@@ -120,9 +121,57 @@ async function loadPuzzleSets(
 				}
 			})
 		return puzzles.length
-			? [{ id: group.id, name: group.name, shape, track, puzzles }]
+			? [
+					{
+						id: group.id,
+						name: group.name,
+						shape,
+						track,
+						kind: group.purpose === 'reward' ? 'bonus' : 'core',
+						puzzles,
+					},
+				]
 			: []
 	})
+}
+
+// What completing a set gives: reward palettes and bonus sets, as the database links them.
+async function loadRewards(
+	client: SupabaseClient<Database>,
+): Promise<PlayerReward[]> {
+	const { data, error } = await client
+		.from('reward_rules')
+		.select(
+			'group_id, reward_palettes(palettes(id, name, colors, published_at, release_at)), reward_puzzle_groups(group_id)',
+		)
+	if (error) throw new Error(error.message)
+	return data.map(rule => ({
+		setId: rule.group_id,
+		palettes: rule.reward_palettes
+			.map(row => toPalette(row.palettes))
+			.filter((palette): palette is PlayerPalette => !!palette),
+		bonusSetIds: rule.reward_puzzle_groups.map(row => row.group_id),
+	}))
+}
+
+// Only rewards of sets that loaded count, and a bonus set that did not load is left out.
+// They follow the order of the sets, which is the order reward palettes reach Zen.
+function usableRewards(
+	rewards: readonly PlayerReward[],
+	sets: readonly PlayerPuzzleSet[],
+): PlayerReward[] {
+	const loaded = new Set(sets.map(set => set.id))
+	const position = (reward: PlayerReward) =>
+		sets.findIndex(set => set.id === reward.setId)
+	return rewards
+		.flatMap(reward => {
+			const bonusSetIds = reward.bonusSetIds.filter(id => loaded.has(id))
+			return loaded.has(reward.setId) &&
+				(reward.palettes.length || bonusSetIds.length)
+				? [{ ...reward, bonusSetIds }]
+				: []
+		})
+		.sort((a, b) => position(a) - position(b))
 }
 
 function sortSets(
@@ -136,6 +185,7 @@ function sortSets(
 	return [...sets].sort(
 		(a, b) =>
 			rank(a.shape) - rank(b.shape) ||
+			(a.kind === b.kind ? 0 : a.kind === 'core' ? -1 : 1) ||
 			(a.track === b.track ? 0 : a.track === 'basic' ? -1 : 1) ||
 			a.name.localeCompare(b.name),
 	)
@@ -144,16 +194,19 @@ function sortSets(
 export async function loadPlayerContent(
 	client: SupabaseClient<Database>,
 ): Promise<PlayerContent> {
-	const [palettes, shapeOrder, puzzleSets] = await Promise.all([
+	const [palettes, shapeOrder, puzzleSets, rewards] = await Promise.all([
 		loadPalettes(client),
 		loadShapeOrder(client),
 		loadPuzzleSets(client),
+		loadRewards(client),
 	])
 	const order = shapeOrder.length ? shapeOrder : [supportedGridShapes[0].id]
+	const sets = sortSets(puzzleSets, order)
 	return {
 		palettes,
 		// A guest starts with the first shape; later shapes are earned with an account.
 		unlockedShapes: [order[0]],
-		puzzleSets: sortSets(puzzleSets, order),
+		puzzleSets: sets,
+		rewards: usableRewards(rewards, sets),
 	}
 }

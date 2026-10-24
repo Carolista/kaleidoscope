@@ -4,7 +4,7 @@ import { Button, Loading } from '@/ui/components'
 import { cacheContent, readCachedContent } from './contentCache'
 import { loadPlayerContent } from './loadPlayerContent'
 import type { PlayerContent } from './playerContent'
-import { PlayerContentContext } from './PlayerContentContext'
+import { PlayerProgressProvider } from './PlayerProgressProvider'
 import styles from './PlayerContentProvider.module.css'
 
 type LoadState =
@@ -93,8 +93,8 @@ export function PlayerContentProvider({
 			</div>
 		)
 	return (
-		<PlayerContentContext.Provider value={state.content}>
+		<PlayerProgressProvider content={state.content}>
 			{children}
-		</PlayerContentContext.Provider>
+		</PlayerProgressProvider>
 	)
 }

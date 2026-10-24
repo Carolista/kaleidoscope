@@ -38,7 +38,10 @@ export default function PuzzleSetList({
 								<span className={styles.setName}>
 									{set.name}
 								</span>
-								<span>{trackLabels[set.track]}</span>
+								<span>
+									{trackLabels[set.track]}
+									{set.kind === 'bonus' ? ' bonus' : ''}
+								</span>
 								<span>
 									{solvedCount(set.puzzles, solved)} of{' '}
 									{set.puzzles.length}

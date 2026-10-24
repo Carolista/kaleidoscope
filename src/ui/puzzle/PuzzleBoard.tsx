@@ -303,23 +303,34 @@ export default function PuzzleBoard({
 			})}
 			{!target &&
 				!solved &&
-				placedPieces.map(({ piece, outline }) => (
-					<g
-						key={piece.id}
-						data-piece-outline={piece.id}
-						className={
-							piece.id === selectedId
-								? styles.selectedOutline
-								: styles.pieceOutline
-						}
-						aria-hidden="true"
-					>
-						<path d={outline} className={styles.outlineHalo} />
-						{piece.id === selectedId && (
-							<path d={outline} className={styles.outlineEdge} />
-						)}
-					</g>
-				))}
+				// SVG paints in document order, so the selected piece goes last to keep its
+				// whole outline visible along edges it shares with neighbors.
+				[...placedPieces]
+					.sort(
+						(a, b) =>
+							Number(a.piece.id === selectedId) -
+							Number(b.piece.id === selectedId),
+					)
+					.map(({ piece, outline }) => (
+						<g
+							key={piece.id}
+							data-piece-outline={piece.id}
+							className={
+								piece.id === selectedId
+									? styles.selectedOutline
+									: styles.pieceOutline
+							}
+							aria-hidden="true"
+						>
+							<path d={outline} className={styles.outlineHalo} />
+							{piece.id === selectedId && (
+								<path
+									d={outline}
+									className={styles.outlineEdge}
+								/>
+							)}
+						</g>
+					))}
 		</svg>
 	)
 }

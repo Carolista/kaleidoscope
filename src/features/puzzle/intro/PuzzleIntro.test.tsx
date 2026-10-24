@@ -22,6 +22,7 @@ function puzzleSet(id: string, track: 'basic' | 'rotation') {
 		name: id,
 		shape: 'hexagon' as const,
 		track,
+		kind: 'core' as const,
 		puzzles: [
 			{
 				id: `${id}-1`,

@@ -174,8 +174,11 @@ export default function PuzzlePlay({
 			return
 		}
 		const occupied = pieceAt(cell)
+		// A piece already on the board has nowhere to move on top of another piece, so
+		// clicking that piece selects it. A piece from the tray still gets the overlap feedback.
 		if (
 			selectedId &&
+			!(occupied && placements[selectedId]) &&
 			occupied?.id !== selectedId &&
 			(keyboard || !currentPuzzle.rotationAllowed)
 		)
