@@ -36,6 +36,31 @@ function readFirstName(session: Session | null): string | null {
 	return typeof name === 'string' && name.trim() ? name.trim() : null
 }
 
+// An email link that failed (expired, or already used, for instance by a mail
+// scanner) returns to the app with the reason in the hash or the query.
+function readLinkError(): string | null {
+	const { hash, search } = window.location
+	const params = new URLSearchParams(
+		hash.startsWith('#error') ? hash.slice(1) : search,
+	)
+	if (!params.has('error') && !params.has('error_code')) return null
+	const expired = ['otp_expired', 'access_denied'].includes(
+		params.get('error_code') ?? params.get('error') ?? '',
+	)
+	return expired
+		? 'That link has expired or was already used.'
+		: "We couldn't use that link."
+}
+
+function clearLinkErrorFromUrl() {
+	const url = new URL(window.location.href)
+	if (url.hash.startsWith('#error')) url.hash = ''
+	;['error', 'error_code', 'error_description'].forEach(key =>
+		url.searchParams.delete(key),
+	)
+	window.history.replaceState(window.history.state, '', url)
+}
+
 function resolveClient(client?: SupabaseClient<Database>) {
 	if (client) return client
 	try {
@@ -114,7 +139,44 @@ function createActions(client: SupabaseClient<Database>) {
 		}
 	}
 
-	return { signUp, signIn, signOut }
+	async function requestPasswordReset(email: string): Promise<AuthResult> {
+		try {
+			// Supabase answers the same whether or not the address has an account.
+			const { error } = await client.auth.resetPasswordForEmail(email, {
+				redirectTo: `${window.location.origin}${import.meta.env.BASE_URL}`,
+			})
+			return error
+				? authFailure(
+						error,
+						"We couldn't send the reset email right now. Please try again in a little while.",
+					)
+				: { status: 'ok' }
+		} catch (cause) {
+			return failure(
+				cause,
+				'Unable to send the reset email. Please try again.',
+			)
+		}
+	}
+
+	async function updatePassword(password: string): Promise<AuthResult> {
+		try {
+			const { error } = await client.auth.updateUser({ password })
+			return error
+				? authFailure(
+						error,
+						"We couldn't update your password right now. Please try again in a little while.",
+					)
+				: { status: 'ok' }
+		} catch (cause) {
+			return failure(
+				cause,
+				'Unable to update the password. Please try again.',
+			)
+		}
+	}
+
+	return { signUp, signIn, signOut, requestPasswordReset, updatePassword }
 }
 
 // Keeps who is signed in (if anyone) for the whole player app. Guests are the
@@ -130,16 +192,19 @@ export function AccountProvider({
 	const [client] = useState(() => resolveClient(suppliedClient))
 	const [session, setSession] = useState<Session | null>(null)
 	const [loading, setLoading] = useState(client !== null)
+	const [recovering, setRecovering] = useState(false)
+	const [linkError, setLinkError] = useState(readLinkError)
 
 	useEffect(() => {
 		if (!client) return
 		let active = true
 		let receivedEvent = false
-		const { data } = client.auth.onAuthStateChange((_event, next) => {
+		const { data } = client.auth.onAuthStateChange((event, next) => {
 			receivedEvent = true
 			if (!active) return
 			setSession(next)
 			setLoading(false)
+			if (event === 'PASSWORD_RECOVERY') setRecovering(true)
 		})
 		client.auth
 			.getSession()
@@ -171,10 +236,18 @@ export function AccountProvider({
 								: 'signedOut',
 						email: session?.user.email ?? null,
 						firstName: readFirstName(session),
+						recovering,
+						linkError,
+						endRecovery: () => setRecovering(false),
+						dismissLinkError: () => {
+							if (!linkError) return
+							setLinkError(null)
+							clearLinkErrorFromUrl()
+						},
 						...actions,
 					}
 				: UNAVAILABLE,
-		[actions, loading, session],
+		[actions, loading, session, recovering, linkError],
 	)
 
 	return (

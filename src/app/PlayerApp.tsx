@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react'
 import { useLayoutEffect, useRef, useState } from 'react'
 import { getThemeColors } from '@/domain/palettes'
-import { AccountControl, AccountDialog } from '@/features/account'
+import { AccountControl, AccountDialog, useAccount } from '@/features/account'
 import { PuzzleMode } from '@/features/puzzle'
 import { hasPersistedDesign, ZenMode } from '@/features/zen'
 import { DarkModeToggle } from '@/ui/components'
@@ -27,6 +27,11 @@ function PlayerApp() {
 	const [showIntro, setShowIntro] = useState(isFirstVisit)
 	const [mode, setMode] = useState<'zen' | 'puzzle'>('puzzle')
 	const [accountOpen, setAccountOpen] = useState(false)
+	const account = useAccount()
+	// Following a password-reset link, or landing on an expired one, opens the dialog.
+	if ((account.recovering || account.linkError) && !accountOpen) {
+		setAccountOpen(true)
+	}
 
 	useLayoutEffect(() => {
 		if (!canAnimateEntrance) return

@@ -34,16 +34,22 @@ function fakeClient(initial: Session | null = null) {
 		signUp: vi.fn(),
 		signInWithPassword: vi.fn(),
 		signOut: vi.fn(),
+		resetPasswordForEmail: vi.fn(),
+		updateUser: vi.fn(),
 	}
 	return {
 		auth,
-		emit: (session: Session | null) => listener('SIGNED_IN', session),
+		emit: (session: Session | null, event = 'SIGNED_IN') =>
+			listener(event, session),
 		client: { auth } as unknown as SupabaseClient<Database>,
 	}
 }
 
+// Mirrors how the player app opens the dialog for reset and expired links.
 function ControlAndDialog() {
 	const [open, setOpen] = useState(false)
+	const account = useAccount()
+	if ((account.recovering || account.linkError) && !open) setOpen(true)
 	return (
 		<>
 			<AccountControl onOpen={() => setOpen(true)} />
@@ -246,6 +252,96 @@ describe('accounts', () => {
 		await openDialog(user)
 		expect(screen.queryByRole('alert')).not.toBeInTheDocument()
 		expect(screen.getByRole('button', { name: 'Sign in' })).toBeEnabled()
+	})
+
+	it('sends a password reset link', async () => {
+		const user = userEvent.setup()
+		const fake = fakeClient()
+		fake.auth.resetPasswordForEmail.mockResolvedValue({
+			data: {},
+			error: null,
+		})
+		renderControl(fake)
+		await openDialog(user)
+		await user.click(
+			screen.getByRole('button', { name: 'Forgot your password?' }),
+		)
+		await user.type(screen.getByLabelText('Email'), 'ada@example.com')
+		await user.click(
+			screen.getByRole('button', { name: 'Send reset link' }),
+		)
+		expect(await screen.findByText(/has an account/)).toBeInTheDocument()
+		expect(fake.auth.resetPasswordForEmail).toHaveBeenCalledWith(
+			'ada@example.com',
+			expect.objectContaining({ redirectTo: expect.any(String) }),
+		)
+	})
+
+	it('opens a new-password form after a reset link and saves it', async () => {
+		const user = userEvent.setup()
+		const fake = fakeClient()
+		fake.auth.updateUser.mockResolvedValue({ data: {}, error: null })
+		renderControl(fake)
+		await screen.findByRole('button', { name: /sign in or create/i })
+		act(() =>
+			fake.emit(
+				sessionFor('ada@example.com', 'Ada'),
+				'PASSWORD_RECOVERY',
+			),
+		)
+		expect(
+			await screen.findByRole('heading', {
+				name: 'Choose a new password',
+			}),
+		).toBeInTheDocument()
+		await user.type(screen.getByLabelText('New password'), 'brand-new-pass')
+		await user.type(
+			screen.getByLabelText('Confirm new password'),
+			'different-pass',
+		)
+		await user.click(
+			screen.getByRole('button', { name: 'Save new password' }),
+		)
+		expect(await screen.findByRole('alert')).toHaveTextContent(
+			"don't match",
+		)
+		expect(fake.auth.updateUser).not.toHaveBeenCalled()
+		await user.clear(screen.getByLabelText('Confirm new password'))
+		await user.type(
+			screen.getByLabelText('Confirm new password'),
+			'brand-new-pass',
+		)
+		await user.click(
+			screen.getByRole('button', { name: 'Save new password' }),
+		)
+		expect(
+			await screen.findByText(/Your password has been updated/),
+		).toBeInTheDocument()
+		expect(fake.auth.updateUser).toHaveBeenCalledWith({
+			password: 'brand-new-pass',
+		})
+		await user.click(screen.getByRole('button', { name: 'Done' }))
+		await user.click(
+			await screen.findByRole('button', { name: /account for ada/i }),
+		)
+		expect(await screen.findByText('Hi, Ada!')).toBeInTheDocument()
+	})
+
+	it('says so when an email link has expired', async () => {
+		window.location.hash =
+			'#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired'
+		const fake = fakeClient()
+		renderControl(fake)
+		expect(await screen.findByRole('alert')).toHaveTextContent(
+			'That link has expired or was already used.',
+		)
+		expect(window.location.hash).toBe(
+			'#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired',
+		)
+		await userEvent.click(
+			screen.getByRole('button', { name: 'Close account dialog' }),
+		)
+		expect(window.location.hash).toBe('')
 	})
 
 	it('greets a signed-in player and signs out', async () => {

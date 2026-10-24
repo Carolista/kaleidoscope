@@ -762,6 +762,26 @@ user) can read a released reward (bonus) group of the first shape, as they alrea
 still need a `puzzle_group_grants` row, packs are unchanged, and `has_shape` still limits guests to the first shape.
 The app derives the guest's earned rewards from solved puzzles on the device.
 
+## Player accounts and auth email
+
+Players create accounts in the app (email, password, first name); no database change is involved. Supabase Auth owns the users, the first
+name is stored as `first_name` in the user metadata, and no `profiles` row is created yet. The player client uses the PKCE flow and its own storage key
+(`kaleidoscope-player-auth`), separate from the admin's.
+
+Dashboard settings:
+
+1. **Authentication > URL Configuration:** add the site URL (`http://localhost:5173/` for development and the deployed
+   `/kaleidoscope/` address) to the redirect allow-list. Confirmation and reset links return there.
+2. **Authentication > Sign In / Providers > Email:** "Confirm email" may be on or off; the app handles both. Password length minimum should not be above 8.
+3. **Authentication > SMTP Settings:** set custom SMTP (sender `noreply@` on your domain, name "Kaleidoscope"). Templates cannot be edited without it. The
+   project uses Resend: verify the domain, then use the host, port (465 or 587), and credentials it gives. Never commit the SMTP password.
+   If signup then takes about 30 seconds and returns a 504, Supabase cannot reach the SMTP server; check **Logs > Auth**, the host and port, and the credentials.
+   Microsoft 365 SMTP is not suitable (see DECISIONS.md, Accounts).
+4. **Authentication > Emails > Templates:** paste in [confirm-signup.html](./email-templates/confirm-signup.html) (subject
+   `Confirm your Kaleidoscope account`) and [reset-password.html](./email-templates/reset-password.html) (subject `Reset your Kaleidoscope password`).
+   The logo is loaded from the deployed site. They deliberately contain no player-supplied text.
+5. **Authentication > Rate Limits:** with custom SMTP the email limit is adjustable; keep a sensible limit.
+
 ## Bootstrap the one admin
 
 An ordinary app user cannot make themselves an admin. There is no public
@@ -963,8 +983,9 @@ The app continues behaving exactly as before until intentionally integrated.
 
 ## Still required before player integration
 
-- Player Auth/registration flows, explicit guest import, and the rest of the admin
-  authoring workspace. Admin sign-in, generated types, and six-recipe isolated
+- Explicit guest import and storing progress per account, and the rest of the admin
+  authoring workspace. Player sign-up, sign-in, and password reset are built (see
+  [Player accounts and auth email](#player-accounts-and-auth-email)). Admin sign-in, generated types, and six-recipe isolated
   playtesting, atomic draft saving/library, draft group assembly/deletion,
   draft palette management, and the progression and reward screens are available; the
   release tools remain pending.
