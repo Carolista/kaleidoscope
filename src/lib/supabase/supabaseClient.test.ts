@@ -71,6 +71,30 @@ it('reports missing configuration for guests with player wording', async () => {
 	expect(getGuestClient).toThrow('Loading puzzles requires')
 })
 
+it('creates a player client with its own persisted session', async () => {
+	vi.stubEnv('VITE_SUPABASE_URL', 'https://example.supabase.co')
+	vi.stubEnv('VITE_SUPABASE_PUBLISHABLE_KEY', 'sb_publishable_example')
+	const { getPlayerClient } = await import('./supabaseClient')
+	expect(getPlayerClient()).toBe(getPlayerClient())
+	expect(createClient).toHaveBeenCalledOnce()
+	expect(createClient).toHaveBeenCalledWith(
+		'https://example.supabase.co',
+		'sb_publishable_example',
+		{
+			auth: {
+				storageKey: 'kaleidoscope-player-auth',
+				flowType: 'pkce',
+				detectSessionInUrl: true,
+			},
+		},
+	)
+})
+
+it('reports missing configuration for accounts', async () => {
+	const { getPlayerClient } = await import('./supabaseClient')
+	expect(getPlayerClient).toThrow('Accounts require')
+})
+
 it('requires HTTPS outside localhost', async () => {
 	vi.stubEnv('VITE_SUPABASE_URL', 'http://example.supabase.co')
 	vi.stubEnv('VITE_SUPABASE_PUBLISHABLE_KEY', 'sb_publishable_example')

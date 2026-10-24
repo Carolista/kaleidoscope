@@ -3,6 +3,7 @@ import type { Database } from './database'
 
 let client: SupabaseClient<Database> | undefined
 let guestClient: SupabaseClient<Database> | undefined
+let playerClient: SupabaseClient<Database> | undefined
 
 function readConfiguration(missingMessage: string) {
 	const url = import.meta.env.VITE_SUPABASE_URL?.trim()
@@ -62,4 +63,22 @@ export function getGuestClient(): SupabaseClient<Database> {
 		},
 	})
 	return guestClient
+}
+
+// The signed-in player's client. Its session lives under its own storage key so
+// it never mixes with the admin's, and the PKCE flow returns confirmation links
+// as a `?code=` query, which does not collide with the `#/admin` hash route.
+export function getPlayerClient(): SupabaseClient<Database> {
+	if (playerClient) return playerClient
+	const { url, key } = readConfiguration(
+		'Accounts require VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in .env.local. Restart Vite after configuring them.',
+	)
+	playerClient = createClient<Database>(url, key, {
+		auth: {
+			storageKey: 'kaleidoscope-player-auth',
+			flowType: 'pkce',
+			detectSessionInUrl: true,
+		},
+	})
+	return playerClient
 }

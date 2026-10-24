@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react'
 import { useLayoutEffect, useRef, useState } from 'react'
 import { getThemeColors } from '@/domain/palettes'
+import { AccountControl, AccountDialog } from '@/features/account'
 import { PuzzleMode } from '@/features/puzzle'
 import { hasPersistedDesign, ZenMode } from '@/features/zen'
 import { DarkModeToggle } from '@/ui/components'
@@ -25,6 +26,7 @@ function PlayerApp() {
 	const [isFirstVisit] = useState(() => !hasPersistedDesign())
 	const [showIntro, setShowIntro] = useState(isFirstVisit)
 	const [mode, setMode] = useState<'zen' | 'puzzle'>('puzzle')
+	const [accountOpen, setAccountOpen] = useState(false)
 
 	useLayoutEffect(() => {
 		if (!canAnimateEntrance) return
@@ -123,7 +125,12 @@ function PlayerApp() {
 				onStarSpinComplete={handleStarSpinComplete}
 				mode={mode}
 				onModeChange={setMode}
-				actions={<DarkModeToggle />}
+				actions={
+					<>
+						<AccountControl onOpen={() => setAccountOpen(true)} />
+						<DarkModeToggle />
+					</>
+				}
 			/>
 			<main className={styles.app}>
 				<PuzzleMode
@@ -139,6 +146,10 @@ function PlayerApp() {
 				)}
 			</main>
 			{(mode === 'puzzle' || !showIntro) && <Footer />}
+			<AccountDialog
+				open={accountOpen}
+				onClose={() => setAccountOpen(false)}
+			/>
 		</div>
 	)
 }

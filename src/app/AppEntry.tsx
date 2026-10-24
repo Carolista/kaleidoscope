@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react'
+import { AccountProvider } from '@/features/account'
 import { ZenStateProvider } from '@/features/zen'
 import { Loading } from '@/ui/components'
 import { PlayerContentProvider } from '@/ui/content'
@@ -24,11 +25,13 @@ function Entry() {
 			<AdminPortal />
 		</Suspense>
 	) : (
-		<PlayerContentProvider>
-			<ZenStateProvider>
-				<PlayerApp />
-			</ZenStateProvider>
-		</PlayerContentProvider>
+		<AccountProvider>
+			<PlayerContentProvider>
+				<ZenStateProvider>
+					<PlayerApp />
+				</ZenStateProvider>
+			</PlayerContentProvider>
+		</AccountProvider>
 	)
 }
 
