@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProvider } from '@/test/renderWithProvider'
@@ -122,6 +122,11 @@ describe('PuzzleMode', () => {
 	beforeEach(() => {
 		localStorage.clear()
 		markPuzzleIntrosSeen()
+		// Index 0 of the celebrations, "Congrats!".
+		vi.spyOn(Math, 'random').mockReturnValue(0)
+	})
+	afterEach(() => {
+		vi.restoreAllMocks()
 	})
 	stubPointerHitTesting()
 
@@ -319,12 +324,12 @@ describe('PuzzleMode', () => {
 			name: 'Reward earned',
 		})
 		expect(reward).toHaveTextContent('Hooray!')
-		expect(reward).toHaveTextContent('New palette unlocked:')
+		expect(reward).toHaveTextContent('New palette unlocked')
 		expect(reward).toHaveTextContent('Earned')
-		expect(reward).toHaveTextContent('New puzzle set unlocked:')
+		expect(reward).toHaveTextContent('New puzzle set unlocked')
 		expect(reward).toHaveTextContent('Extra')
 		await user.click(
-			screen.getByRole('button', { name: 'Go to puzzle set now' }),
+			screen.getByRole('button', { name: 'Go to puzzle set now!' }),
 		)
 		expect(screen.getByRole('heading', { name: 'Extra' })).toBeVisible()
 		await user.click(
@@ -374,7 +379,9 @@ describe('PuzzleMode', () => {
 		fireEvent.click(screen.getByRole('button', { name: /^Puzzle 1,/ }))
 		solvePuzzle()
 		await user.click(
-			await screen.findByRole('button', { name: 'Go to puzzle set now' }),
+			await screen.findByRole('button', {
+				name: 'Go to puzzle set now!',
+			}),
 		)
 		expect(screen.getByRole('heading', { name: 'Extra' })).toBeVisible()
 		fireEvent.click(screen.getByRole('button', { name: /^Puzzle 1,/ }))
@@ -410,10 +417,10 @@ describe('PuzzleMode', () => {
 		fireEvent.click(screen.getByRole('button', { name: /^Puzzle 1,/ }))
 		solvePuzzle()
 		const tryInZen = await screen.findByRole('button', {
-			name: 'Try it out in Zen Mode now',
+			name: 'Try it out in Zen Mode now!',
 		})
 		expect(
-			screen.queryByText('New puzzle set unlocked:'),
+			screen.queryByText('New puzzle set unlocked'),
 		).not.toBeInTheDocument()
 		await user.click(tryInZen)
 		expect(onOpenZen).toHaveBeenCalledOnce()
@@ -463,7 +470,7 @@ describe('PuzzleMode', () => {
 		)
 		expect(announcement).toHaveTextContent('Triangle basics')
 		await user.click(
-			screen.getByRole('button', { name: 'Try it out in Zen Mode now' }),
+			screen.getByRole('button', { name: 'Try it out in Zen Mode now!' }),
 		)
 		expect(onOpenZen).toHaveBeenCalledOnce()
 	})
@@ -502,7 +509,7 @@ describe('PuzzleMode', () => {
 		})
 		expect(special).toHaveTextContent('all 24 puzzle sets of 24 puzzles')
 		await user.click(
-			screen.getByRole('button', { name: 'Try it out in Zen Mode now' }),
+			screen.getByRole('button', { name: 'Try it out in Zen Mode now!' }),
 		)
 		expect(onOpenZen).toHaveBeenCalledOnce()
 	})

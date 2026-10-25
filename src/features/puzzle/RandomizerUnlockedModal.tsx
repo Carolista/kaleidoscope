@@ -48,7 +48,7 @@ export default function RandomizerUnlockedModal({
 						palette.
 					</p>
 					<Button variant="primary" onClick={onOpenZen}>
-						Try it out in Zen Mode now
+						Try it out in Zen Mode now!
 					</Button>
 				</section>
 			</div>

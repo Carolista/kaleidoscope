@@ -1,15 +1,15 @@
-import { useId } from 'react'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button, Modal, ModalHeader } from '@/ui/components'
-import { MODES, type Mode } from './modes'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { useId } from 'react'
 import styles from './ModeDialog.module.css'
+import { MODES, type Mode } from './modes'
 
-const ORDER: readonly Mode[] = ['home', 'zen', 'puzzle']
+const ORDER: readonly Mode[] = ['home', 'puzzle', 'zen']
 
 const NAMES: Readonly<Record<Mode, string>> = {
 	home: 'Home',
-	zen: 'Zen Mode',
 	puzzle: 'Puzzle Mode',
+	zen: 'Zen Mode',
 }
 
 // Where to go next. The page hosts it, so it does not inherit the header's sizing.

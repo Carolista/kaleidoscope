@@ -54,7 +54,7 @@ export default function ShapeUnlockedModal({
 						className={styles.link}
 						onClick={onOpenZen}
 					>
-						Try it out in Zen Mode now
+						Try it out in Zen Mode now!
 					</button>
 				</section>
 				{sets.length > 0 && (

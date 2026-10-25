@@ -7,8 +7,9 @@ import {
 	faLeftFromBracket,
 	faRotateReverse,
 } from '@fortawesome/sharp-duotone-solid-svg-icons'
-import { useRef, useState } from 'react'
 import type { Ref } from 'react'
+import { useRef, useState } from 'react'
+import { pickCelebration } from './celebration'
 import styles from './PuzzleMode.module.css'
 import { nextUnsolvedPuzzle } from './setProgress'
 
@@ -33,6 +34,8 @@ export default function PuzzleSession({
 }) {
 	const [justSolved, setJustSolved] = useState(false)
 	const [advancing, setAdvancing] = useState(false)
+	// Picked when solved rather than during render, so re-renders never change it.
+	const [celebration, setCelebration] = useState('')
 	const play = useRef<PuzzlePlayHandle>(null)
 	const resume = usePuzzleResume()
 	// Read once: the board starts from what was left, and the session is rebuilt per puzzle.
@@ -57,9 +60,10 @@ export default function PuzzleSession({
 			hidden={hidden}
 			solvedMessage="Puzzle solved! Your design matches the target."
 			contentRef={contentRef}
-			celebration="Congrats!"
+			celebration={celebration}
 			onSolve={() => {
 				resume.clear(item.id)
+				setCelebration(pickCelebration())
 				setJustSolved(true)
 				onSolved(item.id)
 			}}
