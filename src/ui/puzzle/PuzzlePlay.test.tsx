@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { palettes } from '@/test/playerContent'
 import {
@@ -29,6 +29,149 @@ function renderPlay(puzzle: Puzzle) {
 		/>,
 	)
 }
+
+describe('PuzzlePlay target peek', () => {
+	stubPointerHitTesting()
+
+	function setup() {
+		const puzzle = generatePuzzle(
+			'peek-target',
+			palettes[1],
+			PUZZLE_RECIPES[0],
+		)
+		const { container } = renderPlay(puzzle)
+		const board = () => container.querySelector(`.${styles.board}`)
+		const peek = () => container.querySelector(`.${styles.peek}`)
+		return { puzzle, board, peek }
+	}
+
+	it('shows the target over the board when the target is pressed, and hides it again', async () => {
+		const user = userEvent.setup()
+		const { board, peek } = setup()
+		const toggle = screen.getByRole('button', {
+			name: 'Show target over the board',
+		})
+		expect(toggle).toHaveAttribute('aria-pressed', 'false')
+		expect(peek()).toBeNull()
+		await user.click(toggle)
+		expect(toggle).toHaveAttribute('aria-pressed', 'true')
+		expect(peek()).not.toBeNull()
+		expect(board()).toHaveAttribute('data-peeking')
+		await user.click(toggle)
+		expect(peek()).toBeNull()
+		expect(board()).not.toHaveAttribute('data-peeking')
+	})
+
+	it('grows out of the target and shrinks back when animation is available', async () => {
+		const user = userEvent.setup()
+		const animations: {
+			playbackRate: number
+			onfinish: (() => void) | null
+			reverse: () => void
+			cancel: () => void
+			keyframes: Keyframe[]
+		}[] = []
+		const animate = vi.fn(function (this: Element, keyframes: Keyframe[]) {
+			const fake = {
+				playbackRate: 1,
+				onfinish: null as (() => void) | null,
+				reverse() {
+					fake.playbackRate *= -1
+				},
+				cancel: vi.fn(),
+				keyframes,
+			}
+			animations.push(fake)
+			return fake
+		})
+		Object.defineProperty(Element.prototype, 'animate', {
+			configurable: true,
+			value: animate,
+		})
+		// The overlay's picture is three times the size of the target's.
+		const rect = vi
+			.spyOn(Element.prototype, 'getBoundingClientRect')
+			.mockImplementation(function (this: Element) {
+				const width = this.closest(`.${styles.peek}`) ? 300 : 100
+				return new DOMRect(10, 20, width, width)
+			})
+		try {
+			const { board, peek } = setup()
+			const toggle = screen.getByRole('button', {
+				name: 'Show target over the board',
+			})
+			await user.click(toggle)
+			expect(animate).toHaveBeenCalledTimes(1)
+			const [from, to] = animations[0].keyframes
+			expect(from.opacity).toBe(0)
+			expect(String(from.transform)).toContain('scale(0.3333')
+			expect(to).toMatchObject({ transform: 'none', opacity: 1 })
+			// The board stays visible until the target has arrived.
+			expect(board()).not.toHaveAttribute('data-peeking')
+			act(() => animations[0].onfinish?.())
+			expect(board()).toHaveAttribute('data-peeking')
+
+			await user.click(toggle)
+			expect(animations[0].playbackRate).toBe(-1)
+			expect(peek()).toHaveAttribute('data-closing')
+			expect(board()).not.toHaveAttribute('data-peeking')
+			act(() => animations[0].onfinish?.())
+			expect(peek()).toBeNull()
+			// Left to hold its invisible end state until removed, so it cannot flash.
+			expect(animations[0].cancel).not.toHaveBeenCalled()
+		} finally {
+			rect.mockRestore()
+			Reflect.deleteProperty(Element.prototype, 'animate')
+		}
+	})
+
+	it('hides again when the overlay is tapped or Escape is pressed', async () => {
+		const user = userEvent.setup()
+		const { peek } = setup()
+		const toggle = screen.getByRole('button', {
+			name: 'Show target over the board',
+		})
+		await user.click(toggle)
+		await user.click(peek() as Element)
+		expect(peek()).toBeNull()
+		await user.click(toggle)
+		await user.keyboard('{Escape}')
+		expect(peek()).toBeNull()
+	})
+
+	it('hides when a piece is picked up so the board can be played', async () => {
+		const user = userEvent.setup()
+		const { peek } = setup()
+		await user.click(
+			screen.getByRole('button', { name: 'Show target over the board' }),
+		)
+		fireEvent.pointerDown(pieceButton(0), {
+			button: 0,
+			pointerId: 1,
+			pointerType: 'mouse',
+		})
+		expect(peek()).toBeNull()
+	})
+
+	it('hides once the puzzle is solved', async () => {
+		const user = userEvent.setup()
+		const { puzzle, peek } = setup()
+		await user.click(
+			screen.getByRole('button', { name: 'Show target over the board' }),
+		)
+		for (const [index, piece] of puzzle.pieces.entries())
+			dragTo(
+				pieceButton(index),
+				tileAt(
+					coordinateKey(
+						pieceCells(piece, puzzle.solution[piece.id])[0],
+					),
+				),
+			)
+		expect(screen.getByRole('status')).toHaveTextContent('Solved.')
+		expect(peek()).toBeNull()
+	})
+})
 
 describe('PuzzlePlay on the stage', () => {
 	stubPointerHitTesting()

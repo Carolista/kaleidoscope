@@ -28,6 +28,7 @@ import {
 import type { GridSize } from '@/domain/shapes'
 import type { AxialCoord } from '@/domain/shapes/hexagon'
 import PuzzleBoard, { PieceGraphic } from './PuzzleBoard'
+import PeekOverlay from './PeekOverlay'
 import styles from './PuzzlePlay.module.css'
 import { tileSizes } from './tileSizes'
 import { useStageLayout } from './useStageLayout'
@@ -159,6 +160,11 @@ export default function PuzzlePlay({
 			: 'Choose a piece to get started.',
 	)
 	const [drag, setDrag] = useState<DragState | null>(null)
+	// Shows the target over the board, to look at it at the board's own size.
+	const [peeking, setPeeking] = useState(false)
+	// Whether the overlay has fully arrived, so the board is hidden only then.
+	const [peekSettled, setPeekSettled] = useState(false)
+	const targetRef = useRef<SVGSVGElement>(null)
 	const dragRef = useRef<DragState | null>(null)
 	const boardRef = useRef<SVGSVGElement>(null)
 	const suppressClickRef = useRef(false)
@@ -319,6 +325,7 @@ export default function PuzzlePlay({
 		)
 			return
 		suppressClickRef.current = false
+		setPeeking(false)
 		const transform = boardRef.current?.getScreenCTM?.()
 		const next: DragState = {
 			piece,
@@ -587,18 +594,42 @@ export default function PuzzlePlay({
 		setDrag(null)
 		suppressClickRef.current = false
 		lastTouchTapRef.current = null
+		setPeeking(false)
 		setMessage('Choose a piece to get started.')
 	}
 
 	useImperativeHandle(ref, () => ({ reset }))
 
+	// A solved board shows the finished design itself.
+	const peekOn = peeking && !solved
+	const closePeek = useEffectEvent((event: KeyboardEvent) => {
+		if (event.key === 'Escape') setPeeking(false)
+	})
+	useEffect(() => {
+		if (!peekOn) return
+		const onKey = (event: KeyboardEvent) => closePeek(event)
+		window.addEventListener('keydown', onKey)
+		return () => window.removeEventListener('keydown', onKey)
+	}, [peekOn])
+
+	// A button over the target, since the target itself is an image.
 	const targetView = (
-		<PuzzleBoard
-			shape={currentPuzzle.shape}
-			gridSize={currentPuzzle.gridSize}
-			colors={currentPuzzle.target}
-			target
-		/>
+		<>
+			<PuzzleBoard
+				svgRef={targetRef}
+				shape={currentPuzzle.shape}
+				gridSize={currentPuzzle.gridSize}
+				colors={currentPuzzle.target}
+				target
+			/>
+			<button
+				type="button"
+				className={styles.peekButton}
+				aria-label="Show target over the board"
+				aria-pressed={peekOn}
+				onClick={() => setPeeking(!peekOn)}
+			/>
+		</>
 	)
 
 	const boardView = (
@@ -627,6 +658,20 @@ export default function PuzzlePlay({
 					})
 				}}
 			/>
+			<PeekOverlay
+				open={peekOn}
+				fromRef={targetRef}
+				onClose={() => setPeeking(false)}
+				onSettledChange={setPeekSettled}
+				className={styles.peek}
+			>
+				<PuzzleBoard
+					shape={currentPuzzle.shape}
+					gridSize={currentPuzzle.gridSize}
+					colors={currentPuzzle.target}
+					target
+				/>
+			</PeekOverlay>
 			{solved && celebration && (
 				<div className={styles.celebration} aria-hidden="true">
 					{celebration}
@@ -757,6 +802,9 @@ export default function PuzzlePlay({
 										</div>
 										<div
 											className={`${styles.board} ${styles.stageItem}`}
+											data-peeking={
+												peekSettled || undefined
+											}
 											style={paddedRect(
 												stageLayout.board,
 												STAGE_BOARD_PADDING *
@@ -804,7 +852,12 @@ export default function PuzzlePlay({
 							{trayAction}
 						</div>
 						{aboveBoard}
-						<div className={styles.board}>{boardView}</div>
+						<div
+							className={styles.board}
+							data-peeking={peekSettled || undefined}
+						>
+							{boardView}
+						</div>
 					</>
 				)}
 			</div>

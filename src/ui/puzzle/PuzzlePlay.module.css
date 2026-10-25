@@ -31,9 +31,51 @@
 }
 
 .target {
+	position: relative;
 	width: 120px;
 	margin: 0;
 	text-align: center;
+}
+
+/* Covers the target; tapping it shows the target over the board. */
+.peekButton {
+	position: absolute;
+	inset: 0;
+	padding: 0;
+	border: 1px solid transparent;
+	border-radius: 6px;
+	background: transparent;
+	cursor: zoom-in;
+}
+
+.peekButton:focus-visible {
+	border-color: var(--accent);
+	outline: none;
+}
+
+.peekButton[aria-pressed='true'] {
+	cursor: zoom-out;
+}
+
+/* The target, drawn exactly where the board is while the board is hidden. It
+   grows out of the target and shrinks back (see PeekOverlay). */
+.peek {
+	position: absolute;
+	inset: 0;
+	cursor: zoom-out;
+}
+
+/* On its way out it no longer takes taps, so the board underneath can be played. */
+.peek[data-closing] {
+	pointer-events: none;
+}
+
+.board[data-peeking] > svg {
+	visibility: hidden;
+}
+
+.stageItem > .peek > svg {
+	width: 100%;
 }
 
 .board {
