@@ -15,7 +15,10 @@ import headerStyles from '@/app/layout/Header.module.css'
 import { useIsTouchDevice } from '@/ui/hooks'
 import { supportedGridShapes, defaultGridSizes } from '@/domain/shapes'
 import { PINWHEEL_GRID_SIZES } from '@/domain/shapes/pinwheel'
-import { palettes } from '@/test/playerContent'
+import { palettes, testContent } from '@/test/playerContent'
+import { generatePuzzle } from '@/domain/puzzles'
+import type { PlayerContent } from '@/ui/content'
+import { markPuzzleIntrosSeen, pieceButton } from '@/test/puzzleInteraction'
 
 vi.mock('@/ui/hooks/useIsTouchDevice')
 const mockUseIsTouchDevice = vi.mocked(useIsTouchDevice)
@@ -129,6 +132,59 @@ describe('App', () => {
 		expect(
 			screen.getByRole('button', { name: 'Zen Mode' }),
 		).toHaveAttribute('aria-pressed', 'false')
+	})
+
+	it('offers Continue for an unfinished puzzle and returns to it with its pieces in place', async () => {
+		mockUseIsTouchDevice.mockReturnValue(false)
+		markPuzzleIntrosSeen()
+		const puzzle = generatePuzzle('resume-app', palettes[1])
+		const piece = puzzle.pieces[0]
+		const content: PlayerContent = {
+			...testContent,
+			puzzleSets: [
+				{
+					id: 'set-one',
+					name: 'Starter',
+					shape: 'hexagon',
+					track: 'basic',
+					kind: 'core',
+					puzzles: [
+						{
+							id: 'p1',
+							name: 'One',
+							difficulty: 'easy',
+							palette: palettes[1],
+							puzzle,
+						},
+					],
+				},
+			],
+		}
+		localStorage.setItem(
+			'kaleidoscope:puzzle-resume:guest',
+			JSON.stringify({
+				version: 1,
+				current: 'p1',
+				attempts: {
+					p1: {
+						setId: 'set-one',
+						placements: { [piece.id]: puzzle.solution[piece.id] },
+						rotations: {},
+					},
+				},
+			}),
+		)
+		const user = userEvent.setup()
+		render(<App />, {
+			wrapper: ({ children }) => (
+				<ZenStateProvider content={content}>
+					{children}
+				</ZenStateProvider>
+			),
+		})
+		await user.click(screen.getByRole('button', { name: 'Continue' }))
+		expect(pieceButton(0)).toHaveAccessibleName(/on board/)
+		expect(screen.getByRole('button', { name: 'Restart' })).toBeVisible()
 	})
 
 	it('moves the centered logo and reveals the page after the star finishes spinning', () => {

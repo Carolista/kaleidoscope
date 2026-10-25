@@ -34,6 +34,20 @@ describe('HomeScreen', () => {
 		expect(onOpenZen).toHaveBeenCalledOnce()
 	})
 
+	it('offers Continue on the Puzzle card when a puzzle was left unfinished', async () => {
+		const user = userEvent.setup()
+		const { onOpenPuzzle } = renderHome({ continuePuzzle: true })
+		const card = screen.getByRole('button', { name: 'Continue' })
+		expect(card).toHaveAccessibleDescription(
+			'Pick up the puzzle you left unfinished.',
+		)
+		expect(
+			screen.queryByRole('button', { name: 'Puzzle' }),
+		).not.toBeInTheDocument()
+		await user.click(card)
+		expect(onOpenPuzzle).toHaveBeenCalledOnce()
+	})
+
 	it('welcomes a guest and offers to sign in', async () => {
 		const user = userEvent.setup()
 		const onSignIn = vi.fn()

@@ -1,7 +1,7 @@
 import type { PlayerContent } from './playerContent'
 
 const STORAGE_KEY = 'kaleidoscope:content'
-const STORAGE_VERSION = 2
+const STORAGE_VERSION = 3
 
 // Each account keeps its own copy, since what it may read differs from a guest's.
 const storageKey = (userId: string | null) =>
@@ -27,6 +27,7 @@ export function readCachedContent(
 		return content &&
 			Array.isArray(content.palettes) &&
 			Array.isArray(content.unlockedShapes) &&
+			Array.isArray(content.shapeOrder) &&
 			Array.isArray(content.puzzleSets) &&
 			Array.isArray(content.rewards)
 			? ({

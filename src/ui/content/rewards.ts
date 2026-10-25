@@ -7,9 +7,10 @@ import type {
 } from './playerContent'
 
 interface Earned {
-	// Bonus sets the player may play, plus every core set.
+	// Bonus sets the player may play, plus every core set of a shape they have.
 	readonly openSetIds: ReadonlySet<string>
 	readonly palettes: readonly PlayerPalette[]
+	readonly shapes: readonly GridShapeId[]
 }
 
 // A shape the player can now use in Zen, with the core sets that came with it.
@@ -47,16 +48,73 @@ export function completesSet(
 	)
 }
 
+// The shapes open to the player. For an account that is what the server last said plus
+// whatever the player's own solves have opened since, so finishing a set offline still opens
+// the next shape (the same rule as the database: a finished core set of one shape opens
+// the next). A guest never opens a shape.
+function openShapes(
+	content: PlayerContent,
+	solved: ReadonlySet<string>,
+	account: boolean,
+): readonly GridShapeId[] {
+	const order = content.shapeOrder
+	if (!account || !order.length) return content.unlockedShapes
+	const open = new Set(content.unlockedShapes)
+	let changed = true
+	while (changed) {
+		changed = false
+		order.forEach((shape, index) => {
+			const previous = order[index - 1]
+			if (
+				index === 0 ||
+				open.has(shape) ||
+				!open.has(previous) ||
+				!content.puzzleSets.some(
+					set =>
+						set.kind === 'core' &&
+						set.shape === previous &&
+						isComplete(set, solved),
+				)
+			)
+				return
+			open.add(shape)
+			changed = true
+		})
+	}
+	return order.filter(shape => open.has(shape))
+}
+
+// The prize for finishing every free set: all shapes open and every set solved, with the
+// four sets per shape the database also requires.
+function finishedEverything(
+	content: PlayerContent,
+	solved: ReadonlySet<string>,
+	shapes: readonly GridShapeId[],
+): boolean {
+	return (
+		content.shapeOrder.length > 0 &&
+		content.shapeOrder.every(
+			shape =>
+				shapes.includes(shape) &&
+				content.puzzleSets.filter(set => set.shape === shape).length >=
+					4,
+		) &&
+		content.puzzleSets.every(set => isComplete(set, solved))
+	)
+}
+
 // A reward counts once its set is complete and the set itself is open, so a
 // bonus set can award more bonus sets. Repeating until nothing changes handles that chain.
 function earnedRewards(
 	content: PlayerContent,
 	solved: ReadonlySet<string>,
+	account: boolean,
 ): Earned {
+	const shapes = openShapes(content, solved, account)
 	const sets = new Map(content.puzzleSets.map(set => [set.id, set]))
 	const open = new Set(
 		content.puzzleSets
-			.filter(set => set.kind === 'core')
+			.filter(set => set.kind === 'core' && shapes.includes(set.shape))
 			.map(set => set.id),
 	)
 	const awarded = new Set<PlayerReward>()
@@ -87,18 +145,33 @@ function earnedRewards(
 			seen.add(palette.id)
 			return true
 		})
-	return { openSetIds: open, palettes }
+	return { openSetIds: open, palettes, shapes }
 }
 
 // The content this player may use: core sets and palettes, plus the bonus sets
-// and reward palettes earned by completing sets. Nothing else is shown.
+// and reward palettes earned by completing sets. Nothing else is shown. For an account the
+// shapes (and the randomizer) include what its own solves have opened, which the server
+// confirms when they are recorded, so progress made offline is usable at once.
 export function availableContent(
 	content: PlayerContent,
 	solved: ReadonlySet<string>,
+	account = false,
 ): PlayerContent {
-	const { openSetIds, palettes } = earnedRewards(content, solved)
+	const { openSetIds, palettes, shapes } = earnedRewards(
+		content,
+		solved,
+		account,
+	)
 	return {
 		...content,
+		unlockedShapes: shapes,
+		nextShape: account
+			? (content.shapeOrder.find(shape => !shapes.includes(shape)) ??
+				null)
+			: content.nextShape,
+		randomizerUnlocked:
+			content.randomizerUnlocked ||
+			(account && finishedEverything(content, solved, shapes)),
 		palettes: [...content.palettes, ...palettes],
 		puzzleSets: content.puzzleSets.filter(set => openSetIds.has(set.id)),
 	}
@@ -109,9 +182,10 @@ export function newRewards(
 	content: PlayerContent,
 	before: ReadonlySet<string>,
 	after: ReadonlySet<string>,
+	account = false,
 ): NewRewards {
-	const previous = earnedRewards(content, before)
-	const current = earnedRewards(content, after)
+	const previous = earnedRewards(content, before, account)
+	const current = earnedRewards(content, after, account)
 	const known = new Set(previous.palettes.map(palette => palette.id))
 	return {
 		palettes: current.palettes.filter(palette => !known.has(palette.id)),

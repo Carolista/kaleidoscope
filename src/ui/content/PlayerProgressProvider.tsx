@@ -10,6 +10,7 @@ import type { AccountProgressApi } from './accountProgress'
 import type { PlayerContent } from './playerContent'
 import { PlayerContentContext } from './PlayerContentContext'
 import { PlayerProgressContext } from './PlayerProgressContext'
+import { PuzzleResumeProvider } from './PuzzleResumeProvider'
 import {
 	accountShapeFor,
 	availableContent,
@@ -211,8 +212,8 @@ export function PlayerProgressProvider({
 	}, [store, userId])
 
 	const available = useMemo(
-		() => availableContent(content, solved),
-		[content, solved],
+		() => availableContent(content, solved, !!userId),
+		[content, solved, userId],
 	)
 	const markSolved = useCallback(
 		async (puzzleId: string): Promise<NewRewards> => {
@@ -232,6 +233,8 @@ export function PlayerProgressProvider({
 			const saved = flush()
 			if (!completesSet(content, puzzleId, next)) return NOTHING
 			let current = content
+			// Offline, what the solve earned is worked out here and the server catches up
+			// when the pending solves are sent.
 			if ((await saved) && reload) {
 				const fresh = await reload()
 				if (fresh) {
@@ -239,11 +242,13 @@ export function PlayerProgressProvider({
 					mergeServerSolved(fresh)
 				}
 			}
+			const before = availableContent(content, solved, true)
+			const after = availableContent(current, next, true)
 			return {
-				...newRewards(current, solved, next),
-				shapes: newShapes(content, current),
+				...newRewards(current, solved, next, true),
+				shapes: newShapes(before, after),
 				randomizer:
-					!content.randomizerUnlocked && current.randomizerUnlocked,
+					!before.randomizerUnlocked && after.randomizerUnlocked,
 			}
 		},
 		[content, solved, userId, flush, reload, mergeServerSolved],
@@ -324,7 +329,14 @@ export function PlayerProgressProvider({
 	return (
 		<PlayerProgressContext.Provider value={progress}>
 			<PlayerContentContext.Provider value={available}>
-				{children}
+				<PuzzleResumeProvider
+					key={userId ?? 'guest'}
+					userId={userId}
+					content={available}
+					solved={solved}
+				>
+					{children}
+				</PuzzleResumeProvider>
 			</PlayerContentContext.Provider>
 		</PlayerProgressContext.Provider>
 	)

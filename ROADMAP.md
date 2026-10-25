@@ -25,14 +25,13 @@ groups are released. The player app now reads released content as a guest: the a
 a Home screen (greeting, then Puzzle and Zen cards), Puzzle Mode lists the released core sets and plays their puzzles, Zen offers
 Hexagon and the released core palettes, and guests earn the Hexagon bonus sets and reward
 palettes locally by completing sets. Players can create an account, sign in, and reset a password
-and signed-in players' solves are saved to the account (which opens Triangle and later shapes), with an explicit guest import. The page frame appears before content loads.
+and signed-in players' solves are saved to the account (which opens Triangle and later shapes), with an explicit guest import, and shared across devices. A signed-in player's earned shapes, bonus sets, and palettes open at once even offline, and Puzzle Mode resumes an unfinished puzzle on the same device. The page frame appears before content loads.
 
 **Next up, in order:**
 
 1. Finish the Puzzle Mode gameplay tweaks from the POC (in progress).
-2. #57, the rest of A4 (server-stored progress, the Triangle unlock, the guest prompt, the explicit import, and cross-device refresh are done;
-   an end-to-end pass through all 96 core and bonus puzzles is still being tested).
-3. Puzzle Mode resume (A5).
+2. #77: change email and password for signed-in players.
+3. A6: harden, verify, and prepare to launch Puzzle Mode.
 
 ---
 
@@ -45,8 +44,8 @@ and signed-in players' solves are saved to the account (which opens Triangle and
 | A1  | Product and content rules                                     | ✅ mostly      |
 | A2  | Supabase foundation: schema, RLS, Auth, admin role, types     | ✅             |
 | A3  | Admin portal: everything needed for 2A content                | ✅ (daily groups and palette correction remain) |
-| A4  | Player accounts, explicit guest import, offline/cloud sync    | 🔜 started: sign-up, sign-in, password reset, server-stored progress, guest import, cross-device refresh |
-| A5  | Content access and puzzle-set progression in Puzzle and Zen   | 🔜 started: guest reads, set browsing, Zen limits |
+| A4  | Player accounts, explicit guest import, offline/cloud sync    | ✅ (change email/password is #77) |
+| A5  | Content access and puzzle-set progression in Puzzle and Zen   | ✅ (the fixed introductory sequence and server-side solution checking are deferred) |
 | A6  | Harden, verify, and launch Puzzle Mode                        | ⬜             |
 
 **2A is done when** the admin side is complete and players can use Puzzle Mode
@@ -178,7 +177,7 @@ remaining pack palette groups wait for the 2B store.
 - ✅ A once-a-session reminder for a guest on a device that has had an account ("Please sign in to continue saving your progress").
 - ✅ Server-stored progress: `record_puzzle_completions` records solves, completes groups, and grants rewards; unsent solves are retried when the browser is back online.
 - ✅ Completions from several devices merge as a union (solves only accumulate, so nothing conflicts); a device refreshes when it comes back online or its tab becomes visible again (at most every 30 seconds). No conflict prompt is needed because in-progress puzzles stay per-device (see A5).
-- Small follow-ups: a "change password" action for signed-in players; the header is a few pixels too wide on screens narrower
+- Small follow-ups: a "change password" action for signed-in players (with change email, #77); the header is a few pixels too wide on screens narrower
   than about 356px since the account button was added.
 
 **A5: Access and progression**
@@ -194,22 +193,16 @@ remaining pack palette groups wait for the 2B store.
   join Zen's palette picker, and a "Reward earned" dialog announces what a solve just earned.
 - ✅ Solving either core group of a shape (basic or rotation) unlocks the next shape and its two core groups (accounts only; guests stay on the first shape), announced in a "New shape unlocked" dialog after the reward dialog. Reward palettes come from completing groups, without duplicate rewards.
 - ✅ The Zen randomizer is granted permanently after all 12 core and 12 bonus groups are solved, and is hidden (button and help entry) until then; a final dialog announces it and points to Zen Mode.
-- ✅ Grant rewards and unlock shapes on the server, idempotently (`record_puzzle_completions`). Validating the solution itself on the server is still open.
+- ✅ Grant rewards and unlock shapes on the server, idempotently (`record_puzzle_completions`). Validating the solution itself on the server is deferred (the database checks access, not the solution).
 - ✅ Zen saves use palette IDs (older saves still load by palette name).
-- Puzzle Mode has no resume: the current puzzle, placements, and rotations
-  live in React state, and a reload returns to the set list (solved puzzles are kept).
-  Save the puzzle ID plus placements and rotations so a
-  reload resumes the same puzzle (rebuild from the stored definition rather than storing
-  solutions). Build this on the A4 guest-storage format so it isn't done twice. Keep it per-device
-  (localStorage, keyed per player and never sent to the account), so two devices never conflict.
+- ✅ Offline unlocks: a signed-in player who finishes a set offline gets what it earns at once (bonus sets, reward palettes, the next shape, the randomizer) and the dialogs announce it; the solves are sent when the connection returns and the database confirms the same unlocks. The next tier of free puzzles is loaded ahead of time through `preview_puzzles()` (migration `20261026000000`); packs and daily puzzles are never previewed.
+- ✅ Puzzle Mode resume: each unfinished puzzle keeps its own placements and rotations until solved, per device and per player (localStorage, never sent to the account), so two devices never conflict. The Home Puzzle card becomes "Continue" and goes straight to the most recent unfinished puzzle.
 
 **A6: Launch impact and release**
 
-- ✅ Zen offers Hexagon plus whatever has been unlocked, the released core palettes, and earned reward palettes. Saves on a locked shape or an unavailable palette simply start fresh (superseding old saves is fine).
-- Existing visitors' saved designs may use shapes or palettes that become locked.
-  Decide how that looks before launch (see "Open decisions").
+- ✅ Zen offers Hexagon plus whatever has been unlocked, the released core palettes, and earned reward palettes. Saves on a locked shape or an unavailable palette simply start fresh. Settled: only a few early testers have older saves, so superseding them is fine.
 - Test RLS against forged requests, the critical player journeys, offline use and
-  reconnecting, and palette corrections.
+  reconnecting (offline unlocks are built and unit-tested; try them on a device), and palette corrections.
 - Cover privacy, account deletion, monitoring, and a rollback plan.
 
 ## 2B work
@@ -275,9 +268,7 @@ remaining pack palette groups wait for the 2B store.
   separate publish step) and whether anything should lock a pack down earlier.
 - Player-side visibility: how, and when, players see content they do not own yet.
 - Pack palette group lineups for the store (2B).
-- What happens to existing visitors' saved designs that use shapes or palettes
-  that become locked, and how to migrate legacy hex saves with duplicate colors.
-- Offline unlock policy: how long cached access lasts, and whether unlocks can be used before the server confirms them.
+- How to migrate legacy hex saves with duplicate colors.
 - Emergency withdrawal of live content.
 - UI wording for "qualified" versus "solved every puzzle."
 - Whether a separate player test account is enough for progression testing.

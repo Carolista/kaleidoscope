@@ -204,3 +204,154 @@ describe('accountShapeFor', () => {
 		).toBeNull()
 	})
 })
+
+describe('an account’s own solves open shapes before the server confirms them', () => {
+	const inShape = (
+		item: PlayerPuzzleSet,
+		shape: PlayerPuzzleSet['shape'],
+	): PlayerPuzzleSet => ({ ...item, shape })
+	const hexCore = set('hex-core', 'core', ['h1'])
+	const triangleCore = inShape(set('tri-core', 'core', ['t1']), 'triangle')
+	const diamondCore = inShape(set('dia-core', 'core', ['d1']), 'diamondStar')
+	const ahead: PlayerContent = {
+		...testContent,
+		palettes: palettes.slice(0, 2),
+		unlockedShapes: ['hexagon'],
+		shapeOrder: ['hexagon', 'triangle', 'diamondStar'],
+		nextShape: 'triangle',
+		randomizerUnlocked: false,
+		puzzleSets: [hexCore, triangleCore, diamondCore],
+		rewards: [],
+	}
+
+	it('hides the sets of a shape that is still locked, however they were loaded', () => {
+		const available = availableContent(ahead, new Set(), true)
+		expect(ids(available.puzzleSets)).toEqual(['hex-core'])
+		expect(available.unlockedShapes).toEqual(['hexagon'])
+		expect(available.nextShape).toBe('triangle')
+	})
+
+	it('opens the next shape and its core sets when a core set is finished, and chains from there', () => {
+		const opened = availableContent(ahead, new Set(['h1']), true)
+		expect(opened.unlockedShapes).toEqual(['hexagon', 'triangle'])
+		expect(opened.nextShape).toBe('diamondStar')
+		expect(ids(opened.puzzleSets)).toEqual(['hex-core', 'tri-core'])
+		const chained = availableContent(ahead, new Set(['h1', 't1']), true)
+		expect(chained.unlockedShapes).toEqual([
+			'hexagon',
+			'triangle',
+			'diamondStar',
+		])
+		expect(chained.nextShape).toBeNull()
+	})
+
+	it('keeps a shape the server already opened, such as a granted one', () => {
+		const granted = availableContent(
+			{ ...ahead, unlockedShapes: ['hexagon', 'diamondStar'] },
+			new Set(),
+			true,
+		)
+		expect(granted.unlockedShapes).toEqual(['hexagon', 'diamondStar'])
+		expect(granted.nextShape).toBe('triangle')
+	})
+
+	it('never opens a shape for a guest', () => {
+		const guest = availableContent(ahead, new Set(['h1']))
+		expect(guest.unlockedShapes).toEqual(['hexagon'])
+		expect(ids(guest.puzzleSets)).toEqual(['hex-core'])
+		expect(guest.nextShape).toBe('triangle')
+	})
+
+	it('reports the shape a solve opened, with its core sets', () => {
+		const before = availableContent(ahead, new Set(), true)
+		const after = availableContent(ahead, new Set(['h1']), true)
+		expect(
+			newShapes(before, after).map(item => [item.shape, ids(item.sets)]),
+		).toEqual([['triangle', ['tri-core']]])
+	})
+
+	it('awards the bonus set and palette of a set finished in a shape that was opened offline', () => {
+		const withRewards: PlayerContent = {
+			...ahead,
+			puzzleSets: [
+				...ahead.puzzleSets,
+				set('tri-bonus', 'bonus', ['tb1']),
+			].map(item =>
+				item.id === 'tri-bonus' ? inShape(item, 'triangle') : item,
+			),
+			rewards: [
+				{
+					setId: 'tri-core',
+					palettes: [palettes[5]],
+					bonusSetIds: ['tri-bonus'],
+				},
+			],
+		}
+		const earned = newRewards(
+			withRewards,
+			new Set(['h1']),
+			new Set(['h1', 't1']),
+			true,
+		)
+		expect(ids(earned.bonusSets)).toEqual(['tri-bonus'])
+		expect(ids(earned.palettes)).toEqual([palettes[5].id])
+	})
+
+	describe('the randomizer', () => {
+		const sets = [
+			set('core-basic', 'core', ['a']),
+			set('core-rotation', 'core', ['b']),
+			set('bonus-basic', 'bonus', ['c']),
+			set('bonus-rotation', 'bonus', ['d']),
+		]
+		const finished: PlayerContent = {
+			...testContent,
+			unlockedShapes: ['hexagon'],
+			shapeOrder: ['hexagon'],
+			randomizerUnlocked: false,
+			puzzleSets: sets,
+			rewards: [],
+		}
+
+		it('is earned once every set of every shape is solved', () => {
+			const all = new Set(['a', 'b', 'c', 'd'])
+			expect(
+				availableContent(finished, all, true).randomizerUnlocked,
+			).toBe(true)
+			expect(availableContent(finished, all).randomizerUnlocked).toBe(
+				false,
+			)
+		})
+
+		it('waits for an unsolved set, a locked shape, or fewer than four sets a shape', () => {
+			expect(
+				availableContent(finished, new Set(['a', 'b', 'c']), true)
+					.randomizerUnlocked,
+			).toBe(false)
+			expect(
+				availableContent(
+					{ ...finished, shapeOrder: ['hexagon', 'triangle'] },
+					new Set(['a', 'b', 'c', 'd']),
+					true,
+				).randomizerUnlocked,
+			).toBe(false)
+			expect(
+				availableContent(
+					{ ...finished, puzzleSets: sets.slice(0, 3) },
+					new Set(['a', 'b', 'c']),
+					true,
+				).randomizerUnlocked,
+			).toBe(false)
+		})
+
+		it('stays earned when the server already granted it', () => {
+			expect(
+				availableContent(
+					{ ...finished, randomizerUnlocked: true },
+					new Set(),
+					true,
+				).randomizerUnlocked,
+			).toBe(true)
+		})
+	})
+})

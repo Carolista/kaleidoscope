@@ -59,6 +59,7 @@ export default function PuzzleMode({
 	onOpenZen,
 	onCreateAccount,
 	returningGuest = false,
+	openRequest = null,
 }: {
 	readonly hidden?: boolean
 	// Lets a reward announcement send the player to Zen Mode.
@@ -67,12 +68,25 @@ export default function PuzzleMode({
 	readonly onCreateAccount?: () => void
 	// A guest on a device that has had an account, who is reminded to sign in.
 	readonly returningGuest?: boolean
+	// Takes the player straight to a puzzle, such as the one they left unfinished. Each
+	// new `nonce` is a new request, even for the same puzzle.
+	readonly openRequest?: {
+		readonly setId: string
+		readonly puzzleId: string
+		readonly nonce: number
+	} | null
 }) {
 	const { palettes, puzzleSets } = usePlayerContent()
 	const { solved, markSolved } = usePlayerProgress()
 	const [seenIntros, setSeenIntros] = useState(loadSeenIntros)
 	const [setId, setSetId] = useState<string | null>(null)
 	const [puzzleId, setPuzzleId] = useState<string | null>(null)
+	const [handledRequest, setHandledRequest] = useState<number | null>(null)
+	if (openRequest && openRequest.nonce !== handledRequest) {
+		setHandledRequest(openRequest.nonce)
+		setSetId(openRequest.setId)
+		setPuzzleId(openRequest.puzzleId)
+	}
 	// Announcements run one after another; the first of `queue` is on screen. Kept after
 	// closing until the dialog has finished animating out.
 	const [announcement, setAnnouncement] = useState<Announcement | null>(null)

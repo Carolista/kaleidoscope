@@ -8,6 +8,9 @@ export type { AccountProgressApi } from './accountProgress'
 export { PlayerProgressProvider } from './PlayerProgressProvider'
 export { usePlayerProgress } from './PlayerProgressContext'
 export type { GuestImport } from './PlayerProgressContext'
+export { usePuzzleResume } from './PuzzleResumeContext'
+export type { PuzzleResume, ResumeTarget } from './PuzzleResumeContext'
+export type { PuzzleAttempt } from './puzzleResume'
 export type {
 	PlayerContent,
 	PlayerPuzzle,

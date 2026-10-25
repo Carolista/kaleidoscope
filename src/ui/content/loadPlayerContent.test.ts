@@ -50,6 +50,7 @@ function group(
 		...live,
 		puzzle_group_members: members.map((puzzle, index) => ({
 			position: index + 1,
+			puzzle_id: (puzzle as { id?: string } | null)?.id ?? null,
 			puzzles: puzzle,
 		})),
 		...extra,
@@ -59,8 +60,13 @@ function group(
 function fakeClient(
 	data: Record<string, unknown>,
 	failing?: string,
+	rpc: () => Promise<{
+		data: unknown
+		error: { message: string } | null
+	}> = () => Promise.resolve({ data: [], error: null }),
 ): SupabaseClient<Database> {
 	return {
+		rpc,
 		from(table: string) {
 			const result =
 				table === failing
@@ -206,6 +212,7 @@ describe('loadPlayerContent', () => {
 		expect(content).toEqual({
 			palettes: [],
 			unlockedShapes: ['hexagon'],
+			shapeOrder: ['hexagon'],
 			nextShape: null,
 			randomizerUnlocked: false,
 			puzzleSets: [],
@@ -310,6 +317,59 @@ describe('loadPlayerContent', () => {
 			['core', ['p1'], ['bonus']],
 			['core-rotation', ['p2'], ['bonus']],
 		])
+	})
+
+	it('fills in the puzzles an account is previewed, and asks only for an account', async () => {
+		const { palettes: _embedded, ...preview } = puzzle('pv')
+		void _embedded
+		const previewGroup = {
+			...group('bonus', [null], { purpose: 'reward' }),
+			puzzle_group_members: [
+				{ position: 1, puzzle_id: 'pv', puzzles: null },
+			],
+		}
+		const data = {
+			puzzle_groups: [previewGroup],
+			palettes: [palette('p1')],
+		}
+		const rpc = vi.fn(() =>
+			Promise.resolve({ data: [preview], error: null }),
+		)
+
+		const account = await loadPlayerContent(
+			fakeClient(data, undefined, rpc),
+			{
+				account: true,
+			},
+		)
+		expect(rpc).toHaveBeenCalledWith('preview_puzzles')
+		expect(account.puzzleSets.map(set => set.id)).toEqual(['bonus'])
+		expect(account.puzzleSets[0].puzzles.map(item => item.id)).toEqual([
+			'pv',
+		])
+		expect(account.puzzleSets[0].puzzles[0].palette.id).toBe('p1')
+
+		rpc.mockClear()
+		const guest = await loadPlayerContent(fakeClient(data, undefined, rpc))
+		expect(rpc).not.toHaveBeenCalled()
+		expect(guest.puzzleSets).toEqual([])
+	})
+
+	it('still loads when the previews cannot be read', async () => {
+		vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+		const content = await loadPlayerContent(
+			fakeClient(
+				{ puzzle_groups: [group('core', [puzzle('c')])] },
+				undefined,
+				() =>
+					Promise.resolve({
+						data: null,
+						error: { message: 'missing' },
+					}),
+			),
+			{ account: true },
+		)
+		expect(content.puzzleSets.map(set => set.id)).toEqual(['core'])
 	})
 
 	it('reports a failed read', async () => {

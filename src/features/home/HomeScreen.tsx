@@ -49,6 +49,7 @@ export default function HomeScreen({
 	onSignIn,
 	onOpenPuzzle,
 	onOpenZen,
+	continuePuzzle = false,
 }: {
 	readonly signedIn: boolean
 	readonly firstName?: string | null
@@ -56,6 +57,8 @@ export default function HomeScreen({
 	readonly onSignIn?: () => void
 	readonly onOpenPuzzle: () => void
 	readonly onOpenZen: () => void
+	// A puzzle was left unfinished, so its card takes the player back to it.
+	readonly continuePuzzle?: boolean
 }) {
 	const { palettes } = usePlayerContent()
 	const idPrefix = useId()
@@ -79,6 +82,11 @@ export default function HomeScreen({
 			<div className={styles.cards}>
 				{AREAS.map((area, index) => {
 					const palette = palettes[index % palettes.length]
+					const resuming = area.id === 'puzzle' && continuePuzzle
+					const title = resuming ? 'Continue' : area.title
+					const tagline = resuming
+						? 'Pick up the puzzle you left unfinished.'
+						: area.tagline
 					return (
 						<button
 							key={area.id}
@@ -112,14 +120,14 @@ export default function HomeScreen({
 										id={`${idPrefix}-${area.id}-title`}
 										className={styles.title}
 									>
-										{area.title}
+										{title}
 									</span>
 								</span>
 								<span
 									id={`${idPrefix}-${area.id}-tagline`}
 									className={styles.tagline}
 								>
-									{area.tagline}
+									{tagline}
 								</span>
 							</span>
 						</button>

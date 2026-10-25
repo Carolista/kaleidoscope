@@ -799,6 +799,22 @@ No tables change. The migration adds `private.grant_zen_randomizer(player)` and 
 four groups for each shape in `shape_progression`. The grant is never taken back. Existing players who already finished everything receive it the next time their progress is recorded.
 The app reads the player's own `feature_grants` row; guests never have one.
 
+## Apply puzzle previews
+
+After the randomizer grant:
+
+1. Run [20261026000000_preview_puzzles.sql](./migrations/20261026000000_preview_puzzles.sql) once in SQL Editor as `postgres`.
+2. Run [preview_puzzles.sql](./tests/preview_puzzles.sql) as `postgres`, without an automatic RLS wrapper. Expect **7 PASS results**; fixtures
+   roll back. Like the record test, it inserts its own groups with the slot indexes and guard triggers set aside, and it asserts only on its own fixture
+   puzzles because released content also fills the catalog. (Written without being run; if an assertion fails, suspect the fixtures first.)
+
+No tables, columns, or policies change, and `can_play_puzzle`, the `puzzles` read policy, and `record_puzzle_completions` are untouched. The migration adds
+`private.can_preview_puzzle(puzzle_id)` and `public.preview_puzzles()`, a `security definer` function for signed-in players (guests are refused) that returns
+the released puzzles of core and reward groups that a player cannot play yet but may be shown ahead of time: bonus groups of shapes they have (`has_shape`), and
+the core and bonus groups of the one shape after the shapes they have. Packs and daily puzzles are never returned. The app asks for these once per content
+load for an account, so that a set finished offline can open what it earns; previews earn nothing, because recording a solve still requires `can_play_puzzle`.
+If the function is missing the app logs a warning and loads without previews.
+
 ## Player accounts and auth email
 
 Players create accounts in the app (email, password, first name); no database change is involved. Supabase Auth owns the users, the first

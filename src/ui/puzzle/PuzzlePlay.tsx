@@ -43,6 +43,12 @@ export interface PuzzleProgress {
 	readonly rotated: boolean
 }
 
+// The pieces' positions and turns, which is all that is needed to rebuild a board.
+export interface PuzzleBoardState {
+	readonly placements: PuzzlePlacements
+	readonly rotations: Readonly<Record<string, number>>
+}
+
 export interface PuzzlePlayHandle {
 	// Clears placements, rotations, and selection for the current puzzle.
 	readonly reset: () => void
@@ -57,6 +63,8 @@ export default function PuzzlePlay({
 	contentRef,
 	onSolve,
 	onProgress,
+	initialState,
+	onStateChange,
 	trayAction,
 	aboveBoard,
 	children,
@@ -72,6 +80,10 @@ export default function PuzzlePlay({
 	readonly onSolve?: () => void
 	// Reports how far along the player is, e.g. for step-by-step guidance.
 	readonly onProgress?: (progress: PuzzleProgress) => void
+	// Where the pieces start, when picking up an earlier attempt. Read once, on mount.
+	readonly initialState?: PuzzleBoardState
+	// Reports the pieces' positions and turns whenever they change, until solved.
+	readonly onStateChange?: (state: PuzzleBoardState) => void
 	// Rendered beside the tray, e.g. an admin Restart.
 	readonly trayAction?: ReactNode
 	// Rendered between the target/tray and the board, e.g. tutorial guidance.
@@ -79,12 +91,18 @@ export default function PuzzlePlay({
 	// Rendered below the board, e.g. player actions and dialogs.
 	readonly children?: ReactNode
 }) {
-	const [placements, setPlacements] = useState<PuzzlePlacements>({})
+	const [placements, setPlacements] = useState<PuzzlePlacements>(
+		initialState?.placements ?? {},
+	)
 	const [selectedId, setSelectedId] = useState<string | null>(null)
 	const [rotations, setRotations] = useState<
 		Readonly<Record<string, number>>
-	>({})
-	const [message, setMessage] = useState('Choose a piece to get started.')
+	>(initialState?.rotations ?? {})
+	const [message, setMessage] = useState(
+		initialState
+			? 'Welcome back. Your pieces are where you left them.'
+			: 'Choose a piece to get started.',
+	)
 	const [drag, setDrag] = useState<DragState | null>(null)
 	const dragRef = useRef<DragState | null>(null)
 	const boardRef = useRef<SVGSVGElement>(null)
@@ -111,6 +129,14 @@ export default function PuzzlePlay({
 	useEffect(() => {
 		reportProgress()
 	}, [placedCount, anyRotated])
+
+	const reportState = useEffectEvent(() =>
+		onStateChange?.({ placements, rotations }),
+	)
+
+	useEffect(() => {
+		if (!solved) reportState()
+	}, [placements, rotations, solved])
 
 	function selectPiece(id: string) {
 		if (solved) return

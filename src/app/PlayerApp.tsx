@@ -13,7 +13,7 @@ import { PuzzleMode } from '@/features/puzzle'
 import { hasPersistedDesign, ZenMode } from '@/features/zen'
 import { DarkModeToggle } from '@/ui/components'
 import type { ContentGate } from '@/ui/content'
-import { ContentGateView } from '@/ui/content'
+import { ContentGateView, usePuzzleResume } from '@/ui/content'
 import { usePlayerTheme } from '@/ui/theme'
 import {
 	markEntranceSpinFinished,
@@ -22,6 +22,73 @@ import {
 } from './entranceHandoff'
 import { Footer, Header, releaseOpeningTitle } from './layout'
 import styles from './PlayerApp.module.css'
+
+type Mode = 'home' | 'zen' | 'puzzle'
+
+// Home, Puzzle Mode, and Zen. Only rendered once the player's content is ready, since
+// they all read it. Puzzle Mode stays mounted while hidden so its place in a set is kept.
+function Modes({
+	mode,
+	onModeChange,
+	onSignIn,
+	isFirstVisit,
+	showIntro,
+	onIntroComplete,
+}: {
+	readonly mode: Mode
+	readonly onModeChange: (mode: Mode) => void
+	// Set for a guest where accounts can be created.
+	readonly onSignIn?: () => void
+	readonly isFirstVisit: boolean
+	readonly showIntro: boolean
+	readonly onIntroComplete: () => void
+}) {
+	const account = useAccount()
+	const { target } = usePuzzleResume()
+	const [openRequest, setOpenRequest] = useState<{
+		setId: string
+		puzzleId: string
+		nonce: number
+	} | null>(null)
+
+	function openPuzzle() {
+		if (target)
+			setOpenRequest(previous => ({
+				...target,
+				nonce: (previous?.nonce ?? 0) + 1,
+			}))
+		onModeChange('puzzle')
+	}
+
+	return (
+		<>
+			{mode === 'home' && (
+				<HomeScreen
+					signedIn={account.status === 'signedIn'}
+					firstName={account.firstName}
+					onSignIn={onSignIn}
+					onOpenPuzzle={openPuzzle}
+					onOpenZen={() => onModeChange('zen')}
+					continuePuzzle={!!target}
+				/>
+			)}
+			<PuzzleMode
+				hidden={mode !== 'puzzle'}
+				onOpenZen={() => onModeChange('zen')}
+				returningGuest={account.returningGuest}
+				onCreateAccount={onSignIn}
+				openRequest={openRequest}
+			/>
+			{mode === 'zen' && (
+				<ZenMode
+					isFirstVisit={isFirstVisit}
+					showIntro={showIntro}
+					onIntroComplete={onIntroComplete}
+				/>
+			)}
+		</>
+	)
+}
 
 // With `gate`, the player's content is not ready yet: only the frame is shown, with
 // the gate's message in place of the modes. The frame is rebuilt once content
@@ -50,7 +117,7 @@ function PlayerApp({ gate }: { readonly gate?: ContentGate }) {
 	)
 	const [isFirstVisit] = useState(() => !hasPersistedDesign())
 	const [showIntro, setShowIntro] = useState(isFirstVisit)
-	const [mode, setMode] = useState<'home' | 'zen' | 'puzzle'>('home')
+	const [mode, setMode] = useState<Mode>('home')
 	const [accountOpen, setAccountOpen] = useState(false)
 	const [importRequested, setImportRequested] = useState(false)
 	const account = useAccount()
@@ -170,38 +237,18 @@ function PlayerApp({ gate }: { readonly gate?: ContentGate }) {
 				{gate ? (
 					<ContentGateView gate={gate} />
 				) : (
-					<>
-						{mode === 'home' && (
-							<HomeScreen
-								signedIn={account.status === 'signedIn'}
-								firstName={account.firstName}
-								onSignIn={
-									account.status === 'signedOut'
-										? () => setAccountOpen(true)
-										: undefined
-								}
-								onOpenPuzzle={() => setMode('puzzle')}
-								onOpenZen={() => setMode('zen')}
-							/>
-						)}
-						<PuzzleMode
-							hidden={mode !== 'puzzle'}
-							onOpenZen={() => setMode('zen')}
-							returningGuest={account.returningGuest}
-							onCreateAccount={
-								account.status === 'signedOut'
-									? () => setAccountOpen(true)
-									: undefined
-							}
-						/>
-						{mode === 'zen' && (
-							<ZenMode
-								isFirstVisit={isFirstVisit}
-								showIntro={showIntro}
-								onIntroComplete={() => setShowIntro(false)}
-							/>
-						)}
-					</>
+					<Modes
+						mode={mode}
+						onModeChange={setMode}
+						onSignIn={
+							account.status === 'signedOut'
+								? () => setAccountOpen(true)
+								: undefined
+						}
+						isFirstVisit={isFirstVisit}
+						showIntro={showIntro}
+						onIntroComplete={() => setShowIntro(false)}
+					/>
 				)}
 			</main>
 			{(gate || mode !== 'zen' || !showIntro) && <Footer />}
