@@ -458,6 +458,14 @@ group or the next shape. Because of that, the solve that finishes a set waits fo
 **Unlocking a shape is announced, not silent.** When the reload shows a shape that was not open before, a second dialog after the reward dialog says so, names that it is available in Zen Mode, and lists the shape's core sets
 with a way in. The randomizer, the last prize, is announced in its own dialog after the reward and shape dialogs, pointing at Zen Mode. The announcements run in a fixed order (reward, shape, randomizer, account prompt, sign-in reminder), one at a time, each after the last has finished closing.
 
+**Only results sync between devices, so devices do not conflict.** Solved puzzles only ever accumulate and a solve is idempotent, so the account's progress is a union of what each device has solved: the app
+adds whatever the server holds and never removes anything, and no conflict prompt is needed. Rewards, groups, and shape unlocks are derived from that union by the database. A device picks up another device's solves
+when it loads, after a solve that finishes a set, when the browser comes back online, and when a tab becomes visible again (at most every 30 seconds, after sending any solves still pending). What a player has left unfinished
+(Puzzle Mode placements and rotations, once resume exists) stays on the device and is never sent to the account, so two devices can hold different attempts at the same puzzle without anything to reconcile. The cost is that a
+half-finished puzzle cannot be continued on another device; the alternative, one server-stored "current puzzle" with a last-write-wins rule or a keep-this-or-that prompt, was set aside as not worth the surface area. Revisit
+for Zen designs when Phase 4 gives them cloud storage, since a design is one document edited in place and can truly conflict. Progress that arrives from another device is not announced: reward, shape, and randomizer
+dialogs describe only what a solve on this device just earned.
+
 **Guest progress moves only when the player says so, and a "no" is not final.** After signing in, an account that lacks puzzles solved as a guest on the device is offered an import, in a dialog that opens by itself until
 answered. Answers are kept per account, device, and puzzle: IDs that were sent are never offered again (the server may have declined some, which should not nag), IDs that were turned down only stop opening the offer by themselves
 and stay available through "Import progress from this device" in the account view, and solves made as a guest afterwards are offered afresh, so progress made while signed out is never silently stranded. The guest save is never deleted

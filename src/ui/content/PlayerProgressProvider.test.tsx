@@ -411,6 +411,57 @@ describe('PlayerProgressProvider for an account', () => {
 		expect(reload).toHaveBeenCalled()
 	})
 
+	it('picks up solves from another device when the tab becomes visible, at most every 30 seconds', async () => {
+		const now = vi.spyOn(Date, 'now')
+		const visibility = vi
+			.spyOn(document, 'visibilityState', 'get')
+			.mockReturnValue('visible')
+		now.mockReturnValue(1_000_000)
+		const reload = vi.fn(() =>
+			Promise.resolve({ content: before, solved: ['other-device'] }),
+		)
+		renderAccount({ reload, solved: ['c1'] })
+		await waitFor(() => expect(reload).not.toHaveBeenCalled())
+
+		await act(async () => {
+			document.dispatchEvent(new Event('visibilitychange'))
+		})
+		expect(reload).not.toHaveBeenCalled()
+
+		now.mockReturnValue(1_031_000)
+		await act(async () => {
+			document.dispatchEvent(new Event('visibilitychange'))
+		})
+		await waitFor(() => expect(reload).toHaveBeenCalledTimes(1))
+		await waitFor(() =>
+			expect([...progress.solved].sort()).toEqual(['c1', 'other-device']),
+		)
+
+		now.mockReturnValue(1_032_000)
+		await act(async () => {
+			document.dispatchEvent(new Event('visibilitychange'))
+		})
+		expect(reload).toHaveBeenCalledTimes(1)
+		now.mockRestore()
+		visibility.mockRestore()
+	})
+
+	it('does not refresh while the tab is hidden', async () => {
+		const now = vi.spyOn(Date, 'now').mockReturnValue(1_000_000)
+		const visibility = vi
+			.spyOn(document, 'visibilityState', 'get')
+			.mockReturnValue('hidden')
+		const reload = vi.fn(() => Promise.resolve(null))
+		renderAccount({ reload })
+		now.mockReturnValue(2_000_000)
+		await act(async () => {
+			document.dispatchEvent(new Event('visibilitychange'))
+		})
+		expect(reload).not.toHaveBeenCalled()
+		now.mockRestore()
+		visibility.mockRestore()
+	})
+
 	it('sends solves left pending by an earlier visit', async () => {
 		saveAccountProgressCache('user-1', {
 			solved: new Set(['c1']),
