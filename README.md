@@ -50,7 +50,7 @@ Today, the application reflects how my engineering approach has evolved. It has 
 - **Mobile-friendly modals:** Dialogs gently drift into focus and fade away on close, with animations skipped for reduced-motion preferences. Titles and close controls stay visible while content scrolls, with edge indicators for more options and background scrolling locked through closing.
 - **Automatic save:** All board patterns, your active board, per-shape size choices, and preferences are restored from browser storage on your next visit. Undo history starts fresh each session.
 - **Home, accounts:** The app opens on a Home screen with a greeting and a card each for Puzzle Mode and Zen Mode (the title takes you back). You can play as a guest, or create an account with email and password at any time and reset a forgotten password by email. An account saves your solved puzzles, unlocks the next shape, and can take in the progress you made as a guest on that device.
-- **Puzzle Mode:** Choose a released puzzle set, see its puzzles as solved pictures grouped by difficulty, and play one: arrange the pieces to match the target, with mirrored placement, mouse/touch dragging, keyboard-friendly select-and-place controls, and rotation where a set allows it. Solved puzzles are remembered on your device. Zen Mode offers the shapes and palettes you have unlocked.
+- **Puzzle Mode:** Choose a released puzzle set, see its puzzles as solved pictures grouped by difficulty, and play one: arrange the pieces to match the target, with mirrored placement, mouse/touch dragging, keyboard-friendly select-and-place controls, and rotation where a set allows it. The target is large and sits beside the board, with the pieces gathered in the board's empty corners, and a press brings it over the board at full size; grid lines on the target can be turned off. Solved puzzles are remembered on your device. Zen Mode offers the shapes and palettes you have unlocked.
 
 <!-- ## Visuals -->
 
@@ -94,8 +94,11 @@ holding a piece, press R (or right-click with a mouse, or tap with a second fing
 on touch) to turn it; it snaps to an open spot nearby or floats with a soft shadow.
 Double-click/double-tap board pieces or drag back to return them to the tray.
 Keyboard users can rotate/select with Enter/Space, activate a board tile to place,
-and use Delete/Backspace on an occupied tile to return its piece. Square tray
-slots stay fixed through rotation and use one subtle selected border.
+and use Delete/Backspace on an occupied tile to return its piece. Each tray piece
+keeps its place through rotation and uses one subtle selected border.
+Press the target to see it at the board's size over the board (press it again or
+Escape to put it back), and use the grid icon among the buttons, or Settings, to
+turn the lines between the target's tiles off when they blur small colors.
 The admin workspace has peer **Puzzles | Palettes | Shapes | Progression | Release** sections. Puzzles and
 Palettes each open on **Groups**, with an items view filtered by Unassigned, Assigned,
 Scheduled, or Published. Releases are scheduled from the **Release** section (a shape's core and bonus groups

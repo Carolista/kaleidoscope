@@ -2,7 +2,11 @@ import { useRef, type ReactNode } from 'react'
 import { faRotate } from '@fortawesome/sharp-duotone-solid-svg-icons'
 import { IconButton } from '@/ui/components'
 import type { Puzzle } from '@/domain/puzzles'
-import { PuzzlePlay, type PuzzlePlayHandle } from '@/ui/puzzle'
+import {
+	PuzzlePlay,
+	type PuzzlePlayHandle,
+	useTargetGridToggle,
+} from '@/ui/puzzle'
 import styles from './PuzzlePlaytest.module.css'
 
 export default function PuzzlePlaytest({
@@ -20,6 +24,7 @@ export default function PuzzlePlaytest({
 	readonly children?: ReactNode
 }) {
 	const play = useRef<PuzzlePlayHandle>(null)
+	const gridToggle = useTargetGridToggle()
 	return (
 		<div className={styles.playtest}>
 			{children}
@@ -36,6 +41,7 @@ export default function PuzzlePlaytest({
 							label="Restart"
 							onClick={() => play.current?.reset()}
 						/>
+						<IconButton size="sm" {...gridToggle} />
 						{actions}
 					</div>
 				}

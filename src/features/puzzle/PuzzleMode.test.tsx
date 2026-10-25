@@ -97,9 +97,33 @@ describe('PuzzleMode', () => {
 		},
 	)
 
+	it('keeps the target grid toggle with the other action icons', () => {
+		renderPlaying()
+		const toggle = screen.getByRole('button', {
+			name: 'Grid lines on the target',
+		})
+		expect(toggle.parentElement).toBe(
+			screen.getByRole('button', { name: 'Restart' }).parentElement,
+		)
+		const cell = () =>
+			screen
+				.getByRole('img', { name: 'Target design' })
+				.querySelector('polygon')!
+		expect(cell().style.stroke).toBe('')
+		fireEvent.click(toggle)
+		expect(toggle).toHaveAttribute('aria-pressed', 'false')
+		expect(cell().style.stroke).not.toBe('')
+		fireEvent.click(toggle)
+		localStorage.removeItem('kaleidoscope:puzzle:targetGridLines')
+	})
+
 	it("tints the session's icons from the puzzle's palette, not the zen palette", () => {
 		renderPlaying()
-		for (const name of ['Restart', 'Back to puzzle set']) {
+		for (const name of [
+			'Restart',
+			'Back to puzzle set',
+			'Grid lines on the target',
+		]) {
 			expect(
 				screen
 					.getByRole('button', { name })

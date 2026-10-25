@@ -5,3 +5,4 @@ export {
 	type PuzzlePlayHandle,
 	type PuzzleProgress,
 } from './PuzzlePlay'
+export { useTargetGridLines, useTargetGridToggle } from './targetGridPreference'

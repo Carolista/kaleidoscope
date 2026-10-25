@@ -1,7 +1,11 @@
 import { Button, PlayerIconButton } from '@/ui/components'
 import type { PlayerPuzzle, PlayerPuzzleSet } from '@/ui/content'
 import { usePuzzleResume } from '@/ui/content'
-import { PuzzlePlay, type PuzzlePlayHandle } from '@/ui/puzzle'
+import {
+	PuzzlePlay,
+	type PuzzlePlayHandle,
+	useTargetGridToggle,
+} from '@/ui/puzzle'
 import { DuotoneTintColorContext } from '@/ui/theme'
 import {
 	faLeftFromBracket,
@@ -37,6 +41,7 @@ export default function PuzzleSession({
 	// Picked when solved rather than during render, so re-renders never change it.
 	const [celebration, setCelebration] = useState('')
 	const play = useRef<PuzzlePlayHandle>(null)
+	const gridToggle = useTargetGridToggle()
 	const resume = usePuzzleResume()
 	// Read once: the board starts from what was left, and the session is rebuilt per puzzle.
 	const [earlier] = useState(() => resume.attemptFor(item.id))
@@ -58,6 +63,8 @@ export default function PuzzleSession({
 				resume.save(item.id, { setId: set.id, ...state })
 			}
 			hidden={hidden}
+			layout="stage"
+			wide
 			solvedMessage="Puzzle solved! Your design matches the target."
 			contentRef={contentRef}
 			celebration={celebration}
@@ -87,6 +94,7 @@ export default function PuzzleSession({
 							Next puzzle
 						</Button>
 					)}
+					<PlayerIconButton {...gridToggle} />
 					<PlayerIconButton
 						icon={faRotateReverse}
 						label="Restart"

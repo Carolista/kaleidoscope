@@ -35,6 +35,9 @@ const layoutCache = new Map<string, StageLayout | null>()
 const reservedHeights = new Map<string, number>()
 // The last width measured, so a new stage can start from it.
 let lastMeasure: Measure = { width: 0, viewportHeight: 0 }
+// Whether anything has ever had room to measure. Where nothing does (no layout
+// engine, as in tests), the usual layout is kept rather than waiting forever.
+let hasMeasuredRoom = false
 
 function remember(key: string, layout: StageLayout | null) {
 	layoutCache.delete(key)
@@ -53,6 +56,7 @@ function remember(key: string, layout: StageLayout | null) {
 export function useStageLayout(puzzle: Puzzle, enabled: boolean) {
 	const element = useRef<HTMLDivElement>(null)
 	const [measure, setMeasure] = useState<Measure>(lastMeasure)
+	const [measured, setMeasured] = useState(false)
 	const [near, setNear] = useState(
 		() => typeof IntersectionObserver === 'undefined',
 	)
@@ -68,6 +72,8 @@ export function useStageLayout(puzzle: Puzzle, enabled: boolean) {
 				viewportHeight: window.innerHeight,
 			}
 			lastMeasure = next
+			if (next.width > 0) hasMeasuredRoom = true
+			setMeasured(true)
 			setMeasure(previous =>
 				previous.width === next.width &&
 				previous.viewportHeight === next.viewportHeight
@@ -161,8 +167,15 @@ export function useStageLayout(puzzle: Puzzle, enabled: boolean) {
 	}, [key, near, board, pieceRadii, landscape, width, stageHeight])
 
 	const layout = cached ?? null
-	const status: 'pending' | 'ready' | 'failed' =
-		cached === undefined ? 'pending' : cached === null ? 'failed' : 'ready'
+	// Nowhere to measure (and never anywhere): keep the usual layout.
+	const noRoom = enabled && measured && width === 0 && !hasMeasuredRoom
+	const status: 'pending' | 'ready' | 'failed' = noRoom
+		? 'failed'
+		: cached === undefined
+			? 'pending'
+			: cached === null
+				? 'failed'
+				: 'ready'
 
 	const reserveKey = `${puzzle.shape}|${landscape ? 'landscape' : 'portrait'}|${width}`
 	if (layout)

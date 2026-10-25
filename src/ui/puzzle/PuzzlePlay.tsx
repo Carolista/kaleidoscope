@@ -29,6 +29,7 @@ import type { GridSize } from '@/domain/shapes'
 import type { AxialCoord } from '@/domain/shapes/hexagon'
 import PuzzleBoard, { PieceGraphic } from './PuzzleBoard'
 import PeekOverlay from './PeekOverlay'
+import { useTargetGridLines } from './targetGridPreference'
 import styles from './PuzzlePlay.module.css'
 import { tileSizes } from './tileSizes'
 import { useStageLayout } from './useStageLayout'
@@ -119,6 +120,7 @@ export default function PuzzlePlay({
 	trayAction,
 	aboveBoard,
 	layout = 'tray',
+	wide = false,
 	children,
 }: {
 	readonly ref?: Ref<PuzzlePlayHandle>
@@ -144,6 +146,9 @@ export default function PuzzlePlay({
 	// bigger and the pieces fill the board's empty corners; it falls back to
 	// 'tray' (target and tray in a row above the board) until it has room measured.
 	readonly layout?: 'tray' | 'stage'
+	// On large screens, grows past the page's column (centered on it) so the
+	// stage has room for the wide layout. For pages that are narrower than the screen.
+	readonly wide?: boolean
 	// Rendered below the board, e.g. player actions and dialogs.
 	readonly children?: ReactNode
 }) {
@@ -165,6 +170,7 @@ export default function PuzzlePlay({
 	// Whether the overlay has fully arrived, so the board is hidden only then.
 	const [peekSettled, setPeekSettled] = useState(false)
 	const targetRef = useRef<SVGSVGElement>(null)
+	const [targetGridLines] = useTargetGridLines()
 	const dragRef = useRef<DragState | null>(null)
 	const boardRef = useRef<SVGSVGElement>(null)
 	const suppressClickRef = useRef(false)
@@ -620,6 +626,7 @@ export default function PuzzlePlay({
 				shape={currentPuzzle.shape}
 				gridSize={currentPuzzle.gridSize}
 				colors={currentPuzzle.target}
+				gridlines={targetGridLines}
 				target
 			/>
 			<button
@@ -669,6 +676,7 @@ export default function PuzzlePlay({
 					shape={currentPuzzle.shape}
 					gridSize={currentPuzzle.gridSize}
 					colors={currentPuzzle.target}
+					gridlines={targetGridLines}
 					target
 				/>
 			</PeekOverlay>
@@ -743,7 +751,7 @@ export default function PuzzlePlay({
 	return (
 		<section
 			hidden={hidden}
-			className={`${styles.puzzle}${trayAction ? ` ${styles.withTrayAction}` : ''}`}
+			className={`${styles.puzzle}${trayAction ? ` ${styles.withTrayAction}` : ''}${wide ? ` ${styles.wide}` : ''}`}
 			aria-label="Puzzle Mode"
 			onPointerDownCapture={() => {
 				suppressClickRef.current = false

@@ -10,6 +10,15 @@
 	display: none;
 }
 
+/* Past the page's column on large screens, centered on it. */
+@media screen and (min-width: 840px) {
+	.wide {
+		--wide-width: min(1100px, calc(100vw - 4rem));
+		width: var(--wide-width);
+		margin-inline: calc(50% - var(--wide-width) / 2);
+	}
+}
+
 .content {
 	display: grid;
 	justify-items: center;

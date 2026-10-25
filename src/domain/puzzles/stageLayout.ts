@@ -45,6 +45,8 @@ const PIECES_FROM = 0.4
 // first, and how much taller than the board the stage may grow before the
 // target is shrunk instead (as a fraction of the board's height).
 const PORTRAIT_TARGET_FRACTIONS = [0.55, 0.5, 0.45, 0.4, 0.35]
+// The most room (pixels) kept for the target in portrait, however wide the stage.
+const PORTRAIT_TARGET_MAX = 240
 const PORTRAIT_EXTRA_BUDGET = 0.45
 const PORTRAIT_EXTRA_LIMIT = 1.5
 // Landscape: the board takes at most this much of the width, and the target is
@@ -424,8 +426,15 @@ function packPortrait(request: StageRequest): StageLayout | null {
 		}
 	}
 
-	for (const fraction of PORTRAIT_TARGET_FRACTIONS) {
-		const targetWidth = Math.round(fraction * width)
+	// Wide columns would otherwise give a huge target and a tall stage.
+	const targetWidths = [
+		...new Set(
+			PORTRAIT_TARGET_FRACTIONS.map(fraction =>
+				Math.min(Math.round(fraction * width), PORTRAIT_TARGET_MAX),
+			),
+		),
+	]
+	for (const targetWidth of targetWidths) {
 		if (!attempt(targetWidth, MIN_PIECE_SCALE, budget)) continue
 		const pieceScale = largestPieceScale(
 			candidate => attempt(targetWidth, candidate, budget) !== null,
@@ -441,9 +450,7 @@ function packPortrait(request: StageRequest): StageLayout | null {
 			)
 	}
 	// Nothing fits in the budget: take the smallest target and pieces, and grow.
-	const targetWidth = Math.round(
-		PORTRAIT_TARGET_FRACTIONS[PORTRAIT_TARGET_FRACTIONS.length - 1] * width,
-	)
+	const targetWidth = targetWidths[targetWidths.length - 1]
 	const result = smallestExtra(targetWidth, MIN_PIECE_SCALE, limit)
 	return result
 		? build(targetWidth, MIN_PIECE_SCALE, result.extra, result.placement)

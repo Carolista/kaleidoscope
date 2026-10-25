@@ -63,7 +63,7 @@ navigation guard and reset lower choices to their defaults.
 **Shapes** is a workbench for the grid sizes (n) and piece mixes behind both
 player modes ([ShapesWorkspace](./src/features/admin/shapes/ShapesWorkspace.tsx)). Each shape's card has a
 Grid sizes table (Size, n, Wedge, Total) and a Recipes table (Preview eye button, Difficulty (Size),
-Pieces, Distribution) above a centered, playable sample with Restart and Randomize buttons. A shape that
+Pieces, Distribution) above a playable sample on the stage layout, with Restart, a target grid lines toggle, and Randomize buttons. A shape that
 already has puzzles (drafts included, counted by `loadShapePuzzleCounts`) is locked and read-only. For
 other shapes n and each recipe's distribution can be edited to try values out: it checks that the pieces
 add up to the wedge, marks every changed value ("Changed", with the shipped value shown), and builds
@@ -313,8 +313,8 @@ The footer is one small line of copyright.
 [app/settings/](./src/app/settings/) holds `SettingsDialog` (hosted by `PlayerApp`, titled "Settings"). Signed in, it shows
 a greeting with Sign out, then User settings (the email as text, with "Change email" and "Change password" side by side; clicking
 either replaces both with its form, and Cancel or Save brings them back with focus returned), then Import progress
-(only while guest solves are waiting), then Game settings (the light/dark toggle, a labelled button; more settings will
-join it). A guest sees an Account section with "Sign in or create an account", which hands over to `AccountDialog`, then Game settings.
+(only while guest solves are waiting), then Game settings (the light/dark toggle, a labelled button, and "Show grid lines on
+puzzle targets", a checkbox; more settings will join them). A guest sees an Account section with "Sign in or create an account", which hands over to `AccountDialog`, then Game settings.
 While content is still loading, Game settings is left out. `CredentialForm` is the shared shell of the two forms. It lives under `app/` because features may not import each other.
 
 On each page load, the logo starts centered over the theme's base color.
@@ -332,8 +332,26 @@ the first puzzle of each difficulty with "x of 8" below it. A set opens to its p
 difficulty subheadings, four to a row, as borderless solved images (no grid lines) with a round
 check badge at the top right once solved. Choosing one plays it. On narrow screens the card's
 text sits top left and the three images wrap to the bottom right.
-Play places the goal image and equal-scale tray pieces in a compact row
-above the full-width board. Boards and pieces use the Zen look: empty tiles are
+Play lays the target, board, and tray pieces out as one **stage**
+([stageLayout.ts](./src/domain/puzzles/stageLayout.ts), `layout="stage"` on `PuzzlePlay`; see DECISIONS.md,
+"Puzzle stage layout"): the board is the biggest shape, the target sits in the upper left corner at 90% of
+the room kept for it, and each tray piece is a circle that holds it in every turn, drawn at 0.5 to 0.75
+of the board's own tile size and gathered toward the upper right, spread out as far as the room allows,
+so the pieces use the board's empty corners and notches. Narrower than 760px the stage grows upward
+(the target is at most 240px); from 760px it fits the screen's height with the target on the left and
+pieces on the right. The player's puzzle opts in with `wide`, so from 840px it grows past the 640px
+page column (up to 1100px, centered). Where nothing can be measured, or nothing fits, `PuzzlePlay`
+keeps its original layout, the goal image and tray in a compact row above the full-width board, which
+the tutorial and the admin puzzle editors still use.
+Pressing the target (a transparent button over it) shows it over the board at the board's size:
+it grows out of the thumbnail while fading in and shrinks back when pressed again, tapped, or
+Escape is pressed (`PeekOverlay`; picking up a piece or solving hides it, and reduced motion skips the
+animation). A grid icon among each screen's actions (Back, Next, Grid lines, Restart for players;
+beside Restart in admin playtests) and a Game settings checkbox turn the lines between the target's tiles
+off and on, on the target and the peek only: the board keeps its lines so empty tiles stay distinct. The
+choice is remembered per device in `kaleidoscope:puzzle:targetGridLines`, on by default
+([targetGridPreference.ts](./src/ui/puzzle/targetGridPreference.ts)).
+Boards and pieces use the Zen look: empty tiles are
 `var(--accent)` with a `var(--base)` stroke, only the wedge is at full opacity until
 solved, and each placed piece gets a single thicker `var(--base)` outline (the selected
 piece adds a thin solid accent line, drawn above the other outlines so shared edges stay visible; clicking
@@ -345,7 +363,8 @@ puzzle in the set; absent when none) is always present so the icons beside it ne
 disabled until the puzzle is solved and again once clicked.
 Opening a puzzle, or choosing Next, swipes it in: the target, tray, and board (not the
 icon row, which stays put) fly in from the right while the previous puzzle's painted copy flies off
-to the left over 560ms (`usePuzzleSwipe`, same inert-clone technique as Zen's grid swap; skipped for
+to the left over 700ms (`usePuzzleSwipe`, same inert-clone technique as Zen's grid swap; the copy resumes
+each CSS animation where the original was, so a finished "Congrats!" does not replay as it leaves; skipped for
 reduced motion; `body` hides horizontal overflow so the travel adds no scrollbar).
 The icon row sits 2rem below the board (the board graphic itself has no bottom margin).
 The reverse-rotate icon restarts the current puzzle and the left-from-bracket icon returns to the set. The icons under
@@ -528,10 +547,10 @@ Test files and `src/test/` are exempt so tests can reach internals and mock exac
 | [ui/theme/](./src/ui/theme/) | `PlayerThemeContext` (dark mode, active palette, toggle), `useDuotoneIconTint`, and `DuotoneTintColorContext` (lets a mode, such as a puzzle session, tint icons from its own color) |
 | [ui/hooks/](./src/ui/hooks/) | `useModalState`, `useIsTouchDevice` |
 | [ui/navigation/](./src/ui/navigation/) | App-wide unsaved-work navigation guard |
-| [ui/puzzle/](./src/ui/puzzle/) | Shared `PuzzlePlay` (target, tray, board, optional `celebration` text, `onProgress`, `aboveBoard` slot, pointer/keyboard interaction) and shape-neutral `PuzzleBoard` |
+| [ui/puzzle/](./src/ui/puzzle/) | Shared `PuzzlePlay` (target, tray, board, optional `celebration` text, `onProgress`, `aboveBoard` slot, `layout` of `'tray'` or `'stage'`, `wide`, pointer/keyboard interaction) and shape-neutral `PuzzleBoard`; `useStageLayout` (measures, packs after paint once near the screen, caches layouts, reserves height), `PeekOverlay` (the target growing over the board), and `targetGridPreference.ts` (`useTargetGridLines`, `useTargetGridToggle`) |
 | [domain/shapes/](./src/domain/shapes/) | React-free shape catalog, sizes, registry, and one folder per shape (grid, layout, types). The catalog's `supportedGridShapes` order is the single shape order (unlock order, Circle Rings last); `PUZZLE_SHAPE_IDS`, `PUZZLE_SHAPE_LABELS`, and every shape menu derive from it |
-| [domain/geometry/](./src/domain/geometry/) | `Point`, shared geometry math, symmetry engine, cell grouping, SVG points |
-| [domain/puzzles/](./src/domain/puzzles/) | Pure seeded puzzle generation, authoring, stored-definition readers (`readAuthoredPuzzle` for admins, `readPlayablePuzzle` for players, which never sees seeds or solutions), placement validation (`unplaceableTiles`), magnet snapping for held pieces (`puzzleSnap.ts`), and completion; per-shape adapters in `puzzleShapes.ts` |
+| [domain/geometry/](./src/domain/geometry/) | `Point`, shared geometry math (including `enclosingCircle`), symmetry engine, cell grouping, SVG points, and the occupancy grid (`pointInPolygon`, covered cells, exact distance to them) |
+| [domain/puzzles/](./src/domain/puzzles/) | Pure seeded puzzle generation, authoring, stored-definition readers (`readAuthoredPuzzle` for admins, `readPlayablePuzzle` for players, which never sees seeds or solutions), placement validation (`unplaceableTiles`), magnet snapping for held pieces (`puzzleSnap.ts`), the stage packer (`stageLayout.ts`: `packPuzzleStage` places the board, target, and piece circles), and completion; per-shape adapters in `puzzleShapes.ts` |
 | [domain/palettes/](./src/domain/palettes/) | Palette types (`Palette`, `PlayerPalette` with an ID), color math, light/dark theme colors, tutorial palette IDs (`introPalettes.ts`); no bundled palette list |
 | [lib/supabase/](./src/lib/supabase/) | Supabase browser clients (`getSupabaseClient` for the admin's session, `getGuestClient` for content reads, with no stored session, `getPlayerClient` for the signed-in player under its own storage key with PKCE) and generated database types |
 | [test/](./src/test/) | Vitest setup, shared render/interaction helpers, and `playerContent.ts` (sample palettes and content for tests) |

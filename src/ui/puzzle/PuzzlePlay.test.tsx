@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { palettes } from '@/test/playerContent'
@@ -16,7 +16,9 @@ import {
 	stubPointerHitTesting,
 	tileAt,
 } from '@/test/puzzleInteraction'
+import { IconButton } from '@/ui/components'
 import PuzzlePlay from './PuzzlePlay'
+import { useTargetGridToggle } from './targetGridPreference'
 import boardStyles from './PuzzleBoard.module.css'
 import styles from './PuzzlePlay.module.css'
 
@@ -29,6 +31,90 @@ function renderPlay(puzzle: Puzzle) {
 		/>,
 	)
 }
+
+describe('PuzzlePlay target grid lines', () => {
+	stubPointerHitTesting()
+
+	const key = 'kaleidoscope:puzzle:targetGridLines'
+	afterEach(() => {
+		localStorage.removeItem(key)
+		cleanup()
+	})
+
+	function targetCell(container: HTMLElement) {
+		return container
+			.querySelector('svg[aria-label="Target design"]')
+			?.querySelector('polygon') as SVGPolygonElement
+	}
+
+	// The toggle lives with each screen's own actions, so the host supplies it.
+	function Host({ puzzle }: { readonly puzzle: Puzzle }) {
+		const toggle = useTargetGridToggle()
+		return (
+			<PuzzlePlay
+				puzzle={puzzle}
+				solvedMessage="Solved."
+				trayAction={<IconButton {...toggle} />}
+			/>
+		)
+	}
+	const renderWithToggle = (puzzle: Puzzle) =>
+		render(<Host puzzle={puzzle} />)
+
+	it('draws the target with grid lines, and can drop them and bring them back', async () => {
+		const user = userEvent.setup()
+		const puzzle = generatePuzzle(
+			'target-grid',
+			palettes[1],
+			PUZZLE_RECIPES[0],
+		)
+		const { container } = renderWithToggle(puzzle)
+		const toggle = screen.getByRole('button', {
+			name: 'Grid lines on the target',
+		})
+		expect(toggle).toHaveAttribute('aria-pressed', 'true')
+		// With lines, a tile keeps the stylesheet's outline; without, its
+		// outline takes its own fill so the tiles meet without seams.
+		expect(targetCell(container).style.stroke).toBe('')
+		await user.click(toggle)
+		expect(toggle).toHaveAttribute('aria-pressed', 'false')
+		expect(targetCell(container).style.stroke).not.toBe('')
+		expect(localStorage.getItem(key)).toBe('false')
+		await user.click(toggle)
+		expect(targetCell(container).style.stroke).toBe('')
+	})
+
+	it('keeps the board lines whatever the target does', async () => {
+		const user = userEvent.setup()
+		const puzzle = generatePuzzle(
+			'board-grid',
+			palettes[1],
+			PUZZLE_RECIPES[0],
+		)
+		const { container } = renderWithToggle(puzzle)
+		await user.click(
+			screen.getByRole('button', { name: 'Grid lines on the target' }),
+		)
+		const boardCell = container
+			.querySelector('svg[data-puzzle-board]')
+			?.querySelector('polygon') as SVGPolygonElement
+		expect(boardCell.style.stroke).toBe('')
+	})
+
+	it('starts without lines when that was chosen before', () => {
+		localStorage.setItem(key, 'false')
+		const puzzle = generatePuzzle(
+			'target-grid-saved',
+			palettes[1],
+			PUZZLE_RECIPES[0],
+		)
+		const { container } = renderWithToggle(puzzle)
+		expect(
+			screen.getByRole('button', { name: 'Grid lines on the target' }),
+		).toHaveAttribute('aria-pressed', 'false')
+		expect(targetCell(container).style.stroke).not.toBe('')
+	})
+})
 
 describe('PuzzlePlay target peek', () => {
 	stubPointerHitTesting()

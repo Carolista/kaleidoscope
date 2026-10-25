@@ -134,7 +134,9 @@ the rules about generation, shared play, and keeping puzzle state out of Zen sti
   shadow; an earlier tiny box with overflowing content went invisible in iOS
   Safari once the shadow filter was applied.
 - Keep the goal image and uniformly scaled tray pieces together above the
-  full-width board, without visible instructions or piece labels. Celebrate a
+  full-width board (the original tray layout, still used by the tutorial and the
+  admin puzzle editors; players and the Shapes workbench use the stage layout
+  below), without visible instructions or piece labels. Celebrate a
   solve with a brief "Congrats!" fade (Mr Dafoe, accent fill, base outline) over
   the board instead of a dialog, so players can appreciate the finished design.
   `PuzzlePlay` takes it as an opt-in `celebration` prop; it is hidden from
@@ -156,10 +158,63 @@ the rules about generation, shared play, and keeping puzzle state out of Zen sti
   along with the board. Only the target/tray/board unit (`PuzzlePlay`'s `contentRef`)
   moves, so the controls beneath do not. The outgoing puzzle is an inert DOM copy
   captured on unmount, which keeps the solved design intact without keeping two live sessions.
+  The copy resumes each CSS animation at the point the original had reached
+  (`document.getAnimations`), because a cloned element restarts its animations: the
+  finished "Congrats!" fade otherwise replayed as the solved puzzle flew out.
 - `size="sm"` remains a Modal variant but no player view uses it now.
 - Generate new seeds with `crypto.getRandomValues`, which works over local
   network HTTP. `crypto.randomUUID` requires a secure context and can prevent
   even Zen Mode from mounting when the puzzle component initializes.
+
+## Puzzle stage layout, target peek, and target grid lines
+
+Large boards and some shapes left the target too small to read, because the tray's square
+slots (sized for a piece's worst turn) pushed everything apart and capped the target at 120px.
+
+- **One stage, not boxes.** The board, target, and pieces are positioned items in one box,
+  packed by the pure `packPuzzleStage` ([stageLayout.ts](./src/domain/puzzles/stageLayout.ts)). The
+  board is the biggest "ball"; the target and each piece fill the room left around it. The packer is
+  exact enough to guarantee no overlaps (tested for every shape in both orientations) and is
+  deterministic. `PuzzlePlay` opts in with `layout="stage"`; it falls back to the original layout when
+  nothing can be measured or nothing fits.
+- **Pieces are circles.** Each piece sits in the smallest circle that holds it in every turn it can
+  take (about its own center, `enclosingCircle`), so rotating never moves it or bumps a neighbor and
+  no overlap or dimming during rotation was needed. Measured against square slots, the old tray reserved
+  3 to 6 times the area the pieces cover.
+- **Piece scale 0.5 to 0.75 of the board's tile size,** largest that fits. Capped at 0.75 (not 1.0)
+  because full size was crowded and spread pieces to every side of the board; the floor was lowered from
+  0.6 so pieces shrink before they scatter. A held piece still scales up to the board's own size.
+- **Target:** in the upper left corner (it must start within 5% of the corner; a smaller target or a
+  taller stage is used when the board blocks it), drawn at 90% of the room kept for it so it does not cling
+  to the board. In portrait it is at most 240px, so wide columns do not give a huge target and a tall stage.
+- **Pieces gather toward the upper right** (centers stay in the right 60%), found with a gravity-style
+  search, then spread to the loosest spacing that still fits (22, 16, 11, then 7px), so they sit loosely in
+  the corner instead of hugging the board.
+- **Two orientations.** Under 760px wide the stage grows upward from a full-width board (up to 45% extra
+  height before the target shrinks). From 760px it fits the screen's height, with the target on the left.
+  The player's puzzle sets `wide`, so from 840px it grows past the 640px page column (up to 1100px,
+  centered) to reach the wide layout; the header and other pages keep the narrow column.
+- **Packing stays cheap and the page stays still.** Packing runs after paint, only once the stage is near
+  the screen (the Shapes page has six), results are cached across remounts, and the stage reserves the
+  tallest height seen for that shape, mode, and width so a new puzzle does not make the page jump. A
+  wrapper that shrinks to its content (a centered flex column) leaves nothing to measure: wrappers of a
+  stage need `width: 100%`.
+- **Return to tray:** a piece dropped anywhere off the board's own cells goes back to its slot, replacing
+  the old tray hit-test.
+- **Peek:** pressing the target shows it over the board at the board's size, so the picture can be
+  studied at the size that matters. It grows out of the thumbnail (Web Animations, FLIP style, about half a
+  second) and shrinks back; a tap, Escape, picking up a piece, or solving closes it; reduced motion swaps
+  instantly. The board hides only once the target has arrived. The finished closing animation is left to
+  hold its invisible end until React removes the overlay: cancelling first flashed the target over the
+  board for a frame.
+- **Target grid lines** can be turned off, on the target and the peek only. Tile outlines blur colors
+  together at small sizes. The board keeps its lines (without them empty tiles are the same color), and
+  nothing else (thumbnails, Zen, export) is affected. It is a device preference
+  (`kaleidoscope:puzzle:targetGridLines`, on by default), changed from a grid icon among each screen's
+  other actions (not floating on the target, where it looked lost over the board) and from a Game settings
+  checkbox. Admin playtests have no Settings, so they only have the icon.
+- **Not done:** the tutorial puzzle and the admin puzzle editors still use the tray layout, and the page
+  room kept around a wide stage when fitting its height (200px, chosen for the admin) is untuned for the player.
 
 ## Admin authoring lab
 
@@ -529,7 +584,7 @@ opened in the browser that asked for them. Closing the new-password dialog early
 The confirmation goes to the new address only: with Supabase's "Secure email change" on, the old address also gets the message, but without a confirmation link, so the setting is off, and the old address is told afterwards by the "Email address changed" notification (which names both addresses, since that is its purpose; the other auth emails carry no player-supplied text). The password re-check, not a second confirmation, is what guards the change. The change-email message is branded like the others. Settings lives under `app/` rather than `features/`, because it composes account, import, and theme and features may not import each other. The account dialog is now only for signed-out players and email links, so there is one place for account details.
 
 **Header simplified to a mode button and a Settings button.** Two mode icons plus a theme toggle plus an account button crowded the title (and overflowed under about 356px). A single "[icon] MODE" button that opens a mode dialog says where the player is, scales to Community Share and other modes later, and the
-theme toggle moved into Settings' Game settings, where audio and a grid toggle can join it. The Settings button wears the same accent fill as the mode button so the two weigh the same. The footer is a single small line.
+theme toggle moved into Settings' Game settings, where audio and a grid toggle can join it (the grid toggle now has: grid lines on puzzle targets, see "Puzzle stage layout"). The Settings button wears the same accent fill as the mode button so the two weigh the same. The footer is a single small line.
 
 **Text is title case in the player app, by a utility rather than CSS.** `text-transform: capitalize` capitalizes every word ("Sign In Or Create An Account"), so a real `toTitleCase` (AP-style small-word list, first word and post-colon words capitalized, "Sign In"/"Log Out" kept as verbs, words with their own capitals untouched) is applied by `Button` and `Heading`, enabled for the player app through `TextCaseContext` so the admin portal keeps its own wording. Asset names are title-cased when player content loads, display only, so
 what the admin types is not rewritten. A name that capitalizes a small word on purpose is evened out, and a Zen save that still names a palette by an old, non-title-case `schemeName` would start fresh (accepted, as with other older saves). Buttons and fields use one shared height, 2rem, and body-font text, instead of Righteous capitals, which overpowered everything else in the modals.

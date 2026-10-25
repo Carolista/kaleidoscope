@@ -165,6 +165,16 @@ describe.each(shapeIds)('stage layout for %s', shape => {
 })
 
 describe('stage layout limits', () => {
+	it('keeps the target modest in a wide portrait stage', () => {
+		const request = requestFor('hexagon', 'portrait')
+		const layout = packPuzzleStage({
+			...request,
+			width: 700,
+		} as StageRequest)
+		expect(layout).not.toBeNull()
+		expect(layout?.target.width).toBeLessThanOrEqual(240)
+	})
+
 	const square = [
 		{ x: 0, y: 0 },
 		{ x: 100, y: 0 },

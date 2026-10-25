@@ -91,6 +91,24 @@ describe('SettingsDialog', () => {
 		).toBeInTheDocument()
 	})
 
+	it('turns grid lines on puzzle targets on and off, and remembers it', async () => {
+		const user = userEvent.setup()
+		localStorage.removeItem('kaleidoscope:puzzle:targetGridLines')
+		renderSettings(fakeClient())
+		const checkbox = await screen.findByRole('checkbox', {
+			name: 'Show grid lines on puzzle targets',
+		})
+		expect(checkbox).toBeChecked()
+		await user.click(checkbox)
+		expect(checkbox).not.toBeChecked()
+		expect(
+			localStorage.getItem('kaleidoscope:puzzle:targetGridLines'),
+		).toBe('false')
+		await user.click(checkbox)
+		expect(checkbox).toBeChecked()
+		localStorage.removeItem('kaleidoscope:puzzle:targetGridLines')
+	})
+
 	it('greets a signed-in player, shows the email, and signs out', async () => {
 		const user = userEvent.setup()
 		const fake = signedIn()
