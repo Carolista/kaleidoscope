@@ -1,4 +1,5 @@
 import CloseButton from './CloseButton'
+import Heading from './Heading'
 import styles from './ModalHeader.module.css'
 
 export interface ModalHeaderProps {
@@ -16,9 +17,9 @@ function ModalHeader({
 }: ModalHeaderProps) {
 	return (
 		<div className={styles.header}>
-			<h2 id={titleId} className={styles.title}>
+			<Heading level={2} id={titleId} className={styles.title}>
 				{title}
-			</h2>
+			</Heading>
 			<CloseButton label={closeLabel} onClick={onClose} />
 		</div>
 	)

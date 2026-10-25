@@ -13,6 +13,7 @@ import type {
 	PlayerPuzzleSet,
 	PlayerReward,
 } from './playerContent'
+import { toTitleCase } from '@/ui/text'
 
 interface Released {
 	readonly published_at: string | null
@@ -29,6 +30,9 @@ function isLive(row: Released): boolean {
 	)
 }
 
+// Palettes, puzzles, and sets are named in the admin portal; players see them in title case.
+const displayName = (name: string) => toTitleCase(name.trim())
+
 function toPalette(
 	row: (Released & { id: string; name: string; colors: string[] }) | null,
 ): PlayerPalette | null {
@@ -40,7 +44,7 @@ function toPalette(
 	)
 		return null
 	const [a, b, c, d, e] = row.colors
-	return { id: row.id, name: row.name, colors: [a, b, c, d, e] }
+	return { id: row.id, name: displayName(row.name), colors: [a, b, c, d, e] }
 }
 
 const byPosition = (a: { position: number }, b: { position: number }) =>
@@ -152,7 +156,7 @@ async function loadPuzzleSets(
 					return [
 						{
 							id: row.id,
-							name: row.name,
+							name: displayName(row.name),
 							difficulty,
 							palette,
 							puzzle: readPlayablePuzzle(row, palette),
@@ -167,7 +171,7 @@ async function loadPuzzleSets(
 			? [
 					{
 						id: group.id,
-						name: group.name,
+						name: displayName(group.name),
 						shape,
 						track,
 						kind: group.purpose === 'reward' ? 'bonus' : 'core',

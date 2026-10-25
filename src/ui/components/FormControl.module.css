@@ -1,8 +1,10 @@
 .control {
 	min-width: 0;
 	border: 1px solid var(--control-border, var(--accent, #222));
-	padding: var(--control-padding, 0.25rem 0.5rem);
+	height: var(--control-height, 2rem);
+	padding: var(--control-padding, 0 0.5rem);
 	font: inherit;
+	font-size: var(--control-font-size, 1.1rem);
 	line-height: 1.25;
 	background: var(--control-surface, var(--base, #fff));
 	color: var(--accent, #222);

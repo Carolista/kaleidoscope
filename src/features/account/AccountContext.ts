@@ -21,12 +21,24 @@ export type AuthResult =
 	| { readonly status: 'ok' }
 	| { readonly status: 'error'; readonly message: string }
 
+export interface ChangeEmailDetails {
+	readonly email: string
+	readonly currentPassword: string
+}
+
+export interface ChangePasswordDetails {
+	readonly currentPassword: string
+	readonly newPassword: string
+}
+
 export interface AccountApi {
 	// `unavailable` is a build without Supabase configured; the app stays guest-only.
 	readonly status: 'unavailable' | 'loading' | 'signedOut' | 'signedIn'
 	// The signed-in player's id; per-account progress and caches are keyed by it.
 	readonly userId: string | null
 	readonly email: string | null
+	// An address the player asked to change to that is still waiting for its confirmation link.
+	readonly pendingEmail: string | null
 	readonly firstName: string | null
 	// True from the moment a password-reset link is followed until the dialog that
 	// sets the new password is closed.
@@ -41,6 +53,11 @@ export interface AccountApi {
 	readonly signOut: () => Promise<AuthResult>
 	readonly requestPasswordReset: (email: string) => Promise<AuthResult>
 	readonly updatePassword: (password: string) => Promise<AuthResult>
+	// Both check the current password first, so an unlocked device is not enough to take over an account.
+	readonly changeEmail: (details: ChangeEmailDetails) => Promise<AuthResult>
+	readonly changePassword: (
+		details: ChangePasswordDetails,
+	) => Promise<AuthResult>
 	readonly endRecovery: () => void
 	readonly dismissLinkError: () => void
 }
@@ -54,6 +71,7 @@ export const UNAVAILABLE: AccountApi = {
 	status: 'unavailable',
 	userId: null,
 	email: null,
+	pendingEmail: null,
 	firstName: null,
 	returningGuest: false,
 	recovering: false,
@@ -63,6 +81,8 @@ export const UNAVAILABLE: AccountApi = {
 	signOut: () => Promise.resolve(UNAVAILABLE_ERROR),
 	requestPasswordReset: () => Promise.resolve(UNAVAILABLE_ERROR),
 	updatePassword: () => Promise.resolve(UNAVAILABLE_ERROR),
+	changeEmail: () => Promise.resolve(UNAVAILABLE_ERROR),
+	changePassword: () => Promise.resolve(UNAVAILABLE_ERROR),
 	endRecovery: () => undefined,
 	dismissLinkError: () => undefined,
 }

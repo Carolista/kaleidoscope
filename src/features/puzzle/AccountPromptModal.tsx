@@ -1,7 +1,7 @@
 import { useId } from 'react'
 import { PUZZLE_SHAPE_LABELS } from '@/domain/puzzles'
 import type { GridShapeId } from '@/domain/shapes'
-import { Button, Modal, ModalHeader } from '@/ui/components'
+import { Button, Heading, Modal, ModalHeader } from '@/ui/components'
 import styles from './RewardModal.module.css'
 
 // Offered once, to a guest who has finished every set open to them: the next shape needs an account.
@@ -39,9 +39,9 @@ export default function AccountPromptModal({
 			<div className={styles.content}>
 				<p className={styles.hooray}>Hooray!</p>
 				<section className={styles.reward}>
-					<h3 className={styles.subheading}>
+					<Heading level={3} className={styles.subheading}>
 						You&rsquo;ve finished every puzzle set open to guests.
-					</h3>
+					</Heading>
 					<p className={styles.text}>
 						Create a free account to unlock {name}, with new puzzle
 						sets and a new shape to design with in Zen Mode.

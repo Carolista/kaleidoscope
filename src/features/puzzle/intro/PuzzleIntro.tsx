@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { Palette } from '@/domain/palettes'
 import { generatePuzzle, PUZZLE_RECIPES } from '@/domain/puzzles'
-import { Button } from '@/ui/components'
+import { Button, Heading } from '@/ui/components'
 import { PuzzlePlay } from '@/ui/puzzle'
 import type { IntroTrack } from '@/features/puzzle/introProgress'
 import styles from './PuzzleIntro.module.css'
@@ -53,24 +53,26 @@ function PuzzleIntro({ track, palette, onContinue }: PuzzleIntroProps) {
 		>
 			{solved ? (
 				<>
-					<h2
+					<Heading
+						level={2}
 						id="puzzle-intro-congrats"
 						className={styles.exclamation}
 					>
 						Congratulations!
-					</h2>
+					</Heading>
 					<p className={styles.message}>
 						You've solved your first {subject}.
 					</p>
 				</>
 			) : (
 				<>
-					<h2
+					<Heading
+						level={2}
 						id="puzzle-intro-welcome"
 						className={styles.exclamation}
 					>
 						Welcome!
-					</h2>
+					</Heading>
 					<p className={styles.message}>
 						{track === 'rotation'
 							? "Let's try a puzzle with turning pieces."

@@ -293,13 +293,24 @@ the favicon replacing the first O. Letter color follows the app's theme accent;
 the six petal colors stay fixed. The star's side tips align with the lettering's
 upper/lower bounds, and spacing shifts it slightly toward the curved D for
 optical balance. The combined mark has one accessible heading name.
-The header places the logo at the left and a compact mode switch at the right. Its solid
-spa/simple-puzzle-piece icons are scaled so both show the same visible height, with natural padding
-around each; accessible names and tooltips retain the mode names. The active mode also shows its name
-(ZEN or PUZZLE, Righteous capitals the same height as the icon) beside its icon, hidden at 420px and
-narrower where the title leaves no room. The dark/light toggle (a classic solid sun/moon, so no palette
-tint) sits just left of the mode switch in the header's `actions` slot, sized in the same `em`s so it
-scales with the title; it is available on every view, board or not.
+The header places the logo at the left, then one mode button, then the Settings button. The mode button is
+filled with the accent color and shows the current mode's solid icon (house, spa, or simple puzzle piece, scaled
+so each shows the same visible height) and its name (HOME, ZEN, or PUZZLE, Righteous capitals the same height as
+the icon; the name is hidden at 420px and narrower where the title leaves no room). It opens a "Choose a Mode"
+dialog (`ModeDialog`, hosted by the page) with Home, Zen Mode, and Puzzle Mode; its accessible name is
+"Change mode, currently Zen". The Settings button (faUserGear, in the header's `actions` slot) has the same
+accent fill, border, and height, with a base-colored icon, so the two carry the same weight. Both are sized in the
+header's `em`s so they scale with the title. The title is still the way back to Home. While content loads only Settings shows.
+The footer is one small line of copyright.
+
+### Settings
+
+[app/settings/](./src/app/settings/) holds `SettingsDialog` (hosted by `PlayerApp`, titled "Settings"). Signed in, it shows
+a greeting with Sign out, then User settings (the email as text, with "Change email" and "Change password" side by side; clicking
+either replaces both with its form, and Cancel or Save brings them back with focus returned), then Import progress
+(only while guest solves are waiting), then Game settings (the light/dark toggle, a labelled button; more settings will
+join it). A guest sees an Account section with "Sign in or create an account", which hands over to `AccountDialog`, then Game settings.
+While content is still loading, Game settings is left out. `CredentialForm` is the shared shell of the two forms. It lives under `app/` because features may not import each other.
 
 On each page load, the logo starts centered over the theme's base color.
 The reusable `LogoStar` spins and scales in for 2 seconds; its animation-end
@@ -395,9 +406,16 @@ changes should be applied to all four SVG assets.
 - Import individual Font Awesome definitions and render `FontAwesomeIcon` SVGs.
   [main.tsx](./src/main.tsx) imports core CSS and disables automatic CSS injection.
   No Kit script or Kit dependency.
-- Self-hosted fonts: Righteous 400 (player header, text buttons, modal titles); Mr Dafoe 400
+- Self-hosted fonts: Righteous 400 (player header, mode button, headings and modal titles); Mr Dafoe 400
   (intro Welcome/Congratulations headings; the Puzzle Mode solve "Congrats!"); Urbanist 200, 400, 400 italic, and 700
   (body text and default bold headings).
+- Text case: `toTitleCase` in [ui/text/](./src/ui/text/) (AP-style: articles, conjunctions, and prepositions of three letters
+  or fewer stay lowercase unless first or after a colon; "in"/"out" stay capitalized after "sign"/"log"; words with their own capitals are
+  left alone). It is applied by `Button` and `Heading` (use `Heading` instead of a raw `h1`-`h6`) only where `TextCaseContext` is `'title'`, which the player
+  app sets and which defaults to "as written", so the admin portal is unchanged; CSS `text-transform` still applies on top. Asset names (puzzle sets, puzzles, palettes)
+  are title-cased once when player content loads, for display only. The logo heading and the Home greeting are not run through it.
+- Buttons and fields share one scale: `--control-height` (2rem default) and 1rem text in Urbanist 400; button text is title case, not
+  Righteous capitals. The admin portal overrides these tokens (`--control-height: auto`, `--button-*`).
 - Icon buttons use accessible labels and tooltips. Toggle labels/icons describe
   the destination. Player boxes are 2.5rem; undo/redo and admin use 1.875rem.
 - Reuse shared `Button`, `Input`, `Select`, and `IconButton` for ordinary controls.
@@ -494,13 +512,13 @@ Test files and `src/test/` are exempt so tests can reach internals and mock exac
 
 | Location | Responsibility |
 | --- | --- |
-| [app/](./src/app/) | `AppEntry` (player/admin routing, navigation guard), `PlayerApp` (page, entrance animation, header, home/mode switching, footer; with a `gate` it shows only the frame while content loads), `ProvisionalTheme` (the saved light/dark mode before Zen's state exists), `entranceHandoff` (carries the opening animation from the loading frame to the real one), `useAdminRoute`, [layout/](./src/app/layout/) (Header, Footer), global [index.css](./src/app/index.css) |
-| [features/account/](./src/features/account/) | Player accounts: `AccountProvider` (session, sign-up/in/out, password reset, reset and expired-link state; `useAccount`), `AccountDialog` (every account view), `AccountControl` (the header button), `GuestImportDialog` and `GuestImportButton`. Hosted by `PlayerApp`, not the header |
+| [app/](./src/app/) | `AppEntry` (player/admin routing, navigation guard), `PlayerApp` (page, entrance animation, header, home/mode switching, footer; with a `gate` it shows only the frame while content loads), `ProvisionalTheme` (the saved light/dark mode before Zen's state exists), `entranceHandoff` (carries the opening animation from the loading frame to the real one), `useAdminRoute`, [layout/](./src/app/layout/) (Header, Footer, ModeDialog), [settings/](./src/app/settings/) (SettingsDialog, SettingsControl, the change email/password forms), global [index.css](./src/app/index.css) |
+| [features/account/](./src/features/account/) | Player accounts: `AccountProvider` (session, sign-up/in/out, password reset, reset and expired-link state; `useAccount`), `AccountDialog` (sign in, sign up, reset password, email links), `GuestImportDialog`. Change email and password are `AccountApi` actions used by Settings. Hosted by `PlayerApp`, not the header |
 | [features/home/](./src/features/home/) | `HomeScreen`: the greeting and one card per area (Puzzle, then Zen) |
 | [features/zen/](./src/features/zen/) | Zen Mode: `ZenMode`, [state/](./src/features/zen/state/) (reducer, history, Context, localStorage persistence, design randomization), [controls/](./src/features/zen/controls/) (toolbar, palette and shape pickers), [grid/](./src/features/zen/grid/) (shape adapters, `ShapeGrid`, `GridView`, cells), [export/](./src/features/zen/export/) (Save Image), [intro/](./src/features/zen/intro/) |
 | [features/puzzle/](./src/features/puzzle/) | Player Puzzle Mode: set list, difficulty grid of solved images, play session with the Congrats overlay and Next, the first-use tutorials (`intro/`), the announcement dialogs (`RewardModal`, `ShapeUnlockedModal`, `AccountPromptModal`, `SignInNudgeModal`), and the device's completed-tutorial record (`introProgress.ts`) and one-time prompt flags (`accountPrompt.ts`) |
 | [features/admin/](./src/features/admin/) | Lazy-loaded admin portal. `shell/` (portal, workspace, navigation), `catalog/` (session cache), `common/` (layout, icon button, form), `groups/` (shared group editing), one folder per content area (`puzzles/`, `puzzle-groups/`, `palettes/`, `palette-groups/`), `services/` (Supabase reads/writes), `testing/` |
-| [ui/components/](./src/ui/components/) | Shared controls: buttons, `DarkModeToggle`, palette-tinted `Checkbox`, native `Modal`, `ModalHeader`, `ConfirmDialog` and its dismissal preferences, form fields, loading, palette strips/choices |
+| [ui/components/](./src/ui/components/) | Shared controls: buttons, `Heading`, `DarkModeToggle` (a labelled button), `ui/text` (`toTitleCase`, `TextCaseContext`), palette-tinted `Checkbox`, native `Modal`, `ModalHeader`, `ConfirmDialog` and its dismissal preferences, form fields, loading, palette strips/choices |
 | [ui/content/](./src/ui/content/) | Player content: `loadPlayerContent` (released core palettes, core and bonus puzzle sets, rewards, shape order, an account's unlocked shapes), `PlayerContentProvider` (loads before the app starts, for the guest or the signed-in player), `PlayerProgressProvider` (the player's solved puzzles on the device or account, `usePlayerProgress` with `markSolved` and `guestImport`, and `usePlayerContent` over what has been earned, via `rewards.ts`), `accountProgress.ts` (reads and records an account's solves), `solvedPuzzles.ts` (the guest save, the per-account cache with pending solves, and the import decision), and the offline content cache, and `PuzzleResumeProvider` / `puzzleResume.ts` (per-device unfinished puzzles) |
 | [ui/theme/](./src/ui/theme/) | `PlayerThemeContext` (dark mode, active palette, toggle), `useDuotoneIconTint`, and `DuotoneTintColorContext` (lets a mode, such as a puzzle session, tint icons from its own color) |
 | [ui/hooks/](./src/ui/hooks/) | `useModalState`, `useIsTouchDevice` |
@@ -609,11 +627,11 @@ Puzzle Mode stays mounted while hidden, so moving between modes within a visit n
 [GuestImportDialog](./src/features/account/GuestImportDialog.tsx) ("Import your progress?") opens by itself until the player answers: "Import progress" sends the IDs to the same function and reloads the
 content, and "Not now" keeps the guest save and stops the offer opening by itself. The answers are remembered per account and per puzzle (`kaleidoscope:guest-import:<userId>` holds `handled`, the IDs already sent, and `declined`, the IDs turned down):
 `guestImport` covers guest solves that the account lacks and has not been sent, and it opens by itself only while some of them are not declined, so solves made as a guest after an earlier import or "Not now" are offered like any others.
-Declined solves stay available through "Import progress from this device" in the account view. The guest save is never deleted or merged automatically.
+Declined solves stay available through "Import progress from this device" in Settings. The guest save is never deleted or merged automatically.
 
 ### Accounts
 
-Players can create an account at any time; guests play on without one. The header's account button opens
+Players can create an account at any time; guests play on without one. The header's Settings button opens the Settings dialog (see Settings above), whose guest view hands over to
 [AccountDialog](./src/features/account/AccountDialog.tsx), which (hosted at page level so it does not inherit the header's sizing) handles:
 - **Sign in / create an account** with email and password; signup also asks for a first name, stored as `first_name` in the
   Supabase user metadata (no profile row or migration). Whether the email must be confirmed is a Supabase dashboard setting; the dialog handles both
@@ -621,13 +639,14 @@ Players can create an account at any time; guests play on without one. The heade
 - **Forgot password:** asks for an email and always answers "If this address has an account, we sent it a link". Following the link (PKCE, back to the app root) signs the
   player in and opens "Choose a new password" (with confirmation); closing that early leaves them signed in with the old password.
 - **Expired or already-used email links** return with an error in the URL; the dialog opens on Sign in saying so, and the URL is cleaned.
-- **Signed in:** a greeting, the email, "Import progress from this device" while guest solves are waiting, and Sign out (this device only).
+- **Signed in:** managed in Settings: a greeting, the email, Sign out (this device only), "Import progress from this device" while guest solves are waiting, and change email and change password.
+  Both changes first check the current password (by signing in again with it, which also gives Supabase the recent sign-in it wants). Changing the email asks Supabase to confirm the new address by link (only the new address gets one; "Secure email change" is off), and the old address is told afterwards by Supabase's "Email address changed" notification; until the link is used Settings shows "Confirmation sent to …" from the session's `new_email`. The dialog opens for a signed-in player only to report an email link that failed.
 Server failures show a plain message (a gateway timeout arrives as the text `{}`), and a result that arrives after the dialog was closed is
 ignored. After a successful sign-in, sign-up, or sign-out the dialog keeps its content and stays disabled until it has finished fading out.
 `getPlayerClient` keeps its own session, which content and progress use once someone is signed in; guest progress is read or moved only by the explicit import above.
 The account also exposes `userId` and `returningGuest` (a guest on a device that has been signed in before: the flag `kaleidoscope:known-account` is set at any sign-in and never cleared, and
 `kaleidoscope:signed-out-here` in `sessionStorage` records a deliberate sign-out).
-Without Supabase configured the account button is hidden. Auth emails use the templates in [supabase/email-templates/](./supabase/email-templates/), sent through custom SMTP (see supabase/README.md).
+Without Supabase configured the sign-in offer in Settings is hidden, and the rest of Settings still works. Auth emails use the templates in [supabase/email-templates/](./supabase/email-templates/), sent through custom SMTP (see supabase/README.md).
 
 ### Grid sizes
 

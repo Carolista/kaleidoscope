@@ -1,13 +1,14 @@
 .button {
-	font-family: var(--button-font, 'Righteous', sans-serif);
+	font-family: var(--button-font, var(--font-body));
 	font-size: var(--button-font-size, 1rem);
-	text-transform: var(--button-text-transform, uppercase);
-	letter-spacing: var(--button-letter-spacing, 0.03em);
-	line-height: var(--button-line-height, normal);
-	padding: var(--button-padding, 0.5rem 1rem);
+	font-weight: var(--button-font-weight, 400);
+	text-transform: var(--button-text-transform, none);
+	letter-spacing: var(--button-letter-spacing, normal);
+	line-height: var(--button-line-height, 1.1);
+	padding: var(--button-padding, 0 0.625rem);
 	margin-block: var(--button-margin, 0);
-	min-height: var(--button-height, auto);
-	border: var(--button-border-width, 2px) solid
+	min-height: var(--button-height, var(--control-height, 2rem));
+	border: var(--button-border-width, 1px) solid
 		var(--control-border, var(--accent, #222));
 	border-radius: var(--control-radius, 4px);
 	cursor: pointer;

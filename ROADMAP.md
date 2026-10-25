@@ -30,8 +30,7 @@ and signed-in players' solves are saved to the account (which opens Triangle and
 **Next up, in order:**
 
 1. Finish the Puzzle Mode gameplay tweaks from the POC (in progress).
-2. #77: change email and password for signed-in players.
-3. A6: harden, verify, and prepare to launch Puzzle Mode.
+2. A6: harden, verify, and prepare to launch Puzzle Mode.
 
 ---
 
@@ -44,7 +43,7 @@ and signed-in players' solves are saved to the account (which opens Triangle and
 | A1  | Product and content rules                                     | ✅ mostly      |
 | A2  | Supabase foundation: schema, RLS, Auth, admin role, types     | ✅             |
 | A3  | Admin portal: everything needed for 2A content                | ✅ (daily groups and palette correction remain) |
-| A4  | Player accounts, explicit guest import, offline/cloud sync    | ✅ (change email/password is #77) |
+| A4  | Player accounts, explicit guest import, offline/cloud sync    | ✅             |
 | A5  | Content access and puzzle-set progression in Puzzle and Zen   | ✅ (the fixed introductory sequence and server-side solution checking are deferred) |
 | A6  | Harden, verify, and launch Puzzle Mode                        | ⬜             |
 
@@ -172,13 +171,14 @@ remaining pack palette groups wait for the 2B store.
   logo animation appear before content loads.
 - The app stays usable without an account. Signup is available at any time.
 - ✅ After all four Hexagon sets are solved, a dismissible once-per-device dialog explains that Triangle needs an account; guests can keep playing Hexagon and Zen.
-- ✅ Never merge guest progress automatically: an explicit import is offered after sign-in or sign-up (and later from the account view), and the guest save is kept either way.
+- ✅ Never merge guest progress automatically: an explicit import is offered after sign-in or sign-up (and later from Settings), and the guest save is kept either way.
 - ✅ Guest storage is separate from per-account caches.
 - ✅ A once-a-session reminder for a guest on a device that has had an account ("Please sign in to continue saving your progress").
 - ✅ Server-stored progress: `record_puzzle_completions` records solves, completes groups, and grants rewards; unsent solves are retried when the browser is back online.
 - ✅ Completions from several devices merge as a union (solves only accumulate, so nothing conflicts); a device refreshes when it comes back online or its tab becomes visible again (at most every 30 seconds). No conflict prompt is needed because in-progress puzzles stay per-device (see A5).
-- Small follow-ups: a "change password" action for signed-in players (with change email, #77); the header is a few pixels too wide on screens narrower
-  than about 356px since the account button was added.
+- ✅ Settings dialog (greeting, sign out, change email, change password, import progress, light/dark mode) opened by a header gear (#77); the header is a single mode button plus the gear, which also fixes the width on screens narrower than about 356px (not yet checked on a device); the footer is one line.
+- ✅ Title case for buttons, headings, and asset names (`toTitleCase`); buttons and fields share one height.
+- Before launch: paste the change-email template into the Supabase dashboard and turn "Secure email change" off and enable the "Email address changed" notification with its template (see supabase/README.md); try a change end to end.
 
 **A5: Access and progression**
 

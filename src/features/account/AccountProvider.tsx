@@ -6,6 +6,8 @@ import {
 	UNAVAILABLE,
 	type AccountApi,
 	type AuthResult,
+	type ChangeEmailDetails,
+	type ChangePasswordDetails,
 	type SignInDetails,
 	type SignUpDetails,
 	type SignUpResult,
@@ -202,7 +204,82 @@ function createActions(
 		}
 	}
 
-	return { signUp, signIn, signOut, requestPasswordReset, updatePassword }
+	// Asks Supabase to check the current password by signing in again, which also
+	// counts as the recent sign-in it wants before an email or password change.
+	async function confirmPassword(password: string): Promise<AuthResult> {
+		const { data } = await client.auth.getSession()
+		const email = data.session?.user.email
+		if (!email) {
+			return {
+				status: 'error',
+				message: 'Please sign in again to make this change.',
+			}
+		}
+		const { error } = await client.auth.signInWithPassword({
+			email,
+			password,
+		})
+		if (!error) return { status: 'ok' }
+		return error.code === 'invalid_credentials'
+			? { status: 'error', message: "That password isn't correct." }
+			: authFailure(
+					error,
+					"We couldn't check your password right now. Please try again in a little while.",
+				)
+	}
+
+	async function changeEmail({
+		email,
+		currentPassword,
+	}: ChangeEmailDetails): Promise<AuthResult> {
+		try {
+			const confirmed = await confirmPassword(currentPassword)
+			if (confirmed.status === 'error') return confirmed
+			const { error } = await client.auth.updateUser(
+				{ email },
+				{
+					emailRedirectTo: `${window.location.origin}${import.meta.env.BASE_URL}`,
+				},
+			)
+			return error
+				? authFailure(
+						error,
+						"We couldn't change your email right now. Please try again in a little while.",
+					)
+				: { status: 'ok' }
+		} catch (cause) {
+			return failure(
+				cause,
+				'Unable to change the email. Please try again.',
+			)
+		}
+	}
+
+	async function changePassword({
+		currentPassword,
+		newPassword,
+	}: ChangePasswordDetails): Promise<AuthResult> {
+		try {
+			const confirmed = await confirmPassword(currentPassword)
+			if (confirmed.status === 'error') return confirmed
+			return await updatePassword(newPassword)
+		} catch (cause) {
+			return failure(
+				cause,
+				'Unable to change the password. Please try again.',
+			)
+		}
+	}
+
+	return {
+		signUp,
+		signIn,
+		signOut,
+		requestPasswordReset,
+		updatePassword,
+		changeEmail,
+		changePassword,
+	}
 }
 
 // Keeps who is signed in (if anyone) for the whole player app. Guests are the
@@ -278,6 +355,7 @@ export function AccountProvider({
 								: 'signedOut',
 						userId: session?.user.id ?? null,
 						email: session?.user.email ?? null,
+						pendingEmail: session?.user.new_email ?? null,
 						firstName: readFirstName(session),
 						returningGuest:
 							!loading &&

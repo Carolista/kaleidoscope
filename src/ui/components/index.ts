@@ -1,4 +1,5 @@
 export { default as Button } from './Button'
+export { default as Heading } from './Heading'
 export { default as Checkbox } from './Checkbox'
 export { default as CloseButton } from './CloseButton'
 export { default as ConfirmDialog } from './ConfirmDialog'

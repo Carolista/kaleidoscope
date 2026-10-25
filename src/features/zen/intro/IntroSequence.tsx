@@ -1,5 +1,5 @@
 import { HexagonGrid } from '@/features/zen/grid'
-import { Button } from '@/ui/components'
+import { Button, Heading } from '@/ui/components'
 import { useZenState } from '@/features/zen/state'
 import { useState } from 'react'
 import { getThemeColors } from '@/domain/palettes'
@@ -75,9 +75,13 @@ function IntroSequence({ onContinue }: IntroSequenceProps) {
 		>
 			{complete ? (
 				<>
-					<h2 id="intro-congrats" className={styles.exclamation}>
+					<Heading
+						level={2}
+						id="intro-congrats"
+						className={styles.exclamation}
+					>
 						Congratulations!
-					</h2>
+					</Heading>
 					<p
 						className={styles.message}
 						role="status"
@@ -88,9 +92,13 @@ function IntroSequence({ onContinue }: IntroSequenceProps) {
 				</>
 			) : (
 				<>
-					<h2 id="intro-welcome" className={styles.exclamation}>
+					<Heading
+						level={2}
+						id="intro-welcome"
+						className={styles.exclamation}
+					>
 						Welcome!
-					</h2>
+					</Heading>
 					<p
 						className={styles.message}
 						role="status"

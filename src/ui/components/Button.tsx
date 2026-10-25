@@ -1,4 +1,5 @@
-import type { ComponentPropsWithRef } from 'react'
+import { useContext, type ComponentPropsWithRef } from 'react'
+import { TextCaseContext, titleCaseNodes } from '@/ui/text'
 import styles from './Button.module.css'
 
 export type ButtonVariant = 'solid' | 'outline' | 'primary' | 'link' | 'danger'
@@ -11,8 +12,10 @@ function Button({
 	variant = 'solid',
 	type = 'button',
 	className,
+	children,
 	...props
 }: ButtonProps) {
+	const textCase = useContext(TextCaseContext)
 	return (
 		<button
 			type={type}
@@ -20,7 +23,9 @@ function Button({
 				.filter(Boolean)
 				.join(' ')}
 			{...props}
-		/>
+		>
+			{textCase === 'title' ? titleCaseNodes(children) : children}
+		</button>
 	)
 }
 

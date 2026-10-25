@@ -1,0 +1,87 @@
+.dialog {
+	width: min(26rem, calc(100vw - 2rem));
+}
+
+.content {
+	display: flex;
+	flex-direction: column;
+	gap: 1.25rem;
+	font-family: var(--font-body);
+}
+
+.content p {
+	margin: 0;
+}
+
+.who {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+}
+
+.greeting {
+	font-family: 'Righteous', sans-serif;
+	font-size: 1.5rem;
+	overflow-wrap: anywhere;
+}
+
+.section {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 0.75rem;
+	padding-top: 1.25rem;
+	border-top: 1px solid var(--accent);
+}
+
+.section:first-child {
+	padding-top: 0;
+	border-top: none;
+}
+
+.section > * {
+	max-width: 100%;
+}
+
+.heading {
+	margin: 0;
+	font-family: 'Righteous', sans-serif;
+	font-size: 1.25rem;
+	font-weight: 400;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+}
+
+.email {
+	overflow-wrap: anywhere;
+}
+
+.note {
+	font-size: 0.9375rem;
+	line-height: 1.4;
+}
+
+.actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+
+.section > form {
+	align-self: stretch;
+}
+
+.withIcon {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+}
+
+.error {
+	font-size: 0.875rem;
+	line-height: 1.4;
+	color: var(--control-danger, #ce4141);
+	overflow-wrap: anywhere;
+}

@@ -1,6 +1,4 @@
 export { AccountProvider } from './AccountProvider'
-export { useAccount } from './AccountContext'
-export { default as AccountControl } from './AccountControl'
+export { useAccount, type AuthResult } from './AccountContext'
 export { default as AccountDialog } from './AccountDialog'
-export { default as GuestImportButton } from './GuestImportButton'
 export { default as GuestImportDialog } from './GuestImportDialog'

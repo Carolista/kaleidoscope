@@ -21,15 +21,6 @@
 	margin: 0;
 }
 
-.greeting {
-	font-family: 'Righteous', sans-serif;
-	font-size: 1.5rem;
-}
-
-.email {
-	overflow-wrap: anywhere;
-}
-
 .error {
 	margin: 0;
 	font-size: 0.875rem;

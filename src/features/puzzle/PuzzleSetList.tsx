@@ -1,3 +1,4 @@
+import { Heading } from '@/ui/components'
 import type { PlayerPuzzleSet } from '@/ui/content'
 import PuzzleImage from './PuzzleImage'
 import { difficultySections, solvedCount } from './setProgress'
@@ -25,7 +26,9 @@ export default function PuzzleSetList({
 		)
 	return (
 		<>
-			<h2 className={styles.heading}>Puzzle Sets</h2>
+			<Heading level={2} className={styles.heading}>
+				Puzzle Sets
+			</Heading>
 			<ul className={styles.setList}>
 				{sets.map(set => (
 					<li key={set.id}>

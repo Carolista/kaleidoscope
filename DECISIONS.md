@@ -443,7 +443,7 @@ username. The name lives in the Supabase user metadata, not a `profiles` row, wh
 `profiles` table stays for when a public identity is needed (Phase 4). Because the name is typed at signup, it never appears in an auth email: the address
 might belong to someone else, so a user-supplied string in a message that looks official would be a phishing aid.
 
-**Accounts are optional until the Hexagon sets are done.** Guests keep playing, and the account button is always in the header. The forced step is later:
+**Accounts are optional until the Hexagon sets are done.** Guests keep playing, and Settings (with sign-in) is always in the header. The forced step is later:
 finishing every set open to a guest (all four Hexagon sets) opens a dialog, once per device, explaining that the next shape needs an account, which can be dismissed so the player can keep playing Hexagon and Zen as a guest. Under the normal rules an account unlocks the next shape by finishing either core set, so a guest who qualifies still sees nothing of Triangle until they have one.
 
 **An account's progress is recorded by the database, through one function.** A signed-in player's solves go to `record_puzzle_completions`, a `security definer`
@@ -483,7 +483,7 @@ built; revisit if that ever stops being true.
 
 **Guest progress moves only when the player says so, and a "no" is not final.** After signing in, an account that lacks puzzles solved as a guest on the device is offered an import, in a dialog that opens by itself until
 answered. Answers are kept per account, device, and puzzle: IDs that were sent are never offered again (the server may have declined some, which should not nag), IDs that were turned down only stop opening the offer by themselves
-and stay available through "Import progress from this device" in the account view, and solves made as a guest afterwards are offered afresh, so progress made while signed out is never silently stranded. The guest save is never deleted
+and stay available through "Import progress from this device" in Settings, and solves made as a guest afterwards are offered afresh, so progress made while signed out is never silently stranded. The guest save is never deleted
 or merged automatically, importing included.
 
 **A guest who probably has an account is reminded once, not forced.** A forced sign-in would punish players on a new browser or device who do not want one. Instead, on a device that has had a signed-in player before, the first guest solve
@@ -492,7 +492,17 @@ Nothing is lost by ignoring it, since the guest save stays and can be imported a
 
 **Passwords can be reset, and links fail gracefully.** A reset always answers the same way, whether or not the address has an account. A confirmation or reset link that
 has expired or was already used (mail scanners often use it first) returns to the app with an error in the URL; the dialog says so and offers to start again. PKCE links must be
-opened in the browser that asked for them. Closing the new-password dialog early leaves the player signed in with the old password; there is no "change password" in the account view yet.
+opened in the browser that asked for them. Closing the new-password dialog early leaves the player signed in with the old password; a signed-in player can change it later in Settings.
+
+**Changing the email or password re-checks the current password, and the email change waits for a link.** Settings, not the sign-in dialog, owns a signed-in player's account: an unlocked device should not be enough to take over an account, so both forms ask for the current password, verified by signing in again with it before `updateUser` runs
+(which also satisfies Supabase's recent-sign-in rule; the session's user id is unchanged, so nothing reloads). A wrong password changes nothing. The email change is not applied until the link is used, so the app shows the waiting address (`new_email`) rather than switching at once.
+The confirmation goes to the new address only: with Supabase's "Secure email change" on, the old address also gets the message, but without a confirmation link, so the setting is off, and the old address is told afterwards by the "Email address changed" notification (which names both addresses, since that is its purpose; the other auth emails carry no player-supplied text). The password re-check, not a second confirmation, is what guards the change. The change-email message is branded like the others. Settings lives under `app/` rather than `features/`, because it composes account, import, and theme and features may not import each other. The account dialog is now only for signed-out players and email links, so there is one place for account details.
+
+**Header simplified to a mode button and a Settings button.** Two mode icons plus a theme toggle plus an account button crowded the title (and overflowed under about 356px). A single "[icon] MODE" button that opens a mode dialog says where the player is, scales to Community Share and other modes later, and the
+theme toggle moved into Settings' Game settings, where audio and a grid toggle can join it. The Settings button wears the same accent fill as the mode button so the two weigh the same. The footer is a single small line.
+
+**Text is title case in the player app, by a utility rather than CSS.** `text-transform: capitalize` capitalizes every word ("Sign In Or Create An Account"), so a real `toTitleCase` (AP-style small-word list, first word and post-colon words capitalized, "Sign In"/"Log Out" kept as verbs, words with their own capitals untouched) is applied by `Button` and `Heading`, enabled for the player app through `TextCaseContext` so the admin portal keeps its own wording. Asset names are title-cased when player content loads, display only, so
+what the admin types is not rewritten. A name that capitalizes a small word on purpose is evened out, and a Zen save that still names a palette by an old, non-title-case `schemeName` would start fresh (accepted, as with other older saves). Buttons and fields use one shared height, 2rem, and body-font text, instead of Righteous capitals, which overpowered everything else in the modals.
 
 **Auth email goes through custom SMTP with branded templates.** Supabase's built-in sender is generic and rate-limited, and templates can only be edited with custom SMTP.
 Microsoft 365 was tried and rejected: its SMTP AUTH is off by default (here for the whole tenant), port 465 is unsupported, and Microsoft is phasing out basic-auth SMTP.

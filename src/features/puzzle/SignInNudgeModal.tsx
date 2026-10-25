@@ -1,5 +1,5 @@
 import { useId } from 'react'
-import { Button, Modal, ModalHeader } from '@/ui/components'
+import { Button, Heading, Modal, ModalHeader } from '@/ui/components'
 import styles from './RewardModal.module.css'
 
 // For a guest on a device that has had an account: their solves are only on this device until they sign in.
@@ -33,9 +33,9 @@ export default function SignInNudgeModal({
 		>
 			<div className={styles.content}>
 				<section className={styles.reward}>
-					<h3 className={styles.subheading}>
+					<Heading level={3} className={styles.subheading}>
 						Please sign in to continue saving your progress.
-					</h3>
+					</Heading>
 					<p className={styles.text}>
 						You aren&rsquo;t signed in, so your puzzles are saved
 						only on this device. After you sign in, you can add them

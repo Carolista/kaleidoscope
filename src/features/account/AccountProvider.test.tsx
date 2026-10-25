@@ -2,48 +2,11 @@ import { useState } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import type { Session, SupabaseClient } from '@supabase/supabase-js'
-import type { Database } from '@/lib/supabase'
+import { fakeClient, sessionFor } from '@/test/fakeAccountClient'
 import { TestZenStateProvider } from '@/test/TestZenStateProvider'
 import { AccountProvider } from './AccountProvider'
-import AccountControl from './AccountControl'
 import AccountDialog from './AccountDialog'
 import { useAccount } from './AccountContext'
-
-type AuthListener = (event: string, session: Session | null) => void
-
-function sessionFor(email: string, firstName?: string) {
-	return {
-		user: {
-			email,
-			user_metadata: firstName ? { first_name: firstName } : {},
-		},
-	} as unknown as Session
-}
-
-function fakeClient(initial: Session | null = null) {
-	let listener: AuthListener = () => undefined
-	const auth = {
-		onAuthStateChange: vi.fn((callback: AuthListener) => {
-			listener = callback
-			return { data: { subscription: { unsubscribe: vi.fn() } } }
-		}),
-		getSession: vi.fn(() =>
-			Promise.resolve({ data: { session: initial }, error: null }),
-		),
-		signUp: vi.fn(),
-		signInWithPassword: vi.fn(),
-		signOut: vi.fn(),
-		resetPasswordForEmail: vi.fn(),
-		updateUser: vi.fn(),
-	}
-	return {
-		auth,
-		emit: (session: Session | null, event = 'SIGNED_IN') =>
-			listener(event, session),
-		client: { auth } as unknown as SupabaseClient<Database>,
-	}
-}
 
 // Mirrors how the player app opens the dialog for reset and expired links.
 function ControlAndDialog() {
@@ -52,7 +15,11 @@ function ControlAndDialog() {
 	if ((account.recovering || account.linkError) && !open) setOpen(true)
 	return (
 		<>
-			<AccountControl onOpen={() => setOpen(true)} />
+			{account.status !== 'unavailable' && (
+				<button type="button" onClick={() => setOpen(true)}>
+					Open account
+				</button>
+			)}
 			<AccountDialog open={open} onClose={() => setOpen(false)} />
 		</>
 	)
@@ -70,9 +37,7 @@ function renderControl(fake: ReturnType<typeof fakeClient>) {
 
 async function openDialog(user: ReturnType<typeof userEvent.setup>) {
 	await user.click(
-		await screen.findByRole('button', {
-			name: /sign in or create an account|account for/i,
-		}),
+		await screen.findByRole('button', { name: 'Open account' }),
 	)
 }
 
@@ -108,8 +73,15 @@ describe('accounts', () => {
 
 	describe('returning guests', () => {
 		function Returning() {
-			const { status, returningGuest } = useAccount()
-			return <p>{`${status} ${returningGuest}`}</p>
+			const { status, returningGuest, signOut } = useAccount()
+			return (
+				<>
+					<p>{`${status} ${returningGuest}`}</p>
+					<button type="button" onClick={() => void signOut()}>
+						Sign out
+					</button>
+				</>
+			)
 		}
 		function renderReturning(fake: ReturnType<typeof fakeClient>) {
 			render(
@@ -155,7 +127,6 @@ describe('accounts', () => {
 			const fake = fakeClient(sessionFor('ada@example.com'))
 			fake.auth.signOut.mockResolvedValue({ error: null })
 			renderReturning(fake)
-			await openDialog(user)
 			await user.click(
 				await screen.findByRole('button', { name: 'Sign out' }),
 			)
@@ -249,7 +220,7 @@ describe('accounts', () => {
 		)
 	})
 
-	it('keeps the form on screen while closing after sign-in, and greets on reopening', async () => {
+	it('keeps the form on screen while closing after sign-in, and only notes it on reopening', async () => {
 		const user = userEvent.setup()
 		const fake = fakeClient()
 		fake.auth.signInWithPassword.mockImplementation(() => {
@@ -264,9 +235,9 @@ describe('accounts', () => {
 		await waitFor(() =>
 			expect(fake.auth.signInWithPassword).toHaveBeenCalled(),
 		)
-		expect(screen.queryByText('Hi, Ada!')).not.toBeInTheDocument()
+		expect(screen.queryByText("You're signed in.")).not.toBeInTheDocument()
 		await openDialog(user)
-		expect(await screen.findByText('Hi, Ada!')).toBeInTheDocument()
+		expect(await screen.findByText("You're signed in.")).toBeInTheDocument()
 	})
 
 	it('shows a readable message when the server times out', async () => {
@@ -343,7 +314,7 @@ describe('accounts', () => {
 		const fake = fakeClient()
 		fake.auth.updateUser.mockResolvedValue({ data: {}, error: null })
 		renderControl(fake)
-		await screen.findByRole('button', { name: /sign in or create/i })
+		await screen.findByRole('button', { name: 'Open account' })
 		act(() =>
 			fake.emit(
 				sessionFor('ada@example.com', 'Ada'),
@@ -382,10 +353,8 @@ describe('accounts', () => {
 			password: 'brand-new-pass',
 		})
 		await user.click(screen.getByRole('button', { name: 'Done' }))
-		await user.click(
-			await screen.findByRole('button', { name: /account for ada/i }),
-		)
-		expect(await screen.findByText('Hi, Ada!')).toBeInTheDocument()
+		await openDialog(user)
+		expect(await screen.findByText("You're signed in.")).toBeInTheDocument()
 	})
 
 	it('says so when an email link has expired', async () => {
@@ -405,16 +374,134 @@ describe('accounts', () => {
 		expect(window.location.hash).toBe('')
 	})
 
-	it('greets a signed-in player and signs out', async () => {
-		const user = userEvent.setup()
-		const fake = fakeClient(sessionFor('ada@example.com', 'Ada'))
-		fake.auth.signOut.mockResolvedValue({ error: null })
-		renderControl(fake)
-		await openDialog(user)
-		expect(await screen.findByText('Hi, Ada!')).toBeInTheDocument()
-		await user.click(screen.getByRole('button', { name: 'Sign out' }))
-		await waitFor(() =>
-			expect(fake.auth.signOut).toHaveBeenCalledWith({ scope: 'local' }),
-		)
+	describe('changing email and password', () => {
+		function Changer() {
+			const { changeEmail, changePassword, pendingEmail } = useAccount()
+			const [message, setMessage] = useState('')
+			const report = (result: { status: string; message?: string }) =>
+				setMessage(result.message ?? result.status)
+			return (
+				<>
+					<p>{`pending ${pendingEmail}`}</p>
+					<p>{`result ${message}`}</p>
+					<button
+						type="button"
+						onClick={() =>
+							void changeEmail({
+								email: 'new@example.com',
+								currentPassword: 'old-pass',
+							}).then(report)
+						}
+					>
+						Change email
+					</button>
+					<button
+						type="button"
+						onClick={() =>
+							void changePassword({
+								currentPassword: 'old-pass',
+								newPassword: 'brand-new-1',
+							}).then(report)
+						}
+					>
+						Change password
+					</button>
+				</>
+			)
+		}
+
+		async function renderChanger() {
+			const user = userEvent.setup()
+			const fake = fakeClient(sessionFor('ada@example.com', 'Ada'))
+			render(
+				<AccountProvider client={fake.client}>
+					<Changer />
+				</AccountProvider>,
+			)
+			await screen.findByText('pending null')
+			return { user, fake }
+		}
+
+		it('checks the current password, then asks for the new email to be confirmed', async () => {
+			const { user, fake } = await renderChanger()
+			fake.auth.signInWithPassword.mockResolvedValue({ error: null })
+			fake.auth.updateUser.mockResolvedValue({ error: null })
+			await user.click(
+				screen.getByRole('button', { name: 'Change email' }),
+			)
+			expect(await screen.findByText('result ok')).toBeInTheDocument()
+			expect(fake.auth.signInWithPassword).toHaveBeenCalledWith({
+				email: 'ada@example.com',
+				password: 'old-pass',
+			})
+			expect(fake.auth.updateUser).toHaveBeenCalledWith(
+				{ email: 'new@example.com' },
+				{
+					emailRedirectTo: `${window.location.origin}${import.meta.env.BASE_URL}`,
+				},
+			)
+		})
+
+		it('does not change anything when the current password is wrong', async () => {
+			const { user, fake } = await renderChanger()
+			fake.auth.signInWithPassword.mockResolvedValue({
+				error: {
+					code: 'invalid_credentials',
+					message: 'Invalid login credentials',
+					status: 400,
+				},
+			})
+			await user.click(
+				screen.getByRole('button', { name: 'Change password' }),
+			)
+			expect(
+				await screen.findByText("result That password isn't correct."),
+			).toBeInTheDocument()
+			expect(fake.auth.updateUser).not.toHaveBeenCalled()
+		})
+
+		it('updates the password after checking the current one', async () => {
+			const { user, fake } = await renderChanger()
+			fake.auth.signInWithPassword.mockResolvedValue({ error: null })
+			fake.auth.updateUser.mockResolvedValue({ error: null })
+			await user.click(
+				screen.getByRole('button', { name: 'Change password' }),
+			)
+			expect(await screen.findByText('result ok')).toBeInTheDocument()
+			expect(fake.auth.updateUser).toHaveBeenCalledWith({
+				password: 'brand-new-1',
+			})
+		})
+
+		it('reports an address that cannot be used', async () => {
+			const { user, fake } = await renderChanger()
+			fake.auth.signInWithPassword.mockResolvedValue({ error: null })
+			fake.auth.updateUser.mockResolvedValue({
+				error: {
+					message:
+						'A user with this email address has already been registered',
+					status: 422,
+				},
+			})
+			await user.click(
+				screen.getByRole('button', { name: 'Change email' }),
+			)
+			expect(
+				await screen.findByText(/already been registered/),
+			).toBeInTheDocument()
+		})
+
+		it('exposes an address that is waiting for confirmation', async () => {
+			const { fake } = await renderChanger()
+			act(() =>
+				fake.emit(
+					sessionFor('ada@example.com', 'Ada', 'new@example.com'),
+					'USER_UPDATED',
+				),
+			)
+			expect(
+				await screen.findByText('pending new@example.com'),
+			).toBeInTheDocument()
+		})
 	})
 })

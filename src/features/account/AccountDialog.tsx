@@ -1,10 +1,4 @@
-import {
-	useId,
-	useRef,
-	useState,
-	type ReactNode,
-	type SubmitEvent,
-} from 'react'
+import { useId, useRef, useState, type SubmitEvent } from 'react'
 import { Button, FormField, Input, Modal, ModalHeader } from '@/ui/components'
 import { useAccount } from './AccountContext'
 import styles from './AccountDialog.module.css'
@@ -26,7 +20,7 @@ const TITLES: Record<View | 'account', string> = {
 	resetSent: 'Check your email',
 	newPassword: 'Choose a new password',
 	passwordUpdated: 'Password updated',
-	account: 'Your account',
+	account: 'Email link',
 }
 
 const SUBMIT_LABELS: Partial<Record<View, readonly [string, string]>> = {
@@ -39,17 +33,15 @@ const SUBMIT_LABELS: Partial<Record<View, readonly [string, string]>> = {
 // Following a reset link signs the player in; these views belong to that visit.
 const RECOVERY_VIEWS: readonly View[] = ['newPassword', 'passwordUpdated']
 
-// The one place a player signs in, creates an account, resets a password, or signs
-// out. Everything else in the app works without it.
+// The one place a player signs in, creates an account, or resets a password. A
+// signed-in player manages the account in Settings; this opens for them only
+// after an email link. Everything else in the app works without it.
 export default function AccountDialog({
 	open,
 	onClose,
-	actions,
 }: {
 	readonly open: boolean
 	readonly onClose: () => void
-	// Extra actions for a signed-in player, above Sign out.
-	readonly actions?: ReactNode
 }) {
 	const account = useAccount()
 	const titleId = useId()
@@ -72,10 +64,10 @@ export default function AccountDialog({
 			setView('newPassword')
 		}
 	}
-	const showAccount = signedIn && !RECOVERY_VIEWS.includes(view)
-	const title = showAccount ? TITLES.account : TITLES[view]
+	const showLinkNotice = signedIn && !RECOVERY_VIEWS.includes(view)
+	const title = showLinkNotice ? TITLES.account : TITLES[view]
 	const shownError =
-		error || (view === 'signIn' && !showAccount ? account.linkError : '')
+		error || (view === 'signIn' && !showLinkNotice ? account.linkError : '')
 
 	function show(next: View) {
 		setView(next)
@@ -175,20 +167,6 @@ export default function AccountDialog({
 		}
 	}
 
-	function signOut() {
-		void run(
-			() => account.signOut(),
-			result => {
-				if (result.status === 'error') {
-					setError(result.message)
-					return 'stay'
-				}
-				close()
-				return 'closing'
-			},
-		)
-	}
-
 	const submitLabels = SUBMIT_LABELS[view]
 	const passwordView = view === 'signIn' || view === 'signUp'
 	const passwordField = (
@@ -234,25 +212,10 @@ export default function AccountDialog({
 				/>
 			}
 		>
-			{showAccount ? (
+			{showLinkNotice ? (
 				<div className={styles.content}>
-					<p className={styles.greeting}>
-						{account.firstName
-							? `Hi, ${account.firstName}!`
-							: 'Hi there!'}
-					</p>
-					<p className={styles.email}>
-						Signed in as <strong>{account.email}</strong>
-					</p>
-					{error && (
-						<p className={styles.error} role="alert">
-							{error}
-						</p>
-					)}
-					{actions}
-					<Button onClick={signOut} disabled={pending}>
-						{pending ? 'Signing out…' : 'Sign out'}
-					</Button>
+					<p>{account.linkError ?? "You're signed in."}</p>
+					<Button onClick={close}>Close</Button>
 				</div>
 			) : view === 'confirm' ? (
 				<div className={styles.content}>

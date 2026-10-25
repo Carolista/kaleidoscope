@@ -3,7 +3,6 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { PlayerProgressContext } from '@/ui/content/PlayerProgressContext'
 import type { GuestImport } from '@/ui/content'
-import GuestImportButton from './GuestImportButton'
 import GuestImportDialog from './GuestImportDialog'
 
 function offer(overrides: Partial<GuestImport> = {}): GuestImport {
@@ -35,7 +34,6 @@ function renderDialog(
 				onClose={onClose}
 				{...props}
 			/>
-			<GuestImportButton onRequest={vi.fn()} />
 		</PlayerProgressContext.Provider>,
 	)
 	return onClose
@@ -95,14 +93,5 @@ describe('GuestImportDialog', () => {
 	it('waits while another dialog is open', () => {
 		renderDialog(offer(), { suspended: true })
 		expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-	})
-
-	it('shows the account-view button only while there is something to import', () => {
-		renderDialog(null)
-		expect(
-			screen.queryByRole('button', {
-				name: 'Import progress from this device',
-			}),
-		).not.toBeInTheDocument()
 	})
 })
