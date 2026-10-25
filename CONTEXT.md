@@ -332,7 +332,7 @@ above the full-width board. Boards and pieces use the Zen look: empty tiles are
 `var(--accent)` with a `var(--base)` stroke, only the wedge is at full opacity until
 solved, and each placed piece gets a single thicker `var(--base)` outline (the selected
 piece adds a thin solid accent line, drawn above the other outlines so shared edges stay visible; clicking
-another placed piece moves the selection to it). Hovering a wedge tile uses a per-cell fill (brightened
+another placed piece moves the selection to it). On circle rings, a dragged piece snaps to its exact board position while over a wedge tile, and tray pieces use an even hex lattice. Hovering a wedge tile uses a per-cell fill (brightened
 painted color, or accent drifting toward base when empty). Solving briefly fades "Congrats!"
 (Mr Dafoe, accent fill, base outline, about 85% of the board's width) over the board; there is
 no dialog for the solve itself, so the solved design stays in view (a set that earns something then opens the reward dialog). The Next puzzle button (the next unsolved

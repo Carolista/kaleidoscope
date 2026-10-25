@@ -106,7 +106,8 @@ the rules about generation, shared play, and keeping puzzle state out of Zen sti
 - Accept any non-overlapping placement inside the wedge. Match the completed
   colors to determine success, then remove interaction and piece/wedge outlines.
 - Render the dragged piece at board scale with the grabbed tile centered on the
-  pointer, not as an offset translucent copy or snapped preview. Muted mirrored
+  pointer, not as an offset translucent copy or snapped preview (circle rings
+  is the exception; see its entry below). Muted mirrored
   tiles reveal full color on completion; placed tray entries are disabled and
   desaturated until returned.
 - Keep the goal image and uniformly scaled tray pieces together above the
@@ -585,8 +586,13 @@ its definitions keep `geometry.radius` and `hexagon-v2`.
   a hex ring, so each circle maps to the hex cell at the same ring position; hex
   neighbours are the touching circles and 60-degree rotation maps rings onto
   themselves. It reuses the hexagon adapter and small and medium piece sizes (wedges 6/9/12; large is
-  5 rings with [4, 3, 2, 2, 1]). Placed
-  pieces look slightly stretched in outer rings, accepted as the trade-off.
+  5 rings with [4, 3, 2, 2, 1]). Pieces are hex offsets, but the board bends the
+  hex lattice into rings, so offsets are not board positions. Off the board (tray
+  and free dragging) a piece is drawn on an even hex lattice of equal circles
+  (`pieceCorners`/`pieceCenter` on the puzzle shape). Over a wedge tile the dragged
+  piece snaps and draws at its exact board position, so what shows is what lands.
+  The bend between that and the tray drawing is accepted. Puzzles are unaffected by
+  layout changes, since they depend only on the hex topology.
 - **Shape is chosen at creation and fixed.** Puzzles pick it in the New form; groups
   pick it in the group-creation dialog. Assign to group offers only groups that
   accept every selected puzzle (shape and track), except daily groups, which mix shapes.
@@ -679,11 +685,19 @@ Hexagon padding and circle-radius bounds remain separate from polygon bounds.
   hexagon, not a star. Sizes 2/3/4 are available; large remains the default
   with 192 cells/20 groups.
 - **Circle rings:** ring `n` has `6n` circles. The center and first ring share a
-  minimum diameter; later rings grow by `1/12` of it per step. Spacing factor
-  `1.04` satisfies within-ring and between-ring non-overlap constraints.
-  Three/four/five rings are available; large remains the default with
-  91 cells/12 groups. Six was the first large size; more rings forced overly subtle
-  growth or tight spacing.
+  minimum diameter. Each later ring's circle size is solved so its circles just
+  fit, around the ring and against the previous ring along the spokes, with
+  spacing factor `1.04` (see `ringMetrics` in `circleRingsLayout.ts`). Diameters
+  grow about 1.00, 1.05, 1.07, 1.09, 1.10 times the minimum for rings 1 to 5.
+  An earlier fixed growth step of `1/12` per ring (33% by ring 5) widened the gap
+  between rings from 4% of a diameter at ring 1 to 27% at ring 5 and lowered
+  packing density from 0.73 to 0.64. Tight sizing was chosen over faster growth:
+  at the same canvas size circles render about 21% larger and every gap is even.
+  This is the densest fit for 6n rings at D6 symmetry; skipping a +6 step in the
+  ring counts grows faster but breaks hex adjacency and makes growth lumpy, and a
+  true hex lattice cannot grow in size. Three/four/five rings are available; large
+  remains the default with 91 cells/12 groups. Six was the first large size; more
+  rings made the outer rings too crowded.
 - **Pinwheel:** eight unequal-sided spokes with uniform 2:1 parallelogram cells,
   3 x 2, 3 x 3, or 4 x 3 steps per spoke (rows x columns). Large remains the default with
   96 cells/12 groups. Equal-sided rhombi looked like a star.

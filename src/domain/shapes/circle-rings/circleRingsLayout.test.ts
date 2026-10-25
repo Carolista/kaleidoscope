@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import {
-	GROWTH_STEP_RATIO,
 	RING_GAP,
 	circleCountForRing,
 	circleRingsBoundingBox,
@@ -27,14 +26,14 @@ describe('circleRingsCellDiameter', () => {
 		expect(circleRingsCellDiameter(1, layout)).toBe(layout.size)
 	})
 
-	it('grows from the floor diameter by GROWTH_STEP_RATIO per ring, from ring 2 onward', () => {
+	it('grows only as much as a snug fit allows: about 10% by ring 5', () => {
 		expect(circleRingsCellDiameter(2, layout)).toBeCloseTo(
-			layout.size + layout.size * GROWTH_STEP_RATIO,
-			10,
+			layout.size * 1.048,
+			2,
 		)
-		expect(circleRingsCellDiameter(4, layout)).toBeCloseTo(
-			layout.size + 3 * layout.size * GROWTH_STEP_RATIO,
-			10,
+		expect(circleRingsCellDiameter(5, layout)).toBeCloseTo(
+			layout.size * 1.098,
+			2,
 		)
 	})
 
@@ -89,6 +88,23 @@ describe('ringCenterRadius', () => {
 				previousRadius = center
 				previousDiameter = diameter
 			}
+		}
+	})
+})
+
+describe('snug fit', () => {
+	it('leaves exactly RING_GAP between rings along a spoke and around each ring', () => {
+		for (let ring = 2; ring <= 12; ring++) {
+			const diameter = circleRingsCellDiameter(ring, layout)
+			const radius = ringCenterRadius(ring, layout)
+			const chord =
+				2 * radius * Math.sin(Math.PI / circleCountForRing(ring))
+			expect(chord).toBeCloseTo(diameter * RING_GAP, 9)
+			expect(radius - ringCenterRadius(ring - 1, layout)).toBeCloseTo(
+				((diameter + circleRingsCellDiameter(ring - 1, layout)) / 2) *
+					RING_GAP,
+				9,
+			)
 		}
 	})
 })

@@ -34,6 +34,8 @@ interface DragState {
 	readonly y: number
 	readonly scale: number
 	readonly anchor: AxialCoord | null
+	// The board's screen transform at the last pointer move, for snapped drawing.
+	readonly board?: DOMMatrix | null
 	readonly moved: boolean
 }
 
@@ -272,6 +274,7 @@ export default function PuzzlePlay({
 						r: coord[1] - current.offset.r,
 					}
 				: null,
+			board: boardRef.current?.getScreenCTM?.() ?? null,
 		}
 	}
 
@@ -492,7 +495,18 @@ export default function PuzzlePlay({
 				<PieceGraphic
 					shape={currentPuzzle.shape}
 					piece={drag.piece}
-					drag={drag}
+					drag={{
+						...drag,
+						// Shapes that bend their lattice show a dragged piece at its
+						// exact board position once it is over a wedge tile, so what
+						// you see is what lands.
+						snap:
+							puzzleShapes[currentPuzzle.shape].pieceCorners &&
+							drag.anchor &&
+							drag.board
+								? { anchor: drag.anchor, board: drag.board }
+								: undefined,
+					}}
 				/>
 			)}
 		</section>

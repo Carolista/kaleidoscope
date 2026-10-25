@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import type { CSSProperties, PointerEvent, Ref } from 'react'
+import type { Point } from '@/domain/geometry'
 import type { AxialCoord } from '@/domain/shapes/hexagon'
 import { pointsToSvgAttr, polygonBoundingBox } from '@/domain/geometry'
 import { brightenAndSaturate } from '@/domain/palettes'
@@ -33,6 +34,17 @@ function cornersFor(shape: PuzzleShapeId, cell: PlacedCoord) {
 	return puzzleShapes[shape].corners(cell, tileSizes[shape])
 }
 
+// Where a piece's tiles sit when they are not on the board.
+function pieceCornersFor(shape: PuzzleShapeId, tile: AxialCoord) {
+	const { corners, pieceCorners } = puzzleShapes[shape]
+	return (pieceCorners ?? corners)(tile, tileSizes[shape])
+}
+
+function pieceCenterFor(shape: PuzzleShapeId, tile: AxialCoord) {
+	const { center, pieceCenter } = puzzleShapes[shape]
+	return (pieceCenter ?? center)(tile, tileSizes[shape])
+}
+
 function polygonPoints(shape: PuzzleShapeId, cell: PlacedCoord): string {
 	return pointsToSvgAttr(cornersFor(shape, cell))
 }
@@ -40,9 +52,13 @@ function polygonPoints(shape: PuzzleShapeId, cell: PlacedCoord): string {
 function viewBoxFor(
 	shape: PuzzleShapeId,
 	cells: readonly PlacedCoord[],
+	cornersOf: (
+		shape: PuzzleShapeId,
+		cell: PlacedCoord,
+	) => Point[] = cornersFor,
 ): string {
 	const { minX, minY, maxX, maxY } = polygonBoundingBox(
-		cells.map(cell => cornersFor(shape, cell)),
+		cells.map(cell => cornersOf(shape, cell)),
 	)
 	const padding = 3
 	return `${minX - padding} ${minY - padding} ${maxX - minX + padding * 2} ${maxY - minY + padding * 2}`
@@ -85,12 +101,48 @@ export function PieceGraphic({
 		readonly y: number
 		readonly offset: AxialCoord
 		readonly scale: number
+		// Draws the piece at its board position for this anchor, locked to the
+		// board's screen transform, instead of following the pointer.
+		readonly snap?: {
+			readonly anchor: AxialCoord
+			readonly board: Pick<DOMMatrix, 'a' | 'b' | 'c' | 'd' | 'e' | 'f'>
+		}
 	}
 }) {
-	const grabbed = drag
-		? puzzleShapes[shape].center(drag.offset, tileSizes[shape])
-		: null
-	const [minX, minY, width, height] = viewBoxFor(shape, piece.tiles)
+	const snap = drag?.snap
+	const tiles = snap ? pieceCells(piece, snap.anchor) : piece.tiles
+	const grabbedCell =
+		drag && snap
+			? {
+					q: snap.anchor.q + drag.offset.q,
+					r: snap.anchor.r + drag.offset.r,
+				}
+			: drag?.offset
+	const grabbed = !grabbedCell
+		? null
+		: snap
+			? puzzleShapes[shape].center(grabbedCell, tileSizes[shape])
+			: pieceCenterFor(shape, grabbedCell)
+	const screen =
+		drag && snap && grabbed
+			? {
+					x:
+						snap.board.a * grabbed.x +
+						snap.board.c * grabbed.y +
+						snap.board.e,
+					y:
+						snap.board.b * grabbed.x +
+						snap.board.d * grabbed.y +
+						snap.board.f,
+				}
+			: drag
+				? { x: drag.x, y: drag.y }
+				: null
+	const [minX, minY, width, height] = viewBoxFor(
+		shape,
+		piece.tiles,
+		pieceCornersFor,
+	)
 		.split(' ')
 		.map(Number)
 	// Reserve the largest rotated bounds so tray slots and tile scale stay fixed.
@@ -103,6 +155,7 @@ export function PieceGraphic({
 				const bounds = viewBoxFor(
 					shape,
 					piece.tiles.map(tile => rotateCoordinate(tile, rotation)),
+					pieceCornersFor,
 				)
 					.split(' ')
 					.map(Number)
@@ -118,10 +171,10 @@ export function PieceGraphic({
 			}
 			className={drag ? styles.draggedPiece : undefined}
 			style={
-				drag
+				drag && screen
 					? {
-							left: drag.x - drag.scale / 2,
-							top: drag.y - drag.scale / 2,
+							left: screen.x - drag.scale / 2,
+							top: screen.y - drag.scale / 2,
 							width: drag.scale,
 							height: drag.scale,
 						}
@@ -129,10 +182,14 @@ export function PieceGraphic({
 			}
 			aria-hidden="true"
 		>
-			{piece.tiles.map((tile, index) => (
+			{tiles.map((tile, index) => (
 				<polygon
 					key={coordinateKey(tile)}
-					points={polygonPoints(shape, tile)}
+					points={
+						snap
+							? polygonPoints(shape, tile)
+							: pointsToSvgAttr(pieceCornersFor(shape, tile))
+					}
 					fill={tile.color}
 					data-piece-tile={index}
 					className={styles.pieceTile}

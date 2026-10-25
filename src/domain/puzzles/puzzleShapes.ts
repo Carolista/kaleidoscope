@@ -14,7 +14,9 @@ import {
 } from '@/domain/shapes/triangle'
 import {
 	CIRCLE_RINGS_GRID_SIZES,
+	RING_GAP,
 	circleRingsCellCenter,
+	circleRingsCellDiameter,
 	circleRingsCellRadius,
 	generateCircleRingsCells,
 } from '@/domain/shapes/circle-rings'
@@ -66,6 +68,12 @@ export interface PuzzleShape {
 	readonly anchorFor: (cell: AxialCoord) => AxialCoord
 	readonly corners: (cell: PlacedCoord, size: number) => Point[]
 	readonly center: (cell: AxialCoord, size: number) => Point
+	// For shapes whose board bends the lattice (circle rings), `corners` and
+	// `center` give board positions, which only fit a tile at its own cell. These
+	// lay out a piece's offsets on an even lattice instead, for the tray and for
+	// dragging before the piece snaps to the board.
+	readonly pieceCorners?: (tile: AxialCoord, size: number) => Point[]
+	readonly pieceCenter?: (tile: AxialCoord, size: number) => Point
 }
 
 const hexDirections: readonly AxialCoord[] = [
@@ -344,6 +352,36 @@ function ringAtHex(cell: AxialCoord): { ring: number; index: number } {
 
 const CIRCLE_SEGMENTS = 32
 
+function circlePolygon(center: Point, radius: number): Point[] {
+	return Array.from({ length: CIRCLE_SEGMENTS }, (_, i) => {
+		const angle = (2 * Math.PI * i) / CIRCLE_SEGMENTS
+		return {
+			x: center.x + radius * Math.cos(angle),
+			y: center.y + radius * Math.sin(angle),
+		}
+	})
+}
+
+// Off the board, a piece uses the circle size of a middle ring, so it reads as
+// the same size as the circles it will land on.
+const PIECE_REFERENCE_RING = 3
+
+function pieceCircleDiameter(size: number): number {
+	return circleRingsCellDiameter(PIECE_REFERENCE_RING, {
+		ringCount: 0,
+		size,
+	})
+}
+
+function pieceLatticeCenter(tile: AxialCoord, size: number): Point {
+	// A flat hex layout's circumradius is its center spacing over sqrt(3).
+	const spacing = pieceCircleDiameter(size) * RING_GAP
+	return axialToPixel(tile, {
+		orientation: 'flat',
+		size: spacing / Math.sqrt(3),
+	})
+}
+
 const circleRings: PuzzleShape = {
 	...hexagon,
 	id: 'circleRings',
@@ -360,18 +398,19 @@ const circleRings: PuzzleShape = {
 	corners: (cell, size) => {
 		const position = ringAtHex(cell)
 		const layout = { ringCount: 0, size }
-		const center = circleRingsCellCenter(position, layout)
-		const radius = circleRingsCellRadius(position, layout)
-		return Array.from({ length: CIRCLE_SEGMENTS }, (_, i) => {
-			const angle = (2 * Math.PI * i) / CIRCLE_SEGMENTS
-			return {
-				x: center.x + radius * Math.cos(angle),
-				y: center.y + radius * Math.sin(angle),
-			}
-		})
+		return circlePolygon(
+			circleRingsCellCenter(position, layout),
+			circleRingsCellRadius(position, layout),
+		)
 	},
 	center: (cell, size) =>
 		circleRingsCellCenter(ringAtHex(cell), { ringCount: 0, size }),
+	pieceCorners: (tile, size) =>
+		circlePolygon(
+			pieceLatticeCenter(tile, size),
+			pieceCircleDiameter(size) / 2,
+		),
+	pieceCenter: pieceLatticeCenter,
 }
 
 export const puzzleShapes: Readonly<Record<PuzzleShapeId, PuzzleShape>> = {
