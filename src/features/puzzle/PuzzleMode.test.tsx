@@ -374,6 +374,7 @@ describe('PuzzleMode', () => {
 				bonusSets: [],
 				shapes: [{ shape: 'triangle' as const, sets: [triangleSet] }],
 				accountShape: null,
+				randomizer: false,
 			}),
 		)
 		renderWithProvider(
@@ -407,6 +408,45 @@ describe('PuzzleMode', () => {
 		expect(onOpenZen).toHaveBeenCalledOnce()
 	})
 
+	it('announces the randomizer last, after the other rewards, and sends the player to Zen', async () => {
+		const user = userEvent.setup()
+		const onOpenZen = vi.fn()
+		const markSolved = vi.fn(() =>
+			Promise.resolve({
+				palettes: [{ ...palettes[5], id: 'earned', name: 'Earned' }],
+				bonusSets: [],
+				shapes: [],
+				accountShape: null,
+				randomizer: true,
+			}),
+		)
+		renderWithProvider(
+			<PlayerProgressContext.Provider
+				value={{
+					solved: new Set(['p2']),
+					markSolved,
+					guestImport: null,
+				}}
+			>
+				<PuzzleMode onOpenZen={onOpenZen} />
+			</PlayerProgressContext.Provider>,
+			content,
+		)
+		fireEvent.click(screen.getByRole('button', { name: /Starter/ }))
+		fireEvent.click(screen.getByRole('button', { name: /^Puzzle 1,/ }))
+		solvePuzzle()
+		await screen.findByRole('dialog', { name: 'Reward earned' })
+		await user.click(screen.getByRole('button', { name: 'Close reward' }))
+		const special = await screen.findByRole('dialog', {
+			name: 'A very special reward',
+		})
+		expect(special).toHaveTextContent('all 24 puzzle sets of 24 puzzles')
+		await user.click(
+			screen.getByRole('button', { name: 'Try it out in Zen Mode now' }),
+		)
+		expect(onOpenZen).toHaveBeenCalledOnce()
+	})
+
 	describe('account prompt for a guest who has finished everything', () => {
 		function renderFinishing(
 			onCreateAccount?: () => void,
@@ -420,6 +460,7 @@ describe('PuzzleMode', () => {
 					palettes: [],
 					bonusSets: [],
 					shapes: [],
+					randomizer: false,
 					accountShape:
 						options.accountShape === undefined
 							? ('triangle' as const)

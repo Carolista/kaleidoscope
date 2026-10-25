@@ -276,7 +276,7 @@ hardest track. Rewards name exact
 palettes, not a palette group. That is the intended pattern for all six shapes, but
 reward rules stay flexible in the database (any group can award palettes and/or
 bonus groups) so a later admin screen can check a shape against the pattern. A player who
-solves all twelve core and twelve bonus groups earns the Zen randomizer.
+solves all twelve core and twelve bonus groups earns the Zen randomizer. The database grants it (`feature_grants`, in `record_puzzle_completions`) so that it is permanent, and the app hides it entirely until then, in Zen's toolbar and the help modal alike, rather than showing it locked.
 
 **Zen access.** Unlocked shapes and awarded palettes are usable in Zen at once, as are
 purchased palette packs. A puzzle pack unlocks only puzzles: its palettes come
@@ -456,7 +456,7 @@ group or the next shape. Because of that, the solve that finishes a set waits fo
 (per account, with a pending list) until the server takes them. Server solves are only ever added to the local set. An account's caches are never shared with the guest's.
 
 **Unlocking a shape is announced, not silent.** When the reload shows a shape that was not open before, a second dialog after the reward dialog says so, names that it is available in Zen Mode, and lists the shape's core sets
-with a way in. The announcements run in a fixed order (reward, shape, account prompt, sign-in reminder), one at a time, each after the last has finished closing.
+with a way in. The randomizer, the last prize, is announced in its own dialog after the reward and shape dialogs, pointing at Zen Mode. The announcements run in a fixed order (reward, shape, randomizer, account prompt, sign-in reminder), one at a time, each after the last has finished closing.
 
 **Guest progress moves only when the player says so, and a "no" is not final.** After signing in, an account that lacks puzzles solved as a guest on the device is offered an import, in a dialog that opens by itself until
 answered. Answers are kept per account, device, and puzzle: IDs that were sent are never offered again (the server may have declined some, which should not nag), IDs that were turned down only stop opening the offer by themselves

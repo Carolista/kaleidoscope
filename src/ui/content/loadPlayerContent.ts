@@ -225,6 +225,18 @@ async function loadAccountShapes(
 	)
 }
 
+// The server grants the randomizer once, permanently, when every free set is complete.
+async function loadRandomizerGrant(
+	client: SupabaseClient<Database>,
+): Promise<boolean> {
+	const { data, error } = await client
+		.from('feature_grants')
+		.select('feature')
+		.eq('feature', 'zen_randomizer')
+	if (error) throw new Error(error.message)
+	return data.length > 0
+}
+
 // A guest starts with the first shape and reads exactly that; an account is allowed on
 // further shapes as it finishes core sets, which the database enforces as it answers.
 export async function loadPlayerContent(
@@ -239,12 +251,16 @@ export async function loadPlayerContent(
 	])
 	const order = shapeOrder.length ? shapeOrder : [supportedGridShapes[0].id]
 	const sets = sortSets(puzzleSets, order)
-	const unlockedShapes = account
-		? await loadAccountShapes(client, order)
-		: [order[0]]
+	const [unlockedShapes, randomizerUnlocked] = account
+		? await Promise.all([
+				loadAccountShapes(client, order),
+				loadRandomizerGrant(client),
+			])
+		: [[order[0]], false]
 	return {
 		palettes,
 		unlockedShapes,
+		randomizerUnlocked,
 		nextShape: order.find(shape => !unlockedShapes.includes(shape)) ?? null,
 		puzzleSets: sets,
 		rewards: usableRewards(rewards, sets),

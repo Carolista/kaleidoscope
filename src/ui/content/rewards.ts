@@ -26,6 +26,8 @@ export interface NewRewards {
 	// Set when a guest has just finished every set open to them and the next shape
 	// needs an account.
 	readonly accountShape: GridShapeId | null
+	// Set when this solve earned Zen's randomizer, by finishing every core and bonus set.
+	readonly randomizer: boolean
 }
 
 function isComplete(set: PlayerPuzzleSet, solved: ReadonlySet<string>) {
@@ -121,6 +123,7 @@ export function newRewards(
 		),
 		shapes: [],
 		accountShape: null,
+		randomizer: false,
 	}
 }
 

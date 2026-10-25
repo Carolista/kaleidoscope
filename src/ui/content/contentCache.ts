@@ -32,6 +32,7 @@ export function readCachedContent(
 			? ({
 					...content,
 					nextShape: content.nextShape ?? null,
+					randomizerUnlocked: content.randomizerUnlocked === true,
 				} as PlayerContent)
 			: null
 	} catch {

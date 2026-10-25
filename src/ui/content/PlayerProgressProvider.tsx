@@ -33,6 +33,7 @@ const NOTHING: NewRewards = {
 	bonusSets: [],
 	shapes: [],
 	accountShape: null,
+	randomizer: false,
 }
 const NONE: ReadonlySet<string> = new Set()
 
@@ -202,6 +203,8 @@ export function PlayerProgressProvider({
 			return {
 				...newRewards(current, solved, next),
 				shapes: newShapes(content, current),
+				randomizer:
+					!content.randomizerUnlocked && current.randomizerUnlocked,
 			}
 		},
 		[content, solved, userId, flush, reload],

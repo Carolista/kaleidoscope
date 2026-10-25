@@ -15,13 +15,14 @@ import type { IntroTrack } from './introProgress'
 import PuzzleGrid from './PuzzleGrid'
 import PuzzleSession from './PuzzleSession'
 import PuzzleSetList from './PuzzleSetList'
+import RandomizerUnlockedModal from './RandomizerUnlockedModal'
 import RewardModal from './RewardModal'
 import ShapeUnlockedModal from './ShapeUnlockedModal'
 import SignInNudgeModal from './SignInNudgeModal'
 import { usePuzzleSwipe } from './usePuzzleSwipe'
 import styles from './PuzzleMode.module.css'
 
-type Stage = 'rewards' | 'shapes' | 'account' | 'signIn'
+type Stage = 'rewards' | 'shapes' | 'randomizer' | 'account' | 'signIn'
 
 interface Announcement {
 	readonly rewards: NewRewards
@@ -39,6 +40,7 @@ function announcementsFor(
 	const queue: Stage[] = []
 	if (earned.palettes.length || earned.bonusSets.length) queue.push('rewards')
 	if (earned.shapes.length) queue.push('shapes')
+	if (earned.randomizer) queue.push('randomizer')
 	if (earned.accountShape && canCreateAccount && !hasSeenAccountPrompt())
 		queue.push('account')
 	// A reminder to sign in, once a session, for a guest who probably has an account.
@@ -154,6 +156,14 @@ export default function PuzzleMode({
 					onAfterClose={nextAnnouncement}
 					onOpenZen={openZen}
 					onOpenSet={openSet}
+				/>
+			)}
+			{stage === 'randomizer' && (
+				<RandomizerUnlockedModal
+					open={announcement.open}
+					onClose={closeAnnouncement}
+					onAfterClose={nextAnnouncement}
+					onOpenZen={openZen}
 				/>
 			)}
 			{stage === 'signIn' && (

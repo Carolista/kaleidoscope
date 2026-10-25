@@ -106,6 +106,7 @@ describe('newRewards', () => {
 			bonusSets: [bonus],
 			shapes: [],
 			accountShape: null,
+			randomizer: false,
 		})
 		expect(
 			newRewards(
@@ -118,6 +119,7 @@ describe('newRewards', () => {
 			bonusSets: [deeper],
 			shapes: [],
 			accountShape: null,
+			randomizer: false,
 		})
 	})
 
@@ -127,6 +129,7 @@ describe('newRewards', () => {
 			bonusSets: [],
 			shapes: [],
 			accountShape: null,
+			randomizer: false,
 		})
 	})
 })

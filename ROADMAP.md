@@ -32,8 +32,7 @@ and signed-in players' solves are saved to the account (which opens Triangle and
 1. Finish the Puzzle Mode gameplay tweaks from the POC (in progress).
 2. #57, the rest of A4: cross-device sync and conflict handling (server-stored progress, the Triangle unlock, the guest prompt, and the explicit
    import are done; an end-to-end pass through all 96 core and bonus puzzles is still being tested).
-3. Puzzle Mode resume (A5); the Zen randomizer stays visible but should be locked until all
-   12 core and 12 bonus groups are solved.
+3. Puzzle Mode resume (A5).
 
 ---
 
@@ -194,7 +193,7 @@ remaining pack palette groups wait for the 2B store.
   palette. Earned state is derived from the solved puzzle IDs, bonus sets stay hidden until earned, reward palettes
   join Zen's palette picker, and a "Reward earned" dialog announces what a solve just earned.
 - ✅ Solving either core group of a shape (basic or rotation) unlocks the next shape and its two core groups (accounts only; guests stay on the first shape), announced in a "New shape unlocked" dialog after the reward dialog. Reward palettes come from completing groups, without duplicate rewards.
-- Grant the Zen randomizer permanently after all 12 core and 12 bonus groups are solved.
+- ✅ The Zen randomizer is granted permanently after all 12 core and 12 bonus groups are solved, and is hidden (button and help entry) until then; a final dialog announces it and points to Zen Mode.
 - ✅ Grant rewards and unlock shapes on the server, idempotently (`record_puzzle_completions`). Validating the solution itself on the server is still open.
 - ✅ Zen saves use palette IDs (older saves still load by palette name).
 - Puzzle Mode has no resume: the current puzzle, placements, and rotations

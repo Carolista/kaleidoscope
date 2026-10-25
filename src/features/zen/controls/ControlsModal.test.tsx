@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { screen } from '@testing-library/react'
+import { testContent } from '@/test/playerContent'
 import { renderWithProvider } from '@/test/renderWithProvider'
 import { usePlayerTheme } from '@/ui/theme'
 import ControlsModal from './ControlsModal'
@@ -32,6 +33,29 @@ describe('ControlsModal', () => {
 		expect(swatches.map(swatch => swatch.style.backgroundColor)).toEqual(
 			colors.map(normalized),
 		)
+	})
+
+	it('lists the randomizer only once it has been earned, and no longer lists dark mode', () => {
+		const { unmount } = renderWithProvider(
+			<ControlsModal open onClose={() => {}} />,
+		)
+		expect(
+			screen.getByRole('heading', { name: 'Randomize Design' }),
+		).toBeInTheDocument()
+		expect(
+			screen.queryByRole('heading', { name: 'Dark / Light Mode' }),
+		).not.toBeInTheDocument()
+		unmount()
+		renderWithProvider(<ControlsModal open onClose={() => {}} />, {
+			...testContent,
+			randomizerUnlocked: false,
+		})
+		expect(
+			screen.queryByRole('heading', { name: 'Randomize Design' }),
+		).not.toBeInTheDocument()
+		expect(
+			screen.getByRole('heading', { name: 'Reset Design' }),
+		).toBeInTheDocument()
 	})
 
 	it('keeps icons for the other controls', () => {

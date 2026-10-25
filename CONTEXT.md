@@ -576,9 +576,11 @@ puzzle image of each difficulty and the name, with "Go to puzzle set now", which
 1. **Reward earned** (above).
 2. **New shape unlocked** ([ShapeUnlockedModal](./src/features/puzzle/ShapeUnlockedModal.tsx)), for an account whose finished set opened a shape: "Triangle is now unlocked
    in Zen Mode!" with a link to Zen, then the new shape's core sets with their pictures and "Go to puzzle set now". It is worked out by comparing the content before and after the post-solve reload.
-3. **Ready for more?** ([AccountPromptModal](./src/features/puzzle/AccountPromptModal.tsx)), once per device (`kaleidoscope:account-prompt`), for a guest whose solve finishes every
+3. **A very special reward** ([RandomizerUnlockedModal](./src/features/puzzle/RandomizerUnlockedModal.tsx)), when the post-solve reload shows Zen's randomizer newly earned: "You did it!" and
+   a note about finishing all 24 puzzle sets of 24 puzzles, with a button to Zen Mode. It comes after the reward and new-shape dialogs. (A randomizer earned by a guest import is not announced.)
+4. **Ready for more?** ([AccountPromptModal](./src/features/puzzle/AccountPromptModal.tsx)), once per device (`kaleidoscope:account-prompt`), for a guest whose solve finishes every
    set open to them while a next shape is locked: the next shape needs an account; "Sign in or create an account", or "Keep playing as a guest" (Zen stays open with all their palettes).
-4. **Playing as a guest** ([SignInNudgeModal](./src/features/puzzle/SignInNudgeModal.tsx)), once per browser session (`kaleidoscope:sign-in-nudge` in `sessionStorage`), for a guest on a device that has had an account
+5. **Playing as a guest** ([SignInNudgeModal](./src/features/puzzle/SignInNudgeModal.tsx)), once per browser session (`kaleidoscope:sign-in-nudge` in `sessionStorage`), for a guest on a device that has had an account
    (`returningGuest`): "Please sign in to continue saving your progress." Skipped when the account prompt is shown, and after signing out on purpose in that session.
 The set preview shared by these dialogs is [UnlockedSetItem](./src/features/puzzle/UnlockedSetItem.tsx).
 
@@ -692,8 +694,12 @@ symmetry engine. One representative per group is clickable.
 ### UX and accessibility
 
 - Single column: header, grid, swatches, undo/redo, settings/actions, footer.
-  Action order: editable area (touch only), palette, randomize, reset, shape,
-  image, help. (The dark/light toggle moved to the app header.) Keep help descriptions aligned with the toolbar. The help modal's first item (Paint Colors) shows the current palette as a compact `PaletteStrip` instead of an icon.
+  Action order: editable area (touch only), palette, randomize (only once earned, see below), reset, shape,
+  image, help. (The dark/light toggle moved to the app header, and the help modal no longer lists it.) Keep help descriptions aligned with the toolbar. The help modal's first item (Paint Colors) shows the current palette as a compact `PaletteStrip` instead of an icon.
+- **The randomizer is earned.** The randomize button and its help entry appear only when `usePlayerContent().randomizerUnlocked` is true: a signed-in
+  account with a `zen_randomizer` row in `feature_grants`, which the database writes (inside `record_puzzle_completions`) the first time every released core
+  and bonus group is complete and there are at least four groups per shape in the progression. The grant is permanent. Guests never have it. A set-finishing solve, an import,
+  and every load pick it up, and it is cached with the content (older caches read as locked).
 - Pointer hover dims non-clickable cells. Touch uses a persisted editable-area
   toggle, initially on. The grid is capped at 560px with a 226px viewport allowance.
 - SVGs use `role="group"` with instructions; clickable cells are labeled buttons

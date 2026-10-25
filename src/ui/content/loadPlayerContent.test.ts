@@ -207,6 +207,7 @@ describe('loadPlayerContent', () => {
 			palettes: [],
 			unlockedShapes: ['hexagon'],
 			nextShape: null,
+			randomizerUnlocked: false,
 			puzzleSets: [],
 			rewards: [],
 		})

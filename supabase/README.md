@@ -784,6 +784,21 @@ finished core group makes `has_shape` true for the next shape, this is also what
 It returns the puzzle IDs now recorded, accepts up to 2000 IDs per call, and is idempotent. The database checks that a
 puzzle is playable, not that it was solved: there is no solution checking yet.
 
+## Apply the randomizer grant
+
+After the player progress migration:
+
+1. Run [20261025000000_zen_randomizer_grant.sql](./migrations/20261025000000_zen_randomizer_grant.sql) once in SQL Editor as `postgres`.
+2. Run [zen_randomizer_grant.sql](./tests/zen_randomizer_grant.sql) as `postgres`, without an automatic RLS wrapper. Expect **4 PASS results**;
+   fixtures roll back. The test sets the real catalog aside inside its transaction (unreleases the groups, cuts the progression to Hexagon) so that four
+   fixture groups are all that count. (Written without being run; if it fails, suspect the fixtures first.) Re-run
+   [record_puzzle_completions.sql](./tests/record_puzzle_completions.sql) too (12 PASS).
+
+No tables change. The migration adds `private.grant_zen_randomizer(player)` and replaces `record_puzzle_completions` so that, after recording, it grants
+`zen_randomizer` (`feature_grants`, source `progression`) once the player has completed every released core and reward group that has a released puzzle, and at least
+four groups for each shape in `shape_progression`. The grant is never taken back. Existing players who already finished everything receive it the next time their progress is recorded.
+The app reads the player's own `feature_grants` row; guests never have one.
+
 ## Player accounts and auth email
 
 Players create accounts in the app (email, password, first name); no database change is involved. Supabase Auth owns the users, the first

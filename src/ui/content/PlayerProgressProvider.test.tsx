@@ -130,6 +130,7 @@ describe('PlayerProgressProvider for a guest', () => {
 			bonusSets: [],
 			shapes: [],
 			accountShape: null,
+			randomizer: false,
 		})
 		expect([...loadSolvedPuzzles()]).toEqual(['c1', 'c2'])
 		expect([...progress.solved]).toEqual(['c1', 'c2'])
@@ -342,6 +343,32 @@ describe('PlayerProgressProvider for an account', () => {
 		])
 	})
 
+	it('reports the randomizer when the reloaded content has earned it', async () => {
+		const earned: PlayerContent = { ...after, randomizerUnlocked: true }
+		render(
+			<PlayerProgressProvider
+				content={{ ...before, randomizerUnlocked: false }}
+				account={{
+					userId: 'user-1',
+					solved: ['c1'],
+					api: api(),
+					reload: () =>
+						Promise.resolve({
+							content: earned,
+							solved: ['c1', 'c2'],
+						}),
+				}}
+			>
+				<Probe />
+			</PlayerProgressProvider>,
+		)
+		let result: NewRewards | undefined
+		await act(async () => {
+			result = await progress.markSolved('c2')
+		})
+		expect(result?.randomizer).toBe(true)
+	})
+
 	it('does not reload for a solve that finishes no set', async () => {
 		const reload = vi.fn(() => Promise.resolve(null))
 		renderAccount({ reload })
@@ -355,6 +382,7 @@ describe('PlayerProgressProvider for an account', () => {
 			bonusSets: [],
 			shapes: [],
 			accountShape: null,
+			randomizer: false,
 		})
 	})
 

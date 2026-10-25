@@ -5,11 +5,9 @@ import {
 	faEyeSlash,
 	faHexagonImage,
 	faMagicWandSparkles,
-	faMoon,
 	faPalette,
 	faRotateReverse,
 	faShapes,
-	faSun,
 } from '@fortawesome/sharp-duotone-solid-svg-icons'
 import { faRotateLeft, faRotateRight } from '@fortawesome/pro-solid-svg-icons'
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core'
@@ -17,6 +15,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { usePlayerTheme, useDuotoneIconTint } from '@/ui/theme'
 import { useIsTouchDevice } from '@/ui/hooks'
 import { Modal, ModalHeader, PaletteStrip } from '@/ui/components'
+import { usePlayerContent } from '@/ui/content'
 import styles from './ControlsModal.module.css'
 
 export interface ControlsModalProps {
@@ -36,6 +35,8 @@ interface ControlItem {
 	readonly touchOnly?: boolean
 	// Shows the current palette in place of icons.
 	readonly showPalette?: boolean
+	// Rendered only once the player has earned Zen's randomizer.
+	readonly requiresRandomizer?: boolean
 }
 
 const CONTROL_ITEMS: readonly ControlItem[] = [
@@ -68,6 +69,7 @@ const CONTROL_ITEMS: readonly ControlItem[] = [
 		label: 'Randomize Design',
 		description:
 			'Generate a random design using your current color palette.',
+		requiresRandomizer: true,
 	},
 	{
 		icons: [faRotateReverse],
@@ -85,12 +87,6 @@ const CONTROL_ITEMS: readonly ControlItem[] = [
 		description: 'Save your design as an image you can download or share.',
 	},
 	{
-		icons: [faSun, faMoon],
-		label: 'Dark / Light Mode',
-		description:
-			'Switch between dark and light mode. Tiles painted with the base or accent color switch along with it.',
-	},
-	{
 		icons: [faCircleInfo],
 		label: 'Help',
 		description: 'Reopen these instructions any time.',
@@ -102,7 +98,12 @@ const CONTROL_ITEMS: readonly ControlItem[] = [
 function ControlsModal({ open, onClose }: ControlsModalProps) {
 	const titleId = useId()
 	const isTouch = useIsTouchDevice()
-	const items = CONTROL_ITEMS.filter(item => !item.touchOnly || isTouch)
+	const { randomizerUnlocked } = usePlayerContent()
+	const items = CONTROL_ITEMS.filter(
+		item =>
+			(!item.touchOnly || isTouch) &&
+			(!item.requiresRandomizer || randomizerUnlocked),
+	)
 	const duotoneTint = useDuotoneIconTint()
 	const { palette } = usePlayerTheme()
 

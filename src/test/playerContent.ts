@@ -106,6 +106,7 @@ export const testContent: PlayerContent = {
 	palettes,
 	unlockedShapes: supportedGridShapes.map(shape => shape.id),
 	nextShape: null,
+	randomizerUnlocked: true,
 	puzzleSets: [],
 	rewards: [],
 }
