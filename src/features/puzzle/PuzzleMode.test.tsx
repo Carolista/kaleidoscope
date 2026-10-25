@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, screen } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProvider } from '@/test/renderWithProvider'
 import { palettes, testContent } from '@/test/playerContent'
-import type { PlayerContent } from '@/ui/content'
+import type { PlayerContent, PlayerPuzzleSet } from '@/ui/content'
+import { PlayerProgressContext } from '@/ui/content/PlayerProgressContext'
 import { generateHexagonCells } from '@/domain/shapes/hexagon'
 import { withLightness } from '@/domain/palettes'
 import { coordinateKey, generatePuzzle, pieceCells } from '@/domain/puzzles'
@@ -60,11 +61,11 @@ function renderPlaying() {
 	fireEvent.click(screen.getByRole('button', { name: /^Puzzle 1,/ }))
 	return view
 }
-function solvePuzzle() {
-	for (const [index, piece] of puzzle.pieces.entries()) {
+function solvePuzzle(target = puzzle) {
+	for (const [index, piece] of target.pieces.entries()) {
 		dragTo(
 			pieceButton(index),
-			tileAt(coordinateKey(puzzle.solution[piece.id])),
+			tileAt(coordinateKey(target.solution[piece.id])),
 		)
 	}
 }
@@ -254,7 +255,9 @@ describe('PuzzleMode', () => {
 		fireEvent.click(screen.getByRole('button', { name: /Starter/ }))
 		fireEvent.click(screen.getByRole('button', { name: /^Puzzle 1,/ }))
 		solvePuzzle()
-		const reward = screen.getByRole('dialog', { name: 'Reward earned' })
+		const reward = await screen.findByRole('dialog', {
+			name: 'Reward earned',
+		})
 		expect(reward).toHaveTextContent('Hooray!')
 		expect(reward).toHaveTextContent('New palette unlocked:')
 		expect(reward).toHaveTextContent('Earned')
@@ -269,6 +272,58 @@ describe('PuzzleMode', () => {
 		)
 		expect(screen.getByRole('button', { name: /Extra/ })).toHaveTextContent(
 			'Basic bonus',
+		)
+	})
+
+	it('continues through the bonus set it just opened with Next puzzle', async () => {
+		const user = userEvent.setup()
+		const first = generatePuzzle('ui-bonus-one', palettes[1])
+		const second = generatePuzzle('ui-bonus-two', palettes[1])
+		const bonusPuzzle = (id: string, target: typeof puzzle) => ({
+			id,
+			name: id,
+			difficulty: 'easy' as const,
+			palette: palettes[1],
+			puzzle: target,
+		})
+		localStorage.setItem(
+			'kaleidoscope:puzzle-progress',
+			JSON.stringify({ version: 1, solved: ['p2'] }),
+		)
+		renderWithProvider(<PuzzleMode />, {
+			...content,
+			puzzleSets: [
+				...content.puzzleSets,
+				{
+					id: 'set-bonus',
+					name: 'Extra',
+					shape: 'hexagon',
+					track: 'basic',
+					kind: 'bonus',
+					puzzles: [
+						bonusPuzzle('bonus-1', first),
+						bonusPuzzle('bonus-2', second),
+					],
+				},
+			],
+			rewards: [
+				{ setId: 'set-one', palettes: [], bonusSetIds: ['set-bonus'] },
+			],
+		})
+		fireEvent.click(screen.getByRole('button', { name: /Starter/ }))
+		fireEvent.click(screen.getByRole('button', { name: /^Puzzle 1,/ }))
+		solvePuzzle()
+		await user.click(
+			await screen.findByRole('button', { name: 'Go to puzzle set now' }),
+		)
+		expect(screen.getByRole('heading', { name: 'Extra' })).toBeVisible()
+		fireEvent.click(screen.getByRole('button', { name: /^Puzzle 1,/ }))
+		solvePuzzle(first)
+		await user.click(screen.getByRole('button', { name: 'Next puzzle' }))
+		expect(targetColors()).toEqual(
+			generateHexagonCells(second.gridSize).map(
+				cell => second.target[cell.groupId],
+			),
 		)
 	})
 
@@ -294,13 +349,244 @@ describe('PuzzleMode', () => {
 		fireEvent.click(screen.getByRole('button', { name: /Starter/ }))
 		fireEvent.click(screen.getByRole('button', { name: /^Puzzle 1,/ }))
 		solvePuzzle()
+		const tryInZen = await screen.findByRole('button', {
+			name: 'Try it out in Zen Mode now',
+		})
 		expect(
 			screen.queryByText('New puzzle set unlocked:'),
 		).not.toBeInTheDocument()
+		await user.click(tryInZen)
+		expect(onOpenZen).toHaveBeenCalledOnce()
+	})
+
+	it('announces an unlocked shape and its core sets after the reward dialog closes', async () => {
+		const user = userEvent.setup()
+		const onOpenZen = vi.fn()
+		const triangleSet: PlayerPuzzleSet = {
+			...content.puzzleSets[0],
+			id: 'tri-core',
+			name: 'Triangle basics',
+			shape: 'triangle',
+		}
+		const markSolved = vi.fn(() =>
+			Promise.resolve({
+				palettes: [{ ...palettes[5], id: 'earned', name: 'Earned' }],
+				bonusSets: [],
+				shapes: [{ shape: 'triangle' as const, sets: [triangleSet] }],
+				accountShape: null,
+				randomizer: false,
+			}),
+		)
+		renderWithProvider(
+			<PlayerProgressContext.Provider
+				value={{
+					solved: new Set(['p2']),
+					markSolved,
+					guestImport: null,
+				}}
+			>
+				<PuzzleMode onOpenZen={onOpenZen} />
+			</PlayerProgressContext.Provider>,
+			content,
+		)
+		fireEvent.click(screen.getByRole('button', { name: /Starter/ }))
+		fireEvent.click(screen.getByRole('button', { name: /^Puzzle 1,/ }))
+		solvePuzzle()
+		await user.click(
+			await screen.findByRole('button', { name: 'Close reward' }),
+		)
+		const announcement = await screen.findByRole('dialog', {
+			name: 'New shape unlocked',
+		})
+		expect(announcement).toHaveTextContent(
+			'Triangle is now unlocked in Zen Mode!',
+		)
+		expect(announcement).toHaveTextContent('Triangle basics')
 		await user.click(
 			screen.getByRole('button', { name: 'Try it out in Zen Mode now' }),
 		)
 		expect(onOpenZen).toHaveBeenCalledOnce()
+	})
+
+	it('announces the randomizer last, after the other rewards, and sends the player to Zen', async () => {
+		const user = userEvent.setup()
+		const onOpenZen = vi.fn()
+		const markSolved = vi.fn(() =>
+			Promise.resolve({
+				palettes: [{ ...palettes[5], id: 'earned', name: 'Earned' }],
+				bonusSets: [],
+				shapes: [],
+				accountShape: null,
+				randomizer: true,
+			}),
+		)
+		renderWithProvider(
+			<PlayerProgressContext.Provider
+				value={{
+					solved: new Set(['p2']),
+					markSolved,
+					guestImport: null,
+				}}
+			>
+				<PuzzleMode onOpenZen={onOpenZen} />
+			</PlayerProgressContext.Provider>,
+			content,
+		)
+		fireEvent.click(screen.getByRole('button', { name: /Starter/ }))
+		fireEvent.click(screen.getByRole('button', { name: /^Puzzle 1,/ }))
+		solvePuzzle()
+		await screen.findByRole('dialog', { name: 'Reward earned' })
+		await user.click(screen.getByRole('button', { name: 'Close reward' }))
+		const special = await screen.findByRole('dialog', {
+			name: 'A very special reward',
+		})
+		expect(special).toHaveTextContent('all 24 puzzle sets of 24 puzzles')
+		await user.click(
+			screen.getByRole('button', { name: 'Try it out in Zen Mode now' }),
+		)
+		expect(onOpenZen).toHaveBeenCalledOnce()
+	})
+
+	describe('account prompt for a guest who has finished everything', () => {
+		function renderFinishing(
+			onCreateAccount?: () => void,
+			options: {
+				returningGuest?: boolean
+				accountShape?: 'triangle' | null
+			} = {},
+		) {
+			const markSolved = vi.fn(() =>
+				Promise.resolve({
+					palettes: [],
+					bonusSets: [],
+					shapes: [],
+					randomizer: false,
+					accountShape:
+						options.accountShape === undefined
+							? ('triangle' as const)
+							: options.accountShape,
+				}),
+			)
+			renderWithProvider(
+				<PlayerProgressContext.Provider
+					value={{
+						solved: new Set(['p2']),
+						markSolved,
+						guestImport: null,
+					}}
+				>
+					<PuzzleMode
+						onCreateAccount={onCreateAccount}
+						returningGuest={options.returningGuest}
+					/>
+				</PlayerProgressContext.Provider>,
+				content,
+			)
+			fireEvent.click(screen.getByRole('button', { name: /Starter/ }))
+			fireEvent.click(screen.getByRole('button', { name: /^Puzzle 1,/ }))
+			solvePuzzle()
+		}
+
+		it('offers an account once, and opens sign-in from it', async () => {
+			const user = userEvent.setup()
+			const onCreateAccount = vi.fn()
+			renderFinishing(onCreateAccount)
+			const prompt = await screen.findByRole('dialog', {
+				name: 'Ready for more?',
+			})
+			expect(prompt).toHaveTextContent('unlock Triangle')
+			expect(localStorage.getItem('kaleidoscope:account-prompt')).toBe(
+				'seen',
+			)
+			await user.click(
+				screen.getByRole('button', {
+					name: 'Sign in or create an account',
+				}),
+			)
+			expect(onCreateAccount).toHaveBeenCalledOnce()
+		})
+
+		it('can be dismissed to keep playing as a guest', async () => {
+			const user = userEvent.setup()
+			const onCreateAccount = vi.fn()
+			renderFinishing(onCreateAccount)
+			await user.click(
+				await screen.findByRole('button', {
+					name: 'Keep playing as a guest',
+				}),
+			)
+			await waitFor(() =>
+				expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+			)
+			expect(onCreateAccount).not.toHaveBeenCalled()
+		})
+
+		it('is not offered again, nor where accounts cannot be created', async () => {
+			localStorage.setItem('kaleidoscope:account-prompt', 'seen')
+			renderFinishing(vi.fn())
+			await new Promise(resolve => setTimeout(resolve, 20))
+			expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+		})
+
+		describe('sign-in reminder for a returning guest', () => {
+			beforeEach(() => sessionStorage.clear())
+
+			it('asks them to sign in, and opens sign-in from it', async () => {
+				const user = userEvent.setup()
+				const onSignIn = vi.fn()
+				renderFinishing(onSignIn, {
+					returningGuest: true,
+					accountShape: null,
+				})
+				const nudge = await screen.findByRole('dialog', {
+					name: 'Playing as a guest',
+				})
+				expect(nudge).toHaveTextContent(
+					'Please sign in to continue saving your progress.',
+				)
+				expect(
+					sessionStorage.getItem('kaleidoscope:sign-in-nudge'),
+				).toBe('shown')
+				await user.click(
+					screen.getByRole('button', { name: 'Sign in' }),
+				)
+				expect(onSignIn).toHaveBeenCalledOnce()
+			})
+
+			it('shows once per browser session', async () => {
+				sessionStorage.setItem('kaleidoscope:sign-in-nudge', 'shown')
+				renderFinishing(vi.fn(), {
+					returningGuest: true,
+					accountShape: null,
+				})
+				await new Promise(resolve => setTimeout(resolve, 20))
+				expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+			})
+
+			it('is not shown to a guest who has never had an account', async () => {
+				renderFinishing(vi.fn(), { accountShape: null })
+				await new Promise(resolve => setTimeout(resolve, 20))
+				expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+			})
+
+			it('does not repeat the account prompt', async () => {
+				renderFinishing(vi.fn(), { returningGuest: true })
+				expect(
+					await screen.findByRole('dialog', {
+						name: 'Ready for more?',
+					}),
+				).toBeInTheDocument()
+				expect(
+					sessionStorage.getItem('kaleidoscope:sign-in-nudge'),
+				).toBeNull()
+			})
+		})
+
+		it('is not offered without a way to create an account', async () => {
+			renderFinishing()
+			await new Promise(resolve => setTimeout(resolve, 20))
+			expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+		})
 	})
 
 	it('moves to the next puzzle in the set without repeating a solved one', async () => {

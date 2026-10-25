@@ -1,8 +1,7 @@
 import { useId } from 'react'
 import { Modal, ModalHeader, PaletteStrip } from '@/ui/components'
 import type { NewRewards, PlayerPuzzleSet } from '@/ui/content'
-import PuzzleImage from './PuzzleImage'
-import { difficultySections } from './setProgress'
+import UnlockedSetItem from './UnlockedSetItem'
 import styles from './RewardModal.module.css'
 
 // Announces what finishing a set just earned: palettes to try in Zen, and bonus sets to play.
@@ -76,29 +75,11 @@ export default function RewardModal({
 							unlocked:
 						</h3>
 						{bonusSets.map(set => (
-							<div key={set.id} className={styles.item}>
-								<span className={styles.previews}>
-									{difficultySections(set).map(section => (
-										<span
-											key={section.difficulty}
-											className={styles.preview}
-											aria-hidden="true"
-										>
-											<PuzzleImage
-												item={section.puzzles[0].item}
-											/>
-										</span>
-									))}
-								</span>
-								<span className={styles.name}>{set.name}</span>
-								<button
-									type="button"
-									className={styles.link}
-									onClick={() => onOpenSet(set)}
-								>
-									Go to puzzle set now
-								</button>
-							</div>
+							<UnlockedSetItem
+								key={set.id}
+								set={set}
+								onOpenSet={onOpenSet}
+							/>
 						))}
 					</section>
 				)}

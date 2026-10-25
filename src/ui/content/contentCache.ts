@@ -3,10 +3,16 @@ import type { PlayerContent } from './playerContent'
 const STORAGE_KEY = 'kaleidoscope:content'
 const STORAGE_VERSION = 2
 
+// Each account keeps its own copy, since what it may read differs from a guest's.
+const storageKey = (userId: string | null) =>
+	userId ? `${STORAGE_KEY}:${userId}` : STORAGE_KEY
+
 // The last successful load, so a player who is offline still has something to play.
-export function readCachedContent(): PlayerContent | null {
+export function readCachedContent(
+	userId: string | null = null,
+): PlayerContent | null {
 	try {
-		const raw = localStorage.getItem(STORAGE_KEY)
+		const raw = localStorage.getItem(storageKey(userId))
 		if (!raw) return null
 		const parsed: unknown = JSON.parse(raw)
 		if (
@@ -23,17 +29,24 @@ export function readCachedContent(): PlayerContent | null {
 			Array.isArray(content.unlockedShapes) &&
 			Array.isArray(content.puzzleSets) &&
 			Array.isArray(content.rewards)
-			? (content as PlayerContent)
+			? ({
+					...content,
+					nextShape: content.nextShape ?? null,
+					randomizerUnlocked: content.randomizerUnlocked === true,
+				} as PlayerContent)
 			: null
 	} catch {
 		return null
 	}
 }
 
-export function cacheContent(content: PlayerContent): void {
+export function cacheContent(
+	content: PlayerContent,
+	userId: string | null = null,
+): void {
 	try {
 		localStorage.setItem(
-			STORAGE_KEY,
+			storageKey(userId),
 			JSON.stringify({ version: STORAGE_VERSION, content }),
 		)
 	} catch {

@@ -3,7 +3,7 @@
 The admin sign-in entry point uses Supabase Auth and the generated database types.
 The player app reads released content (core palettes, core puzzle sets, shape order) as a guest through a
 separate client that keeps no session; see CONTEXT.md, Player content. Guests cannot read `puzzle_authoring`.
-No image bucket, payment integration, or player progress/sync operations are included.
+No image bucket or payment integration is included. A signed-in player records progress only through `record_puzzle_completions` (see "Apply player progress").
 
 ## Connect admin sign-in
 
@@ -156,8 +156,8 @@ The large **New group** plus opens creation. Deleting a group requires confirmat
 and unassigns its puzzles without deleting their designs or private solutions.
 Pricing/shop products, selection rules, scheduling, and publishing tools follow
 separately (shape order and rewards are under **Progression**).
-No player attempts, completions, reward grants, guest imports,
-or Zen autosaves are written.
+The admin portal writes no player attempts, completions, reward grants, guest imports,
+or Zen autosaves.
 
 Select card checkboxes for **Change palette** or **Delete selected** (shown only
 when every selected draft is unassigned). **Show group** narrows the gallery to one
@@ -761,6 +761,43 @@ No tables, columns, or types change. The migration replaces `private.can_play_pu
 user) can read a released reward (bonus) group of the first shape, as they already could a core group. Signed-in players
 still need a `puzzle_group_grants` row, packs are unchanged, and `has_shape` still limits guests to the first shape.
 The app derives the guest's earned rewards from solved puzzles on the device.
+
+## Apply player progress
+
+After the guest bonus groups:
+
+1. Run [20261024000000_record_puzzle_completions.sql](./migrations/20261024000000_record_puzzle_completions.sql) once in SQL
+   Editor as `postgres`.
+2. Run [record_puzzle_completions.sql](./tests/record_puzzle_completions.sql) as `postgres`, without an automatic RLS
+   wrapper. Expect **12 PASS results**; fixtures roll back. Like the guest bonus test, it inserts its own groups with the slot
+   indexes and guard triggers set aside, because released content already fills the slots. (This script was syntax-checked
+   but not run when it was written; if an assertion fails, check the fixtures before the function.)
+
+No tables, columns, or policies change. The migration adds `public.record_puzzle_completions(p_puzzle_ids uuid[])`, a
+`security definer` function for signed-in players (guests and signed-out requests are refused). It is the only way
+a player's progress is written: players still have no insert rights on `puzzle_completions` or `group_completions`.
+It records each requested puzzle the player may play right now (`can_play_puzzle`), then repeats until nothing changes:
+a group whose released puzzles are all recorded gets a `group_completions` row, its `reward_rules` grant the bonus groups
+(`puzzle_group_grants`) and palettes (`palette_grants`) with `source = 'reward'`, and a newly granted bonus group can
+accept its puzzles on the next pass. That is how a whole imported guest save settles in one call, in any order. Because a
+finished core group makes `has_shape` true for the next shape, this is also what opens Triangle (and later shapes).
+It returns the puzzle IDs now recorded, accepts up to 2000 IDs per call, and is idempotent. The database checks that a
+puzzle is playable, not that it was solved: there is no solution checking yet.
+
+## Apply the randomizer grant
+
+After the player progress migration:
+
+1. Run [20261025000000_zen_randomizer_grant.sql](./migrations/20261025000000_zen_randomizer_grant.sql) once in SQL Editor as `postgres`.
+2. Run [zen_randomizer_grant.sql](./tests/zen_randomizer_grant.sql) as `postgres`, without an automatic RLS wrapper. Expect **4 PASS results**;
+   fixtures roll back. The test sets the real catalog aside inside its transaction (unreleases the groups, cuts the progression to Hexagon) so that four
+   fixture groups are all that count. (Written without being run; if it fails, suspect the fixtures first.) Re-run
+   [record_puzzle_completions.sql](./tests/record_puzzle_completions.sql) too (12 PASS).
+
+No tables change. The migration adds `private.grant_zen_randomizer(player)` and replaces `record_puzzle_completions` so that, after recording, it grants
+`zen_randomizer` (`feature_grants`, source `progression`) once the player has completed every released core and reward group that has a released puzzle, and at least
+four groups for each shape in `shape_progression`. The grant is never taken back. Existing players who already finished everything receive it the next time their progress is recorded.
+The app reads the player's own `feature_grants` row; guests never have one.
 
 ## Player accounts and auth email
 

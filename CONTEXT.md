@@ -18,10 +18,10 @@ The app opens on a Home screen: a greeting, then a card for Puzzle Mode (the pri
 Mode. The KALEID★SCOPE title returns Home from anywhere, and the header's Zen/Puzzle switch stays as it was.
 The greeting is "Hi, Ada!" for a signed-in player (or "Welcome back!" without a first name) and "Welcome!" for a guest, with a link
 to sign in or create an account. The page frame (header and the logo's opening animation) appears immediately; the app loads
-what this player may use from Supabase as a guest in the meantime (see Player content below), and shows a loading message in
+what this player may use from Supabase (as a guest, or with their own session once it is known who is playing) in the meantime (see Player content below), and shows a loading message in
 place of the screens only if that is not done when the logo has moved up. Puzzle Mode lists the core puzzle sets and any bonus sets earned, then a set's
-puzzles by difficulty, and plays one on the shared `PuzzlePlay` surface; solved puzzle IDs stay
-on the device. Solving the last puzzle of a set that earns something opens a "Reward earned" dialog
+puzzles by difficulty, and plays one on the shared `PuzzlePlay` surface; a guest's solved puzzle IDs stay
+on the device, and a signed-in player's are saved to the account. Solving the last puzzle of a set that earns something opens a "Reward earned" dialog
 (see Player content). Its independent local React state survives mode switches but not reloads; it never
 persists over Zen designs.
 
@@ -495,13 +495,13 @@ Test files and `src/test/` are exempt so tests can reach internals and mock exac
 | Location | Responsibility |
 | --- | --- |
 | [app/](./src/app/) | `AppEntry` (player/admin routing, navigation guard), `PlayerApp` (page, entrance animation, header, home/mode switching, footer; with a `gate` it shows only the frame while content loads), `ProvisionalTheme` (the saved light/dark mode before Zen's state exists), `entranceHandoff` (carries the opening animation from the loading frame to the real one), `useAdminRoute`, [layout/](./src/app/layout/) (Header, Footer), global [index.css](./src/app/index.css) |
-| [features/account/](./src/features/account/) | Player accounts: `AccountProvider` (session, sign-up/in/out, password reset, reset and expired-link state; `useAccount`), `AccountDialog` (every account view), `AccountControl` (the header button). Hosted by `PlayerApp`, not the header |
+| [features/account/](./src/features/account/) | Player accounts: `AccountProvider` (session, sign-up/in/out, password reset, reset and expired-link state; `useAccount`), `AccountDialog` (every account view), `AccountControl` (the header button), `GuestImportDialog` and `GuestImportButton`. Hosted by `PlayerApp`, not the header |
 | [features/home/](./src/features/home/) | `HomeScreen`: the greeting and one card per area (Puzzle, then Zen) |
 | [features/zen/](./src/features/zen/) | Zen Mode: `ZenMode`, [state/](./src/features/zen/state/) (reducer, history, Context, localStorage persistence, design randomization), [controls/](./src/features/zen/controls/) (toolbar, palette and shape pickers), [grid/](./src/features/zen/grid/) (shape adapters, `ShapeGrid`, `GridView`, cells), [export/](./src/features/zen/export/) (Save Image), [intro/](./src/features/zen/intro/) |
-| [features/puzzle/](./src/features/puzzle/) | Player Puzzle Mode: set list, difficulty grid of solved images, play session with the Congrats overlay and Next, the first-use tutorials (`intro/`), the reward dialog (`RewardModal`), and the device's completed-tutorial record (`introProgress.ts`) |
+| [features/puzzle/](./src/features/puzzle/) | Player Puzzle Mode: set list, difficulty grid of solved images, play session with the Congrats overlay and Next, the first-use tutorials (`intro/`), the announcement dialogs (`RewardModal`, `ShapeUnlockedModal`, `AccountPromptModal`, `SignInNudgeModal`), and the device's completed-tutorial record (`introProgress.ts`) and one-time prompt flags (`accountPrompt.ts`) |
 | [features/admin/](./src/features/admin/) | Lazy-loaded admin portal. `shell/` (portal, workspace, navigation), `catalog/` (session cache), `common/` (layout, icon button, form), `groups/` (shared group editing), one folder per content area (`puzzles/`, `puzzle-groups/`, `palettes/`, `palette-groups/`), `services/` (Supabase reads/writes), `testing/` |
 | [ui/components/](./src/ui/components/) | Shared controls: buttons, `DarkModeToggle`, palette-tinted `Checkbox`, native `Modal`, `ModalHeader`, `ConfirmDialog` and its dismissal preferences, form fields, loading, palette strips/choices |
-| [ui/content/](./src/ui/content/) | Player content: `loadPlayerContent` (released core palettes, core and bonus puzzle sets, rewards, shape order), `PlayerContentProvider` (loads before the app starts), `PlayerProgressProvider` (the device's solved puzzles, `usePlayerProgress`, and `usePlayerContent` over what has been earned, via `rewards.ts`), `solvedPuzzles.ts` (the solved-puzzle record), and the offline cache |
+| [ui/content/](./src/ui/content/) | Player content: `loadPlayerContent` (released core palettes, core and bonus puzzle sets, rewards, shape order, an account's unlocked shapes), `PlayerContentProvider` (loads before the app starts, for the guest or the signed-in player), `PlayerProgressProvider` (the player's solved puzzles on the device or account, `usePlayerProgress` with `markSolved` and `guestImport`, and `usePlayerContent` over what has been earned, via `rewards.ts`), `accountProgress.ts` (reads and records an account's solves), `solvedPuzzles.ts` (the guest save, the per-account cache with pending solves, and the import decision), and the offline content cache |
 | [ui/theme/](./src/ui/theme/) | `PlayerThemeContext` (dark mode, active palette, toggle), `useDuotoneIconTint`, and `DuotoneTintColorContext` (lets a mode, such as a puzzle session, tint icons from its own color) |
 | [ui/hooks/](./src/ui/hooks/) | `useModalState`, `useIsTouchDevice` |
 | [ui/navigation/](./src/ui/navigation/) | App-wide unsaved-work navigation guard |
@@ -531,9 +531,13 @@ React rendering remains separate from geometry and storage.
 ### Player content
 
 Before the player app can show anything, [PlayerContentProvider](./src/ui/content/PlayerContentProvider.tsx) loads one
-[PlayerContent](./src/ui/content/playerContent.ts) with the guest client, which keeps no session (so an admin
-signed in on the same browser still reads exactly what a guest can). Reads rely on the database's own rules
-(released content only; guests play only the first shape's core and bonus groups) and are filtered again for release state
+[PlayerContent](./src/ui/content/playerContent.ts). A guest loads with the guest client, which keeps no session (so an admin
+signed in on the same browser still reads exactly what a guest can); a signed-in player loads with their own session
+(`getPlayerClient`), so the database shows what their progress has opened. The provider waits until it is known whether someone is signed in
+(`accountResolved`, `userId`, supplied by `AppEntry` since `ui` cannot read the account), and when the player signs in or out it loads for the new
+player while the app stays on screen. Reads rely on the database's own rules
+(released content only; guests play only the first shape's core and bonus groups; an account also reads later shapes it has opened and the bonus
+groups it was granted) and are filtered again for release state
 in [loadPlayerContent](./src/ui/content/loadPlayerContent.ts):
 - **palettes:** members of released core palette groups, by group name then position (these are Zen's palettes);
 - **puzzle sets:** released core and reward (bonus) puzzle groups of a basic or rotation track, each puzzle rendered
@@ -542,16 +546,18 @@ in [loadPlayerContent](./src/ui/content/loadPlayerContent.ts):
 - **rewards:** from `reward_rules`, what completing a set gives: its reward palettes (readable once released) and the
   bonus sets the database links to it. Only rewards of sets that loaded are kept, in set order;
 - **unlocked shapes:** only the first shape in `shape_progression` for guests (a Zen design on a locked shape
-  starts fresh).
-The load is network first. A success is cached in `kaleidoscope:content`; if the network fails the last cache is
+  starts fresh). For an account, the first shape, any `shape_grants`, and each shape after one whose core group the account has completed
+  (its own `group_completions`), which mirrors the database's `has_shape`;
+- **next shape:** the first shape in the order still locked (`nextShape`), which names what a guest is invited to unlock.
+The load is network first. A success is cached in `kaleidoscope:content` (an account's in `kaleidoscope:content:<userId>`, never shared with a guest's); if the network fails the last cache for that player is
 used, and with no cache the player sees the error with Try again. With no released palettes it shows "Nothing has been
 released yet" with Check again, since Zen needs a palette. The catalog does not change during a visit.
 Until content is ready the provider shows its `gate`: `AppEntry` supplies the app's own frame (`PlayerApp` with a `gate`, under
 `ProvisionalTheme`), so the loading, error, and nothing-released messages (`ContentGateView`) appear in the page's main area
 under the opening logo; with no `gate` they take a page of their own. The real app replaces the frame once content is ready and
 continues the opening animation from where it was (`entranceHandoff`; the star joins its spin part-way).
-Solved puzzles are stored on the device as `{ version: 1, solved: [puzzle IDs] }` in `kaleidoscope:puzzle-progress`
-and are never merged into an account automatically. The cache format is version 2 (it gained `rewards`; older caches
+A guest's solved puzzles are stored on the device as `{ version: 1, solved: [puzzle IDs] }` in `kaleidoscope:puzzle-progress`
+and are never merged into an account automatically (see Account progress below). The cache format is version 2 (it gained `rewards`; older caches
 are ignored).
 
 **Earned content.** [PlayerProgressProvider](./src/ui/content/PlayerProgressProvider.tsx) keeps the solved puzzles and
@@ -562,8 +568,34 @@ and a reward palette already in the core list is not added twice. Reward palette
 `markSolved` returns what the solve newly earned (`newRewards`), and Puzzle Mode shows it in
 [RewardModal](./src/features/puzzle/RewardModal.tsx): "Reward earned" and "Hooray!" (Mr Dafoe), then the new palettes
 (a color strip and name, with "Try it out in Zen Mode now", which switches mode) and/or the new bonus sets (the first
-puzzle image of each difficulty and the name, with "Go to puzzle set now", which opens that set). Later shapes, resume,
-and saving progress to an account are not built yet.
+puzzle image of each difficulty and the name, with "Go to puzzle set now", which opens that set; Next puzzle then continues inside that set).
+`markSolved` is async and its result also carries `shapes` and `accountShape`.
+
+**Announcements.** One solve can queue several dialogs, shown one after another in
+[PuzzleMode](./src/features/puzzle/PuzzleMode.tsx), each starting when the previous one has finished closing:
+1. **Reward earned** (above).
+2. **New shape unlocked** ([ShapeUnlockedModal](./src/features/puzzle/ShapeUnlockedModal.tsx)), for an account whose finished set opened a shape: "Triangle is now unlocked
+   in Zen Mode!" with a link to Zen, then the new shape's core sets with their pictures and "Go to puzzle set now". It is worked out by comparing the content before and after the post-solve reload.
+3. **A very special reward** ([RandomizerUnlockedModal](./src/features/puzzle/RandomizerUnlockedModal.tsx)), when the post-solve reload shows Zen's randomizer newly earned: "You did it!" and
+   a note about finishing all 24 puzzle sets of 24 puzzles, with a button to Zen Mode. It comes after the reward and new-shape dialogs. (A randomizer earned by a guest import is not announced.)
+4. **Ready for more?** ([AccountPromptModal](./src/features/puzzle/AccountPromptModal.tsx)), once per device (`kaleidoscope:account-prompt`), for a guest whose solve finishes every
+   set open to them while a next shape is locked: the next shape needs an account; "Sign in or create an account", or "Keep playing as a guest" (Zen stays open with all their palettes).
+5. **Playing as a guest** ([SignInNudgeModal](./src/features/puzzle/SignInNudgeModal.tsx)), once per browser session (`kaleidoscope:sign-in-nudge` in `sessionStorage`), for a guest on a device that has had an account
+   (`returningGuest`): "Please sign in to continue saving your progress." Skipped when the account prompt is shown, and after signing out on purpose in that session.
+The set preview shared by these dialogs is [UnlockedSetItem](./src/features/puzzle/UnlockedSetItem.tsx).
+
+**Account progress.** For a signed-in player, `PlayerProgressProvider` takes its solved set from the server (`puzzle_completions`, read through
+[accountProgress.ts](./src/ui/content/accountProgress.ts)) and sends each solve to `record_puzzle_completions` (see supabase/README.md, "Apply player progress"), which records
+it and everything it earns, including opening the next shape. The account's progress and unconfirmed solves are cached in `kaleidoscope:puzzle-progress:<userId>`
+(`{ solved, pending }`), separate from the guest save. A solve that cannot reach the server stays pending and is sent on the next load or when the browser goes back online. A solve that does not finish a set
+is sent in the background; one that does waits for the server, then reloads the content, so the dialogs above can report what it opened. Server solves are merged in, never removed, so something
+solved on another device appears and a solve the server declined is still shown locally. Not built yet: conflict prompts between devices for the same unfinished puzzle, and server-side solution checking.
+
+**Guest import.** When a signed-in player's device holds guest solves the account lacks, `usePlayerProgress().guestImport` describes them (`count`, `offered`, `run`, `decline`) and
+[GuestImportDialog](./src/features/account/GuestImportDialog.tsx) ("Import your progress?") opens by itself until the player answers: "Import progress" sends the IDs to the same function and reloads the
+content, and "Not now" keeps the guest save and stops the offer opening by itself. The answers are remembered per account and per puzzle (`kaleidoscope:guest-import:<userId>` holds `handled`, the IDs already sent, and `declined`, the IDs turned down):
+`guestImport` covers guest solves that the account lacks and has not been sent, and it opens by itself only while some of them are not declined, so solves made as a guest after an earlier import or "Not now" are offered like any others.
+Declined solves stay available through "Import progress from this device" in the account view. The guest save is never deleted or merged automatically.
 
 ### Accounts
 
@@ -575,10 +607,12 @@ Players can create an account at any time; guests play on without one. The heade
 - **Forgot password:** asks for an email and always answers "If this address has an account, we sent it a link". Following the link (PKCE, back to the app root) signs the
   player in and opens "Choose a new password" (with confirmation); closing that early leaves them signed in with the old password.
 - **Expired or already-used email links** return with an error in the URL; the dialog opens on Sign in saying so, and the URL is cleaned.
-- **Signed in:** a greeting, the email, and Sign out (this device only).
+- **Signed in:** a greeting, the email, "Import progress from this device" while guest solves are waiting, and Sign out (this device only).
 Server failures show a plain message (a gateway timeout arrives as the text `{}`), and a result that arrives after the dialog was closed is
 ignored. After a successful sign-in, sign-up, or sign-out the dialog keeps its content and stays disabled until it has finished fading out.
-`getPlayerClient` keeps its own session; content still loads with the guest client, and no guest progress is read or moved by any of this.
+`getPlayerClient` keeps its own session, which content and progress use once someone is signed in; guest progress is read or moved only by the explicit import above.
+The account also exposes `userId` and `returningGuest` (a guest on a device that has been signed in before: the flag `kaleidoscope:known-account` is set at any sign-in and never cleared, and
+`kaleidoscope:signed-out-here` in `sessionStorage` records a deliberate sign-out).
 Without Supabase configured the account button is hidden. Auth emails use the templates in [supabase/email-templates/](./supabase/email-templates/), sent through custom SMTP (see supabase/README.md).
 
 ### Grid sizes
@@ -660,8 +694,12 @@ symmetry engine. One representative per group is clickable.
 ### UX and accessibility
 
 - Single column: header, grid, swatches, undo/redo, settings/actions, footer.
-  Action order: editable area (touch only), palette, randomize, reset, shape,
-  image, help. (The dark/light toggle moved to the app header.) Keep help descriptions aligned with the toolbar. The help modal's first item (Paint Colors) shows the current palette as a compact `PaletteStrip` instead of an icon.
+  Action order: editable area (touch only), palette, randomize (only once earned, see below), reset, shape,
+  image, help. (The dark/light toggle moved to the app header, and the help modal no longer lists it.) Keep help descriptions aligned with the toolbar. The help modal's first item (Paint Colors) shows the current palette as a compact `PaletteStrip` instead of an icon.
+- **The randomizer is earned.** The randomize button and its help entry appear only when `usePlayerContent().randomizerUnlocked` is true: a signed-in
+  account with a `zen_randomizer` row in `feature_grants`, which the database writes (inside `record_puzzle_completions`) the first time every released core
+  and bonus group is complete and there are at least four groups per shape in the progression. The grant is permanent. Guests never have it. A set-finishing solve, an import,
+  and every load pick it up, and it is cached with the content (older caches read as locked).
 - Pointer hover dims non-clickable cells. Touch uses a persisted editable-area
   toggle, initially on. The grid is capped at 560px with a 226px viewport allowance.
 - SVGs use `role="group"` with instructions; clickable cells are labeled buttons

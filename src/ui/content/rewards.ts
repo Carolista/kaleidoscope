@@ -1,4 +1,5 @@
 import type { PlayerPalette } from '@/domain/palettes'
+import type { GridShapeId } from '@/domain/shapes'
 import type {
 	PlayerContent,
 	PlayerPuzzleSet,
@@ -11,13 +12,39 @@ interface Earned {
 	readonly palettes: readonly PlayerPalette[]
 }
 
+// A shape the player can now use in Zen, with the core sets that came with it.
+export interface UnlockedShape {
+	readonly shape: GridShapeId
+	readonly sets: readonly PlayerPuzzleSet[]
+}
+
 export interface NewRewards {
 	readonly palettes: readonly PlayerPalette[]
 	readonly bonusSets: readonly PlayerPuzzleSet[]
+	// Only an account can unlock shapes, and only once the server has confirmed it.
+	readonly shapes: readonly UnlockedShape[]
+	// Set when a guest has just finished every set open to them and the next shape
+	// needs an account.
+	readonly accountShape: GridShapeId | null
+	// Set when this solve earned Zen's randomizer, by finishing every core and bonus set.
+	readonly randomizer: boolean
 }
 
 function isComplete(set: PlayerPuzzleSet, solved: ReadonlySet<string>) {
 	return set.puzzles.every(puzzle => solved.has(puzzle.id))
+}
+
+// Whether solving this puzzle just finished a set it belongs to.
+export function completesSet(
+	content: PlayerContent,
+	puzzleId: string,
+	solved: ReadonlySet<string>,
+): boolean {
+	return content.puzzleSets.some(
+		set =>
+			set.puzzles.some(puzzle => puzzle.id === puzzleId) &&
+			isComplete(set, solved),
+	)
 }
 
 // A reward counts once its set is complete and the set itself is open, so a
@@ -94,5 +121,46 @@ export function newRewards(
 				current.openSetIds.has(set.id) &&
 				!previous.openSetIds.has(set.id),
 		),
+		shapes: [],
+		accountShape: null,
+		randomizer: false,
 	}
+}
+
+function allComplete(content: PlayerContent, solved: ReadonlySet<string>) {
+	const { puzzleSets } = availableContent(content, solved)
+	return (
+		puzzleSets.length > 0 &&
+		puzzleSets.every(set => isComplete(set, solved))
+	)
+}
+
+// The shape a guest must create an account for, at the solve that finishes everything
+// they can play. Finishing means every open set, bonus sets included, so it cannot
+// happen before the core sets have opened their bonus sets.
+export function accountShapeFor(
+	content: PlayerContent,
+	before: ReadonlySet<string>,
+	after: ReadonlySet<string>,
+): GridShapeId | null {
+	return content.nextShape &&
+		allComplete(content, after) &&
+		!allComplete(content, before)
+		? content.nextShape
+		: null
+}
+
+// The shapes that opened between two loads of the same player's content.
+export function newShapes(
+	before: PlayerContent,
+	after: PlayerContent,
+): UnlockedShape[] {
+	return after.unlockedShapes
+		.filter(shape => !before.unlockedShapes.includes(shape))
+		.map(shape => ({
+			shape,
+			sets: after.puzzleSets.filter(
+				set => set.kind === 'core' && set.shape === shape,
+			),
+		}))
 }

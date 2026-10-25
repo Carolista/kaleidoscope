@@ -25,16 +25,14 @@ groups are released. The player app now reads released content as a guest: the a
 a Home screen (greeting, then Puzzle and Zen cards), Puzzle Mode lists the released core sets and plays their puzzles, Zen offers
 Hexagon and the released core palettes, and guests earn the Hexagon bonus sets and reward
 palettes locally by completing sets. Players can create an account, sign in, and reset a password
-(progress is not saved to an account yet), and the page frame appears before content loads.
+and signed-in players' solves are saved to the account (which opens Triangle and later shapes), with an explicit guest import. The page frame appears before content loads.
 
 **Next up, in order:**
 
 1. Finish the Puzzle Mode gameplay tweaks from the POC (in progress).
-2. #57, the rest of A4: explicit guest import and server-stored progress per account, then the
-   dismissible prompt after all four Hexagon sets that unlocks Triangle for accounts (a guest can keep playing). The Triangle
-   core and bonus content must be published before that can be tested.
-3. Puzzle Mode resume (A5); the Zen randomizer stays visible but should be locked until all
-   12 core and 12 bonus groups are solved.
+2. #57, the rest of A4: cross-device sync and conflict handling (server-stored progress, the Triangle unlock, the guest prompt, and the explicit
+   import are done; an end-to-end pass through all 96 core and bonus puzzles is still being tested).
+3. Puzzle Mode resume (A5).
 
 ---
 
@@ -47,7 +45,7 @@ palettes locally by completing sets. Players can create an account, sign in, and
 | A1  | Product and content rules                                     | ✅ mostly      |
 | A2  | Supabase foundation: schema, RLS, Auth, admin role, types     | ✅             |
 | A3  | Admin portal: everything needed for 2A content                | ✅ (daily groups and palette correction remain) |
-| A4  | Player accounts, explicit guest import, offline/cloud sync    | 🔜 started: sign-up, sign-in, password reset; import and sync remain |
+| A4  | Player accounts, explicit guest import, offline/cloud sync    | 🔜 started: sign-up, sign-in, password reset, server-stored progress, guest import; cross-device conflict handling remains |
 | A5  | Content access and puzzle-set progression in Puzzle and Zen   | 🔜 started: guest reads, set browsing, Zen limits |
 | A6  | Harden, verify, and launch Puzzle Mode                        | ⬜             |
 
@@ -174,12 +172,12 @@ remaining pack palette groups wait for the 2B store.
 - ✅ A Home screen greets the player (by first name when signed in) and offers Puzzle and Zen; the title returns Home. The page frame and
   logo animation appear before content loads.
 - The app stays usable without an account. Signup is available at any time.
-- After all four Hexagon sets are solved, a dismissible dialog explains that Triangle needs an account; guests can keep playing Hexagon and Zen.
-- Never merge guest progress automatically. Offer an explicit import on both
-  signup and sign-in, and keep the guest save if the player declines.
-- Keep guest storage separate from per-account caches.
-- Sync automatically when the player is back online. Merge completions, and
-  ask only when two devices changed the same unfinished puzzle.
+- ✅ After all four Hexagon sets are solved, a dismissible once-per-device dialog explains that Triangle needs an account; guests can keep playing Hexagon and Zen.
+- ✅ Never merge guest progress automatically: an explicit import is offered after sign-in or sign-up (and later from the account view), and the guest save is kept either way.
+- ✅ Guest storage is separate from per-account caches.
+- ✅ A once-a-session reminder for a guest on a device that has had an account ("Please sign in to continue saving your progress").
+- ✅ Server-stored progress: `record_puzzle_completions` records solves, completes groups, and grants rewards; unsent solves are retried when the browser is back online.
+- Still to do: merge completions from several devices as they change, and ask only when two devices changed the same unfinished puzzle.
 - Small follow-ups: a "change password" action for signed-in players; the header is a few pixels too wide on screens narrower
   than about 356px since the account button was added.
 
@@ -194,9 +192,9 @@ remaining pack palette groups wait for the 2B store.
   set and its palette, the rotation core group unlocks both bonus sets and its palette, and each bonus set awards a
   palette. Earned state is derived from the solved puzzle IDs, bonus sets stay hidden until earned, reward palettes
   join Zen's palette picker, and a "Reward earned" dialog announces what a solve just earned.
-- Solving either core group of a shape (basic or rotation) unlocks the next shape and its two core groups (accounts only; guests stay on the first shape). Reward palettes come from completing groups, without duplicate rewards.
-- Grant the Zen randomizer permanently after all 12 core and 12 bonus groups are solved.
-- Validate completions and grant rewards on the server, idempotently.
+- ✅ Solving either core group of a shape (basic or rotation) unlocks the next shape and its two core groups (accounts only; guests stay on the first shape), announced in a "New shape unlocked" dialog after the reward dialog. Reward palettes come from completing groups, without duplicate rewards.
+- ✅ The Zen randomizer is granted permanently after all 12 core and 12 bonus groups are solved, and is hidden (button and help entry) until then; a final dialog announces it and points to Zen Mode.
+- ✅ Grant rewards and unlock shapes on the server, idempotently (`record_puzzle_completions`). Validating the solution itself on the server is still open.
 - ✅ Zen saves use palette IDs (older saves still load by palette name).
 - Puzzle Mode has no resume: the current puzzle, placements, and rotations
   live in React state, and a reload returns to the set list (solved puzzles are kept).
@@ -279,7 +277,7 @@ remaining pack palette groups wait for the 2B store.
 - What happens to existing visitors' saved designs that use shapes or palettes
   that become locked, and how to migrate legacy hex saves with duplicate colors.
 - Offline unlock policy: how long cached access lasts, and whether unlocks can be used before the server confirms them.
-- Guest-import UX details and conflict wording.
+- Conflict wording for two devices that changed the same unfinished puzzle.
 - Emergency withdrawal of live content.
 - UI wording for "qualified" versus "solved every puzzle."
 - Whether a separate player test account is enough for progression testing.

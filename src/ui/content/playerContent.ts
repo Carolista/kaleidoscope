@@ -34,6 +34,10 @@ export interface PlayerContent {
 	// Zen's palettes, in the order the admin arranged them; once earned, reward palettes follow.
 	readonly palettes: readonly PlayerPalette[]
 	readonly unlockedShapes: readonly GridShapeId[]
+	// The first shape in the unlock order that is still locked, if any.
+	readonly nextShape: GridShapeId | null
+	// Zen's randomizer, the prize for finishing every core and bonus set; only an account earns it.
+	readonly randomizerUnlocked: boolean
 	readonly puzzleSets: readonly PlayerPuzzleSet[]
 	readonly rewards: readonly PlayerReward[]
 }

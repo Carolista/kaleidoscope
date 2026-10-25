@@ -24,10 +24,15 @@ export type AuthResult =
 export interface AccountApi {
 	// `unavailable` is a build without Supabase configured; the app stays guest-only.
 	readonly status: 'unavailable' | 'loading' | 'signedOut' | 'signedIn'
+	// The signed-in player's id; per-account progress and caches are keyed by it.
+	readonly userId: string | null
 	readonly email: string | null
 	readonly firstName: string | null
 	// True from the moment a password-reset link is followed until the dialog that
 	// sets the new password is closed.
+	// A guest on a device that has been signed in before, and did not sign out on purpose
+	// in this browser session: likely someone with an account who has not signed in yet.
+	readonly returningGuest: boolean
 	readonly recovering: boolean
 	// Set when an email link came back expired or already used.
 	readonly linkError: string | null
@@ -47,8 +52,10 @@ const UNAVAILABLE_ERROR = {
 
 export const UNAVAILABLE: AccountApi = {
 	status: 'unavailable',
+	userId: null,
 	email: null,
 	firstName: null,
+	returningGuest: false,
 	recovering: false,
 	linkError: null,
 	signUp: () => Promise.resolve(UNAVAILABLE_ERROR),

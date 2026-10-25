@@ -882,6 +882,10 @@ export type Database = {
 				}
 				Returns: Json
 			}
+			record_puzzle_completions: {
+				Args: { p_puzzle_ids: string[] }
+				Returns: string[]
+			}
 			replace_puzzle_draft: {
 				Args: {
 					p_board_size: string

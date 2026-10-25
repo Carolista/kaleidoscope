@@ -276,7 +276,7 @@ hardest track. Rewards name exact
 palettes, not a palette group. That is the intended pattern for all six shapes, but
 reward rules stay flexible in the database (any group can award palettes and/or
 bonus groups) so a later admin screen can check a shape against the pattern. A player who
-solves all twelve core and twelve bonus groups earns the Zen randomizer.
+solves all twelve core and twelve bonus groups earns the Zen randomizer. The database grants it (`feature_grants`, in `record_puzzle_completions`) so that it is permanent, and the app hides it entirely until then, in Zen's toolbar and the help modal alike, rather than showing it locked.
 
 **Zen access.** Unlocked shapes and awarded palettes are usable in Zen at once, as are
 purchased palette packs. A puzzle pack unlocks only puzzles: its palettes come
@@ -444,7 +444,28 @@ username. The name lives in the Supabase user metadata, not a `profiles` row, wh
 might belong to someone else, so a user-supplied string in a message that looks official would be a phishing aid.
 
 **Accounts are optional until the Hexagon sets are done.** Guests keep playing, and the account button is always in the header. The forced step is later:
-finishing all four Hexagon sets opens a dialog explaining that Triangle needs an account, which can be dismissed so the player can keep playing Hexagon and Zen as a guest (not built yet).
+finishing every set open to a guest (all four Hexagon sets) opens a dialog, once per device, explaining that the next shape needs an account, which can be dismissed so the player can keep playing Hexagon and Zen as a guest. Under the normal rules an account unlocks the next shape by finishing either core set, so a guest who qualifies still sees nothing of Triangle until they have one.
+
+**An account's progress is recorded by the database, through one function.** A signed-in player's solves go to `record_puzzle_completions`, a `security definer`
+function; players have no insert rights on `puzzle_completions` or `group_completions`. One call records the puzzles the player may play, completes the groups they finish, grants the rewards, and repeats
+until nothing changes, so whatever the content gates (the next shape via `has_shape`, bonus groups via grants) is decided by the same rules that already hide it, and a whole imported save settles in one call. Rewards are still
+also derived in the app from the solved IDs, for the dialogs. The function checks access, not the solution; checking solutions server-side would need placements sent along and is deferred.
+
+**A signed-in player reads with their own session; the app shows only what it has loaded.** Content is loaded again for the signed-in player, and again after a solve that finishes a set, because that is what can open a bonus
+group or the next shape. Because of that, the solve that finishes a set waits for the server before announcing its rewards, so a bonus set is never missing from its own announcement. Other solves are sent in the background and kept
+(per account, with a pending list) until the server takes them. Server solves are only ever added to the local set. An account's caches are never shared with the guest's.
+
+**Unlocking a shape is announced, not silent.** When the reload shows a shape that was not open before, a second dialog after the reward dialog says so, names that it is available in Zen Mode, and lists the shape's core sets
+with a way in. The randomizer, the last prize, is announced in its own dialog after the reward and shape dialogs, pointing at Zen Mode. The announcements run in a fixed order (reward, shape, randomizer, account prompt, sign-in reminder), one at a time, each after the last has finished closing.
+
+**Guest progress moves only when the player says so, and a "no" is not final.** After signing in, an account that lacks puzzles solved as a guest on the device is offered an import, in a dialog that opens by itself until
+answered. Answers are kept per account, device, and puzzle: IDs that were sent are never offered again (the server may have declined some, which should not nag), IDs that were turned down only stop opening the offer by themselves
+and stay available through "Import progress from this device" in the account view, and solves made as a guest afterwards are offered afresh, so progress made while signed out is never silently stranded. The guest save is never deleted
+or merged automatically, importing included.
+
+**A guest who probably has an account is reminded once, not forced.** A forced sign-in would punish players on a new browser or device who do not want one. Instead, on a device that has had a signed-in player before, the first guest solve
+of a browser session shows "Please sign in to continue saving your progress", unless the player signed out on purpose in that session, or the account prompt is already due. The device remembers a past sign-in with a flag that holds no identity.
+Nothing is lost by ignoring it, since the guest save stays and can be imported after signing in.
 
 **Passwords can be reset, and links fail gracefully.** A reset always answers the same way, whether or not the address has an account. A confirmation or reset link that
 has expired or was already used (mail scanners often use it first) returns to the app with an error in the URL; the dialog says so and offers to start again. PKCE links must be
