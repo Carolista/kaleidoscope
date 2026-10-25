@@ -589,7 +589,9 @@ The set preview shared by these dialogs is [UnlockedSetItem](./src/features/puzz
 it and everything it earns, including opening the next shape. The account's progress and unconfirmed solves are cached in `kaleidoscope:puzzle-progress:<userId>`
 (`{ solved, pending }`), separate from the guest save. A solve that cannot reach the server stays pending and is sent on the next load or when the browser goes back online. A solve that does not finish a set
 is sent in the background; one that does waits for the server, then reloads the content, so the dialogs above can report what it opened. Server solves are merged in, never removed, so something
-solved on another device appears and a solve the server declined is still shown locally. Not built yet: conflict prompts between devices for the same unfinished puzzle, and server-side solution checking.
+solved on another device appears and a solve the server declined is still shown locally. `PlayerProgressProvider` also refreshes (sends anything pending, reloads, merges the server's solves) when the browser comes back online
+and when the tab becomes visible again, at most every 30 seconds, so a device left open picks up another device's solves. There are no conflict prompts: solves only accumulate, and in-progress puzzle state is per-device (see DECISIONS, "Only results sync
+between devices"). Another device's rewards appear without a dialog. Not built yet: server-side solution checking.
 
 **Guest import.** When a signed-in player's device holds guest solves the account lacks, `usePlayerProgress().guestImport` describes them (`count`, `offered`, `run`, `decline`) and
 [GuestImportDialog](./src/features/account/GuestImportDialog.tsx) ("Import your progress?") opens by itself until the player answers: "Import progress" sends the IDs to the same function and reloads the

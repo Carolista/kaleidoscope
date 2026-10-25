@@ -30,8 +30,8 @@ and signed-in players' solves are saved to the account (which opens Triangle and
 **Next up, in order:**
 
 1. Finish the Puzzle Mode gameplay tweaks from the POC (in progress).
-2. #57, the rest of A4: cross-device sync and conflict handling (server-stored progress, the Triangle unlock, the guest prompt, and the explicit
-   import are done; an end-to-end pass through all 96 core and bonus puzzles is still being tested).
+2. #57, the rest of A4 (server-stored progress, the Triangle unlock, the guest prompt, the explicit import, and cross-device refresh are done;
+   an end-to-end pass through all 96 core and bonus puzzles is still being tested).
 3. Puzzle Mode resume (A5).
 
 ---
@@ -45,7 +45,7 @@ and signed-in players' solves are saved to the account (which opens Triangle and
 | A1  | Product and content rules                                     | ✅ mostly      |
 | A2  | Supabase foundation: schema, RLS, Auth, admin role, types     | ✅             |
 | A3  | Admin portal: everything needed for 2A content                | ✅ (daily groups and palette correction remain) |
-| A4  | Player accounts, explicit guest import, offline/cloud sync    | 🔜 started: sign-up, sign-in, password reset, server-stored progress, guest import; cross-device conflict handling remains |
+| A4  | Player accounts, explicit guest import, offline/cloud sync    | 🔜 started: sign-up, sign-in, password reset, server-stored progress, guest import, cross-device refresh |
 | A5  | Content access and puzzle-set progression in Puzzle and Zen   | 🔜 started: guest reads, set browsing, Zen limits |
 | A6  | Harden, verify, and launch Puzzle Mode                        | ⬜             |
 
@@ -177,7 +177,7 @@ remaining pack palette groups wait for the 2B store.
 - ✅ Guest storage is separate from per-account caches.
 - ✅ A once-a-session reminder for a guest on a device that has had an account ("Please sign in to continue saving your progress").
 - ✅ Server-stored progress: `record_puzzle_completions` records solves, completes groups, and grants rewards; unsent solves are retried when the browser is back online.
-- Still to do: merge completions from several devices as they change, and ask only when two devices changed the same unfinished puzzle.
+- ✅ Completions from several devices merge as a union (solves only accumulate, so nothing conflicts); a device refreshes when it comes back online or its tab becomes visible again (at most every 30 seconds). No conflict prompt is needed because in-progress puzzles stay per-device (see A5).
 - Small follow-ups: a "change password" action for signed-in players; the header is a few pixels too wide on screens narrower
   than about 356px since the account button was added.
 
@@ -200,7 +200,8 @@ remaining pack palette groups wait for the 2B store.
   live in React state, and a reload returns to the set list (solved puzzles are kept).
   Save the puzzle ID plus placements and rotations so a
   reload resumes the same puzzle (rebuild from the stored definition rather than storing
-  solutions). Build this on the A4 guest-storage format so it isn't done twice.
+  solutions). Build this on the A4 guest-storage format so it isn't done twice. Keep it per-device
+  (localStorage, keyed per player and never sent to the account), so two devices never conflict.
 
 **A6: Launch impact and release**
 
@@ -277,7 +278,6 @@ remaining pack palette groups wait for the 2B store.
 - What happens to existing visitors' saved designs that use shapes or palettes
   that become locked, and how to migrate legacy hex saves with duplicate colors.
 - Offline unlock policy: how long cached access lasts, and whether unlocks can be used before the server confirms them.
-- Conflict wording for two devices that changed the same unfinished puzzle.
 - Emergency withdrawal of live content.
 - UI wording for "qualified" versus "solved every puzzle."
 - Whether a separate player test account is enough for progression testing.

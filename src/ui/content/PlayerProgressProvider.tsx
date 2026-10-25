@@ -36,6 +36,8 @@ const NOTHING: NewRewards = {
 	randomizer: false,
 }
 const NONE: ReadonlySet<string> = new Set()
+// Returning to a tab refreshes progress at most this often.
+const REFRESH_INTERVAL_MS = 30_000
 
 // What the server returned when content was last loaded for the signed-in player.
 export interface AccountSnapshot {
@@ -139,9 +141,35 @@ export function PlayerProgressProvider({
 		return run
 	}, [userId, api])
 
+	// Solves only ever accumulate, so whatever the server holds joins what is known here.
+	const mergeServerSolved = useCallback(
+		(fresh: AccountSnapshot | null) => {
+			if (!fresh) return
+			setStore(previous =>
+				previous.userId === userId
+					? {
+							...previous,
+							solved: new Set([
+								...previous.solved,
+								...fresh.solved,
+							]),
+						}
+					: previous,
+			)
+		},
+		[userId],
+	)
+
 	const syncPending = useCallback(async () => {
-		if (pendingRef.current.size && (await flush())) await reload?.()
-	}, [flush, reload])
+		if (pendingRef.current.size && (await flush()))
+			mergeServerSolved((await reload?.()) ?? null)
+	}, [flush, reload, mergeServerSolved])
+
+	// Picks up solves made on another device, after sending any made here.
+	const refresh = useCallback(async () => {
+		if (!userId || !reload || !(await flush())) return
+		mergeServerSolved(await reload())
+	}, [userId, reload, flush, mergeServerSolved])
 
 	useEffect(() => {
 		pendingRef.current = userId
@@ -150,11 +178,32 @@ export function PlayerProgressProvider({
 	}, [userId])
 
 	useEffect(() => {
-		const retry = () => void syncPending()
-		retry()
-		window.addEventListener('online', retry)
-		return () => window.removeEventListener('online', retry)
+		void syncPending()
 	}, [syncPending])
+
+	const lastRefreshRef = useRef(0)
+	useEffect(() => {
+		if (!userId) return
+		// Content has just loaded, so the clock starts now.
+		lastRefreshRef.current = Date.now()
+		const refreshNow = () => {
+			lastRefreshRef.current = Date.now()
+			void refresh()
+		}
+		const onVisible = () => {
+			if (
+				document.visibilityState === 'visible' &&
+				Date.now() - lastRefreshRef.current > REFRESH_INTERVAL_MS
+			)
+				refreshNow()
+		}
+		window.addEventListener('online', refreshNow)
+		document.addEventListener('visibilitychange', onVisible)
+		return () => {
+			window.removeEventListener('online', refreshNow)
+			document.removeEventListener('visibilitychange', onVisible)
+		}
+	}, [userId, refresh])
 
 	useEffect(() => {
 		if (userId && store.userId === userId)
@@ -187,17 +236,7 @@ export function PlayerProgressProvider({
 				const fresh = await reload()
 				if (fresh) {
 					current = fresh.content
-					setStore(previous =>
-						previous.userId === userId
-							? {
-									...previous,
-									solved: new Set([
-										...previous.solved,
-										...fresh.solved,
-									]),
-								}
-							: previous,
-					)
+					mergeServerSolved(fresh)
 				}
 			}
 			return {
@@ -207,7 +246,7 @@ export function PlayerProgressProvider({
 					!content.randomizerUnlocked && current.randomizerUnlocked,
 			}
 		},
-		[content, solved, userId, flush, reload],
+		[content, solved, userId, flush, reload, mergeServerSolved],
 	)
 
 	const importIds = store.importable
