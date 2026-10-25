@@ -13,8 +13,8 @@
 
 .hooray {
 	margin: 0;
-	font-family: 'Mr Dafoe', cursive;
-	font-size: 3.5rem;
+	font-family: 'Hurricane', cursive;
+	font-size: 4.2rem;
 	line-height: 1.1;
 }
 
@@ -33,9 +33,10 @@
 
 .subheading {
 	margin: 0;
-	font-family: 'Righteous', sans-serif;
-	font-size: 1.3rem;
+	font-family: 'Urbanist', sans-serif;
+	font-size: 1.1rem;
 	font-weight: 400;
+	text-transform: uppercase;
 }
 
 .item {
@@ -75,6 +76,7 @@
 	color: inherit;
 	font: inherit;
 	text-decoration: underline;
+	font-style: italic;
 	cursor: pointer;
 }
 
