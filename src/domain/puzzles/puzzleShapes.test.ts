@@ -3,6 +3,7 @@ import { supportedGridShapes } from '@/domain/shapes'
 import {
 	PUZZLE_SHAPE_IDS,
 	PUZZLE_SHAPE_LABELS,
+	puzzleGridSizeClass,
 	puzzleShapes,
 } from './puzzleShapes'
 
@@ -13,6 +14,18 @@ describe('puzzle shape order', () => {
 		expect(Object.entries(PUZZLE_SHAPE_LABELS)).toEqual(
 			supportedGridShapes.map(shape => [shape.id, shape.label]),
 		)
+	})
+})
+
+describe('puzzleGridSizeClass', () => {
+	it('names the small, medium, and large grid of each shape, defaulting to medium', () => {
+		for (const id of PUZZLE_SHAPE_IDS) {
+			const { gridSizes } = puzzleShapes[id]
+			expect(puzzleGridSizeClass(id, gridSizes.sm)).toBe('sm')
+			expect(puzzleGridSizeClass(id, gridSizes.md)).toBe('md')
+			expect(puzzleGridSizeClass(id, gridSizes.lg)).toBe('lg')
+			expect(puzzleGridSizeClass(id, -1)).toBe('md')
+		}
 	})
 })
 

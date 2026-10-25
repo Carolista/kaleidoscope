@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { palettes } from '@/test/playerContent'
 import {
@@ -17,6 +17,7 @@ import {
 	tileAt,
 } from '@/test/puzzleInteraction'
 import PuzzlePlay from './PuzzlePlay'
+import boardStyles from './PuzzleBoard.module.css'
 import styles from './PuzzlePlay.module.css'
 
 function renderPlay(puzzle: Puzzle) {
@@ -77,6 +78,138 @@ describe('PuzzlePlay', () => {
 		expect(onProgress).toHaveBeenLastCalledWith({
 			placed: 1,
 			rotated: true,
+		})
+	})
+
+	describe('rotating a held piece', () => {
+		const recipe = PUZZLE_RECIPES.find(
+			value => value.id === 'moderate-small',
+		)!
+		const rotated = generatePuzzle('tray-rotation', palettes[1], recipe)
+		const index = rotated.pieces.findIndex(piece => piece.tiles.length > 1)
+
+		function hold(pointerType: 'mouse' | 'touch') {
+			renderPlay(rotated)
+			const button = pieceButton(index)
+			hitTest.mockReturnValue(null)
+			fireEvent.pointerDown(button, {
+				pointerId: 1,
+				pointerType,
+				button: 0,
+				clientX: 10,
+				clientY: 10,
+			})
+			fireEvent.pointerMove(button, {
+				pointerId: 1,
+				pointerType,
+				clientX: 100,
+				clientY: 100,
+			})
+			const graphic = document.querySelector(
+				`.${boardStyles.draggedPiece}`,
+			)!
+			const points = (svg: Element) =>
+				[...svg.querySelectorAll('polygon')].map(tile =>
+					tile.getAttribute('points'),
+				)
+			return { button, graphic, points }
+		}
+
+		it('holds a touched piece above the fingertip, but a mouse piece at the pointer', () => {
+			const centerOf = (graphic: Element) => {
+				const style = (graphic as SVGElement).style
+				return {
+					x: parseFloat(style.left) + parseFloat(style.width) / 2,
+					y: parseFloat(style.top) + parseFloat(style.height) / 2,
+				}
+			}
+			const touch = hold('touch')
+			expect(centerOf(touch.graphic).x).toBeCloseTo(100, 6)
+			expect(centerOf(touch.graphic).y).toBeLessThan(100)
+			cleanup()
+			const mouse = hold('mouse')
+			expect(centerOf(mouse.graphic)).toEqual({ x: 100, y: 100 })
+		})
+
+		it('turns with the R key and keeps the turn when dropped in the air', () => {
+			const { button, graphic, points } = hold('mouse')
+			const trayBefore = points(button.querySelector('svg')!)
+			const before = points(graphic)
+			fireEvent.keyDown(window, { key: 'r' })
+			expect(points(graphic)).not.toEqual(before)
+			fireEvent.pointerUp(button, {
+				pointerId: 1,
+				pointerType: 'mouse',
+				clientX: 100,
+				clientY: 100,
+			})
+			expect(points(button.querySelector('svg')!)).not.toEqual(trayBefore)
+		})
+
+		it('ignores R with a modifier, so browser shortcuts still work', () => {
+			const { graphic, points } = hold('mouse')
+			const before = points(graphic)
+			fireEvent.keyDown(window, { key: 'r', metaKey: true })
+			expect(points(graphic)).toEqual(before)
+		})
+
+		it('turns with a right-click while a mouse holds the piece', () => {
+			const { graphic, points } = hold('mouse')
+			const before = points(graphic)
+			expect(fireEvent.contextMenu(document.body)).toBe(false)
+			expect(points(graphic)).not.toEqual(before)
+		})
+
+		it('turns when a second finger taps, but not for a second mouse event', () => {
+			const { graphic, points } = hold('touch')
+			const before = points(graphic)
+			fireEvent.pointerDown(document.body, {
+				pointerId: 1,
+				pointerType: 'touch',
+			})
+			expect(points(graphic)).toEqual(before)
+			fireEvent.pointerDown(document.body, {
+				pointerId: 2,
+				pointerType: 'touch',
+			})
+			expect(points(graphic)).not.toEqual(before)
+		})
+
+		it('leaves a lifted board piece as it was when the turn is dropped nowhere', async () => {
+			renderPlay(rotated)
+			const piece = rotated.pieces[index]
+			const button = pieceButton(index)
+			const user = userEvent.setup()
+			for (let i = 0; i < (rotated.solution[piece.id].rotation ?? 0); i++)
+				await user.click(button)
+			const destination = tileAt(
+				coordinateKey(rotated.solution[piece.id]),
+			)
+			dragTo(button, destination)
+			const placedFill = destination.getAttribute('fill')
+			hitTest.mockReturnValue(null)
+			fireEvent.pointerDown(destination, {
+				pointerId: 5,
+				pointerType: 'mouse',
+				button: 0,
+				clientX: 10,
+				clientY: 10,
+			})
+			fireEvent.pointerMove(destination, {
+				pointerId: 5,
+				pointerType: 'mouse',
+				clientX: 300,
+				clientY: 300,
+			})
+			fireEvent.keyDown(window, { key: 'r' })
+			fireEvent.pointerUp(destination, {
+				pointerId: 5,
+				pointerType: 'mouse',
+				clientX: 300,
+				clientY: 300,
+			})
+			expect(button).toHaveAccessibleName(/on board/)
+			expect(destination).toHaveAttribute('fill', placedFill)
 		})
 	})
 

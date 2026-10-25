@@ -66,6 +66,9 @@ export interface PuzzleShape {
 	// Lattice point that piece tiles are offset from, so 60-degree rotations
 	// of those offsets land on other cells.
 	readonly anchorFor: (cell: AxialCoord) => AxialCoord
+	// Whether a piece anchored here has tiles on real cells. Omitted when every
+	// anchor works.
+	readonly isAnchor?: (anchor: AxialCoord) => boolean
 	readonly corners: (cell: PlacedCoord, size: number) => Point[]
 	readonly center: (cell: AxialCoord, size: number) => Point
 	// For shapes whose board bends the lattice (circle rings), `corners` and
@@ -159,9 +162,16 @@ const triangleLattice = {
 	corners: (cell, size) =>
 		triangleVertices(cell).map(vertex => trianglePixel(vertex, size)),
 	center: (cell, size) => trianglePixel(cell, size / 3),
+	// Piece offsets only land on cells when the anchor is a lattice vertex.
+	isAnchor: anchor => anchor.q % 3 === 0 && anchor.r % 3 === 0,
 } satisfies Pick<
 	PuzzleShape,
-	'rotationStep' | 'neighbors' | 'anchorFor' | 'corners' | 'center'
+	| 'rotationStep'
+	| 'neighbors'
+	| 'anchorFor'
+	| 'corners'
+	| 'center'
+	| 'isAnchor'
 >
 
 const triangle: PuzzleShape = {
@@ -420,6 +430,17 @@ export const puzzleShapes: Readonly<Record<PuzzleShapeId, PuzzleShape>> = {
 	hexagram,
 	pinwheel,
 	circleRings,
+}
+
+// Which of the shape's small, medium, or large grids a puzzle's grid size is.
+export function puzzleGridSizeClass(
+	shape: PuzzleShapeId,
+	gridSize: number,
+): GridSize {
+	const match = (
+		Object.entries(puzzleShapes[shape].gridSizes) as [GridSize, number][]
+	).find(([, size]) => size === gridSize)
+	return match?.[0] ?? 'md'
 }
 
 export function isPuzzleShapeId(value: unknown): value is PuzzleShapeId {

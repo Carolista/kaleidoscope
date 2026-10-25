@@ -105,11 +105,34 @@ the rules about generation, shared play, and keeping puzzle state out of Zen sti
   `PuzzlePlay` and neither side needs a preview flag.
 - Accept any non-overlapping placement inside the wedge. Match the completed
   colors to determine success, then remove interaction and piece/wedge outlines.
-- Render the dragged piece at board scale with the grabbed tile centered on the
-  pointer, not as an offset translucent copy or snapped preview (circle rings
-  is the exception; see its entry below). Muted mirrored
+- Render the dragged piece at board scale. Over a wedge tile where every tile of
+  the piece fits, it snaps to that exact board position (the pull reaches only
+  `SNAP_REACH`, 0.02 of a tile, beyond a tile's own area, in
+  `puzzleSnap.ts`), so what shows is what lands. It never snaps onto an occupied
+  spot. With no open spot in reach it floats under the pointer, slightly enlarged
+  and casting a soft shadow that clears, with a scale and shadow transition,
+  when it settles. A color or opacity cue was tried and dropped because it
+  depends on the palette (a faded color can look like another palette color);
+  a blur or frosted-glass cue was considered and not built, since the
+  snap-or-float state already says whether a spot works. A placed piece lifted
+  off the board leaves its spot empty until it lands again. Muted mirrored
   tiles reveal full color on completion; placed tray entries are disabled and
   desaturated until returned.
+- Held pieces turn while held on rotation puzzles, about the grabbed tile and
+  re-checking for an open spot after each turn: the R key (not with Ctrl, Cmd, or
+  Alt), right-click for a mouse only (a trackpad two-finger tap would lift the
+  held finger), or a tap from a second finger on touch. The turn is kept where the
+  piece lands or when a tray piece is dropped in the air, and discarded when a
+  piece lifted from the board is dropped nowhere valid, so it never ends up
+  half-turned.
+- On touch the held piece is drawn above the fingertip so the finger does not
+  cover it, and the piece, not the finger, decides where it snaps, lands, or
+  drops into the tray. The clearance is 60/56/50 CSS pixels for small, medium,
+  and large boards (`TOUCH_HOLD_OFFSETS`), tuned by hand on a phone because
+  larger boards have smaller pieces. It flips below the finger near the top of
+  the screen. The held piece's box is sized to hold the whole piece and its
+  shadow; an earlier tiny box with overflowing content went invisible in iOS
+  Safari once the shadow filter was applied.
 - Keep the goal image and uniformly scaled tray pieces together above the
   full-width board, without visible instructions or piece labels. Celebrate a
   solve with a brief "Congrats!" fade (Mr Dafoe, accent fill, base outline) over
@@ -164,8 +187,14 @@ deleting an unused draft frees its seed unless another saved row still uses it.
 Different seeds can yield visually identical designs.
 
 Tray clicks/taps rotate 60 degrees; dragging moves. Return board pieces via
-double-click/double-tap or dragging back, preserving orientation; no board rotation
-or separate rotate/return buttons. Keyboard equivalents remain available.
+double-click/double-tap or dragging back, preserving orientation; there are no
+separate rotate/return buttons. A piece on the board turns only while it is held
+(see Puzzle Mode decisions above for the R key, right-click, and second-finger
+tap). Tapping a placed piece to turn it in place, pivoting on other tiles when
+the tapped one did not fit, was built and removed: on small boards there was
+often no room until the piece was already in the right spot, and the shifting
+pivot made landings hard to predict. Double-tap to return stays, and rapid taps
+are not turned into rotations. Keyboard equivalents remain available.
 Stable square containers reserve all orientations at consistent tile scale,
 with one subtle selected/focus border. Players meet rotation through a first-use tutorial (see Puzzle tutorials).
 The admin lab does not mount Zen state or write player progress. Named drafts

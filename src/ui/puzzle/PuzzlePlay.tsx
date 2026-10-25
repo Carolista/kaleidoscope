@@ -14,14 +14,42 @@ import {
 	isPuzzleSolved,
 	pieceCells,
 	placePuzzlePiece,
+	nearestOpenAnchor,
 	type PuzzlePiece,
 	type PuzzlePlacements,
+	puzzleGridSizeClass,
 	puzzleShapes,
 	rotateCoordinate,
+	screenToBoard,
 } from '@/domain/puzzles'
+import type { GridSize } from '@/domain/shapes'
 import type { AxialCoord } from '@/domain/shapes/hexagon'
 import PuzzleBoard, { PieceGraphic } from './PuzzleBoard'
 import styles from './PuzzlePlay.module.css'
+import { tileSizes } from './tileSizes'
+
+// A finger covers a small piece, so touch holds it this far above the
+// fingertip (CSS pixels). The piece, not the finger, decides where it snaps and
+// lands. Near the top of the screen it flips below the finger instead. Bigger
+// boards have smaller pieces, which need less clearance.
+const TOUCH_HOLD_OFFSETS: Readonly<Record<GridSize, number>> = {
+	sm: 60,
+	md: 56,
+	lg: 50,
+}
+
+function heldPoint(
+	event: { readonly clientX: number; readonly clientY: number },
+	pointerType: string,
+	offset: number,
+) {
+	if (pointerType !== 'touch') return { x: event.clientX, y: event.clientY }
+	const above = event.clientY - offset
+	return {
+		x: event.clientX,
+		y: above < 0 ? event.clientY + offset : above,
+	}
+}
 
 interface DragState {
 	readonly piece: PuzzlePiece
@@ -34,6 +62,10 @@ interface DragState {
 	readonly y: number
 	readonly scale: number
 	readonly anchor: AxialCoord | null
+	// The anchor of the nearest open spot within reach, where the piece snaps.
+	readonly snapAnchor?: AxialCoord | null
+	// Total turns of the held piece; committed to the puzzle only where it lands.
+	readonly rotation: number
 	// The board's screen transform at the last pointer move, for snapped drawing.
 	readonly board?: DOMMatrix | null
 	readonly moved: boolean
@@ -120,8 +152,24 @@ export default function PuzzlePlay({
 	}))
 	const { rotationStep } = puzzleShapes[currentPuzzle.shape]
 	const rotationDegrees = rotationStep * 60
-	const colors = getPuzzleColors(currentPuzzle, placements)
+	// A piece lifted off the board leaves its spot empty until it lands again.
+	const liftedId = drag?.moved ? drag.piece.id : null
+	const shownPlacements =
+		liftedId && placements[liftedId]
+			? Object.fromEntries(
+					Object.entries(placements).filter(
+						([id]) => id !== liftedId,
+					),
+				)
+			: placements
+	const colors = getPuzzleColors(currentPuzzle, shownPlacements)
 	const solved = isPuzzleSolved(currentPuzzle, placements)
+	// A held piece snaps to the nearest open spot (see nearestOpenAnchor) so what
+	// you see is what lands, and floats with the pointer when there is none.
+	const dragSnap =
+		drag?.snapAnchor && drag.board
+			? { anchor: drag.snapAnchor, board: drag.board }
+			: undefined
 	const placedCount = Object.keys(placements).length
 	const anyRotated = Object.values(rotations).some(turns => turns !== 0)
 	const reportProgress = useEffectEvent(() =>
@@ -158,19 +206,29 @@ export default function PuzzlePlay({
 		if (piece) place(id, anchorAt(piece, cell, rotations[id] ?? 0))
 	}
 
-	function place(id: string, anchor: AxialCoord) {
+	// A piece that is not on the board keeps the turns it was held at.
+	function keepRotation(id: string, turns: number) {
+		if (turns === (rotations[id] ?? 0)) return
+		setRotations(previous => ({ ...previous, [id]: turns }))
+	}
+
+	function place(
+		id: string,
+		anchor: AxialCoord,
+		rotation = rotations[id] ?? 0,
+	) {
 		if (solved) return
 		const result = placePuzzlePiece(currentPuzzle, placements, id, {
 			...anchor,
-			...(currentPuzzle.rotationAllowed
-				? { rotation: rotations[id] ?? 0 }
-				: {}),
+			...(currentPuzzle.rotationAllowed ? { rotation } : {}),
 		})
 		if (!result.ok) {
+			if (!placements[id]) keepRotation(id, rotation)
 			setSelectedId(id)
 			setMessage(result.reason)
 			return
 		}
+		keepRotation(id, rotation)
 		setPlacements(result.placements)
 		setSelectedId(null)
 		if (isPuzzleSolved(currentPuzzle, result.placements)) onSolve?.()
@@ -243,6 +301,7 @@ export default function PuzzlePlay({
 			y: event.clientY,
 			scale: transform ? Math.hypot(transform.a, transform.b) : 1,
 			anchor: null,
+			rotation: rotations[piece.id] ?? 0,
 			moved: false,
 		}
 		dragRef.current = next
@@ -253,15 +312,23 @@ export default function PuzzlePlay({
 	function pointerPosition(event: PointerEvent): DragState | null {
 		const current = dragRef.current
 		if (!current || event.pointerId !== current.pointerId) return null
-		const element = document.elementFromPoint(event.clientX, event.clientY)
+		const held = heldPoint(
+			event,
+			current.pointerType,
+			TOUCH_HOLD_OFFSETS[
+				puzzleGridSizeClass(currentPuzzle.shape, currentPuzzle.gridSize)
+			],
+		)
+		const element = document.elementFromPoint(held.x, held.y)
 		const key = element
 			?.closest('[data-puzzle-cell]')
 			?.getAttribute('data-puzzle-cell')
 		const coord = key ? key.split(',').map(Number) : null
+		const board = boardRef.current?.getScreenCTM?.() ?? null
 		return {
 			...current,
-			x: event.clientX,
-			y: event.clientY,
+			x: held.x,
+			y: held.y,
 			moved:
 				current.moved ||
 				Math.hypot(
@@ -274,9 +341,124 @@ export default function PuzzlePlay({
 						r: coord[1] - current.offset.r,
 					}
 				: null,
-			board: boardRef.current?.getScreenCTM?.() ?? null,
+			board,
+			snapAnchor: snapAnchorFor(current, board, held.x, held.y),
 		}
 	}
+
+	function snapAnchorFor(
+		held: DragState,
+		board: DOMMatrix | null,
+		x: number,
+		y: number,
+	): AxialCoord | null {
+		return board
+			? nearestOpenAnchor({
+					puzzle: currentPuzzle,
+					placements,
+					pieceId: held.piece.id,
+					rotation: currentPuzzle.rotationAllowed ? held.rotation : 0,
+					offset: held.offset,
+					pointer: screenToBoard(board, { x, y }),
+					size: tileSizes[currentPuzzle.shape],
+				})
+			: null
+	}
+
+	// Turns the held piece one step about the tile under the pointer, then looks
+	// again for an open spot, so it snaps if it fits there turned.
+	function rotateHeld() {
+		const held = dragRef.current
+		if (!held || solved || !currentPuzzle.rotationAllowed) return
+		const offset = rotateCoordinate(held.offset, rotationStep)
+		const hovered = held.anchor && {
+			q: held.anchor.q + held.offset.q,
+			r: held.anchor.r + held.offset.r,
+		}
+		const turned: DragState = {
+			...held,
+			rotation: (held.rotation + rotationStep) % 6,
+			piece: {
+				...held.piece,
+				tiles: held.piece.tiles.map(tile =>
+					rotateCoordinate(tile, rotationStep),
+				),
+			},
+			offset,
+			anchor: hovered && {
+				q: hovered.q - offset.q,
+				r: hovered.r - offset.r,
+			},
+		}
+		const next = {
+			...turned,
+			snapAnchor: snapAnchorFor(
+				turned,
+				held.board ?? null,
+				held.x,
+				held.y,
+			),
+		}
+		dragRef.current = next
+		setDrag(next)
+		setMessage(`Piece rotated ${rotationDegrees} degrees.`)
+	}
+
+	const rotateOnKey = useEffectEvent((event: KeyboardEvent) => {
+		if (
+			event.key.toLowerCase() !== 'r' ||
+			event.repeat ||
+			event.ctrlKey ||
+			event.metaKey ||
+			event.altKey ||
+			!currentPuzzle.rotationAllowed
+		)
+			return
+		event.preventDefault()
+		rotateHeld()
+	})
+	const rotateOnRightClick = useEffectEvent((event: MouseEvent) => {
+		if (
+			dragRef.current?.pointerType !== 'mouse' ||
+			!currentPuzzle.rotationAllowed
+		)
+			return
+		event.preventDefault()
+		rotateHeld()
+	})
+	// A second finger tapping anywhere turns the piece the first finger holds.
+	const rotateOnSecondTouch = useEffectEvent(
+		(event: globalThis.PointerEvent) => {
+			const held = dragRef.current
+			if (
+				!held ||
+				event.pointerType !== 'touch' ||
+				held.pointerType !== 'touch' ||
+				event.pointerId === held.pointerId ||
+				!currentPuzzle.rotationAllowed
+			)
+				return
+			suppressClickRef.current = true
+			rotateHeld()
+		},
+	)
+	const holding = drag !== null
+
+	useEffect(() => {
+		if (!holding) return
+		const onKey = (event: KeyboardEvent) => rotateOnKey(event)
+		const onContext = (event: MouseEvent) => rotateOnRightClick(event)
+		const onTouch = (event: globalThis.PointerEvent) =>
+			rotateOnSecondTouch(event)
+		window.addEventListener('keydown', onKey)
+		window.addEventListener('contextmenu', onContext)
+		window.addEventListener('pointerdown', onTouch)
+		return () => {
+			window.removeEventListener('keydown', onKey)
+			window.removeEventListener('contextmenu', onContext)
+			window.removeEventListener('pointerdown', onTouch)
+		}
+	}, [holding])
 
 	function endDrag(event: PointerEvent) {
 		const current = pointerPosition(event)
@@ -309,15 +491,20 @@ export default function PuzzlePlay({
 		}
 		lastTouchTapRef.current = null
 		suppressClickRef.current = true
-		if (current.anchor) {
-			place(current.piece.id, current.anchor)
+		// Releasing over a tile with no open spot still tries it, for the reason message.
+		const target = current.snapAnchor ?? current.anchor
+		if (target) {
+			place(current.piece.id, target, current.rotation)
 		} else if (
 			document
-				.elementFromPoint(event.clientX, event.clientY)
+				.elementFromPoint(current.x, current.y)
 				?.closest('[data-puzzle-tray]')
 		) {
 			returnToTray(current.piece.id)
+			keepRotation(current.piece.id, current.rotation)
 		} else {
+			if (!placements[current.piece.id])
+				keepRotation(current.piece.id, current.rotation)
 			setSelectedId(current.piece.id)
 			setMessage(
 				'Drop onto a wedge tile, or return the piece to the tray.',
@@ -462,7 +649,7 @@ export default function PuzzlePlay({
 						colors={colors}
 						solved={solved}
 						pieces={currentPuzzle.pieces}
-						placements={placements}
+						placements={shownPlacements}
 						selectedId={selectedId}
 						onActivate={activateCell}
 						onReturn={cell => {
@@ -495,18 +682,7 @@ export default function PuzzlePlay({
 				<PieceGraphic
 					shape={currentPuzzle.shape}
 					piece={drag.piece}
-					drag={{
-						...drag,
-						// Shapes that bend their lattice show a dragged piece at its
-						// exact board position once it is over a wedge tile, so what
-						// you see is what lands.
-						snap:
-							puzzleShapes[currentPuzzle.shape].pieceCorners &&
-							drag.anchor &&
-							drag.board
-								? { anchor: drag.anchor, board: drag.board }
-								: undefined,
-					}}
+					drag={{ ...drag, snap: dragSnap }}
 				/>
 			)}
 		</section>

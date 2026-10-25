@@ -33,6 +33,7 @@ import {
 	placePuzzlePiece,
 	PUZZLE_RECIPES,
 	rotateCoordinate,
+	unplaceableTiles,
 } from './puzzle'
 import type { PuzzlePlacements } from './puzzle'
 import { pinwheelGridSize, puzzleShapes } from './puzzleShapes'
@@ -155,6 +156,32 @@ describe('piece placement', () => {
 		expect(placePuzzlePiece(puzzle, {}, 'missing', { q: 0, r: 0 }).ok).toBe(
 			false,
 		)
+	})
+
+	it('lists the tiles that cannot land, ignoring the piece itself', () => {
+		const placements = { [other.id]: puzzle.solution[other.id] }
+		expect(
+			unplaceableTiles(puzzle, placements, single.id, { q: 99, r: 99 }),
+		).toEqual(new Set(['99,99']))
+		expect(
+			unplaceableTiles(
+				puzzle,
+				placements,
+				single.id,
+				puzzle.solution[other.id],
+			).size,
+		).toBe(1)
+		expect(
+			unplaceableTiles(
+				puzzle,
+				puzzle.solution,
+				other.id,
+				puzzle.solution[other.id],
+			).size,
+		).toBe(0)
+		expect(
+			unplaceableTiles(puzzle, {}, 'missing', { q: 0, r: 0 }).size,
+		).toBe(0)
 	})
 
 	it('accepts an incorrect but fitting placement, and can move an existing piece', () => {

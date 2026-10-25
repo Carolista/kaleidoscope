@@ -7,7 +7,12 @@ import type { PlayerContent, PlayerPuzzleSet } from '@/ui/content'
 import { PlayerProgressContext } from '@/ui/content/PlayerProgressContext'
 import { generateHexagonCells } from '@/domain/shapes/hexagon'
 import { withLightness } from '@/domain/palettes'
-import { coordinateKey, generatePuzzle, pieceCells } from '@/domain/puzzles'
+import {
+	coordinateKey,
+	generatePuzzle,
+	pieceCells,
+	puzzleShapes,
+} from '@/domain/puzzles'
 import PuzzleMode from './PuzzleMode'
 import styles from '@/ui/puzzle/PuzzleBoard.module.css'
 import {
@@ -1015,15 +1020,20 @@ describe('PuzzleMode', () => {
 		}
 	})
 
-	it('drags an opaque piece under the pointer at board scale without a grid preview', () => {
+	it('drags an opaque piece at board scale, snapping to its board position over a wedge tile', () => {
 		renderPlaying()
 		const piece = puzzle.pieces[0]
 		const source = pieceButton(0)
 		const board = screen.getByRole('group', { name: 'Puzzle board' })
 		Object.defineProperty(board, 'getScreenCTM', {
-			value: () => ({ a: 2, b: 0 }),
+			value: () => ({ a: 2, b: 0, c: 0, d: 2, e: 0, f: 0 }),
 		})
 		const destination = tileAt(coordinateKey(puzzle.solution[piece.id]))
+		// The hexagon board draws tiles at 16 units; the first tile is the grab point.
+		const snapped = puzzleShapes.hexagon.center(
+			puzzle.solution[piece.id],
+			16,
+		)
 		hitTest.mockReturnValue(destination)
 		fireEvent.pointerDown(source, {
 			pointerId: 1,
@@ -1033,18 +1043,35 @@ describe('PuzzleMode', () => {
 		})
 		fireEvent.pointerMove(source, {
 			pointerId: 1,
-			clientX: 100,
-			clientY: 100,
+			clientX: 2 * snapped.x + 3,
+			clientY: 2 * snapped.y - 3,
 		})
 		expect(board.querySelectorAll('polygon')).toHaveLength(37)
 		const graphic = document.querySelector(`.${styles.draggedPiece}`)!
-		expect(graphic).toHaveStyle({
-			left: '99px',
-			top: '99px',
-			width: '2px',
-			height: '2px',
-		})
-		expect(graphic).toHaveAttribute('viewBox', '-0.5 -0.5 1 1')
+		// The box is centered on the grabbed tile, in board units and on screen.
+		const heldCenter = () => {
+			const [x, y, size] = graphic
+				.getAttribute('viewBox')!
+				.split(' ')
+				.map(Number)
+			const style = (graphic as SVGElement).style
+			const width = parseFloat(style.width)
+			return {
+				board: { x: x + size / 2, y: y + size / 2 },
+				screen: {
+					x: parseFloat(style.left) + width / 2,
+					y: parseFloat(style.top) + width / 2,
+				},
+				// Screen pixels per board unit.
+				scale: width / size,
+			}
+		}
+		expect(heldCenter().board.x).toBeCloseTo(snapped.x, 6)
+		expect(heldCenter().board.y).toBeCloseTo(snapped.y, 6)
+		expect(heldCenter().screen.x).toBeCloseTo(2 * snapped.x, 6)
+		expect(heldCenter().screen.y).toBeCloseTo(2 * snapped.y, 6)
+		expect(heldCenter().scale).toBeCloseTo(2, 6)
+		expect(graphic).not.toHaveClass(styles.floatingPiece)
 		expect(graphic.querySelectorAll('polygon')).toHaveLength(
 			piece.tiles.length,
 		)
@@ -1055,7 +1082,8 @@ describe('PuzzleMode', () => {
 			clientX: 150,
 			clientY: 200,
 		})
-		expect(graphic).toHaveStyle({ left: '149px', top: '199px' })
+		expect(heldCenter().screen).toEqual({ x: 150, y: 200 })
+		expect(graphic).toHaveClass(styles.floatingPiece)
 		hitTest.mockReturnValue(destination)
 		fireEvent.pointerUp(source, {
 			pointerId: 2,
@@ -1072,6 +1100,77 @@ describe('PuzzleMode', () => {
 		expect(
 			document.querySelector(`.${styles.draggedPiece}`),
 		).not.toBeInTheDocument()
+	})
+
+	it('floats over a piece that is in the way and snaps to an open spot', () => {
+		renderPlaying()
+		const [first, second] = puzzle.pieces
+		const board = screen.getByRole('group', { name: 'Puzzle board' })
+		dragTo(pieceButton(0), tileAt(coordinateKey(puzzle.solution[first.id])))
+		Object.defineProperty(board, 'getScreenCTM', {
+			value: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }),
+		})
+		const occupied = puzzleShapes.hexagon.center(
+			puzzle.solution[first.id],
+			16,
+		)
+		const open = puzzleShapes.hexagon.center(puzzle.solution[second.id], 16)
+		hitTest.mockReturnValue(null)
+		const source = pieceButton(1)
+		fireEvent.pointerDown(source, {
+			pointerId: 3,
+			button: 0,
+			clientX: 500,
+			clientY: 500,
+		})
+		fireEvent.pointerMove(source, {
+			pointerId: 3,
+			clientX: occupied.x,
+			clientY: occupied.y,
+		})
+		const graphic = document.querySelector(`.${styles.draggedPiece}`)!
+		expect(graphic).toHaveClass(styles.floatingPiece)
+		fireEvent.pointerMove(source, {
+			pointerId: 3,
+			clientX: open.x,
+			clientY: open.y,
+		})
+		expect(graphic).not.toHaveClass(styles.floatingPiece)
+		fireEvent.pointerUp(source, {
+			pointerId: 3,
+			clientX: open.x,
+			clientY: open.y,
+		})
+		expect(pieceButton(1)).toHaveAccessibleName(/on board/)
+	})
+
+	it('empties the spot of a placed piece while it is lifted, and restores it if dropped nowhere', () => {
+		renderPlaying()
+		const destination = tileAt(
+			coordinateKey(puzzle.solution[puzzle.pieces[0].id]),
+		)
+		dragTo(pieceButton(0), destination)
+		const placedFill = destination.getAttribute('fill')
+		expect(placedFill).not.toBe('var(--accent)')
+		hitTest.mockReturnValue(null)
+		fireEvent.pointerDown(destination, {
+			pointerId: 4,
+			button: 0,
+			clientX: 10,
+			clientY: 10,
+		})
+		fireEvent.pointerMove(destination, {
+			pointerId: 4,
+			clientX: 300,
+			clientY: 300,
+		})
+		expect(destination).toHaveAttribute('fill', 'var(--accent)')
+		fireEvent.pointerUp(destination, {
+			pointerId: 4,
+			clientX: 300,
+			clientY: 300,
+		})
+		expect(destination).toHaveAttribute('fill', placedFill)
 	})
 
 	it('keeps progress while hidden and moves to the next puzzle in the set', async () => {

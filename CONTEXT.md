@@ -233,7 +233,12 @@ triangle and hexagram tiles flip between pointing up and down);
 dragging moves it without rotating. Double-click/double-tap a board piece or drag
 it back to return it to the tray, preserving orientation. Keyboard: Enter/Space
 rotates/selects in tray, board activation places, Delete/Backspace on an occupied
-tile returns its piece. Rotation happens only in the tray. Containers stay square
+tile returns its piece. A piece turns in the tray, or while held: the R key, a
+mouse right-click, or a tap from a second finger on touch (it turns about the
+grabbed tile and re-checks for an open spot). A held piece snaps to the nearest
+open spot within a very short reach and otherwise floats with a soft shadow;
+on touch it is held above the fingertip, by 60, 56, or 50 pixels on small,
+medium, and large boards. Containers stay square
 across all orientations, with one subtle selected/focus border and normal disabled
 cursor. Players get a short tutorial the first time they meet turning pieces (see Puzzle tutorials).
 
@@ -332,7 +337,7 @@ above the full-width board. Boards and pieces use the Zen look: empty tiles are
 `var(--accent)` with a `var(--base)` stroke, only the wedge is at full opacity until
 solved, and each placed piece gets a single thicker `var(--base)` outline (the selected
 piece adds a thin solid accent line, drawn above the other outlines so shared edges stay visible; clicking
-another placed piece moves the selection to it). On circle rings, a dragged piece snaps to its exact board position while over a wedge tile, and tray pieces use an even hex lattice. Hovering a wedge tile uses a per-cell fill (brightened
+another placed piece moves the selection to it). Hovering a wedge tile uses a per-cell fill (brightened
 painted color, or accent drifting toward base when empty). Solving briefly fades "Congrats!"
 (Mr Dafoe, accent fill, base outline, about 85% of the board's width) over the board; there is
 no dialog for the solve itself, so the solved design stays in view (a set that earns something then opens the reward dialog). The Next puzzle button (the next unsolved
@@ -526,7 +531,7 @@ Test files and `src/test/` are exempt so tests can reach internals and mock exac
 | [ui/puzzle/](./src/ui/puzzle/) | Shared `PuzzlePlay` (target, tray, board, optional `celebration` text, `onProgress`, `aboveBoard` slot, pointer/keyboard interaction) and shape-neutral `PuzzleBoard` |
 | [domain/shapes/](./src/domain/shapes/) | React-free shape catalog, sizes, registry, and one folder per shape (grid, layout, types). The catalog's `supportedGridShapes` order is the single shape order (unlock order, Circle Rings last); `PUZZLE_SHAPE_IDS`, `PUZZLE_SHAPE_LABELS`, and every shape menu derive from it |
 | [domain/geometry/](./src/domain/geometry/) | `Point`, shared geometry math, symmetry engine, cell grouping, SVG points |
-| [domain/puzzles/](./src/domain/puzzles/) | Pure seeded puzzle generation, authoring, stored-definition readers (`readAuthoredPuzzle` for admins, `readPlayablePuzzle` for players, which never sees seeds or solutions), placement validation, and completion; per-shape adapters in `puzzleShapes.ts` |
+| [domain/puzzles/](./src/domain/puzzles/) | Pure seeded puzzle generation, authoring, stored-definition readers (`readAuthoredPuzzle` for admins, `readPlayablePuzzle` for players, which never sees seeds or solutions), placement validation (`unplaceableTiles`), magnet snapping for held pieces (`puzzleSnap.ts`), and completion; per-shape adapters in `puzzleShapes.ts` |
 | [domain/palettes/](./src/domain/palettes/) | Palette types (`Palette`, `PlayerPalette` with an ID), color math, light/dark theme colors, tutorial palette IDs (`introPalettes.ts`); no bundled palette list |
 | [lib/supabase/](./src/lib/supabase/) | Supabase browser clients (`getSupabaseClient` for the admin's session, `getGuestClient` for content reads, with no stored session, `getPlayerClient` for the signed-in player under its own storage key with PKCE) and generated database types |
 | [test/](./src/test/) | Vitest setup, shared render/interaction helpers, and `playerContent.ts` (sample palettes and content for tests) |

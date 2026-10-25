@@ -89,7 +89,9 @@ screens stack the columns. The compact header groups account, sign-out, and them
 controls, with favicon navigation back to the player app. Admin defaults to dark
 mode and uses the same neutral charcoal/white theme colors as the player app.
 
-Click/tap tray pieces to rotate in rotation-enabled recipes; drag to move.
+Click/tap tray pieces to rotate in rotation-enabled recipes; drag to move. While
+holding a piece, press R (or right-click with a mouse, or tap with a second finger
+on touch) to turn it; it snaps to an open spot nearby or floats with a soft shadow.
 Double-click/double-tap board pieces or drag back to return them to the tray.
 Keyboard users can rotate/select with Enter/Space, activate a board tile to place,
 and use Delete/Backspace on an occupied tile to return its piece. Square tray

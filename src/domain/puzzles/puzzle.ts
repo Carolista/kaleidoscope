@@ -304,6 +304,38 @@ export function getPuzzleColors(
 	)
 }
 
+function colorsOfOtherPieces(
+	puzzle: Puzzle,
+	placements: PuzzlePlacements,
+	pieceId: string,
+): Record<string, string> {
+	const otherPlacements = { ...placements }
+	delete otherPlacements[pieceId]
+	return getPuzzleColors(puzzle, otherPlacements)
+}
+
+// Coordinate keys of the piece's tiles that could not land at this anchor:
+// outside the wedge or on another piece. Empty when the piece fits.
+export function unplaceableTiles(
+	puzzle: Puzzle,
+	placements: PuzzlePlacements,
+	pieceId: string,
+	anchor: PuzzlePlacement,
+): Set<string> {
+	const piece = puzzle.pieces.find(piece => piece.id === pieceId)
+	if (!piece) return new Set()
+	const occupied = colorsOfOtherPieces(puzzle, placements, pieceId)
+	return new Set(
+		pieceCells(piece, anchor)
+			.map(coordinateKey)
+			.filter(
+				key =>
+					!Object.hasOwn(puzzle.target, key) ||
+					Object.hasOwn(occupied, key),
+			),
+	)
+}
+
 export function placePuzzlePiece(
 	puzzle: Puzzle,
 	placements: PuzzlePlacements,
@@ -336,9 +368,7 @@ export function placePuzzlePiece(
 			reason: 'Keep every tile inside the outlined wedge.',
 		}
 	}
-	const otherPlacements = { ...placements }
-	delete otherPlacements[pieceId]
-	const occupied = getPuzzleColors(puzzle, otherPlacements)
+	const occupied = colorsOfOtherPieces(puzzle, placements, pieceId)
 	if (cells.some(cell => Object.hasOwn(occupied, coordinateKey(cell)))) {
 		return { ok: false, reason: 'That space overlaps another piece.' }
 	}

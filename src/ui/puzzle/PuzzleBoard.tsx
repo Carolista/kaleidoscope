@@ -17,18 +17,10 @@ import type {
 	PuzzleShapeId,
 } from '@/domain/puzzles'
 import styles from './PuzzleBoard.module.css'
+import { tileSizes } from './tileSizes'
 
-// SVG units per tile: a hexagon's circumradius, a triangle's side (also used
-// by hexagram), a diamond-star or pinwheel lattice step, or an inner ring's
-// circle diameter.
-const tileSizes: Readonly<Record<PuzzleShapeId, number>> = {
-	hexagon: 16,
-	triangle: 28,
-	diamondStar: 48,
-	hexagram: 28,
-	circleRings: 30,
-	pinwheel: 22,
-}
+// Board units around a held piece kept for its shadow and lift.
+const HELD_SHADOW_ROOM = 16
 
 function cornersFor(shape: PuzzleShapeId, cell: PlacedCoord) {
 	return puzzleShapes[shape].corners(cell, tileSizes[shape])
@@ -164,20 +156,51 @@ export function PieceGraphic({
 		),
 	)
 	const viewBox = `${minX + width / 2 - side / 2} ${minY + height / 2 - side / 2} ${side} ${side}`
+	// A held piece's box is sized to hold the whole piece and its shadow, centered
+	// on the grabbed tile. Relying on overflow outside a tiny box left the piece
+	// invisible in iOS Safari once a filter was applied.
+	const half =
+		drag && grabbed
+			? Math.max(
+					...tiles.flatMap(tile =>
+						(snap
+							? cornersFor(shape, tile)
+							: pieceCornersFor(shape, tile)
+						).map(point =>
+							Math.max(
+								Math.abs(point.x - grabbed.x),
+								Math.abs(point.y - grabbed.y),
+							),
+						),
+					),
+				) *
+					1.1 +
+				HELD_SHADOW_ROOM
+			: 0
 	return (
 		<svg
 			viewBox={
-				grabbed ? `${grabbed.x - 0.5} ${grabbed.y - 0.5} 1 1` : viewBox
+				grabbed
+					? `${grabbed.x - half} ${grabbed.y - half} ${2 * half} ${2 * half}`
+					: viewBox
 			}
-			className={drag ? styles.draggedPiece : undefined}
+			className={
+				drag
+					? snap
+						? styles.draggedPiece
+						: `${styles.draggedPiece} ${styles.floatingPiece}`
+					: undefined
+			}
 			style={
 				drag && screen
-					? {
-							left: screen.x - drag.scale / 2,
-							top: screen.y - drag.scale / 2,
-							width: drag.scale,
-							height: drag.scale,
-						}
+					? ({
+							left: screen.x - half * drag.scale,
+							top: screen.y - half * drag.scale,
+							width: 2 * half * drag.scale,
+							height: 2 * half * drag.scale,
+							// The shadow follows the board's scale: 4 tile units of lift.
+							'--lift': `${drag.scale * 4}px`,
+						} as CSSProperties)
 					: { width: side, height: side }
 			}
 			aria-hidden="true"
