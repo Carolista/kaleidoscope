@@ -10,7 +10,7 @@ import { GridShapeButton } from '@/features/zen/controls/shapes'
 import { ColorOptions, PaletteButton } from '@/features/zen/controls/palettes'
 import { SaveImageButton } from '@/features/zen/export'
 import { GridTransition, ShapeGrid } from '@/features/zen/grid'
-import { IntroSequence } from '@/features/zen/intro'
+import { ZenIntro } from '@/features/zen/intro'
 import { useZenState } from '@/features/zen/state'
 import styles from './ZenMode.module.css'
 
@@ -27,7 +27,7 @@ export default function ZenMode({
 	const svgRef = useRef<SVGSVGElement>(null)
 
 	return showIntro ? (
-		<IntroSequence onContinue={onIntroComplete} />
+		<ZenIntro onContinue={onIntroComplete} />
 	) : (
 		<>
 			<GridTransition

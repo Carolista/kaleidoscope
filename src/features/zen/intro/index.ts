@@ -1,1 +1,1 @@
-export { default as IntroSequence } from './IntroSequence'
+export { default as ZenIntro } from './ZenIntro'
