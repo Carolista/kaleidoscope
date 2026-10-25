@@ -30,7 +30,7 @@ export default function UnlockedSetItem({
 				className={styles.link}
 				onClick={() => onOpenSet(set)}
 			>
-				Go to puzzle set now
+				Go to puzzle set now!
 			</button>
 		</div>
 	)
