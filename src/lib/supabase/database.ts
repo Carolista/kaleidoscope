@@ -873,6 +873,21 @@ export type Database = {
 				Args: { p_shape_ids: string[] }
 				Returns: string[]
 			}
+			preview_puzzles: {
+				Args: never
+				Returns: {
+					board_size: string
+					definition: Json
+					difficulty: string
+					id: string
+					name: string
+					palette_id: string
+					published_at: string | null
+					release_at: string | null
+					rotation_allowed: boolean
+					shape_id: string
+				}[]
+			}
 			preview_release: {
 				Args: {
 					p_action: string

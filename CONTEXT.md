@@ -501,7 +501,7 @@ Test files and `src/test/` are exempt so tests can reach internals and mock exac
 | [features/puzzle/](./src/features/puzzle/) | Player Puzzle Mode: set list, difficulty grid of solved images, play session with the Congrats overlay and Next, the first-use tutorials (`intro/`), the announcement dialogs (`RewardModal`, `ShapeUnlockedModal`, `AccountPromptModal`, `SignInNudgeModal`), and the device's completed-tutorial record (`introProgress.ts`) and one-time prompt flags (`accountPrompt.ts`) |
 | [features/admin/](./src/features/admin/) | Lazy-loaded admin portal. `shell/` (portal, workspace, navigation), `catalog/` (session cache), `common/` (layout, icon button, form), `groups/` (shared group editing), one folder per content area (`puzzles/`, `puzzle-groups/`, `palettes/`, `palette-groups/`), `services/` (Supabase reads/writes), `testing/` |
 | [ui/components/](./src/ui/components/) | Shared controls: buttons, `DarkModeToggle`, palette-tinted `Checkbox`, native `Modal`, `ModalHeader`, `ConfirmDialog` and its dismissal preferences, form fields, loading, palette strips/choices |
-| [ui/content/](./src/ui/content/) | Player content: `loadPlayerContent` (released core palettes, core and bonus puzzle sets, rewards, shape order, an account's unlocked shapes), `PlayerContentProvider` (loads before the app starts, for the guest or the signed-in player), `PlayerProgressProvider` (the player's solved puzzles on the device or account, `usePlayerProgress` with `markSolved` and `guestImport`, and `usePlayerContent` over what has been earned, via `rewards.ts`), `accountProgress.ts` (reads and records an account's solves), `solvedPuzzles.ts` (the guest save, the per-account cache with pending solves, and the import decision), and the offline content cache |
+| [ui/content/](./src/ui/content/) | Player content: `loadPlayerContent` (released core palettes, core and bonus puzzle sets, rewards, shape order, an account's unlocked shapes), `PlayerContentProvider` (loads before the app starts, for the guest or the signed-in player), `PlayerProgressProvider` (the player's solved puzzles on the device or account, `usePlayerProgress` with `markSolved` and `guestImport`, and `usePlayerContent` over what has been earned, via `rewards.ts`), `accountProgress.ts` (reads and records an account's solves), `solvedPuzzles.ts` (the guest save, the per-account cache with pending solves, and the import decision), and the offline content cache, and `PuzzleResumeProvider` / `puzzleResume.ts` (per-device unfinished puzzles) |
 | [ui/theme/](./src/ui/theme/) | `PlayerThemeContext` (dark mode, active palette, toggle), `useDuotoneIconTint`, and `DuotoneTintColorContext` (lets a mode, such as a puzzle session, tint icons from its own color) |
 | [ui/hooks/](./src/ui/hooks/) | `useModalState`, `useIsTouchDevice` |
 | [ui/navigation/](./src/ui/navigation/) | App-wide unsaved-work navigation guard |
@@ -557,8 +557,9 @@ Until content is ready the provider shows its `gate`: `AppEntry` supplies the ap
 under the opening logo; with no `gate` they take a page of their own. The real app replaces the frame once content is ready and
 continues the opening animation from where it was (`entranceHandoff`; the star joins its spin part-way).
 A guest's solved puzzles are stored on the device as `{ version: 1, solved: [puzzle IDs] }` in `kaleidoscope:puzzle-progress`
-and are never merged into an account automatically (see Account progress below). The cache format is version 2 (it gained `rewards`; older caches
-are ignored).
+and are never merged into an account automatically (see Account progress below). The cache format is version 3 (it gained `rewards`, then `shapeOrder`; older caches
+are ignored). For an account the load also asks the database for the next tier of free puzzles (`preview_puzzles()`: bonus sets of shapes the player has, and the core and bonus sets of the one shape after them), so
+that a set finished offline can open them; a failure there is logged and the load continues without them.
 
 **Earned content.** [PlayerProgressProvider](./src/ui/content/PlayerProgressProvider.tsx) keeps the solved puzzles and
 gives every mode the same `usePlayerContent()`: [availableContent](./src/ui/content/rewards.ts) keeps all core sets and
@@ -569,7 +570,7 @@ and a reward palette already in the core list is not added twice. Reward palette
 [RewardModal](./src/features/puzzle/RewardModal.tsx): "Reward earned" and "Hooray!" (Mr Dafoe), then the new palettes
 (a color strip and name, with "Try it out in Zen Mode now", which switches mode) and/or the new bonus sets (the first
 puzzle image of each difficulty and the name, with "Go to puzzle set now", which opens that set; Next puzzle then continues inside that set).
-`markSolved` is async and its result also carries `shapes` and `accountShape`.
+`markSolved` is async and its result also carries `shapes` and `accountShape`. For an account, the content and shapes it uses include what the player's own solves have opened (see Offline unlocks below).
 
 **Announcements.** One solve can queue several dialogs, shown one after another in
 [PuzzleMode](./src/features/puzzle/PuzzleMode.tsx), each starting when the previous one has finished closing:
@@ -591,7 +592,18 @@ it and everything it earns, including opening the next shape. The account's prog
 is sent in the background; one that does waits for the server, then reloads the content, so the dialogs above can report what it opened. Server solves are merged in, never removed, so something
 solved on another device appears and a solve the server declined is still shown locally. `PlayerProgressProvider` also refreshes (sends anything pending, reloads, merges the server's solves) when the browser comes back online
 and when the tab becomes visible again, at most every 30 seconds, so a device left open picks up another device's solves. There are no conflict prompts: solves only accumulate, and in-progress puzzle state is per-device (see DECISIONS, "Only results sync
-between devices"). Another device's rewards appear without a dialog. Not built yet: server-side solution checking.
+between devices"). Another device's rewards appear without a dialog. Deferred: server-side solution checking.
+
+**Offline unlocks.** For an account, `availableContent(content, solved, true)` adds what the player's own solves have opened to what the server last said: `openShapes` opens the next shape once a core set of the one before it is
+complete (the same rule as the database's `has_shape`, applied again until nothing changes), the core sets of open shapes are the open sets, and the randomizer is earned locally once every shape is open, each has at least four sets, and
+all are solved. A guest never opens a shape. `markSolved` for an account compares what was available before and after the solve, so a set finished offline still announces its rewards, new shape, and randomizer; it only waits for the server
+when it can reach it. The pending solves are sent together when the connection returns, and `record_puzzle_completions` repeats until nothing changes, so the database confirms the same unlocks in any order. `PlayerContent.shapeOrder` holds the unlock order that this needs.
+
+**Puzzle resume.** [PuzzleResumeProvider](./src/ui/content/PuzzleResumeProvider.tsx) (mounted inside `PlayerProgressProvider`, keyed by player) keeps one attempt per unfinished puzzle, `{ setId, placements, rotations }`, in
+`kaleidoscope:puzzle-resume:<userId | guest>` ([puzzleResume.ts](./src/ui/content/puzzleResume.ts)); it is per device and never sent to the account. `usePuzzleResume()` gives `target` (the most recently played unfinished puzzle that is still open and unsolved),
+`attemptFor`, `save`, and `clear`. An attempt is rebuilt by replaying its placements against the puzzle as published now (`restoreAttempt`), dropping what no longer fits. `PuzzlePlay` takes `initialState` (read once) and reports `onStateChange`
+(not once solved); `PuzzleSession` saves through it and clears on solve or restart. On Home the Puzzle card says "Continue" while `target` exists, and `PlayerApp`'s `Modes` passes `PuzzleMode` an `openRequest` (a new `nonce` per request) so the puzzle opens straight away.
+Puzzle Mode stays mounted while hidden, so moving between modes within a visit needs no reload of its own.
 
 **Guest import.** When a signed-in player's device holds guest solves the account lacks, `usePlayerProgress().guestImport` describes them (`count`, `offered`, `run`, `decline`) and
 [GuestImportDialog](./src/features/account/GuestImportDialog.tsx) ("Import your progress?") opens by itself until the player answers: "Import progress" sends the IDs to the same function and reloads the

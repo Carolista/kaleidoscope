@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Database } from '@/lib/supabase'
+import type { Database, Tables } from '@/lib/supabase'
 import type { PlayerPalette } from '@/domain/palettes'
 import { PUZZLE_RECIPES, readPlayablePuzzle } from '@/domain/puzzles'
 import {
@@ -81,15 +81,54 @@ async function loadShapeOrder(client: SupabaseClient<Database>) {
 	return data.map(row => row.shape_id).filter(isGridShapeId)
 }
 
+type PaletteRow = Released & { id: string; name: string; colors: string[] }
+type PuzzleRow = Tables<'puzzles'> & { palettes: PaletteRow | null }
+
+// Free puzzles this account has not earned yet but needs on hand, so that a set finished
+// offline can open what it earns. The database returns only the next tier (see
+// `preview_puzzles`). They earn nothing by being loaded. A failure is not fatal: the player
+// just waits for a connection to open what they earn.
+async function loadPreviewPuzzles(
+	client: SupabaseClient<Database>,
+): Promise<Map<string, PuzzleRow>> {
+	try {
+		const { data, error } = await client.rpc('preview_puzzles')
+		if (error) throw new Error(error.message)
+		if (!data.length) return new Map()
+		const paletteIds = [...new Set(data.map(row => row.palette_id))]
+		const palettes = await client
+			.from('palettes')
+			.select('id, name, colors, published_at, release_at')
+			.in('id', paletteIds)
+		if (palettes.error) throw new Error(palettes.error.message)
+		const byId = new Map(palettes.data.map(row => [row.id, row]))
+		return new Map(
+			data.map(row => [
+				row.id,
+				{ ...row, palettes: byId.get(row.palette_id) ?? null },
+			]),
+		)
+	} catch (cause) {
+		console.warn('Could not load upcoming puzzles.', cause)
+		return new Map()
+	}
+}
+
 async function loadPuzzleSets(
 	client: SupabaseClient<Database>,
+	account: boolean,
 ): Promise<PlayerPuzzleSet[]> {
-	const { data, error } = await client
-		.from('puzzle_groups')
-		.select(
-			'id, name, purpose, shape_id, track, published_at, release_at, puzzle_group_members(position, puzzles(*, palettes(id, name, colors, published_at, release_at)))',
-		)
-		.in('purpose', ['core', 'reward'])
+	const [{ data, error }, previews] = await Promise.all([
+		client
+			.from('puzzle_groups')
+			.select(
+				'id, name, purpose, shape_id, track, published_at, release_at, puzzle_group_members(position, puzzle_id, puzzles(*, palettes(id, name, colors, published_at, release_at)))',
+			)
+			.in('purpose', ['core', 'reward']),
+		account
+			? loadPreviewPuzzles(client)
+			: Promise.resolve(new Map<string, PuzzleRow>()),
+	])
 	if (error) throw new Error(error.message)
 	return data.flatMap(group => {
 		const { shape_id: shape, track } = group
@@ -102,7 +141,7 @@ async function loadPuzzleSets(
 		const puzzles = [...group.puzzle_group_members]
 			.sort(byPosition)
 			.flatMap((member): PlayerPuzzle[] => {
-				const row = member.puzzles
+				const row = member.puzzles ?? previews.get(member.puzzle_id)
 				if (!row || !isLive(row)) return []
 				const palette = toPalette(row.palettes)
 				const difficulty = PUZZLE_RECIPES.find(
@@ -246,7 +285,7 @@ export async function loadPlayerContent(
 	const [palettes, shapeOrder, puzzleSets, rewards] = await Promise.all([
 		loadPalettes(client),
 		loadShapeOrder(client),
-		loadPuzzleSets(client),
+		loadPuzzleSets(client, account),
 		loadRewards(client),
 	])
 	const order = shapeOrder.length ? shapeOrder : [supportedGridShapes[0].id]
@@ -260,6 +299,7 @@ export async function loadPlayerContent(
 	return {
 		palettes,
 		unlockedShapes,
+		shapeOrder: order,
 		randomizerUnlocked,
 		nextShape: order.find(shape => !unlockedShapes.includes(shape)) ?? null,
 		puzzleSets: sets,

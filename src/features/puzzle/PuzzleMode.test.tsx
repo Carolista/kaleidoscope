@@ -125,6 +125,66 @@ describe('PuzzleMode', () => {
 	})
 	stubPointerHitTesting()
 
+	it('remembers where the pieces are and puts them back after a reload', () => {
+		const first = renderPlaying()
+		dragTo(
+			pieceButton(0),
+			tileAt(coordinateKey(puzzle.solution[puzzle.pieces[0].id])),
+		)
+		expect(pieceButton(0)).toHaveAccessibleName(/on board/)
+		first.unmount()
+
+		renderBrowser(
+			<PuzzleMode
+				openRequest={{ setId: 'set-one', puzzleId: 'p1', nonce: 1 }}
+			/>,
+		)
+		expect(pieceButton(0)).toHaveAccessibleName(/on board/)
+		expect(pieceButton(1)).toHaveAccessibleName(/in tray/)
+		expect(screen.getByRole('status')).toHaveTextContent(
+			'Your pieces are where you left them.',
+		)
+	})
+
+	it('forgets an unfinished puzzle once it is restarted or solved', async () => {
+		const user = userEvent.setup()
+		const view = renderPlaying()
+		dragTo(
+			pieceButton(0),
+			tileAt(coordinateKey(puzzle.solution[puzzle.pieces[0].id])),
+		)
+		await user.click(screen.getByRole('button', { name: 'Restart' }))
+		view.unmount()
+		renderBrowser(
+			<PuzzleMode
+				openRequest={{ setId: 'set-one', puzzleId: 'p1', nonce: 1 }}
+			/>,
+		)
+		expect(pieceButton(0)).toHaveAccessibleName(/in tray/)
+		solvePuzzle()
+		expect(
+			JSON.parse(
+				localStorage.getItem('kaleidoscope:puzzle-resume:guest') ??
+					'{}',
+			).attempts,
+		).toEqual({})
+	})
+
+	it('keeps each player’s unfinished puzzles apart', () => {
+		const first = renderPlaying()
+		dragTo(
+			pieceButton(0),
+			tileAt(coordinateKey(puzzle.solution[puzzle.pieces[0].id])),
+		)
+		first.unmount()
+		expect(
+			localStorage.getItem('kaleidoscope:puzzle-resume:guest'),
+		).not.toBeNull()
+		expect(
+			localStorage.getItem('kaleidoscope:puzzle-resume:user-1'),
+		).toBeNull()
+	})
+
 	it('lists the available sets with their progress and opens one as a numbered grid', async () => {
 		const user = userEvent.setup()
 		localStorage.setItem(

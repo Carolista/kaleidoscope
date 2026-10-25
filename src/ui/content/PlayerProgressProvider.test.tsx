@@ -79,13 +79,14 @@ function renderAccount(
 		readonly reload?: () => Promise<AccountSnapshot | null>
 		readonly solved?: readonly string[]
 		readonly userId?: string
+		readonly content?: PlayerContent
 	} = {},
 ) {
 	const reload = options.reload ?? (() => Promise.resolve(null))
 	const userId = options.userId ?? 'user-1'
 	return render(
 		<PlayerProgressProvider
-			content={before}
+			content={options.content ?? before}
 			account={{
 				userId,
 				solved: options.solved ?? [],
@@ -409,6 +410,65 @@ describe('PlayerProgressProvider for an account', () => {
 			expect(loadAccountProgressCache('user-1').pending.size).toBe(0),
 		)
 		expect(reload).toHaveBeenCalled()
+	})
+
+	it('opens what a finished set earns while offline, then sends the solves when back online', async () => {
+		const triangle: PlayerPuzzleSet = {
+			...set('triangle-core', 'core', ['t1']),
+			shape: 'triangle',
+		}
+		const offline: PlayerContent = {
+			...before,
+			unlockedShapes: ['hexagon'],
+			shapeOrder: ['hexagon', 'triangle'],
+			nextShape: 'triangle',
+			puzzleSets: [core, bonus, triangle],
+			rewards: [
+				{
+					setId: 'core',
+					palettes: [palettes[2]],
+					bonusSetIds: ['bonus'],
+				},
+			],
+		}
+		let online = false
+		const record = vi.fn<AccountProgressApi['record']>(() =>
+			online ? Promise.resolve([]) : Promise.reject(new Error('Offline')),
+		)
+		const reload = vi.fn(() => Promise.resolve(null))
+		renderAccount({ api: api(record), reload, content: offline })
+		expect(sets).toEqual(['core'])
+
+		await act(async () => {
+			await progress.markSolved('c1')
+		})
+		let earned: NewRewards | undefined
+		await act(async () => {
+			earned = await progress.markSolved('c2')
+		})
+		expect(earned?.bonusSets.map(item => item.id)).toEqual(['bonus'])
+		expect(earned?.palettes.map(item => item.id)).toEqual([palettes[2].id])
+		expect(earned?.shapes.map(item => item.shape)).toEqual(['triangle'])
+		expect(earned?.shapes[0].sets.map(item => item.id)).toEqual([
+			'triangle-core',
+		])
+		expect(sets).toEqual(['core', 'bonus', 'triangle-core'])
+		expect(reload).not.toHaveBeenCalled()
+		expect(loadAccountProgressCache('user-1').pending).toEqual(
+			new Set(['c1', 'c2']),
+		)
+
+		online = true
+		await act(async () => {
+			window.dispatchEvent(new Event('online'))
+		})
+		await waitFor(() =>
+			expect(record).toHaveBeenLastCalledWith(['c1', 'c2']),
+		)
+		await waitFor(() =>
+			expect(loadAccountProgressCache('user-1').pending.size).toBe(0),
+		)
+		expect(sets).toEqual(['core', 'bonus', 'triangle-core'])
 	})
 
 	it('picks up solves from another device when the tab becomes visible, at most every 30 seconds', async () => {

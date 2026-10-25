@@ -1,5 +1,6 @@
 import { Button, PlayerIconButton } from '@/ui/components'
 import type { PlayerPuzzle, PlayerPuzzleSet } from '@/ui/content'
+import { usePuzzleResume } from '@/ui/content'
 import { PuzzlePlay, type PuzzlePlayHandle } from '@/ui/puzzle'
 import { DuotoneTintColorContext } from '@/ui/theme'
 import {
@@ -33,6 +34,9 @@ export default function PuzzleSession({
 	const [justSolved, setJustSolved] = useState(false)
 	const [advancing, setAdvancing] = useState(false)
 	const play = useRef<PuzzlePlayHandle>(null)
+	const resume = usePuzzleResume()
+	// Read once: the board starts from what was left, and the session is rebuilt per puzzle.
+	const [earlier] = useState(() => resume.attemptFor(item.id))
 	// The puzzle just solved already counts, so "next" skips it.
 	const found = nextUnsolvedPuzzle(
 		set,
@@ -46,11 +50,16 @@ export default function PuzzleSession({
 		<PuzzlePlay
 			ref={play}
 			puzzle={item.puzzle}
+			initialState={earlier ?? undefined}
+			onStateChange={state =>
+				resume.save(item.id, { setId: set.id, ...state })
+			}
 			hidden={hidden}
 			solvedMessage="Puzzle solved! Your design matches the target."
 			contentRef={contentRef}
 			celebration="Congrats!"
 			onSolve={() => {
+				resume.clear(item.id)
 				setJustSolved(true)
 				onSolved(item.id)
 			}}

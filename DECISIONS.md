@@ -461,10 +461,25 @@ with a way in. The randomizer, the last prize, is announced in its own dialog af
 **Only results sync between devices, so devices do not conflict.** Solved puzzles only ever accumulate and a solve is idempotent, so the account's progress is a union of what each device has solved: the app
 adds whatever the server holds and never removes anything, and no conflict prompt is needed. Rewards, groups, and shape unlocks are derived from that union by the database. A device picks up another device's solves
 when it loads, after a solve that finishes a set, when the browser comes back online, and when a tab becomes visible again (at most every 30 seconds, after sending any solves still pending). What a player has left unfinished
-(Puzzle Mode placements and rotations, once resume exists) stays on the device and is never sent to the account, so two devices can hold different attempts at the same puzzle without anything to reconcile. The cost is that a
+(Puzzle Mode placements and rotations) stays on the device and is never sent to the account, so two devices can hold different attempts at the same puzzle without anything to reconcile. The cost is that a
 half-finished puzzle cannot be continued on another device; the alternative, one server-stored "current puzzle" with a last-write-wins rule or a keep-this-or-that prompt, was set aside as not worth the surface area. Revisit
 for Zen designs when Phase 4 gives them cloud storage, since a design is one document edited in place and can truly conflict. Progress that arrives from another device is not announced: reward, shape, and randomizer
 dialogs describe only what a solve on this device just earned.
+
+**Unfinished puzzles resume per device, one attempt per puzzle, through a Continue card.** Each unfinished puzzle keeps its own placements and rotations until it is solved or restarted, rather than only the latest one, so
+leaving a puzzle to try another costs nothing. Only positions are stored, never the puzzle, and they are replayed against the puzzle as published, so a corrected puzzle drops what no longer fits instead of showing an impossible
+board. Home stays the landing screen; when something is unfinished its Puzzle card says "Continue" and opens the most recent unfinished puzzle directly (the set list is one Back away), in preference to marking progress on the set list or
+only resuming after a reload. Attempts are kept per player, so signing in or out never shows someone else's.
+
+**Progress made offline counts at once; the database confirms it later.** A player on a flight who finishes a set gets what it earns (bonus sets, reward palettes, the next shape, the randomizer) without waiting for the server, and the
+dialogs announce it as usual. The app applies the same rules as the database to the player's own solves, and the pending solves are sent when the connection returns, which settles in one call because the database repeats until nothing changes.
+Offline use needs the puzzles of the next tier on hand beforehand, but players only read what they have earned. Rather than loosening the read rule on `puzzles` (which would have widened what a forged request can read and rewritten several
+tests), a separate `preview_puzzles()` function returns the bonus sets of shapes a player has and the core and bonus sets of the single next shape; recording solves still accepts only puzzles the player may play, so a preview earns nothing.
+Packs and daily puzzles are never previewed. The cost is that free puzzles are readable one tier before they are earned, accepted for the same reason as guests reading the first shape's bonus sets. If previews cannot be loaded, the app still
+loads and the player simply waits for a connection to open what they earn. A solve the server later declines is still shown locally, as before.
+
+**Older saved designs on shapes or palettes that are now locked are not carried over.** Saves on a locked shape or an unavailable palette start fresh. Only a few early testers have older saves, so no migration or special treatment was
+built; revisit if that ever stops being true.
 
 **Guest progress moves only when the player says so, and a "no" is not final.** After signing in, an account that lacks puzzles solved as a guest on the device is offered an import, in a dialog that opens by itself until
 answered. Answers are kept per account, device, and puzzle: IDs that were sent are never offered again (the server may have declined some, which should not nag), IDs that were turned down only stop opening the offer by themselves
