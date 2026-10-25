@@ -2,28 +2,31 @@ import type { CSSProperties } from 'react'
 import { useLayoutEffect, useRef, useState } from 'react'
 import { getThemeColors } from '@/domain/palettes'
 import {
-	AccountControl,
 	AccountDialog,
-	GuestImportButton,
 	GuestImportDialog,
 	useAccount,
 } from '@/features/account'
 import { HomeScreen } from '@/features/home'
 import { PuzzleMode } from '@/features/puzzle'
 import { hasPersistedDesign, ZenMode } from '@/features/zen'
-import { DarkModeToggle } from '@/ui/components'
 import type { ContentGate } from '@/ui/content'
 import { ContentGateView, usePuzzleResume } from '@/ui/content'
+import { TextCaseContext } from '@/ui/text'
 import { usePlayerTheme } from '@/ui/theme'
 import {
 	markEntranceSpinFinished,
 	markEntranceStarted,
 	readEntranceHandoff,
 } from './entranceHandoff'
-import { Footer, Header, releaseOpeningTitle } from './layout'
+import {
+	Footer,
+	Header,
+	ModeDialog,
+	releaseOpeningTitle,
+	type Mode,
+} from './layout'
+import { SettingsControl, SettingsDialog } from './settings'
 import styles from './PlayerApp.module.css'
-
-type Mode = 'home' | 'zen' | 'puzzle'
 
 // Home, Puzzle Mode, and Zen. Only rendered once the player's content is ready, since
 // they all read it. Puzzle Mode stays mounted while hidden so its place in a set is kept.
@@ -119,6 +122,8 @@ function PlayerApp({ gate }: { readonly gate?: ContentGate }) {
 	const [showIntro, setShowIntro] = useState(isFirstVisit)
 	const [mode, setMode] = useState<Mode>('home')
 	const [accountOpen, setAccountOpen] = useState(false)
+	const [settingsOpen, setSettingsOpen] = useState(false)
+	const [modesOpen, setModesOpen] = useState(false)
 	const [importRequested, setImportRequested] = useState(false)
 	const account = useAccount()
 	// Following a password-reset link, or landing on an expired one, opens the dialog.
@@ -207,73 +212,91 @@ function PlayerApp({ gate }: { readonly gate?: ContentGate }) {
 	}
 
 	return (
-		<div
-			className={`${styles.page}${entrance === 'opening' ? ` ${styles.opening}` : ''}`}
-			style={
-				{
-					'--base': base,
-					'--accent': accent,
-					backgroundColor: base,
-				} as CSSProperties
-			}
-		>
-			<Header
-				titleRef={titleRef}
-				isOpening={entrance === 'opening'}
-				isMoving={entrance === 'moving'}
-				onStarSpinComplete={handleStarSpinComplete}
-				starElapsedMs={handoff?.elapsedMs}
-				mode={mode}
-				onModeChange={gate ? undefined : setMode}
-				onHome={gate ? undefined : () => setMode('home')}
-				actions={
-					<>
-						<AccountControl onOpen={() => setAccountOpen(true)} />
-						{!gate && <DarkModeToggle />}
-					</>
+		<TextCaseContext.Provider value="title">
+			<div
+				className={`${styles.page}${entrance === 'opening' ? ` ${styles.opening}` : ''}`}
+				style={
+					{
+						'--base': base,
+						'--accent': accent,
+						backgroundColor: base,
+					} as CSSProperties
 				}
-			/>
-			<main className={styles.app}>
-				{gate ? (
-					<ContentGateView gate={gate} />
-				) : (
-					<Modes
+			>
+				<Header
+					titleRef={titleRef}
+					isOpening={entrance === 'opening'}
+					isMoving={entrance === 'moving'}
+					onStarSpinComplete={handleStarSpinComplete}
+					starElapsedMs={handoff?.elapsedMs}
+					mode={mode}
+					onOpenModes={gate ? undefined : () => setModesOpen(true)}
+					onHome={gate ? undefined : () => setMode('home')}
+					actions={
+						<SettingsControl onOpen={() => setSettingsOpen(true)} />
+					}
+				/>
+				<main className={styles.app}>
+					{gate ? (
+						<ContentGateView gate={gate} />
+					) : (
+						<Modes
+							mode={mode}
+							onModeChange={setMode}
+							onSignIn={
+								account.status === 'signedOut'
+									? () => setAccountOpen(true)
+									: undefined
+							}
+							isFirstVisit={isFirstVisit}
+							showIntro={showIntro}
+							onIntroComplete={() => setShowIntro(false)}
+						/>
+					)}
+				</main>
+				{(gate || mode !== 'zen' || !showIntro) && <Footer />}
+				{!gate && (
+					<ModeDialog
+						open={modesOpen}
 						mode={mode}
-						onModeChange={setMode}
-						onSignIn={
-							account.status === 'signedOut'
-								? () => setAccountOpen(true)
-								: undefined
-						}
-						isFirstVisit={isFirstVisit}
-						showIntro={showIntro}
-						onIntroComplete={() => setShowIntro(false)}
+						onSelect={setMode}
+						onClose={() => setModesOpen(false)}
 					/>
 				)}
-			</main>
-			{(gate || mode !== 'zen' || !showIntro) && <Footer />}
-			<AccountDialog
-				open={accountOpen}
-				onClose={() => setAccountOpen(false)}
-				actions={
-					!gate && (
-						<GuestImportButton
-							onRequest={() => {
-								setAccountOpen(false)
-								setImportRequested(true)
-							}}
-						/>
-					)
-				}
-			/>
-			{!gate && (
-				<GuestImportDialog
-					requested={importRequested}
-					suspended={accountOpen}
-					onClose={() => setImportRequested(false)}
+				<SettingsDialog
+					open={settingsOpen}
+					onClose={() => setSettingsOpen(false)}
+					onSignIn={
+						account.status === 'unavailable'
+							? undefined
+							: () => {
+									setSettingsOpen(false)
+									setAccountOpen(true)
+								}
+					}
+					onImportProgress={
+						gate
+							? undefined
+							: () => {
+									setSettingsOpen(false)
+									setImportRequested(true)
+								}
+					}
+					showGameSettings={!gate}
 				/>
-			)}
-		</div>
+				<AccountDialog
+					open={accountOpen}
+					onClose={() => setAccountOpen(false)}
+				/>
+				{!gate && (
+					<GuestImportDialog
+						requested={importRequested}
+						suspended={accountOpen || settingsOpen}
+						onClose={() => setImportRequested(false)}
+					/>
+				)}
+			</div>
+		</TextCaseContext.Provider>
 	)
 }
 

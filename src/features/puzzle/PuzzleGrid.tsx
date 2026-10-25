@@ -1,5 +1,5 @@
 import { PUZZLE_DIFFICULTY_LABELS } from '@/domain/puzzles'
-import { PlayerIconButton } from '@/ui/components'
+import { Heading, PlayerIconButton } from '@/ui/components'
 import type { PlayerPuzzleSet } from '@/ui/content'
 import { faArrowLeft } from '@fortawesome/pro-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -27,7 +27,9 @@ export default function PuzzleGrid({
 					label="All puzzle sets"
 					onClick={onBack}
 				/>
-				<h2 className={styles.heading}>{set.name}</h2>
+				<Heading level={2} className={styles.heading}>
+					{set.name}
+				</Heading>
 			</div>
 			<p className={styles.progress}>
 				{solvedCount(set.puzzles, solved)} of {set.puzzles.length}
@@ -40,7 +42,9 @@ export default function PuzzleGrid({
 						className={styles.section}
 						aria-label={label}
 					>
-						<h3 className={styles.subheading}>{label}</h3>
+						<Heading level={3} className={styles.subheading}>
+							{label}
+						</Heading>
 						<ul className={styles.puzzleGrid}>
 							{section.puzzles.map(({ item, number }) => {
 								const done = solved.has(item.id)

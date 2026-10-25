@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { savePersistedState } from '@/features/zen/state'
 import { TestZenStateProvider as ZenStateProvider } from '@/test/TestZenStateProvider'
@@ -26,8 +26,21 @@ const mockUseIsTouchDevice = vi.mocked(useIsTouchDevice)
 // The app lands on Home; most of these tests are about Zen, so open it.
 function renderApp() {
 	const view = renderLanding()
-	fireEvent.click(screen.getByRole('button', { name: 'Zen Mode' }))
+	fireEvent.click(screen.getByRole('button', { name: 'Zen' }))
 	return view
+}
+
+async function chooseMode(
+	user: ReturnType<typeof userEvent.setup>,
+	name: 'Home' | 'Zen Mode' | 'Puzzle Mode',
+) {
+	await user.click(screen.getByRole('button', { name: /Change mode/ }))
+	await user.click(
+		within(screen.getByRole('dialog', { name: 'Choose a Mode' })).getByRole(
+			'button',
+			{ name },
+		),
+	)
 }
 
 function renderLanding() {
@@ -78,7 +91,7 @@ describe('App', () => {
 			screen.getByRole('button', { name: 'Paint tile 1 of 9' }),
 		)
 		const savedZenDesign = localStorage.getItem('kaleidoscope:design')
-		await user.click(screen.getByRole('button', { name: 'Puzzle Mode' }))
+		await chooseMode(user, 'Puzzle Mode')
 		expect(
 			screen.getByRole('region', { name: 'Puzzle Mode' }),
 		).toBeVisible()
@@ -86,7 +99,7 @@ describe('App', () => {
 			screen.queryByRole('group', { name: 'Controls' }),
 		).not.toBeInTheDocument()
 		expect(localStorage.getItem('kaleidoscope:design')).toBe(savedZenDesign)
-		await user.click(screen.getByRole('button', { name: 'Zen Mode' }))
+		await chooseMode(user, 'Zen Mode')
 		expect(
 			screen.getByRole('button', { name: 'Paint tile 1 of 9' }),
 		).toBeInTheDocument()
@@ -124,14 +137,16 @@ describe('App', () => {
 		expect(
 			screen.queryByRole('region', { name: 'Home' }),
 		).not.toBeInTheDocument()
+		expect(
+			screen.getByRole('button', {
+				name: 'Change mode, currently Puzzle',
+			}),
+		).toBeInTheDocument()
 		await user.click(screen.getByRole('button', { name: 'Home' }))
 		expect(screen.getByRole('region', { name: 'Home' })).toBeVisible()
 		expect(
-			screen.getByRole('button', { name: 'Puzzle Mode' }),
-		).toHaveAttribute('aria-pressed', 'false')
-		expect(
-			screen.getByRole('button', { name: 'Zen Mode' }),
-		).toHaveAttribute('aria-pressed', 'false')
+			screen.getByRole('button', { name: 'Change mode, currently Home' }),
+		).toBeInTheDocument()
 	})
 
 	it('offers Continue for an unfinished puzzle and returns to it with its pieces in place', async () => {
@@ -285,7 +300,7 @@ describe('App', () => {
 			'Loading Kaleidoscope',
 		)
 		expect(
-			screen.queryByRole('button', { name: 'Zen Mode' }),
+			screen.queryByRole('button', { name: /Change mode/ }),
 		).not.toBeInTheDocument()
 		expect(
 			screen.queryByRole('button', { name: 'Home' }),
@@ -294,6 +309,41 @@ describe('App', () => {
 			screen.queryByRole('button', { name: /Switch to/ }),
 		).not.toBeInTheDocument()
 		expect(screen.getByRole('contentinfo')).toBeInTheDocument()
+	})
+
+	it('keeps theme and account settings in one Settings dialog', async () => {
+		mockUseIsTouchDevice.mockReturnValue(false)
+		const user = userEvent.setup()
+		renderLanding()
+		expect(
+			screen.queryByRole('button', { name: /Switch to/ }),
+		).not.toBeInTheDocument()
+		await user.click(screen.getByRole('button', { name: 'Settings' }))
+		const dialog = screen.getByRole('dialog', { name: 'Settings' })
+		await user.click(
+			within(dialog).getByRole('button', {
+				name: 'Switch to Light Mode',
+			}),
+		)
+		expect(
+			within(dialog).getByRole('button', { name: 'Switch to Dark Mode' }),
+		).toBeInTheDocument()
+	})
+
+	it('offers Settings without the game settings while content loads', async () => {
+		const user = userEvent.setup()
+		render(
+			<ProvisionalTheme>
+				<App gate={{ status: 'loading' }} />
+			</ProvisionalTheme>,
+		)
+		await user.click(screen.getByRole('button', { name: 'Settings' }))
+		expect(
+			screen.getByRole('dialog', { name: 'Settings' }),
+		).toBeInTheDocument()
+		expect(
+			screen.queryByRole('button', { name: /Switch to/ }),
+		).not.toBeInTheDocument()
 	})
 
 	it('offers a retry in the frame when content cannot load', async () => {
@@ -306,7 +356,7 @@ describe('App', () => {
 		expect(screen.getByRole('alert')).toHaveTextContent('Offline')
 		await userEvent
 			.setup()
-			.click(screen.getByRole('button', { name: 'Try again' }))
+			.click(screen.getByRole('button', { name: 'Try Again' }))
 		expect(retry).toHaveBeenCalledOnce()
 	})
 

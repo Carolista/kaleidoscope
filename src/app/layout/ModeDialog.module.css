@@ -1,0 +1,19 @@
+.dialog {
+	width: min(20rem, calc(100vw - 2rem));
+}
+
+.options {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+}
+
+.option {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.icon {
+	width: 1rem;
+}

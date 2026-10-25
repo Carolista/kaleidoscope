@@ -4,12 +4,9 @@ function Footer() {
 	const currentYear = new Date().getFullYear()
 	return (
 		<footer>
-			<div className={styles.copyright}>
-				<p className={styles.yearName}>
-					&copy;{currentYear} Caroline R. Jones
-				</p>
-				<p className={styles.reserved}>All rights reserved.</p>
-			</div>
+			<p className={styles.copyright}>
+				&copy;{currentYear} Caroline R. Jones. All rights reserved.
+			</p>
 		</footer>
 	)
 }

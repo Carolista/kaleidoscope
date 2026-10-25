@@ -1,0 +1,87 @@
+<!--
+	Supabase Auth "Email address changed" notification (a security notification).
+	Paste into Authentication > Emails > Templates > Email address changed (HTML body),
+	and turn that notification on. Subject: Your Kaleidoscope email was changed
+	It goes to the OLD address after the change is confirmed, and has no link on
+	purpose. Unlike the other emails it names the two addresses, since telling the
+	owner which account email changed is its whole point.
+-->
+<!doctype html>
+<html lang="en">
+	<body
+		style="
+			margin: 0;
+			padding: 0;
+			background: #f4f1ec;
+			font-family: Helvetica, Arial, sans-serif;
+			color: #222222;
+		"
+	>
+		<table
+			role="presentation"
+			width="100%"
+			cellpadding="0"
+			cellspacing="0"
+			style="background: #f4f1ec; padding: 32px 16px"
+		>
+			<tr>
+				<td align="center">
+					<table
+						role="presentation"
+						width="100%"
+						cellpadding="0"
+						cellspacing="0"
+						style="
+							max-width: 480px;
+							background: #ffffff;
+							border: 2px solid #222222;
+							border-radius: 6px;
+						"
+					>
+						<tr>
+							<td align="center" style="padding: 32px 32px 8px">
+								<img
+									src="https://codewithcarrie.com/kaleidoscope/screenshots/kaleidoscope-header.png"
+									alt="Kaleidoscope"
+									width="320"
+									style="
+										display: block;
+										width: 320px;
+										max-width: 100%;
+										height: auto;
+									"
+								/>
+							</td>
+						</tr>
+						<tr>
+							<td
+								style="
+									padding: 16px 32px 8px;
+									font-size: 16px;
+									line-height: 1.5;
+								"
+							>
+								<p style="margin: 0 0 16px">
+									The email address for your
+									<strong>Kaleidoscope Puzzle</strong>
+									account was changed from
+									<strong>{{ .OldEmail }}</strong> to
+									<strong>{{ .Email }}</strong>.
+								</p>
+								<p style="margin: 0 0 16px">
+									If that was you, there's nothing more to do.
+									If it wasn't, please email us right away at
+									<a
+										href="mailto:help@kaleidoscopepuzzle.com"
+										style="color: #222222"
+										>help@kaleidoscopepuzzle.com</a
+									>, and reset your password if you still can.
+								</p>
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+	</body>
+</html>

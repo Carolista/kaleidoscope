@@ -9,51 +9,34 @@
 	font-size: var(--title-size);
 }
 
-.modeSwitch {
+.modeButton {
 	--icon-visible-height: 0.42em;
 	display: flex;
 	flex-shrink: 0;
-	margin-left: auto;
-	height: 0.78em;
-	border: 1px solid var(--accent);
-	border-radius: 4px;
-	overflow: hidden;
-}
-
-.modeSwitch button {
-	display: flex;
 	align-items: center;
 	justify-content: center;
-	height: 100%;
-	padding: 0 0.12em;
+	gap: 0.12em;
+	margin-left: auto;
+	height: 0.78em;
+	padding: 0 0.2em 0 0.12em;
 	font-size: inherit;
-	border: none;
-	background: transparent;
-	color: var(--accent);
+	border: 1px solid var(--accent);
+	border-radius: 4px;
+	background: var(--accent);
+	color: var(--base);
 	cursor: pointer;
 }
 
-.modeSwitch svg {
+.modeButton svg {
 	height: 0.48em;
 	width: 0.55em;
 }
 
 /* The puzzle piece fills 384 of its 512 viewBox units vertically, the spa 448,
    so it is scaled up to show the same visible height (and the same as the label). */
-.modeSwitch .puzzleIcon {
+.modeButton .puzzleIcon {
 	height: 0.56em;
 	width: 0.7em;
-}
-
-.modeSwitch button[aria-pressed='true'] {
-	background: var(--accent);
-	color: var(--base);
-}
-
-/* Only the active mode shows its name, beside its icon. */
-.modeSwitch button[aria-pressed='true'] {
-	gap: 0.12em;
-	padding-inline-end: 0.2em;
 }
 
 .modeLabel {
@@ -64,28 +47,32 @@
 	white-space: nowrap;
 }
 
-.modeSwitch button:focus-visible {
-	outline: 2px dashed currentColor;
-	outline-offset: -3px;
+.modeButton:focus-visible {
+	outline: 2px dashed var(--accent);
+	outline-offset: 3px;
 }
 
 .actions {
 	--icon-glyph-size: 0.5em;
 	display: flex;
-	margin-left: auto;
 	flex-shrink: 0;
 	align-items: center;
 }
 
-.actions + .modeSwitch {
-	margin-left: 0;
-}
-
-/* Sized in the header's em, like the mode switch, so it scales with the title. */
-.actions button {
+/* Sized and filled like the mode button, so the two carry the same weight. */
+.actions button,
+.actions button:hover {
+	--icon-color: var(--base);
 	width: 0.78em;
 	height: 0.78em;
 	font-size: inherit;
+	border: 1px solid var(--accent);
+	background-color: var(--accent);
+}
+
+.actions button:focus-visible {
+	outline: 2px dashed var(--accent);
+	outline-offset: 3px;
 }
 
 .openingSwitch {
@@ -157,14 +144,14 @@
 	}
 }
 
-/* The title cannot shrink further, so on narrow screens the active mode is
-   shown by its filled button alone. */
+/* The title cannot shrink further, so on narrow screens the mode is shown by
+   its icon alone. */
 @media screen and (max-width: 420px) {
 	.modeLabel {
 		display: none;
 	}
 
-	.modeSwitch button[aria-pressed='true'] {
+	.modeButton {
 		padding-inline-end: 0.12em;
 	}
 }

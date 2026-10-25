@@ -1,5 +1,5 @@
 import { useId } from 'react'
-import { Button, Modal, ModalHeader } from '@/ui/components'
+import { Button, Heading, Modal, ModalHeader } from '@/ui/components'
 import styles from './RewardModal.module.css'
 
 // The last prize: finishing every core and bonus set earns Zen's randomizer.
@@ -34,9 +34,9 @@ export default function RandomizerUnlockedModal({
 			<div className={styles.content}>
 				<p className={styles.hooray}>You did it!</p>
 				<section className={styles.reward}>
-					<h3 className={styles.subheading}>
+					<Heading level={3} className={styles.subheading}>
 						Every puzzle set, solved!
-					</h3>
+					</Heading>
 					<p className={styles.text}>
 						You finished all 24 puzzle sets of 24 puzzles each. That
 						takes real dedication, and it deserves something

@@ -14,7 +14,7 @@ import type { IconDefinition } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { usePlayerTheme, useDuotoneIconTint } from '@/ui/theme'
 import { useIsTouchDevice } from '@/ui/hooks'
-import { Modal, ModalHeader, PaletteStrip } from '@/ui/components'
+import { Heading, Modal, ModalHeader, PaletteStrip } from '@/ui/components'
 import { usePlayerContent } from '@/ui/content'
 import styles from './ControlsModal.module.css'
 
@@ -140,7 +140,9 @@ function ControlsModal({ open, onClose }: ControlsModalProps) {
 							))}
 						</div>
 						<div>
-							<h3 className={styles.itemTitle}>{item.label}</h3>
+							<Heading level={3} className={styles.itemTitle}>
+								{item.label}
+							</Heading>
 							<p className={styles.itemDescription}>
 								{item.description}
 							</p>

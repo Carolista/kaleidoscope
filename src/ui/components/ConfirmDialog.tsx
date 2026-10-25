@@ -2,6 +2,7 @@ import { useId, useState, type ReactNode, type RefObject } from 'react'
 import { dismissConfirmDialog } from './confirmDialogPreferences'
 import Button from './Button'
 import Checkbox from './Checkbox'
+import Heading from './Heading'
 import styles from './ConfirmDialog.module.css'
 import Modal from './Modal'
 import CloseButton from './CloseButton'
@@ -79,9 +80,9 @@ function ConfirmDialog({
 			className={styles.dialog}
 			header={
 				<div className={styles.heading}>
-					<h2 id={titleId} className={styles.title}>
+					<Heading level={2} id={titleId} className={styles.title}>
 						{title}
-					</h2>
+					</Heading>
 					{closeLabel && (
 						<CloseButton
 							label={closeLabel}

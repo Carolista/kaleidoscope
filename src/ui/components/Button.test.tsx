@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createRef } from 'react'
 import Button from './Button'
+import { TextCaseContext } from '@/ui/text'
 
 describe('Button', () => {
 	it('forwards native props and refs and defaults to a non-submit button', async () => {
@@ -57,5 +58,45 @@ describe('Button', () => {
 			</Button>,
 		)
 		expect(screen.getByRole('button', { name: 'Download' })).toBeDisabled()
+	})
+
+	describe('text case', () => {
+		it('shows labels as written by default', () => {
+			render(<Button>sign in or create an account</Button>)
+			expect(
+				screen.getByRole('button', {
+					name: 'sign in or create an account',
+				}),
+			).toBeInTheDocument()
+		})
+
+		it('title-cases text labels where the app opts in, leaving icons alone', () => {
+			render(
+				<TextCaseContext.Provider value="title">
+					<Button>
+						<svg data-testid="icon" />
+						sign in or create an account
+					</Button>
+				</TextCaseContext.Provider>,
+			)
+			expect(
+				screen.getByRole('button', {
+					name: 'Sign In or Create an Account',
+				}),
+			).toContainElement(screen.getByTestId('icon'))
+		})
+
+		it('reads a label split across strings as one title', () => {
+			render(
+				<TextCaseContext.Provider value="title">
+					<Button>import {3} puzzles to the account</Button>
+				</TextCaseContext.Provider>,
+			)
+			expect(
+				screen.getByRole('button', {
+					name: 'Import 3 Puzzles to the Account',
+				}),
+			).toBeInTheDocument()
+		})
 	})
 })

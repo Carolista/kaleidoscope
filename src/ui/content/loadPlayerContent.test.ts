@@ -252,11 +252,36 @@ describe('loadPlayerContent', () => {
 		})
 		expect(set.puzzles.map(item => item.id)).toEqual(['third'])
 		expect(set.puzzles[0]).toMatchObject({
-			name: 'Puzzle third',
+			name: 'Puzzle Third',
 			difficulty: 'easy',
 		})
 		expect(set.puzzles[0].puzzle.solution).toEqual({})
 		expect(consoleError).toHaveBeenCalledOnce()
+	})
+
+	it('shows set, puzzle, and palette names in title case', async () => {
+		const content = await loadPlayerContent(
+			fakeClient({
+				puzzle_groups: [
+					group(
+						'set',
+						[
+							puzzle('one', {
+								name: 'a walk in the park',
+								palettes: palette('p1', {
+									name: ' sunset over the sea ',
+								}),
+							}),
+						],
+						{ name: 'hexagon basics' },
+					),
+				],
+			}),
+		)
+		const [set] = content.puzzleSets
+		expect(set.name).toBe('Hexagon Basics')
+		expect(set.puzzles[0].name).toBe('A Walk in the Park')
+		expect(set.puzzles[0].palette.name).toBe('Sunset Over the Sea')
 	})
 
 	it('loads bonus sets after their core set and the rewards that link them', async () => {

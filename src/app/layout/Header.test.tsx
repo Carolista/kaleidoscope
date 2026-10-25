@@ -4,56 +4,55 @@ import userEvent from '@testing-library/user-event'
 import Header from './Header'
 
 describe('Header', () => {
-	it('uses solid icons with accessible mode names and preserves switching', async () => {
-		const onModeChange = vi.fn()
-		render(<Header mode="zen" onModeChange={onModeChange} />)
-		const zen = screen.getByRole('button', { name: 'Zen Mode' })
-		const puzzle = screen.getByRole('button', { name: 'Puzzle Mode' })
-		expect(zen).toHaveAttribute('aria-pressed', 'true')
-		expect(puzzle).toHaveAttribute('aria-pressed', 'false')
-		expect(zen).toHaveAttribute('title', 'Zen Mode')
-		// Only the active mode shows its name beside the icon.
-		expect(zen).toHaveTextContent('ZEN')
-		expect(puzzle).toHaveTextContent('')
+	it('shows the current mode with a solid icon and opens the mode picker', async () => {
+		const onOpenModes = vi.fn()
+		render(<Header mode="zen" onOpenModes={onOpenModes} />)
+		const button = screen.getByRole('button', {
+			name: 'Change mode, currently Zen',
+		})
+		expect(button).toHaveAttribute('title', 'Change mode')
+		expect(button).toHaveAttribute('aria-haspopup', 'dialog')
+		expect(button).toHaveTextContent('ZEN')
 		expect(screen.getByText('ZEN')).toHaveAttribute('aria-hidden', 'true')
-		expect(zen.querySelector('svg')).toHaveAttribute('data-icon', 'spa')
-		expect(puzzle.querySelector('svg')).toHaveAttribute(
-			'data-icon',
-			'puzzle-piece-simple',
-		)
-		for (const button of [zen, puzzle]) {
-			expect(button.querySelector('svg')).toHaveAttribute(
-				'data-prefix',
-				'fas',
-			)
-		}
-		await userEvent.setup().click(puzzle)
-		expect(onModeChange).toHaveBeenCalledWith('puzzle')
+		const icon = button.querySelector('svg')
+		expect(icon).toHaveAttribute('data-icon', 'spa')
+		expect(icon).toHaveAttribute('data-prefix', 'fas')
+		await userEvent.setup().click(button)
+		expect(onOpenModes).toHaveBeenCalledOnce()
 	})
 
-	it('labels the puzzle button instead when Puzzle Mode is active', () => {
-		render(<Header mode="puzzle" onModeChange={vi.fn()} />)
-		expect(
-			screen.getByRole('button', { name: 'Puzzle Mode' }),
-		).toHaveTextContent('PUZZLE')
-		expect(
-			screen.getByRole('button', { name: 'Zen Mode' }),
-		).toHaveTextContent('')
+	it.each([
+		['home', 'Home', 'house'],
+		['puzzle', 'Puzzle', 'puzzle-piece-simple'],
+	] as const)('names %s mode', (mode, label, icon) => {
+		render(<Header mode={mode} onOpenModes={vi.fn()} />)
+		const button = screen.getByRole('button', {
+			name: `Change mode, currently ${label}`,
+		})
+		expect(button).toHaveTextContent(label.toUpperCase())
+		expect(button.querySelector('svg')).toHaveAttribute('data-icon', icon)
 	})
 
-	it('shows page-wide actions before the mode switch', () => {
+	it('has no mode button without a way to open the picker', () => {
+		render(<Header mode="zen" />)
+		expect(
+			screen.queryByRole('button', { name: /Change mode/ }),
+		).not.toBeInTheDocument()
+	})
+
+	it('shows page-wide actions after the mode button', () => {
 		render(
 			<Header
 				mode="zen"
-				onModeChange={vi.fn()}
+				onOpenModes={vi.fn()}
 				actions={<button type="button">Action</button>}
 			/>,
 		)
-		const mode = screen.getByRole('navigation', { name: 'Play mode' })
+		const mode = screen.getByRole('button', { name: /Change mode/ })
 		expect(
 			mode.compareDocumentPosition(
 				screen.getByRole('button', { name: 'Action' }),
-			) & Node.DOCUMENT_POSITION_PRECEDING,
+			) & Node.DOCUMENT_POSITION_FOLLOWING,
 		).toBeTruthy()
 	})
 

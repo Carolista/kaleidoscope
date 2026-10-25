@@ -831,7 +831,11 @@ Dashboard settings:
    If signup then takes about 30 seconds and returns a 504, Supabase cannot reach the SMTP server; check **Logs > Auth**, the host and port, and the credentials.
    Microsoft 365 SMTP is not suitable (see DECISIONS.md, Accounts).
 4. **Authentication > Emails > Templates:** paste in [confirm-signup.html](./email-templates/confirm-signup.html) (subject
-   `Confirm your Kaleidoscope account`) and [reset-password.html](./email-templates/reset-password.html) (subject `Reset your Kaleidoscope password`).
+   `Confirm your Kaleidoscope account`), [reset-password.html](./email-templates/reset-password.html) (subject `Reset your Kaleidoscope password`), and
+   [change-email.html](./email-templates/change-email.html) (**Change email address**, subject `Confirm your new Kaleidoscope email`), and
+   [email-changed.html](./email-templates/email-changed.html) (security notification **Email address changed**, subject `Your Kaleidoscope email was changed`; turn the notification on).
+   Turn **Secure email change** off (Authentication > Sign In / Providers > Email): the app sends one confirmation link, to the new address, and the old address receives a copy without a link, which
+   the template cannot make sense of. The old address is told afterwards by the notification, which names both addresses (the only template that does). The change-email link returns to the allow-listed site URL.
    The logo is loaded from the deployed site. They deliberately contain no player-supplied text.
 5. **Authentication > Rate Limits:** with custom SMTP the email limit is adjustable; keep a sensible limit.
 

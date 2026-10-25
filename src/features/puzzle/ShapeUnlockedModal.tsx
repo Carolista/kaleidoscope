@@ -1,6 +1,6 @@
 import { useId } from 'react'
 import { PUZZLE_SHAPE_LABELS } from '@/domain/puzzles'
-import { Modal, ModalHeader } from '@/ui/components'
+import { Heading, Modal, ModalHeader } from '@/ui/components'
 import type { PlayerPuzzleSet, UnlockedShape } from '@/ui/content'
 import UnlockedSetItem from './UnlockedSetItem'
 import styles from './RewardModal.module.css'
@@ -45,10 +45,10 @@ export default function ShapeUnlockedModal({
 		>
 			<div className={styles.content}>
 				<section className={styles.reward}>
-					<h3 className={styles.subheading}>
+					<Heading level={3} className={styles.subheading}>
 						{names.join(' and ')} {plural ? 'are' : 'is'} now
 						unlocked in Zen Mode!
-					</h3>
+					</Heading>
 					<button
 						type="button"
 						className={styles.link}
@@ -59,10 +59,10 @@ export default function ShapeUnlockedModal({
 				</section>
 				{sets.length > 0 && (
 					<section className={styles.reward}>
-						<h3 className={styles.subheading}>
+						<Heading level={3} className={styles.subheading}>
 							New puzzle set{sets.length === 1 ? '' : 's'}{' '}
 							unlocked:
-						</h3>
+						</Heading>
 						{sets.map(set => (
 							<UnlockedSetItem
 								key={set.id}
