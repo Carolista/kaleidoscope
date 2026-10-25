@@ -21,12 +21,28 @@ import {
 	puzzleShapes,
 	rotateCoordinate,
 	screenToBoard,
+	STAGE_BOARD_PADDING,
+	type StagePiece,
+	type StageRect,
 } from '@/domain/puzzles'
 import type { GridSize } from '@/domain/shapes'
 import type { AxialCoord } from '@/domain/shapes/hexagon'
 import PuzzleBoard, { PieceGraphic } from './PuzzleBoard'
 import styles from './PuzzlePlay.module.css'
 import { tileSizes } from './tileSizes'
+import { useStageLayout } from './useStageLayout'
+
+// Smallest tap target for a piece on the stage (pixels), even when its circle is smaller.
+const STAGE_MIN_PIECE = 40
+
+function paddedRect(rect: StageRect, padding: number) {
+	return {
+		left: rect.x - padding,
+		top: rect.y - padding,
+		width: rect.width + 2 * padding,
+		height: rect.height + 2 * padding,
+	}
+}
 
 // A finger covers a small piece, so touch holds it this far above the
 // fingertip (CSS pixels). The piece, not the finger, decides where it snaps and
@@ -101,6 +117,7 @@ export default function PuzzlePlay({
 	onStateChange,
 	trayAction,
 	aboveBoard,
+	layout = 'tray',
 	children,
 }: {
 	readonly ref?: Ref<PuzzlePlayHandle>
@@ -122,6 +139,10 @@ export default function PuzzlePlay({
 	readonly trayAction?: ReactNode
 	// Rendered between the target/tray and the board, e.g. tutorial guidance.
 	readonly aboveBoard?: ReactNode
+	// 'stage' packs the target, pieces, and board together so the target can be
+	// bigger and the pieces fill the board's empty corners; it falls back to
+	// 'tray' (target and tray in a row above the board) until it has room measured.
+	readonly layout?: 'tray' | 'stage'
 	// Rendered below the board, e.g. player actions and dialogs.
 	readonly children?: ReactNode
 }) {
@@ -141,6 +162,15 @@ export default function PuzzlePlay({
 	const dragRef = useRef<DragState | null>(null)
 	const boardRef = useRef<SVGSVGElement>(null)
 	const suppressClickRef = useRef(false)
+	const {
+		element: stageHost,
+		layout: stageLayout,
+		status: stageStatus,
+		height: stageHeight,
+	} = useStageLayout(currentPuzzle, layout === 'stage')
+	// Until the stage is packed it holds its place; the old layout is only for
+	// when nothing fits.
+	const onStage = layout === 'stage' && stageStatus !== 'failed'
 	const lastTouchTapRef = useRef<{ pieceId: string; time: number } | null>(
 		null,
 	)
@@ -460,6 +490,18 @@ export default function PuzzlePlay({
 		}
 	}, [holding])
 
+	// The stage's tray is everywhere around the board's own cells, which are not.
+	function droppedOnTray(x: number, y: number) {
+		const element = document.elementFromPoint(x, y)
+		return (
+			Boolean(element?.closest('[data-puzzle-tray]')) &&
+			!(
+				element?.tagName.toLowerCase() === 'polygon' &&
+				element.closest('[data-puzzle-board]')
+			)
+		)
+	}
+
 	function endDrag(event: PointerEvent) {
 		const current = pointerPosition(event)
 		if (!current) return
@@ -495,11 +537,7 @@ export default function PuzzlePlay({
 		const target = current.snapAnchor ?? current.anchor
 		if (target) {
 			place(current.piece.id, target, current.rotation)
-		} else if (
-			document
-				.elementFromPoint(current.x, current.y)
-				?.closest('[data-puzzle-tray]')
-		) {
+		} else if (droppedOnTray(current.x, current.y)) {
 			returnToTray(current.piece.id)
 			keepRotation(current.piece.id, current.rotation)
 		} else {
@@ -554,6 +592,109 @@ export default function PuzzlePlay({
 
 	useImperativeHandle(ref, () => ({ reset }))
 
+	const targetView = (
+		<PuzzleBoard
+			shape={currentPuzzle.shape}
+			gridSize={currentPuzzle.gridSize}
+			colors={currentPuzzle.target}
+			target
+		/>
+	)
+
+	const boardView = (
+		<>
+			<PuzzleBoard
+				svgRef={boardRef}
+				shape={currentPuzzle.shape}
+				gridSize={currentPuzzle.gridSize}
+				colors={colors}
+				solved={solved}
+				pieces={currentPuzzle.pieces}
+				placements={shownPlacements}
+				selectedId={selectedId}
+				onActivate={activateCell}
+				onReturn={cell => {
+					const piece = pieceAt(cell)
+					if (piece) returnToTray(piece.id)
+				}}
+				onGrab={(event, cell) => {
+					const piece = pieceAt(cell)
+					if (!piece) return
+					const anchor = placements[piece.id]
+					startDrag(event, piece, {
+						q: cell.q - anchor.q,
+						r: cell.r - anchor.r,
+					})
+				}}
+			/>
+			{solved && celebration && (
+				<div className={styles.celebration} aria-hidden="true">
+					{celebration}
+				</div>
+			)}
+		</>
+	)
+
+	// In the tray a piece sits in a square slot; on the stage it is centered in
+	// its own circle (`slot`) at `unit` pixels per board unit.
+	function pieceButton(
+		piece: PuzzlePiece,
+		index: number,
+		slot?: StagePiece,
+		unit?: number,
+	) {
+		const diameter = slot ? Math.max(2 * slot.radius, STAGE_MIN_PIECE) : 0
+		return (
+			<button
+				type="button"
+				key={piece.id}
+				className={
+					slot ? `${styles.piece} ${styles.stagePiece}` : styles.piece
+				}
+				style={
+					slot
+						? {
+								left: slot.x - diameter / 2,
+								top: slot.y - diameter / 2,
+								width: diameter,
+								height: diameter,
+							}
+						: undefined
+				}
+				aria-label={`Select piece ${index + 1}, ${piece.tiles.length} ${piece.tiles.length === 1 ? 'tile' : 'tiles'}, ${placements[piece.id] ? 'on board' : 'in tray'}`}
+				aria-pressed={selectedId === piece.id}
+				aria-description={
+					currentPuzzle.rotationAllowed
+						? `Click or tap to rotate ${rotationDegrees} degrees; drag to move. Keyboard: Enter or Space rotates, then activate a board tile to place.`
+						: undefined
+				}
+				disabled={Boolean(placements[piece.id])}
+				onClick={() => activateTrayPiece(piece.id)}
+				onPointerDown={event => {
+					const tileIndex =
+						event.target instanceof Element
+							? Number(
+									event.target
+										.closest('[data-piece-tile]')
+										?.getAttribute('data-piece-tile') ?? 0,
+								)
+							: 0
+					startDrag(event, piece, piece.tiles[tileIndex])
+				}}
+			>
+				<PieceGraphic
+					shape={currentPuzzle.shape}
+					piece={piece}
+					stage={
+						slot && unit
+							? { unit, diameter: 2 * slot.radius }
+							: undefined
+					}
+				/>
+			</button>
+		)
+	}
+
 	return (
 		<section
 			hidden={hidden}
@@ -582,96 +723,90 @@ export default function PuzzlePlay({
 			}}
 		>
 			<div ref={contentRef} className={styles.content}>
-				<div className={styles.goalAndPieces}>
-					<figure className={styles.target}>
-						<PuzzleBoard
-							shape={currentPuzzle.shape}
-							gridSize={currentPuzzle.gridSize}
-							colors={currentPuzzle.target}
-							target
-						/>
-					</figure>
-					<div
-						className={styles.tray}
-						role="group"
-						aria-label="Puzzle pieces"
-						data-puzzle-tray=""
-					>
-						{displayPieces.map((piece, index) => (
-							<button
-								type="button"
-								key={piece.id}
-								className={styles.piece}
-								aria-label={`Select piece ${index + 1}, ${piece.tiles.length} ${piece.tiles.length === 1 ? 'tile' : 'tiles'}, ${placements[piece.id] ? 'on board' : 'in tray'}`}
-								aria-pressed={selectedId === piece.id}
-								aria-description={
-									currentPuzzle.rotationAllowed
-										? `Click or tap to rotate ${rotationDegrees} degrees; drag to move. Keyboard: Enter or Space rotates, then activate a board tile to place.`
-										: undefined
-								}
-								disabled={Boolean(placements[piece.id])}
-								onClick={() => activateTrayPiece(piece.id)}
-								onPointerDown={event => {
-									const tileIndex =
-										event.target instanceof Element
-											? Number(
-													event.target
-														.closest(
-															'[data-piece-tile]',
-														)
-														?.getAttribute(
-															'data-piece-tile',
-														) ?? 0,
-												)
-											: 0
-									startDrag(
-										event,
-										piece,
-										piece.tiles[tileIndex],
-									)
-								}}
+				{layout === 'stage' && (
+					<div ref={stageHost} className={styles.stageHost}>
+						{onStage && trayAction && (
+							<div className={styles.stageActions}>
+								{trayAction}
+							</div>
+						)}
+						{onStage && aboveBoard}
+						{onStage && (
+							<div
+								className={styles.stageSlot}
+								style={{ minHeight: stageHeight }}
 							>
-								<PieceGraphic
-									shape={currentPuzzle.shape}
-									piece={piece}
-								/>
-							</button>
-						))}
+								{stageLayout && (
+									<div
+										className={styles.stage}
+										style={{
+											width: stageLayout.width,
+											height: stageLayout.height,
+										}}
+										data-puzzle-tray=""
+									>
+										<div
+											className={styles.stageItem}
+											style={paddedRect(
+												stageLayout.target,
+												STAGE_BOARD_PADDING *
+													stageLayout.targetScale,
+											)}
+										>
+											{targetView}
+										</div>
+										<div
+											className={`${styles.board} ${styles.stageItem}`}
+											style={paddedRect(
+												stageLayout.board,
+												STAGE_BOARD_PADDING *
+													stageLayout.boardScale,
+											)}
+										>
+											{boardView}
+										</div>
+										<div
+											className={styles.stagePieces}
+											role="group"
+											aria-label="Puzzle pieces"
+										>
+											{displayPieces.map((piece, index) =>
+												pieceButton(
+													piece,
+													index,
+													stageLayout.pieces[index],
+													stageLayout.pieceScale,
+												),
+											)}
+										</div>
+									</div>
+								)}
+							</div>
+						)}
 					</div>
-					{trayAction}
-				</div>
-				{aboveBoard}
-				<div className={styles.board}>
-					<PuzzleBoard
-						svgRef={boardRef}
-						shape={currentPuzzle.shape}
-						gridSize={currentPuzzle.gridSize}
-						colors={colors}
-						solved={solved}
-						pieces={currentPuzzle.pieces}
-						placements={shownPlacements}
-						selectedId={selectedId}
-						onActivate={activateCell}
-						onReturn={cell => {
-							const piece = pieceAt(cell)
-							if (piece) returnToTray(piece.id)
-						}}
-						onGrab={(event, cell) => {
-							const piece = pieceAt(cell)
-							if (!piece) return
-							const anchor = placements[piece.id]
-							startDrag(event, piece, {
-								q: cell.q - anchor.q,
-								r: cell.r - anchor.r,
-							})
-						}}
-					/>
-					{solved && celebration && (
-						<div className={styles.celebration} aria-hidden="true">
-							{celebration}
+				)}
+				{!onStage && (
+					<>
+						<div className={styles.goalAndPieces}>
+							<figure className={styles.target}>
+								{targetView}
+							</figure>
+							<div
+								className={styles.tray}
+								role="group"
+								aria-label="Puzzle pieces"
+								data-puzzle-tray=""
+							>
+								{displayPieces.map((piece, index) =>
+									pieceButton(piece, index),
+								)}
+							</div>
+							{trayAction}
 						</div>
-					)}
-				</div>
+						{aboveBoard}
+						<div className={styles.board}>{boardView}</div>
+					</>
+				)}
 			</div>
 
 			<div role="status" className="visually-hidden">

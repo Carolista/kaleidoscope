@@ -30,6 +30,52 @@ function renderPlay(puzzle: Puzzle) {
 	)
 }
 
+describe('PuzzlePlay on the stage', () => {
+	stubPointerHitTesting()
+
+	it('packs the target, pieces, and board once measured, and still plays', async () => {
+		vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(
+			366,
+		)
+		const puzzle = generatePuzzle(
+			'stage-play',
+			palettes[1],
+			PUZZLE_RECIPES[3],
+		)
+		render(
+			<PuzzlePlay
+				puzzle={puzzle}
+				layout="stage"
+				solvedMessage="Solved."
+				trayAction={<button type="button">Restart</button>}
+			/>,
+		)
+		const pieces = await screen.findByRole('group', {
+			name: 'Puzzle pieces',
+		})
+		expect(pieces.querySelectorAll('button')).toHaveLength(
+			puzzle.pieces.length,
+		)
+		expect(screen.getAllByRole('button', { name: 'Restart' })).toHaveLength(
+			1,
+		)
+		expect(screen.getByRole('img', { name: 'Target design' })).toBeTruthy()
+		dragTo(
+			pieceButton(0),
+			tileAt(
+				coordinateKey(
+					pieceCells(
+						puzzle.pieces[0],
+						puzzle.solution[puzzle.pieces[0].id],
+					)[0],
+				),
+			),
+		)
+		expect(pieceButton(0)).toHaveAccessibleName(/on board/)
+		vi.restoreAllMocks()
+	})
+})
+
 describe('PuzzlePlay', () => {
 	stubPointerHitTesting()
 

@@ -2,7 +2,11 @@ import { useMemo } from 'react'
 import type { CSSProperties, PointerEvent, Ref } from 'react'
 import type { Point } from '@/domain/geometry'
 import type { AxialCoord } from '@/domain/shapes/hexagon'
-import { pointsToSvgAttr, polygonBoundingBox } from '@/domain/geometry'
+import {
+	enclosingCircle,
+	pointsToSvgAttr,
+	polygonBoundingBox,
+} from '@/domain/geometry'
 import { brightenAndSaturate } from '@/domain/palettes'
 import {
 	coordinateKey,
@@ -56,6 +60,19 @@ function viewBoxFor(
 	return `${minX - padding} ${minY - padding} ${maxX - minX + padding * 2} ${maxY - minY + padding * 2}`
 }
 
+// A square view box of `side` board units centered on the circle that just
+// holds the piece, so the stage's circle for it holds the drawing too.
+function stageViewBox(
+	shape: PuzzleShapeId,
+	tiles: readonly AxialCoord[],
+	side: number,
+): string {
+	const { x, y } = enclosingCircle(
+		tiles.flatMap(tile => pieceCornersFor(shape, tile)),
+	)
+	return `${x - side / 2} ${y - side / 2} ${side} ${side}`
+}
+
 function pieceOutline(
 	shape: PuzzleShapeId,
 	tiles: readonly AxialCoord[],
@@ -85,9 +102,13 @@ export function PieceGraphic({
 	shape,
 	piece,
 	drag,
+	stage,
 }: {
 	readonly shape: PuzzleShapeId
 	readonly piece: PuzzlePiece
+	// Draws the piece centered in a circle of this pixel diameter, at this many
+	// pixels per board unit, instead of in a square slot at one pixel per unit.
+	readonly stage?: { readonly unit: number; readonly diameter: number }
 	readonly drag?: {
 		readonly x: number
 		readonly y: number
@@ -155,7 +176,9 @@ export function PieceGraphic({
 			}),
 		),
 	)
-	const viewBox = `${minX + width / 2 - side / 2} ${minY + height / 2 - side / 2} ${side} ${side}`
+	const viewBox = stage
+		? stageViewBox(shape, piece.tiles, stage.diameter / stage.unit)
+		: `${minX + width / 2 - side / 2} ${minY + height / 2 - side / 2} ${side} ${side}`
 	// A held piece's box is sized to hold the whole piece and its shadow, centered
 	// on the grabbed tile. Relying on overflow outside a tiny box left the piece
 	// invisible in iOS Safari once a filter was applied.
@@ -201,7 +224,9 @@ export function PieceGraphic({
 							// The shadow follows the board's scale: 4 tile units of lift.
 							'--lift': `${drag.scale * 4}px`,
 						} as CSSProperties)
-					: { width: side, height: side }
+					: stage
+						? { width: stage.diameter, height: stage.diameter }
+						: { width: side, height: side }
 			}
 			aria-hidden="true"
 		>
@@ -287,6 +312,7 @@ export default function PuzzleBoard({
 			viewBox={viewBoxFor(shape, cells)}
 			className={styles.gridGraphic}
 			role={target ? 'img' : 'group'}
+			data-puzzle-board={target ? undefined : ''}
 			aria-label={label ?? (target ? 'Target design' : 'Puzzle board')}
 		>
 			{cells.map(cell => {

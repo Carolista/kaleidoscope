@@ -132,6 +132,56 @@
 	filter: grayscale(0.8);
 }
 
+/* The stage packs target, pieces, and board into one box; the board and target
+   boxes are padded like their SVGs, so the SVG fills its box. */
+.stageHost {
+	display: grid;
+	justify-items: center;
+	gap: 1rem;
+	width: 100%;
+}
+
+.stageActions {
+	display: flex;
+	justify-content: center;
+}
+
+/* Holds the stage's room while it is being packed, so the page does not jump. */
+.stageSlot {
+	display: flex;
+	justify-content: center;
+	width: 100%;
+}
+
+.stage {
+	position: relative;
+	max-width: 100%;
+}
+
+.stageItem {
+	position: absolute;
+}
+
+.stageItem > svg {
+	width: 100%;
+}
+
+.stagePieces {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+}
+
+.stagePiece {
+	position: absolute;
+	min-width: 0;
+	min-height: 0;
+	padding: 0;
+	aspect-ratio: auto;
+	border-radius: 50%;
+	pointer-events: auto;
+}
+
 @media screen and (max-width: 480px) {
 	.withTrayAction .goalAndPieces {
 		grid-template-columns: minmax(0, 1fr);
