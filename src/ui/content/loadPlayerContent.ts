@@ -2,7 +2,11 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase'
 import type { PlayerPalette } from '@/domain/palettes'
 import { PUZZLE_RECIPES, readPlayablePuzzle } from '@/domain/puzzles'
-import { isGridShapeId, supportedGridShapes } from '@/domain/shapes'
+import {
+	isGridShapeId,
+	supportedGridShapes,
+	type GridShapeId,
+} from '@/domain/shapes'
 import type {
 	PlayerContent,
 	PlayerPuzzle,
@@ -191,8 +195,41 @@ function sortSets(
 	)
 }
 
+// Mirrors the database's `has_shape`: the first shape, a granted shape, or the shape after
+// one whose core group the account has completed. The account's own rows are all it can read.
+async function loadAccountShapes(
+	client: SupabaseClient<Database>,
+	order: readonly GridShapeId[],
+): Promise<GridShapeId[]> {
+	const [completions, grants] = await Promise.all([
+		client
+			.from('group_completions')
+			.select('puzzle_groups(shape_id, purpose)'),
+		client.from('shape_grants').select('shape_id'),
+	])
+	if (completions.error) throw new Error(completions.error.message)
+	if (grants.error) throw new Error(grants.error.message)
+	const finishedCore = new Set(
+		completions.data.flatMap(row =>
+			row.puzzle_groups?.purpose === 'core' && row.puzzle_groups.shape_id
+				? [row.puzzle_groups.shape_id]
+				: [],
+		),
+	)
+	const granted = new Set(grants.data.map(row => row.shape_id))
+	return order.filter(
+		(shape, index) =>
+			index === 0 ||
+			granted.has(shape) ||
+			finishedCore.has(order[index - 1]),
+	)
+}
+
+// A guest starts with the first shape and reads exactly that; an account is allowed on
+// further shapes as it finishes core sets, which the database enforces as it answers.
 export async function loadPlayerContent(
 	client: SupabaseClient<Database>,
+	{ account = false }: { readonly account?: boolean } = {},
 ): Promise<PlayerContent> {
 	const [palettes, shapeOrder, puzzleSets, rewards] = await Promise.all([
 		loadPalettes(client),
@@ -202,10 +239,13 @@ export async function loadPlayerContent(
 	])
 	const order = shapeOrder.length ? shapeOrder : [supportedGridShapes[0].id]
 	const sets = sortSets(puzzleSets, order)
+	const unlockedShapes = account
+		? await loadAccountShapes(client, order)
+		: [order[0]]
 	return {
 		palettes,
-		// A guest starts with the first shape; later shapes are earned with an account.
-		unlockedShapes: [order[0]],
+		unlockedShapes,
+		nextShape: order.find(shape => !unlockedShapes.includes(shape)) ?? null,
 		puzzleSets: sets,
 		rewards: usableRewards(rewards, sets),
 	}

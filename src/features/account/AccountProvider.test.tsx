@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { Session, SupabaseClient } from '@supabase/supabase-js'
@@ -104,6 +104,67 @@ describe('accounts', () => {
 		expect(
 			await screen.findByText('signedIn Ada ada@example.com'),
 		).toBeInTheDocument()
+	})
+
+	describe('returning guests', () => {
+		function Returning() {
+			const { status, returningGuest } = useAccount()
+			return <p>{`${status} ${returningGuest}`}</p>
+		}
+		function renderReturning(fake: ReturnType<typeof fakeClient>) {
+			render(
+				<TestZenStateProvider>
+					<AccountProvider client={fake.client}>
+						<Returning />
+						<ControlAndDialog />
+					</AccountProvider>
+				</TestZenStateProvider>,
+			)
+		}
+		beforeEach(() => {
+			localStorage.clear()
+			sessionStorage.clear()
+		})
+
+		it('is not one before the device has had an account', async () => {
+			renderReturning(fakeClient())
+			expect(
+				await screen.findByText('signedOut false'),
+			).toBeInTheDocument()
+		})
+
+		it('remembers a past sign-in, and is one while signed out', async () => {
+			const first = fakeClient(sessionFor('ada@example.com'))
+			const { unmount } = render(
+				<AccountProvider client={first.client}>
+					<Returning />
+				</AccountProvider>,
+			)
+			expect(
+				await screen.findByText('signedIn false'),
+			).toBeInTheDocument()
+			unmount()
+			renderReturning(fakeClient())
+			expect(
+				await screen.findByText('signedOut true'),
+			).toBeInTheDocument()
+		})
+
+		it('is not one after signing out on purpose in this browser session', async () => {
+			const user = userEvent.setup()
+			const fake = fakeClient(sessionFor('ada@example.com'))
+			fake.auth.signOut.mockResolvedValue({ error: null })
+			renderReturning(fake)
+			await openDialog(user)
+			await user.click(
+				await screen.findByRole('button', { name: 'Sign out' }),
+			)
+			await waitFor(() => expect(fake.auth.signOut).toHaveBeenCalled())
+			act(() => fake.emit(null, 'SIGNED_OUT'))
+			expect(
+				await screen.findByText('signedOut false'),
+			).toBeInTheDocument()
+		})
 	})
 
 	it('signs in with the trimmed email', async () => {

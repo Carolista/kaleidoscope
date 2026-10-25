@@ -144,6 +144,7 @@ describe('loadPlayerContent', () => {
 			}),
 		)
 		expect(content.unlockedShapes).toEqual(['triangle'])
+		expect(content.nextShape).toBe('hexagon')
 		expect(content.puzzleSets.map(set => set.id)).toEqual([
 			'tri-basic',
 			'hex-basic',
@@ -151,11 +152,61 @@ describe('loadPlayerContent', () => {
 		])
 	})
 
+	it('opens the next shape for an account that finished a core group, and a granted shape', async () => {
+		const progression = {
+			shape_progression: [
+				'hexagon',
+				'triangle',
+				'diamondStar',
+				'hexagram',
+			].map((shape_id, index) => ({ shape_id, position: index + 1 })),
+		}
+		const completed = (shape_id: string, purpose: string) => ({
+			puzzle_groups: { shape_id, purpose },
+		})
+		const content = await loadPlayerContent(
+			fakeClient({
+				...progression,
+				group_completions: [
+					completed('hexagon', 'core'),
+					// A bonus group opens nothing; neither does a completion that cannot be read.
+					completed('triangle', 'reward'),
+					{ puzzle_groups: null },
+				],
+				shape_grants: [{ shape_id: 'hexagram' }],
+			}),
+			{ account: true },
+		)
+		expect(content.unlockedShapes).toEqual([
+			'hexagon',
+			'triangle',
+			'hexagram',
+		])
+		const guest = await loadPlayerContent(
+			fakeClient({
+				...progression,
+				group_completions: [completed('hexagon', 'core')],
+			}),
+		)
+		expect(guest.unlockedShapes).toEqual(['hexagon'])
+		expect(guest.nextShape).toBe('triangle')
+		expect(content.nextShape).toBe('diamondStar')
+	})
+
+	it("reports a failure to read an account's progress", async () => {
+		await expect(
+			loadPlayerContent(fakeClient({}, 'group_completions'), {
+				account: true,
+			}),
+		).rejects.toThrow('group_completions failed')
+	})
+
 	it('defaults to Hexagon when no order is released', async () => {
 		const content = await loadPlayerContent(fakeClient({}))
 		expect(content).toEqual({
 			palettes: [],
 			unlockedShapes: ['hexagon'],
+			nextShape: null,
 			puzzleSets: [],
 			rewards: [],
 		})

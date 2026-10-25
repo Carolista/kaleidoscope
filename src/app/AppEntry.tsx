@@ -1,5 +1,5 @@
-import { lazy, Suspense } from 'react'
-import { AccountProvider } from '@/features/account'
+import { lazy, Suspense, type ReactNode } from 'react'
+import { AccountProvider, useAccount } from '@/features/account'
 import { ZenStateProvider } from '@/features/zen'
 import { Loading } from '@/ui/components'
 import { PlayerContentProvider } from '@/ui/content'
@@ -10,6 +10,24 @@ import { NavigationGuardProvider } from '@/ui/navigation'
 import useAdminRoute from './useAdminRoute'
 
 const AdminPortal = lazy(() => import('@/features/admin'))
+
+// Content depends on who is playing, so it waits for the account to be known.
+function PlayerContent({ children }: { readonly children: ReactNode }) {
+	const { status, userId } = useAccount()
+	return (
+		<PlayerContentProvider
+			userId={userId}
+			accountResolved={status !== 'loading'}
+			gate={gate => (
+				<ProvisionalTheme>
+					<PlayerApp gate={gate} />
+				</ProvisionalTheme>
+			)}
+		>
+			{children}
+		</PlayerContentProvider>
+	)
+}
 
 function Entry() {
 	const admin = useAdminRoute()
@@ -27,17 +45,11 @@ function Entry() {
 		</Suspense>
 	) : (
 		<AccountProvider>
-			<PlayerContentProvider
-				gate={gate => (
-					<ProvisionalTheme>
-						<PlayerApp gate={gate} />
-					</ProvisionalTheme>
-				)}
-			>
+			<PlayerContent>
 				<ZenStateProvider>
 					<PlayerApp />
 				</ZenStateProvider>
-			</PlayerContentProvider>
+			</PlayerContent>
 		</AccountProvider>
 	)
 }

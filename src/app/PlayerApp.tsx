@@ -1,7 +1,13 @@
 import type { CSSProperties } from 'react'
 import { useLayoutEffect, useRef, useState } from 'react'
 import { getThemeColors } from '@/domain/palettes'
-import { AccountControl, AccountDialog, useAccount } from '@/features/account'
+import {
+	AccountControl,
+	AccountDialog,
+	GuestImportButton,
+	GuestImportDialog,
+	useAccount,
+} from '@/features/account'
 import { HomeScreen } from '@/features/home'
 import { PuzzleMode } from '@/features/puzzle'
 import { hasPersistedDesign, ZenMode } from '@/features/zen'
@@ -46,6 +52,7 @@ function PlayerApp({ gate }: { readonly gate?: ContentGate }) {
 	const [showIntro, setShowIntro] = useState(isFirstVisit)
 	const [mode, setMode] = useState<'home' | 'zen' | 'puzzle'>('home')
 	const [accountOpen, setAccountOpen] = useState(false)
+	const [importRequested, setImportRequested] = useState(false)
 	const account = useAccount()
 	// Following a password-reset link, or landing on an expired one, opens the dialog.
 	if ((account.recovering || account.linkError) && !accountOpen) {
@@ -180,6 +187,12 @@ function PlayerApp({ gate }: { readonly gate?: ContentGate }) {
 						<PuzzleMode
 							hidden={mode !== 'puzzle'}
 							onOpenZen={() => setMode('zen')}
+							returningGuest={account.returningGuest}
+							onCreateAccount={
+								account.status === 'signedOut'
+									? () => setAccountOpen(true)
+									: undefined
+							}
 						/>
 						{mode === 'zen' && (
 							<ZenMode
@@ -195,7 +208,24 @@ function PlayerApp({ gate }: { readonly gate?: ContentGate }) {
 			<AccountDialog
 				open={accountOpen}
 				onClose={() => setAccountOpen(false)}
+				actions={
+					!gate && (
+						<GuestImportButton
+							onRequest={() => {
+								setAccountOpen(false)
+								setImportRequested(true)
+							}}
+						/>
+					)
+				}
 			/>
+			{!gate && (
+				<GuestImportDialog
+					requested={importRequested}
+					suspended={accountOpen}
+					onClose={() => setImportRequested(false)}
+				/>
+			)}
 		</div>
 	)
 }

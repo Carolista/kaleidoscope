@@ -1,4 +1,10 @@
-import { useId, useRef, useState, type SubmitEvent } from 'react'
+import {
+	useId,
+	useRef,
+	useState,
+	type ReactNode,
+	type SubmitEvent,
+} from 'react'
 import { Button, FormField, Input, Modal, ModalHeader } from '@/ui/components'
 import { useAccount } from './AccountContext'
 import styles from './AccountDialog.module.css'
@@ -38,9 +44,12 @@ const RECOVERY_VIEWS: readonly View[] = ['newPassword', 'passwordUpdated']
 export default function AccountDialog({
 	open,
 	onClose,
+	actions,
 }: {
 	readonly open: boolean
 	readonly onClose: () => void
+	// Extra actions for a signed-in player, above Sign out.
+	readonly actions?: ReactNode
 }) {
 	const account = useAccount()
 	const titleId = useId()
@@ -240,6 +249,7 @@ export default function AccountDialog({
 							{error}
 						</p>
 					)}
+					{actions}
 					<Button onClick={signOut} disabled={pending}>
 						{pending ? 'Signing out…' : 'Sign out'}
 					</Button>

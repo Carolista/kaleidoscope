@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { palettes, testContent } from '@/test/playerContent'
 import { cacheContent, readCachedContent } from './contentCache'
+import type { AccountProgressApi } from './accountProgress'
 import { usePlayerContent } from './PlayerContentContext'
+import { usePlayerProgress } from './PlayerProgressContext'
+import { saveAccountProgressCache } from './solvedPuzzles'
 import { PlayerContentProvider } from './PlayerContentProvider'
 
 function Names() {
@@ -110,6 +113,120 @@ describe('PlayerContentProvider', () => {
 		expect(
 			screen.getByRole('button', { name: 'Check again' }),
 		).toBeInTheDocument()
+	})
+})
+
+function Solved() {
+	return <p>Solved: {[...usePlayerProgress().solved].join(', ')}</p>
+}
+
+function progressApi(solved: readonly string[] = []): AccountProgressApi {
+	return {
+		loadSolved: () => Promise.resolve([...solved]),
+		record: () => Promise.resolve([]),
+	}
+}
+
+describe('PlayerContentProvider for accounts', () => {
+	it('waits until it is known who is playing, then loads for that player', async () => {
+		const load = vi.fn((userId: string | null) =>
+			Promise.resolve(userId ? fresh : testContent),
+		)
+		const { rerender } = render(
+			<PlayerContentProvider
+				load={load}
+				progress={progressApi(['p1'])}
+				accountResolved={false}
+			>
+				<Solved />
+			</PlayerContentProvider>,
+		)
+		expect(screen.getByRole('status')).toHaveTextContent(
+			'Loading Kaleidoscope',
+		)
+		expect(load).not.toHaveBeenCalled()
+		rerender(
+			<PlayerContentProvider
+				load={load}
+				progress={progressApi(['p1'])}
+				userId="user-1"
+			>
+				<Solved />
+			</PlayerContentProvider>,
+		)
+		expect(await screen.findByText('Solved: p1')).toBeInTheDocument()
+		expect(load).toHaveBeenCalledExactlyOnceWith('user-1')
+		expect(readCachedContent('user-1')).toEqual(fresh)
+		expect(readCachedContent()).toBeNull()
+	})
+
+	it('keeps the app on screen while it loads for a player who signs in', async () => {
+		const guest = { ...testContent, palettes: palettes.slice(0, 1) }
+		const account = { ...testContent, palettes: palettes.slice(0, 3) }
+		let finish: (content: typeof account) => void = () => undefined
+		const load = vi.fn((userId: string | null) =>
+			userId
+				? new Promise<typeof account>(resolve => (finish = resolve))
+				: Promise.resolve(guest),
+		)
+		const { rerender } = render(
+			<PlayerContentProvider load={load} progress={progressApi()}>
+				<Names />
+			</PlayerContentProvider>,
+		)
+		expect(await screen.findByText('Tahiti')).toBeInTheDocument()
+		rerender(
+			<PlayerContentProvider
+				load={load}
+				progress={progressApi()}
+				userId="user-1"
+			>
+				<Names />
+			</PlayerContentProvider>,
+		)
+		expect(screen.getByText('Tahiti')).toBeInTheDocument()
+		await act(async () => finish(account))
+		expect(
+			await screen.findByText('Tahiti, Cabo, Club Neon'),
+		).toBeInTheDocument()
+	})
+
+	it('falls back to the account’s own cache and solves when the network fails', async () => {
+		cacheContent({ ...testContent, palettes: palettes.slice(0, 1) })
+		cacheContent(
+			{ ...testContent, palettes: palettes.slice(2, 3) },
+			'user-1',
+		)
+		saveAccountProgressCache('user-1', {
+			solved: new Set(['p1', 'p2']),
+			pending: new Set(),
+		})
+		render(
+			<PlayerContentProvider
+				load={() => Promise.reject(new Error('Offline'))}
+				progress={progressApi()}
+				userId="user-1"
+			>
+				<Names />
+				<Solved />
+			</PlayerContentProvider>,
+		)
+		expect(await screen.findByText('Club Neon')).toBeInTheDocument()
+		expect(screen.getByText('Solved: p1, p2')).toBeInTheDocument()
+	})
+
+	it('does not use the guest’s cache for an account', async () => {
+		cacheContent({ ...testContent, palettes: palettes.slice(0, 1) })
+		render(
+			<PlayerContentProvider
+				load={() => Promise.reject(new Error('Offline'))}
+				progress={progressApi()}
+				userId="user-1"
+			>
+				<Names />
+			</PlayerContentProvider>,
+		)
+		expect(await screen.findByRole('alert')).toHaveTextContent('Offline')
 	})
 })
 

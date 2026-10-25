@@ -71,7 +71,32 @@ function resolveClient(client?: SupabaseClient<Database>) {
 	}
 }
 
-function createActions(client: SupabaseClient<Database>) {
+// This device has had a signed-in player. Kept for good: it only lets the app remind a
+// guest that they may have an account, and holds nothing about who it was.
+const KNOWN_ACCOUNT_KEY = 'kaleidoscope:known-account'
+// Signing out on purpose in this browser session means the player knows they are a guest.
+const SIGNED_OUT_HERE_KEY = 'kaleidoscope:signed-out-here'
+
+function readFlag(storage: () => Storage, key: string) {
+	try {
+		return storage().getItem(key) === '1'
+	} catch {
+		return false
+	}
+}
+
+function writeFlag(storage: () => Storage, key: string) {
+	try {
+		storage().setItem(key, '1')
+	} catch {
+		// The reminder is a courtesy; losing it is fine.
+	}
+}
+
+function createActions(
+	client: SupabaseClient<Database>,
+	onSignedOut: () => void,
+) {
 	async function signUp({
 		firstName,
 		email,
@@ -128,12 +153,13 @@ function createActions(client: SupabaseClient<Database>) {
 	async function signOut(): Promise<AuthResult> {
 		try {
 			const { error } = await client.auth.signOut({ scope: 'local' })
-			return error
-				? authFailure(
-						error,
-						"We couldn't sign you out right now. Please try again.",
-					)
-				: { status: 'ok' }
+			if (error)
+				return authFailure(
+					error,
+					"We couldn't sign you out right now. Please try again.",
+				)
+			onSignedOut()
+			return { status: 'ok' }
 		} catch (cause) {
 			return failure(cause, 'Unable to sign out. Please try again.')
 		}
@@ -194,6 +220,12 @@ export function AccountProvider({
 	const [loading, setLoading] = useState(client !== null)
 	const [recovering, setRecovering] = useState(false)
 	const [linkError, setLinkError] = useState(readLinkError)
+	const [knownAccount] = useState(() =>
+		readFlag(() => localStorage, KNOWN_ACCOUNT_KEY),
+	)
+	const [signedOutHere, setSignedOutHere] = useState(() =>
+		readFlag(() => sessionStorage, SIGNED_OUT_HERE_KEY),
+	)
 
 	useEffect(() => {
 		if (!client) return
@@ -221,8 +253,18 @@ export function AccountProvider({
 		}
 	}, [client])
 
+	useEffect(() => {
+		if (session) writeFlag(() => localStorage, KNOWN_ACCOUNT_KEY)
+	}, [session])
+
 	const actions = useMemo(
-		() => (client ? createActions(client) : null),
+		() =>
+			client
+				? createActions(client, () => {
+						writeFlag(() => sessionStorage, SIGNED_OUT_HERE_KEY)
+						setSignedOutHere(true)
+					})
+				: null,
 		[client],
 	)
 	const api = useMemo<AccountApi>(
@@ -234,8 +276,14 @@ export function AccountProvider({
 							: session
 								? 'signedIn'
 								: 'signedOut',
+						userId: session?.user.id ?? null,
 						email: session?.user.email ?? null,
 						firstName: readFirstName(session),
+						returningGuest:
+							!loading &&
+							!session &&
+							knownAccount &&
+							!signedOutHere,
 						recovering,
 						linkError,
 						endRecovery: () => setRecovering(false),
@@ -247,7 +295,15 @@ export function AccountProvider({
 						...actions,
 					}
 				: UNAVAILABLE,
-		[actions, loading, session, recovering, linkError],
+		[
+			actions,
+			loading,
+			session,
+			recovering,
+			linkError,
+			knownAccount,
+			signedOutHere,
+		],
 	)
 
 	return (
