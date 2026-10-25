@@ -1,9 +1,6 @@
-import { useSyncExternalStore } from 'react'
-import {
-	faBorderAll,
-	faSquare,
-} from '@fortawesome/sharp-duotone-solid-svg-icons'
 import type { IconButtonProps } from '@/ui/components'
+import { faBorderAll, faSquare } from '@fortawesome/pro-solid-svg-icons'
+import { useSyncExternalStore } from 'react'
 
 // Whether a puzzle's target (and the peek overlay that shows it over the board)
 // draws lines between its tiles. On small screens the lines can blur the
@@ -65,7 +62,7 @@ export function useTargetGridToggle(): Pick<
 > {
 	const [show, setShow] = useTargetGridLines()
 	return {
-		icon: show ? faBorderAll : faSquare,
+		icon: show ? faSquare : faBorderAll,
 		label: 'Grid lines on the target',
 		'aria-pressed': show,
 		onClick: () => setShow(!show),

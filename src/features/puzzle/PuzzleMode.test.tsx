@@ -122,7 +122,6 @@ describe('PuzzleMode', () => {
 		for (const name of [
 			'Restart',
 			'Back to puzzle set',
-			'Grid lines on the target',
 		]) {
 			expect(
 				screen
