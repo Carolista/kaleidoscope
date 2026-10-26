@@ -233,6 +233,11 @@
 	pointer-events: auto;
 }
 
+.paletteName {
+	font-family: 'Righteous', sans-serif;
+	font-size: 1.4rem;
+}
+
 @media screen and (max-width: 480px) {
 	.withTrayAction .goalAndPieces {
 		grid-template-columns: minmax(0, 1fr);

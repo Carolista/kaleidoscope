@@ -43,6 +43,7 @@ export function difficultySections(
 		const list = sections.get(item.difficulty) ?? []
 		list.push({ item, number: index + 1 })
 		sections.set(item.difficulty, list)
+		console.log(item)
 	})
 	return [...sections].map(([difficulty, puzzles]) => ({
 		difficulty,

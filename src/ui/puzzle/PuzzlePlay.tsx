@@ -874,6 +874,9 @@ export default function PuzzlePlay({
 				{solved ? solvedMessage : message}
 			</div>
 			{children}
+			<div className={styles.paletteName}>
+				{currentPuzzle.paletteName}
+			</div>
 			{drag?.moved && !hidden && (
 				<PieceGraphic
 					shape={currentPuzzle.shape}

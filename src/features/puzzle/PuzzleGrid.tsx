@@ -62,6 +62,7 @@ export default function PuzzleGrid({
 											>
 												<PuzzleImage item={item} />
 											</span>
+											{item.name}
 											{done && (
 												<span
 													className={styles.check}

@@ -74,6 +74,7 @@ export default function PuzzleSetList({
 												item={section.puzzles[0].item}
 											/>
 										</span>
+										{section.puzzles[0].item.palette.name}
 										<span>
 											{solvedCount(
 												section.puzzles.map(
