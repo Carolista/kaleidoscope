@@ -431,7 +431,7 @@ changes should be applied to all four SVG assets.
   [main.tsx](./src/main.tsx) imports core CSS and disables automatic CSS injection.
   No Kit script or Kit dependency.
 - Self-hosted fonts: Righteous 400 (player header, mode button, headings and modal titles); Mr Dafoe 400
-  (intro Welcome/Congratulations headings; the Puzzle Mode solve "Congrats!"); Urbanist 200, 400, 400 italic, and 700
+  (intro Welcome/Congratulations headings; the Puzzle Mode solve "Congrats!"); Urbanist 200, 400, 400 italic, 600, and 800
   (body text and default bold headings).
 - Text case: `toTitleCase` in [ui/text/](./src/ui/text/) (AP-style: articles, conjunctions, and prepositions of three letters
   or fewer stay lowercase unless first or after a colon; "in"/"out" stay capitalized after "sign"/"log"; words with their own capitals are

@@ -76,7 +76,7 @@ export default function PuzzleSetList({
 								<span>
 									{set.kind === 'bonus' ? ' (Bonus)' : ''}
 								</span>
-								<span>
+								<span className={styles.setTotalSolved}>
 									{solvedCount(set.puzzles, solved)}/
 									{set.puzzles.length}
 								</span>
