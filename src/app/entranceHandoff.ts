@@ -3,35 +3,50 @@
 // frame continues it instead of playing it again.
 
 const STAR_SPIN_MS = 2000
+export const TITLE_MOVE_MS = 1400
 
 let startedAt: number | null = null
-let spinFinished = false
+let spinFinishedAt: number | null = null
 
 export function markEntranceStarted() {
 	startedAt ??= performance.now()
 }
 
 export function markEntranceSpinFinished() {
-	spinFinished = true
+	spinFinishedAt ??= performance.now()
 }
 
 export interface EntranceHandoff {
-	// The opening is already past the point where the title leaves the centre.
+	// The title has already finished moving into the header.
 	readonly settled: boolean
+	// The star has finished spinning, so the title has left the centre (and may still be moving).
+	readonly spinDone: boolean
 	// How long the star has been spinning, when the opening is still under way.
 	readonly elapsedMs: number
+	// How far into its move to the header the title got, once the spin is done.
+	readonly moveElapsedMs: number
 }
 
 export function readEntranceHandoff(): EntranceHandoff {
-	if (startedAt === null) return { settled: false, elapsedMs: 0 }
-	const elapsedMs = performance.now() - startedAt
+	if (startedAt === null)
+		return {
+			settled: false,
+			spinDone: false,
+			elapsedMs: 0,
+			moveElapsedMs: 0,
+		}
+	const now = performance.now()
+	const spinEndedAt = spinFinishedAt ?? startedAt + STAR_SPIN_MS
+	const moveElapsedMs = Math.max(0, now - spinEndedAt)
 	return {
-		settled: spinFinished || elapsedMs >= STAR_SPIN_MS,
-		elapsedMs,
+		settled: moveElapsedMs >= TITLE_MOVE_MS,
+		spinDone: now >= spinEndedAt,
+		elapsedMs: now - startedAt,
+		moveElapsedMs,
 	}
 }
 
 export function resetEntranceHandoff() {
 	startedAt = null
-	spinFinished = false
+	spinFinishedAt = null
 }

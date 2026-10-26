@@ -597,7 +597,7 @@ released yet" with Check again, since Zen needs a palette. The catalog does not 
 Until content is ready the provider shows its `gate`: `AppEntry` supplies the app's own frame (`PlayerApp` with a `gate`, under
 `ProvisionalTheme`), so the loading, error, and nothing-released messages (`ContentGateView`) appear in the page's main area
 under the opening logo; with no `gate` they take a page of their own. The real app replaces the frame once content is ready and
-continues the opening animation from where it was (`entranceHandoff`; the star joins its spin part-way).
+continues the opening animation from where it was (`entranceHandoff`; the star joins its spin part-way, and a title still moving into the header carries on from its place in the move). Content that arrives once the title has settled fades in over a second (`arriving` on `main`); otherwise the opening's own fade brings it in.
 A guest's solved puzzles are stored on the device as `{ version: 1, solved: [puzzle IDs] }` in `kaleidoscope:puzzle-progress`
 and are never merged into an account automatically (see Account progress below). The cache format is version 3 (it gained `rewards`, then `shapeOrder`; older caches
 are ignored). For an account the load also asks the database for the next tier of free puzzles (`preview_puzzles()`: bonus sets of shapes the player has, and the core and bonus sets of the one shape after them), so

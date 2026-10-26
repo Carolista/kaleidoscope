@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import { getThemeColors } from '@/domain/palettes'
 import {
 	AccountDialog,
@@ -17,12 +17,14 @@ import {
 	markEntranceSpinFinished,
 	markEntranceStarted,
 	readEntranceHandoff,
+	TITLE_MOVE_MS,
 } from './entranceHandoff'
 import {
 	Footer,
 	Header,
 	ModeDialog,
 	releaseOpeningTitle,
+	restoreOpeningTitle,
 	type Mode,
 } from './layout'
 import { SettingsControl, SettingsDialog } from './settings'
@@ -132,18 +134,6 @@ function PlayerApp({ gate }: { readonly gate?: ContentGate }) {
 	}
 
 	useLayoutEffect(() => {
-		if (!canAnimateEntrance) return
-		const title = titleRef.current
-		if (!title) return
-
-		return () => {
-			titleAnimationRef.current?.cancel()
-			titleAnimationRef.current = null
-			title.style.transformOrigin = ''
-		}
-	}, [canAnimateEntrance])
-
-	useLayoutEffect(() => {
 		// `--base`/`--accent` are set inline below, but CSS custom properties
 		// only cascade to descendants, not up to <body>/<html>, so we set
 		// their background directly here instead — covering the viewport
@@ -160,7 +150,7 @@ function PlayerApp({ gate }: { readonly gate?: ContentGate }) {
 		document.body.style.backgroundColor = base
 	}, [base])
 
-	function handleStarSpinComplete() {
+	const handleStarSpinComplete = useCallback(() => {
 		if (
 			!canAnimateEntrance ||
 			entranceStartedRef.current ||
@@ -196,7 +186,8 @@ function PlayerApp({ gate }: { readonly gate?: ContentGate }) {
 		const animation = title.animate(
 			[{ transform }, { transform: 'none' }],
 			{
-				duration: 1400,
+				duration: TITLE_MOVE_MS,
+				delay: -(handoff?.moveElapsedMs ?? 0),
 				easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
 				fill: 'both',
 			},
@@ -209,7 +200,28 @@ function PlayerApp({ gate }: { readonly gate?: ContentGate }) {
 			setEntrance('complete')
 		}
 		setEntrance('moving')
-	}
+	}, [canAnimateEntrance, gate, handoff])
+
+	useLayoutEffect(() => {
+		if (!canAnimateEntrance) return
+		const title = titleRef.current
+		if (!title) return
+
+		// A frame rebuilt while the title was on its way to the header picks the move up
+		// where it was, rather than waiting for a spin that has already ended.
+		const resumeMove = !!handoff?.spinDone
+		if (resumeMove) handleStarSpinComplete()
+
+		return () => {
+			titleAnimationRef.current?.cancel()
+			titleAnimationRef.current = null
+			title.style.transformOrigin = ''
+			if (resumeMove) {
+				entranceStartedRef.current = false
+				restoreOpeningTitle(title)
+			}
+		}
+	}, [canAnimateEntrance, handoff, handleStarSpinComplete])
 
 	return (
 		<TextCaseContext.Provider value="title">
@@ -236,7 +248,9 @@ function PlayerApp({ gate }: { readonly gate?: ContentGate }) {
 						<SettingsControl onOpen={() => setSettingsOpen(true)} />
 					}
 				/>
-				<main className={styles.app}>
+				<main
+					className={`${styles.app}${handoff?.settled ? ` ${styles.arriving}` : ''}`}
+				>
 					{gate ? (
 						<ContentGateView gate={gate} />
 					) : (

@@ -392,15 +392,57 @@ describe('App', () => {
 			)
 		})
 
-		it('does not replay an opening that had already moved the title up', () => {
+		// The loading frame began at 1000ms and its star finished spinning at 3000ms.
+		function startLoadingFrame(nowMs: number) {
+			const now = vi.spyOn(performance, 'now')
+			now.mockReturnValue(1000)
 			markEntranceStarted()
+			now.mockReturnValue(3000)
 			markEntranceSpinFinished()
+			now.mockReturnValue(nowMs)
+			return now
+		}
+
+		it('does not replay an opening whose title has already reached the header', () => {
+			const now = startLoadingFrame(4500)
 			renderLanding()
 			const page = screen.getByRole('main').parentElement
 			expect(page).not.toHaveClass(styles.opening)
 			expect(
 				screen.getByRole('heading', { name: 'Kaleidoscope' }),
 			).not.toHaveClass(headerStyles.openingTitle)
+			expect(Element.prototype.animate).not.toHaveBeenCalled()
+			now.mockRestore()
+		})
+
+		it('carries on moving a title that was still on its way to the header', () => {
+			const now = startLoadingFrame(3600)
+			vi.mocked(Element.prototype.animate).mockReturnValue({
+				cancel: vi.fn(),
+			} as unknown as Animation)
+			const rect = vi
+				.spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+				.mockReturnValue({ width: 100, height: 50 } as DOMRect)
+			renderLanding()
+			expect(Element.prototype.animate).toHaveBeenCalledWith(
+				expect.anything(),
+				expect.objectContaining({ duration: 1400, delay: -600 }),
+			)
+			expect(screen.getByRole('main')).not.toHaveClass(styles.arriving)
+			rect.mockRestore()
+			now.mockRestore()
+		})
+
+		it('fades the content in when it arrives after the opening has played', () => {
+			const now = startLoadingFrame(4500)
+			renderLanding()
+			expect(screen.getByRole('main')).toHaveClass(styles.arriving)
+			now.mockRestore()
+		})
+
+		it('leaves the fade to the opening when content is ready at once', () => {
+			renderLanding()
+			expect(screen.getByRole('main')).not.toHaveClass(styles.arriving)
 		})
 
 		it('joins a spin already under way', () => {
