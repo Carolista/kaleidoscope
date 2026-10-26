@@ -8,6 +8,7 @@ import {
 } from 'react'
 import type { AccountProgressApi } from './accountProgress'
 import type { PlayerContent } from './playerContent'
+import { NewChoicesProvider } from './NewChoicesProvider'
 import { PlayerContentContext } from './PlayerContentContext'
 import { PlayerProgressContext } from './PlayerProgressContext'
 import { PuzzleResumeProvider } from './PuzzleResumeProvider'
@@ -329,14 +330,20 @@ export function PlayerProgressProvider({
 	return (
 		<PlayerProgressContext.Provider value={progress}>
 			<PlayerContentContext.Provider value={available}>
-				<PuzzleResumeProvider
+				<NewChoicesProvider
 					key={userId ?? 'guest'}
 					userId={userId}
 					content={available}
-					solved={solved}
 				>
-					{children}
-				</PuzzleResumeProvider>
+					<PuzzleResumeProvider
+						key={userId ?? 'guest'}
+						userId={userId}
+						content={available}
+						solved={solved}
+					>
+						{children}
+					</PuzzleResumeProvider>
+				</NewChoicesProvider>
 			</PlayerContentContext.Provider>
 		</PlayerProgressContext.Provider>
 	)
