@@ -540,6 +540,11 @@ also derived in the app from the solved IDs, for the dialogs. The function check
 group or the next shape. Because of that, the solve that finishes a set waits for the server before announcing its rewards, so a bonus set is never missing from its own announcement. Other solves are sent in the background and kept
 (per account, with a pending list) until the server takes them. Server solves are only ever added to the local set. An account's caches are never shared with the guest's.
 
+**Progress reads name the player, and a skipped solve stays pending.** An admin signed in to the player app has the `admin_crud` policies on every progress table, so a read that relies on row-level security alone
+(`puzzle_completions`, `group_completions`, `shape_grants`, `feature_grants`) returns every account's rows and would show the admin a blend of other accounts' progress. Every player read therefore filters by `user_id`, whoever
+is signed in. `record_puzzle_completions` returns only the puzzles it recorded, and only those leave the pending list; a puzzle it skipped stays pending (and is retried) instead of being forgotten while still shown as solved, which
+would make it vanish on the next load. The cost is that a puzzle the server will never accept is resent with each flush, which is cheap and keeps the failure visible rather than silent.
+
 **Unlocking a shape is announced, not silent.** When the reload shows a shape that was not open before, a second dialog after the reward dialog says so, names that it is available in Zen Mode, and lists the shape's core sets
 with a way in. The randomizer, the last prize, is announced in its own dialog after the reward and shape dialogs, pointing at Zen Mode. The announcements run in a fixed order (reward, shape, randomizer, account prompt, sign-in reminder), one at a time, each after the last has finished closing.
 

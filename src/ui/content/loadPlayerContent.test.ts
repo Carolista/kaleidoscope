@@ -64,6 +64,7 @@ function fakeClient(
 		data: unknown
 		error: { message: string } | null
 	}> = () => Promise.resolve({ data: [], error: null }),
+	filters: [string, string, unknown][] = [],
 ): SupabaseClient<Database> {
 	return {
 		rpc,
@@ -74,7 +75,10 @@ function fakeClient(
 					: { data: data[table] ?? [], error: null }
 			const query = {
 				select: () => query,
-				eq: () => query,
+				eq: (column: string, value: unknown) => {
+					filters.push([table, column, value])
+					return query
+				},
 				in: () => query,
 				order: () => query,
 				then: (resolve: (value: typeof result) => unknown) =>
@@ -181,7 +185,7 @@ describe('loadPlayerContent', () => {
 				],
 				shape_grants: [{ shape_id: 'hexagram' }],
 			}),
-			{ account: true },
+			{ account: { userId: 'user-1' } },
 		)
 		expect(content.unlockedShapes).toEqual([
 			'hexagon',
@@ -199,10 +203,23 @@ describe('loadPlayerContent', () => {
 		expect(content.nextShape).toBe('diamondStar')
 	})
 
+	it("asks only for the signed-in player's own progress", async () => {
+		const filters: [string, string, unknown][] = []
+		await loadPlayerContent(fakeClient({}, undefined, undefined, filters), {
+			account: { userId: 'user-1' },
+		})
+		for (const table of [
+			'group_completions',
+			'shape_grants',
+			'feature_grants',
+		])
+			expect(filters).toContainEqual([table, 'user_id', 'user-1'])
+	})
+
 	it("reports a failure to read an account's progress", async () => {
 		await expect(
 			loadPlayerContent(fakeClient({}, 'group_completions'), {
-				account: true,
+				account: { userId: 'user-1' },
 			}),
 		).rejects.toThrow('group_completions failed')
 	})
@@ -364,7 +381,7 @@ describe('loadPlayerContent', () => {
 		const account = await loadPlayerContent(
 			fakeClient(data, undefined, rpc),
 			{
-				account: true,
+				account: { userId: 'user-1' },
 			},
 		)
 		expect(rpc).toHaveBeenCalledWith('preview_puzzles')
@@ -392,7 +409,7 @@ describe('loadPlayerContent', () => {
 						error: { message: 'missing' },
 					}),
 			),
-			{ account: true },
+			{ account: { userId: 'user-1' } },
 		)
 		expect(content.puzzleSets.map(set => set.id)).toEqual(['core'])
 	})

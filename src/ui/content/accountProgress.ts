@@ -2,8 +2,10 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase'
 
 // What the player app needs from the server about a signed-in player's solved puzzles.
+// Reads name the player: an admin's session can read every account's rows, so what the
+// row-level rules allow is not enough to mean "mine".
 export interface AccountProgressApi {
-	readonly loadSolved: () => Promise<string[]>
+	readonly loadSolved: (userId: string) => Promise<string[]>
 	// Resolves with the puzzles the server recorded (it skips any the player may not
 	// play). Rejects when the server could not be reached or refused, so the caller can retry.
 	readonly record: (puzzleIds: readonly string[]) => Promise<string[]>
@@ -18,12 +20,13 @@ export function supabaseAccountProgress(
 	client: SupabaseClient<Database>,
 ): AccountProgressApi {
 	return {
-		async loadSolved() {
+		async loadSolved(userId) {
 			const solved: string[] = []
 			for (let from = 0; ; from += PAGE) {
 				const { data, error } = await client
 					.from('puzzle_completions')
 					.select('puzzle_id')
+					.eq('user_id', userId)
 					.order('puzzle_id')
 					.range(from, from + PAGE - 1)
 				if (error) throw new Error(error.message)

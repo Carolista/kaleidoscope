@@ -239,16 +239,19 @@ function sortSets(
 }
 
 // Mirrors the database's `has_shape`: the first shape, a granted shape, or the shape after
-// one whose core group the account has completed. The account's own rows are all it can read.
+// one whose core group the account has completed. Rows are asked for by player, since an
+// admin's session can read every account's.
 async function loadAccountShapes(
 	client: SupabaseClient<Database>,
+	userId: string,
 	order: readonly GridShapeId[],
 ): Promise<GridShapeId[]> {
 	const [completions, grants] = await Promise.all([
 		client
 			.from('group_completions')
-			.select('puzzle_groups(shape_id, purpose)'),
-		client.from('shape_grants').select('shape_id'),
+			.select('puzzle_groups(shape_id, purpose)')
+			.eq('user_id', userId),
+		client.from('shape_grants').select('shape_id').eq('user_id', userId),
 	])
 	if (completions.error) throw new Error(completions.error.message)
 	if (grants.error) throw new Error(grants.error.message)
@@ -271,10 +274,12 @@ async function loadAccountShapes(
 // The server grants the randomizer once, permanently, when every free set is complete.
 async function loadRandomizerGrant(
 	client: SupabaseClient<Database>,
+	userId: string,
 ): Promise<boolean> {
 	const { data, error } = await client
 		.from('feature_grants')
 		.select('feature')
+		.eq('user_id', userId)
 		.eq('feature', 'zen_randomizer')
 	if (error) throw new Error(error.message)
 	return data.length > 0
@@ -284,20 +289,20 @@ async function loadRandomizerGrant(
 // further shapes as it finishes core sets, which the database enforces as it answers.
 export async function loadPlayerContent(
 	client: SupabaseClient<Database>,
-	{ account = false }: { readonly account?: boolean } = {},
+	{ account }: { readonly account?: { readonly userId: string } } = {},
 ): Promise<PlayerContent> {
 	const [palettes, shapeOrder, puzzleSets, rewards] = await Promise.all([
 		loadPalettes(client),
 		loadShapeOrder(client),
-		loadPuzzleSets(client, account),
+		loadPuzzleSets(client, !!account),
 		loadRewards(client),
 	])
 	const order = shapeOrder.length ? shapeOrder : [supportedGridShapes[0].id]
 	const sets = sortSets(puzzleSets, order)
 	const [unlockedShapes, randomizerUnlocked] = account
 		? await Promise.all([
-				loadAccountShapes(client, order),
-				loadRandomizerGrant(client),
+				loadAccountShapes(client, account.userId, order),
+				loadRandomizerGrant(client, account.userId),
 			])
 		: [[order[0]], false]
 	return {
