@@ -19,7 +19,7 @@ Mode. The KALEID★SCOPE title returns Home from anywhere, and the header's Zen/
 The greeting is "Hi, Ada!" for a signed-in player (or "Welcome back!" without a first name) and "Welcome!" for a guest, with a link
 to sign in or create an account. The page frame (header and the logo's opening animation) appears immediately; the app loads
 what this player may use from Supabase (as a guest, or with their own session once it is known who is playing) in the meantime (see Player content below), and shows a loading message in
-place of the screens only if that is not done when the logo has moved up. Puzzle Mode lists the core puzzle sets and any bonus sets earned, then a set's
+place of the screens only if that is not done when the logo has moved up. Puzzle Mode lists the core puzzle sets and any bonus sets earned (each with its track label, a three-dot color cue, and progress), then a set's
 puzzles by difficulty, and plays one on the shared `PuzzlePlay` surface; a guest's solved puzzle IDs stay
 on the device, and a signed-in player's are saved to the account. Solving the last puzzle of a set that earns something opens a "Reward earned" dialog
 (see Player content). Its independent local React state survives mode switches but not reloads; it never

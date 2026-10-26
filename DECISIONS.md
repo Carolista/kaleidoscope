@@ -1007,6 +1007,16 @@ with the decorative `faDot` icon through a shared `SeparatorDot`. Because an ico
 inside a string, services such as palette usage return label parts rather than joined text, and
 the screen reader hears the parts without a separator.
 
+**Rainbow palette:** `--red`, `--orange`, `--yellow`, `--green`, `--blue`, `--purple`, and
+`--magenta` are defined once on `:root` in `index.css` for both the player and admin sides.
+Admin's `--admin-*` colors alias them in dark mode and override them with literal values in
+light mode; the player side has no light variants because it has no fixed light theme. Use the
+shared names rather than hard-coding hex values.
+
+**Track indicator:** each puzzle set in the player list shows three `faCircle` dots before the
+track label as a quick visual cue: Basic is green/blue/purple and Rotation is magenta/red/orange.
+The dots are decorative (`aria-hidden`), so the label alone names the track.
+
 **Background flicker constraint:** set literal background colors without transitions.
 The synchronous `index.html` bootstrap handles pre-mount paint; `App` renders
 `.page` and updates `html`/`body` in `useLayoutEffect`. CSS-only defaults arrive

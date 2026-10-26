@@ -227,12 +227,16 @@ describe('PuzzleMode', () => {
 		).toBeInTheDocument()
 		const set = screen.getByRole('button', { name: /Starter/ })
 		expect(set).toHaveTextContent('Basic')
-		expect(set).toHaveTextContent('1 of 2')
+		expect(set).toHaveTextContent('1/2')
 		// No shape name or wording, just a preview and progress per difficulty.
 		expect(set).not.toHaveTextContent(/Hexagon|solved/)
-		expect(set.querySelectorAll('svg')).toHaveLength(2)
-		expect(set).toHaveTextContent('0 of 1')
-		expect(set).toHaveTextContent('1 of 1')
+		const dots = set.querySelectorAll('svg[data-icon="circle"]')
+		expect(
+			Array.from(dots, dot => (dot as SVGElement).style.color),
+		).toEqual(['var(--green)', 'var(--blue)', 'var(--purple)'])
+		expect(set.querySelectorAll('svg')).toHaveLength(2 + dots.length)
+		expect(set).toHaveTextContent('0/1')
+		expect(set).toHaveTextContent('1/1')
 		await user.click(set)
 		expect(screen.getByRole('heading', { name: 'Starter' })).toBeVisible()
 		expect(
@@ -280,7 +284,7 @@ describe('PuzzleMode', () => {
 		renderBrowser()
 		expect(
 			screen.getByRole('button', { name: /Starter/ }),
-		).toHaveTextContent('1 of 2')
+		).toHaveTextContent('1/2')
 	})
 
 	it('finishes the set when no unsolved puzzle is left', async () => {
@@ -299,6 +303,23 @@ describe('PuzzleMode', () => {
 			screen.getByRole('button', { name: 'Back to puzzle set' }),
 		)
 		expect(screen.getByRole('heading', { name: 'Starter' })).toBeVisible()
+	})
+
+	it('colors the track indicator by track', () => {
+		const [starter] = content.puzzleSets
+		renderWithProvider(<PuzzleMode />, {
+			...content,
+			puzzleSets: [{ ...starter, track: 'rotation' }],
+		})
+		const dots = screen
+			.getByRole('button', { name: /Starter/ })
+			.querySelectorAll('svg[data-icon="circle"]')
+		expect(
+			screen.getByRole('button', { name: /Starter/ }),
+		).toHaveTextContent('Rotation')
+		expect(
+			Array.from(dots, dot => (dot as SVGElement).style.color),
+		).toEqual(['var(--magenta)', 'var(--red)', 'var(--orange)'])
 	})
 
 	it('hides a bonus set until its core set is complete, then announces and lists it', async () => {

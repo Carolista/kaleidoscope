@@ -4,6 +4,13 @@
 
 :root {
 	--font-body: 'Urbanist', system-ui, 'Segoe UI', sans-serif;
+	--red: #c94444;
+	--orange: #e3772a;
+	--yellow: #e5b218;
+	--green: #5aa23f;
+	--blue: #2184c7;
+	--purple: #963dca;
+	--magenta: #c93d96;
 }
 
 :where(button, input, select, textarea) {

@@ -1,6 +1,6 @@
 import { Heading } from '@/ui/components'
 import type { PlayerPuzzleSet } from '@/ui/content'
-import { faCircleCheck } from '@fortawesome/pro-solid-svg-icons'
+import { faCircleCheck, faCircle } from '@fortawesome/pro-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import PuzzleImage from './PuzzleImage'
 import styles from './PuzzleMode.module.css'
@@ -9,6 +9,11 @@ import { difficultySections, solvedCount } from './setProgress'
 const trackLabels = {
 	basic: 'Basic',
 	rotation: 'Rotation',
+} as const
+
+const trackColors = {
+	basic: ['--green', '--blue', '--purple'],
+	rotation: ['--magenta', '--red', '--orange'],
 } as const
 
 export default function PuzzleSetList({
@@ -52,11 +57,27 @@ export default function PuzzleSetList({
 									)}
 								</span>
 								<span>
+									<span
+										className={styles.trackDots}
+										aria-hidden="true"
+									>
+										{trackColors[set.track].map(color => (
+											<FontAwesomeIcon
+												key={color}
+												icon={faCircle}
+												style={{
+													color: `var(${color})`,
+												}}
+											/>
+										))}
+									</span>
 									{trackLabels[set.track]}
+								</span>
+								<span>
 									{set.kind === 'bonus' ? ' (Bonus)' : ''}
 								</span>
 								<span>
-									{solvedCount(set.puzzles, solved)} of{' '}
+									{solvedCount(set.puzzles, solved)}/
 									{set.puzzles.length}
 								</span>
 							</span>
@@ -81,8 +102,8 @@ export default function PuzzleSetList({
 													entry => entry.item,
 												),
 												solved,
-											)}{' '}
-											of {section.puzzles.length}
+											)}
+											/{section.puzzles.length}
 										</span>
 									</span>
 								))}
