@@ -38,6 +38,8 @@
 .choice[aria-pressed='true'] {
 	border-color: var(--palette-choice-selected-border, transparent);
 	background: var(--palette-choice-selected-surface, transparent);
+	box-shadow: inset 0 0 0 var(--palette-choice-selected-extra-width, 0)
+		var(--palette-choice-selected-border, transparent);
 }
 
 .choice:disabled {
