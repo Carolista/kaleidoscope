@@ -256,6 +256,8 @@ interface PuzzleBoardProps {
 	// False drops the lines between cells, for small thumbnails.
 	readonly gridlines?: boolean
 	readonly solved?: boolean
+	// Fades the graphic, like a tray piece that is already on the board.
+	readonly dimmed?: boolean
 	readonly pieces?: readonly PuzzlePiece[]
 	readonly placements?: PuzzlePlacements
 	readonly selectedId?: string | null
@@ -276,6 +278,7 @@ export default function PuzzleBoard({
 	target = false,
 	gridlines = true,
 	solved = false,
+	dimmed = false,
 	pieces = [],
 	placements = {},
 	selectedId,
@@ -311,6 +314,7 @@ export default function PuzzleBoard({
 			ref={svgRef}
 			viewBox={viewBoxFor(shape, cells)}
 			className={styles.gridGraphic}
+			data-dimmed={dimmed || undefined}
 			role={target ? 'img' : 'group'}
 			data-puzzle-board={target ? undefined : ''}
 			aria-label={label ?? (target ? 'Target design' : 'Puzzle board')}

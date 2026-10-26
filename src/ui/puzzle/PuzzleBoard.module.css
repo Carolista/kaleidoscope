@@ -5,6 +5,12 @@
 	overflow: visible;
 }
 
+/* Matches the faded pieces in the tray (.piece:disabled in PuzzlePlay). */
+.gridGraphic[data-dimmed] {
+	opacity: 0.45;
+	filter: grayscale(0.8);
+}
+
 .targetCell,
 .mirrorCell,
 .wedgeCell,

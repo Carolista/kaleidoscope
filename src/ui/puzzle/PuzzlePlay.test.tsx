@@ -257,6 +257,32 @@ describe('PuzzlePlay target peek', () => {
 		expect(screen.getByRole('status')).toHaveTextContent('Solved.')
 		expect(peek()).toBeNull()
 	})
+
+	it('dims the target and turns off peeking once the puzzle is solved', () => {
+		const puzzle = generatePuzzle(
+			'dim-target',
+			palettes[1],
+			PUZZLE_RECIPES[0],
+		)
+		const { container } = renderPlay(puzzle)
+		const target = container.querySelector(
+			'svg[aria-label="Target design"]',
+		)
+		expect(target).not.toHaveAttribute('data-dimmed')
+		for (const [index, piece] of puzzle.pieces.entries())
+			dragTo(
+				pieceButton(index),
+				tileAt(
+					coordinateKey(
+						pieceCells(piece, puzzle.solution[piece.id])[0],
+					),
+				),
+			)
+		expect(target).toHaveAttribute('data-dimmed')
+		expect(
+			screen.getByRole('button', { name: 'Show target over the board' }),
+		).toBeDisabled()
+	})
 })
 
 describe('PuzzlePlay on the stage', () => {

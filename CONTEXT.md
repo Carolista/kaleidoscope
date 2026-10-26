@@ -346,7 +346,7 @@ the tutorial and the admin puzzle editors still use.
 Pressing the target (a transparent button over it) shows it over the board at the board's size:
 it grows out of the thumbnail while fading in and shrinks back when pressed again, tapped, or
 Escape is pressed (`PeekOverlay`; picking up a piece or solving hides it, and reduced motion skips the
-animation). A grid icon among each screen's actions (Back, Next, Grid lines, Restart for players;
+animation). Once the puzzle is solved the reference is no longer needed: the target fades to match the tray's placed-piece ghosts (`PuzzleBoard`'s `dimmed`, opacity 0.45 plus grayscale) and its button is disabled. A grid icon among each screen's actions (Back, Next, Grid lines, Restart for players;
 beside Restart in admin playtests) and a Game settings checkbox turn the lines between the target's tiles
 off and on, on the target and the peek only: the board keeps its lines so empty tiles stay distinct. The
 choice is remembered per device in `kaleidoscope:puzzle:targetGridLines`, on by default

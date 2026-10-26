@@ -628,12 +628,14 @@ export default function PuzzlePlay({
 				colors={currentPuzzle.target}
 				gridlines={targetGridLines}
 				target
+				dimmed={solved}
 			/>
 			<button
 				type="button"
 				className={styles.peekButton}
 				aria-label="Show target over the board"
 				aria-pressed={peekOn}
+				disabled={solved}
 				onClick={() => setPeeking(!peekOn)}
 			/>
 		</>
