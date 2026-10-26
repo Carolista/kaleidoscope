@@ -183,7 +183,8 @@ remaining pack palette groups wait for the 2B store.
 **A5: Access and progression**
 
 - ✅ One access layer for palettes, shapes, and puzzle sets in Zen and Puzzle Mode (`ui/content`); guests see only
-  released core content and Hexagon. Locked content is simply hidden for now.
+  released core content and Hexagon to play.
+- ✅ Earnable content is shown locked, as a preview: reward palettes, bonus sets, and sets of later shapes follow the earned ones, disabled, in greyscale, with a lock, and in color while hovered, focused, or pressed (migration `20261026010000`, `locked_set_previews()`). Pack and daily content, and locked shapes in Zen's shape picker, are not shown yet (phase 2B for packs).
 - ✅ Puzzle Mode teaches itself on first use, as does Zen (the Zen tutorial shows the first time Zen is opened, and Puzzle Mode teaches basic and rotation puzzles the first time each is used). The app opens on Home, from which either is one tap.
 - ✅ Player-side random puzzle generation is replaced by published puzzles.
 - The first introductory sequence is fixed. After that, every puzzle in an unlocked set is selectable (selectable today; the fixed sequence is not built).

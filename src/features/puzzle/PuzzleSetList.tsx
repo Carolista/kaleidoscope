@@ -1,3 +1,4 @@
+import { supportedGridShapes } from '@/domain/shapes'
 import { Heading } from '@/ui/components'
 import type { Locked, PlayerPuzzleSet } from '@/ui/content'
 import { usePressPreview } from '@/ui/hooks'
@@ -38,24 +39,29 @@ function TrackLabel({ set }: { readonly set: PlayerPuzzleSet }) {
 	)
 }
 
-// A bonus set not yet earned: it cannot be opened, but pressing it previews its colors.
+// A set not yet earned: it cannot be opened, but pressing it previews its colors.
 // It uses aria-disabled rather than disabled so it still receives pointer events and focus.
 function LockedSetButton({ item: set, unlockedBy }: Locked<PlayerPuzzleSet>) {
 	const press = usePressPreview()
+	const shape =
+		supportedGridShapes.find(item => item.id === set.shape)?.label ??
+		set.shape
+	const bonus = set.kind === 'bonus' ? ', bonus' : ''
 	return (
 		<button
 			type="button"
 			className={`${styles.setButton} ${styles.lockedSet}`}
 			aria-disabled="true"
-			aria-label={`${set.name}, bonus ${trackLabels[set.track]} set, locked. Finish ${unlockedBy} to unlock`}
+			aria-label={`${set.name}, ${shape} ${trackLabels[set.track]}${bonus} set, locked. Finish ${unlockedBy} to unlock`}
 			{...press}
 		>
 			<span className={styles.setText}>
 				<span className={styles.setName}>{set.name}</span>
+				<span>{shape}</span>
 				<span>
 					<TrackLabel set={set} />
 				</span>
-				<span>(Bonus)</span>
+				{set.kind === 'bonus' && <span>(Bonus)</span>}
 				<span className={styles.lockedRequirement}>
 					<FontAwesomeIcon icon={faLock} aria-hidden="true" /> Finish{' '}
 					{unlockedBy}

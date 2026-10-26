@@ -34,6 +34,7 @@ export function readCachedContent(
 					...content,
 					lockedPalettes: [],
 					lockedPuzzleSets: [],
+					previewSets: content.previewSets ?? [],
 					nextShape: content.nextShape ?? null,
 					randomizerUnlocked: content.randomizerUnlocked === true,
 				} as PlayerContent)

@@ -132,6 +132,47 @@ describe('locked content', () => {
 		).toEqual(['deeper'])
 	})
 
+	it('lists the sets and palettes of shapes not yet reached, from sets the player cannot read yet', () => {
+		const later: PlayerPuzzleSet = {
+			...set('later', 'core', ['t1']),
+			shape: 'triangle',
+		}
+		const laterBonus: PlayerPuzzleSet = {
+			...set('later-bonus', 'bonus', ['t2']),
+			shape: 'triangle',
+		}
+		const available = availableContent(
+			{
+				...content,
+				previewSets: [later, laterBonus],
+				rewards: [
+					...content.rewards,
+					{
+						setId: 'later',
+						palettes: [palettes[5]],
+						bonusSetIds: ['later-bonus'],
+					},
+				],
+			},
+			new Set(),
+		)
+		expect(
+			available.lockedPuzzleSets.map(({ item, unlockedBy }) => [
+				item.id,
+				unlockedBy,
+			]),
+		).toEqual([
+			['bonus', 'core'],
+			['deeper', 'bonus'],
+			['later', 'a Hexagon set'],
+			['later-bonus', 'later'],
+		])
+		expect(available.lockedPalettes.map(entry => entry.item.id)).toContain(
+			palettes[5].id,
+		)
+		expect(ids(available.puzzleSets)).toEqual(['core'])
+	})
+
 	it('lists nothing once everything is earned', () => {
 		const available = availableContent(
 			content,

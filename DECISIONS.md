@@ -410,8 +410,8 @@ so that row spans the state columns with "N of M live".
 
 **Release means the content exists and is locked, not that players see it.** `published_at` approves content
 and `release_at` is when it goes live; a scheduled item stays editable until its release instant, a live one never
-changes (except a palette color correction). What a player is shown is a separate rule in the player app. The plan is
-to start with owned content only and later add a way to see what could be unlocked or bought.
+changes (except a palette color correction). What a player is shown is a separate rule in the player app. Players use
+only what they own, and see what could be earned locked (see Player content); buying comes with the store.
 
 **Everything is released through groups.** Palettes and puzzles are never released or cancelled singly. Releasing a
 group also releases what it depends on, in dependency order: palettes, puzzles, then the group. A dependency already
@@ -469,11 +469,19 @@ release instant) and uses the eye icon.
 
 ### Player content
 
-**Players see only what they have.** The player app loads one set of content before it starts: the palettes of released
+**Players use only what they have, and see what they can earn.** The player app loads one set of content before it starts: the palettes of released
 core palette groups (these are Zen's palettes), the released core puzzle sets, and the unlocked shapes (for guests, the
-first shape in the unlock order). A way to show what could be unlocked or bought comes later; for now locked content is
-simply absent. The database stays the authority (guest reads are limited to released content and the first shape's
+first shape in the unlock order). The database stays the authority for what can be played (guest reads of puzzles are limited to released content and the first shape's
 core groups); the app filters again by release state so drafts never appear even under elevated access.
+
+**Earnable content is shown locked, as a preview.** Reward palettes, bonus sets, and the sets of later shapes appear after the earned ones, disabled and in
+greyscale, and show in full color only while hovered, focused, or pressed. This invites players on without a level or XP system. Only content earned through
+puzzles is shown: pack and daily content stays invisible until the store exists (phase 2B, where unavailable packs will use the same treatment). The indicator is a lock icon
+and a "Keep solving to unlock" heading, because the lock sits outside the colors and nothing moves when content unlocks; dashed borders were tried and rejected. Rows use `aria-disabled` rather than `disabled`
+so they still receive hover, touch, and focus events; touch previews end on `pointercancel` so scrolling the list does not flash colors.
+Names, shapes, reward links, and palette colors of released groups were already readable by everyone, so showing them needed no new access. What a locked set
+shows is limited to the three puzzle images on its card: `locked_set_previews()` returns the first puzzle of each difficulty (for guests too), never the other 21,
+and recording solves still requires `can_play_puzzle`. The cost is that those few target designs are readable before they are earned. This supersedes "the plan is to start with owned content only" under Releases.
 
 **Players never read authoring data.** Seeds and known solutions stay admin-only, so the player reads a puzzle through its
 stored definition and its own palette alone (`readPlayablePuzzle`); a puzzle's ID stands in for its seed.
@@ -513,7 +521,7 @@ instead of storing grants: a set is complete when all its puzzles are solved, co
 bonus sets, and a bonus set can award more. Deriving keeps one source of truth and keeps the unmerged guest save
 simple, and the later account import only has to carry solved IDs. The tradeoff is that a guest can read the first shape's
 bonus puzzles by editing requests; that is accepted because guests are local-only anyway and later shapes stay gated.
-Bonus sets stay hidden until earned (see "Players see only what they have"). Earned palettes are Zen palettes;
+Bonus sets stay locked until earned (shown disabled; see "Earnable content is shown locked"). Earned palettes are Zen palettes;
 playing a puzzle in a palette still grants nothing.
 
 **Rewards are announced in a dialog, not a line of text.** What a solve earns is a moment worth stopping for, so it opens a

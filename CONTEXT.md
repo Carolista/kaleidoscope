@@ -341,6 +341,11 @@ the first puzzle of each difficulty with "x of 8" below it. A set opens to its p
 difficulty subheadings, four to a row, as borderless solved images (no grid lines) with a round
 check badge at the top right once solved. Choosing one plays it. On narrow screens the card's
 text sits top left and the three images wrap to the bottom right.
+After the open sets, a "Keep solving to unlock" heading lists the sets the player has not earned, in
+the same order (shape, core before bonus, basic before rotation). A locked card has the same layout, with the shape ("Triangle · Basic")
+and "(Bonus)" for bonus sets, and the lock icon and "Finish <set>" (or "Finish a Hexagon set" for a shape's core sets) in place of the count. Its images and
+track dots are greyscale and fade to color while the card is hovered, focused, or pressed (see Locked content). It is `aria-disabled`, not
+`disabled`, and its label says what unlocks it.
 Play lays the target, board, and tray pieces out as one **stage**
 ([stageLayout.ts](./src/domain/puzzles/stageLayout.ts), `layout="stage"` on `PuzzlePlay`; see DECISIONS.md,
 "Puzzle stage layout"): the board is the biggest shape, the target sits in the upper left corner at 90% of
@@ -472,7 +477,10 @@ changes should be applied to all four SVG assets.
   Player PalettePicker adapts its local name-based catalog and applies/closes
   immediately; admin owns catalog IDs and bulk selection still requires Apply.
   Keep duplicate colors in their original slots. Interactive painting color
-  buttons remain the separate ColorSwatches component.
+  buttons remain the separate ColorSwatches component. An optional `locked` list (choices with a
+  `requirement`) adds a "Keep solving to unlock" heading and unselectable rows after the rest: a greyscale
+  strip with a lock hanging just outside the row, so nothing is covered or resized, the same label and title with
+  the requirement, and `aria-disabled` so it still takes pointer events and focus.
 - [AdminLayout](./src/features/admin/common/AdminLayout.tsx) supplies section
   headings/actions, feedback, gallery framing, and ordered member rows. Puzzle,
   palette, and landscape-group cards retain their domain content/layouts; don't
@@ -559,7 +567,7 @@ Test files and `src/test/` are exempt so tests can reach internals and mock exac
 | [ui/components/](./src/ui/components/) | Shared controls: buttons, `Heading`, `DarkModeToggle` (a labelled button), `ui/text` (`toTitleCase`, `TextCaseContext`), palette-tinted `Checkbox`, native `Modal`, `ModalHeader`, `ConfirmDialog` and its dismissal preferences, form fields, loading, palette strips/choices |
 | [ui/content/](./src/ui/content/) | Player content: `loadPlayerContent` (released core palettes, core and bonus puzzle sets, rewards, shape order, an account's unlocked shapes), `PlayerContentProvider` (loads before the app starts, for the guest or the signed-in player), `PlayerProgressProvider` (the player's solved puzzles on the device or account, `usePlayerProgress` with `markSolved` and `guestImport`, and `usePlayerContent` over what has been earned, via `rewards.ts`), `accountProgress.ts` (reads and records an account's solves), `solvedPuzzles.ts` (the guest save, the per-account cache with pending solves, and the import decision), and the offline content cache, `NewChoicesProvider` / `newChoices.ts` (which palettes and shapes the player has seen), and `PuzzleResumeProvider` / `puzzleResume.ts` (per-device unfinished puzzles) |
 | [ui/theme/](./src/ui/theme/) | `PlayerThemeContext` (dark mode, active palette, toggle), `useDuotoneIconTint`, and `DuotoneTintColorContext` (lets a mode, such as a puzzle session, tint icons from its own color) |
-| [ui/hooks/](./src/ui/hooks/) | `useModalState`, `useIsTouchDevice` |
+| [ui/hooks/](./src/ui/hooks/) | `useModalState`, `useIsTouchDevice`, `usePressPreview` (the `data-previewing` state for a finger or pen held on locked content) |
 | [ui/navigation/](./src/ui/navigation/) | App-wide unsaved-work navigation guard |
 | [ui/puzzle/](./src/ui/puzzle/) | Shared `PuzzlePlay` (target, tray, board, optional `celebration` text, `onProgress`, `aboveBoard` slot, `layout` of `'tray'` or `'stage'`, `wide`, pointer/keyboard interaction) and shape-neutral `PuzzleBoard`; `useStageLayout` (measures, packs after paint once near the screen, caches layouts, reserves height), `PeekOverlay` (the target growing over the board), and `targetGridPreference.ts` (`useTargetGridLines`, `useTargetGridToggle`) |
 | [domain/shapes/](./src/domain/shapes/) | React-free shape catalog, sizes, registry, and one folder per shape (grid, layout, types). The catalog's `supportedGridShapes` order is the single shape order (unlock order, Circle Rings last); `PUZZLE_SHAPE_IDS`, `PUZZLE_SHAPE_LABELS`, and every shape menu derive from it |
@@ -604,6 +612,9 @@ in [loadPlayerContent](./src/ui/content/loadPlayerContent.ts):
 - **unlocked shapes:** only the first shape in `shape_progression` for guests (a Zen design on a locked shape
   starts fresh). For an account, the first shape, any `shape_grants`, and each shape after one whose core group the account has completed
   (its own `group_completions`), which mirrors the database's `has_shape`;
+- **preview sets:** released core and bonus groups the player cannot read yet (every later shape, and the bonus sets of an account that has not been granted them), kept apart in `previewSets`
+  with only the puzzles `locked_set_previews()` returns (the first of each difficulty, the three a card shows). They are never played or counted toward completion;
+  rewards of preview sets are kept so locked palettes and sets can say what unlocks them. A failure loading them is logged and the load continues without them;
 - **next shape:** the first shape in the order still locked (`nextShape`), which names what a guest is invited to unlock.
 The load is network first. A success is cached in `kaleidoscope:content` (an account's in `kaleidoscope:content:<userId>`, never shared with a guest's); if the network fails the last cache for that player is
 used, and with no cache the player sees the error with Try again. With no released palettes it shows "Nothing has been
@@ -614,8 +625,15 @@ under the opening logo; with no `gate` they take a page of their own. The real a
 continues the opening animation from where it was (`entranceHandoff`; the star joins its spin part-way, and a title still moving into the header carries on from its place in the move). Content that arrives once the title has settled fades in over a second (`arriving` on `main`); otherwise the opening's own fade brings it in.
 A guest's solved puzzles are stored on the device as `{ version: 1, solved: [puzzle IDs] }` in `kaleidoscope:puzzle-progress`
 and are never merged into an account automatically (see Account progress below). The cache format is version 3 (it gained `rewards`, then `shapeOrder`; older caches
-are ignored). For an account the load also asks the database for the next tier of free puzzles (`preview_puzzles()`: bonus sets of shapes the player has, and the core and bonus sets of the one shape after them), so
+are ignored; `previewSets` defaults to empty for a cache saved without it). For an account the load also asks the database for the next tier of free puzzles (`preview_puzzles()`: bonus sets of shapes the player has, and the core and bonus sets of the one shape after them), so
 that a set finished offline can open them; a failure there is logged and the load continues without them.
+
+**Locked content.** `availableContent` also fills `lockedPalettes` and `lockedPuzzleSets` (each a `Locked<T>`: the item and `unlockedBy`, the
+name of what unlocks it) from what is loaded but not earned: reward palettes of sets not yet complete, bonus sets (unlocked by the set that rewards them),
+and core sets of shapes not yet open (unlocked by "a <previous shape> set", since either core set opens the next shape). Raw loaded content leaves both lists empty.
+Zen's palette picker and the Puzzle Sets list show them after the earned items. Only earnable content is shown: pack and daily groups are never loaded for this.
+Preview is a press-and-hold: `@media (hover: hover)` handles the mouse, and `usePressPreview` sets `data-previewing` for touch and pen
+on pointer down, ending on release, cancel (a scroll starting), or leaving, and blocks the long-press context menu.
 
 **Earned content.** [PlayerProgressProvider](./src/ui/content/PlayerProgressProvider.tsx) keeps the solved puzzles and
 gives every mode the same `usePlayerContent()`: [availableContent](./src/ui/content/rewards.ts) keeps all core sets and

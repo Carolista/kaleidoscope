@@ -230,6 +230,7 @@ describe('loadPlayerContent', () => {
 			palettes: [],
 			lockedPalettes: [],
 			lockedPuzzleSets: [],
+			previewSets: [],
 			unlockedShapes: ['hexagon'],
 			shapeOrder: ['hexagon'],
 			nextShape: null,
@@ -393,10 +394,51 @@ describe('loadPlayerContent', () => {
 		])
 		expect(account.puzzleSets[0].puzzles[0].palette.id).toBe('p1')
 
+		expect(rpc).toHaveBeenCalledWith('locked_set_previews')
+
 		rpc.mockClear()
 		const guest = await loadPlayerContent(fakeClient(data, undefined, rpc))
-		expect(rpc).not.toHaveBeenCalled()
+		expect(rpc).not.toHaveBeenCalledWith('preview_puzzles')
 		expect(guest.puzzleSets).toEqual([])
+	})
+
+	it('keeps a set the player cannot read apart, with only its card puzzles, and keeps its rewards', async () => {
+		const { palettes: _embedded, ...card } = puzzle('card')
+		void _embedded
+		const data = {
+			puzzle_groups: [
+				{
+					...group('later', [null], { purpose: 'core' }),
+					puzzle_group_members: [
+						{ position: 1, puzzle_id: 'card', puzzles: null },
+						{ position: 2, puzzle_id: 'hidden', puzzles: null },
+					],
+				},
+			],
+			palettes: [palette('p1')],
+			reward_rules: [
+				{
+					group_id: 'later',
+					reward_palettes: [{ palettes: palette('p2') }],
+					reward_puzzle_groups: [],
+				},
+			],
+		}
+		const rpc = vi.fn((name: string) =>
+			Promise.resolve({
+				data: name === 'locked_set_previews' ? [card] : [],
+				error: null,
+			}),
+		)
+		const content = await loadPlayerContent(
+			fakeClient(data, undefined, rpc as never),
+		)
+		expect(content.puzzleSets).toEqual([])
+		expect(content.previewSets.map(set => set.id)).toEqual(['later'])
+		expect(content.previewSets[0].puzzles.map(item => item.id)).toEqual([
+			'card',
+		])
+		expect(content.rewards.map(reward => reward.setId)).toEqual(['later'])
 	})
 
 	it('still loads when the previews cannot be read', async () => {

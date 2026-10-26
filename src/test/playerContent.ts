@@ -111,5 +111,6 @@ export const testContent: PlayerContent = {
 	nextShape: null,
 	randomizerUnlocked: true,
 	puzzleSets: [],
+	previewSets: [],
 	rewards: [],
 }

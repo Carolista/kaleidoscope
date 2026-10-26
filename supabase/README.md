@@ -815,6 +815,20 @@ the core and bonus groups of the one shape after the shapes they have. Packs and
 load for an account, so that a set finished offline can open what it earns; previews earn nothing, because recording a solve still requires `can_play_puzzle`.
 If the function is missing the app logs a warning and loads without previews.
 
+## Apply locked set previews
+
+After the puzzle previews:
+
+1. Run [20261026010000_locked_set_previews.sql](./migrations/20261026010000_locked_set_previews.sql) once in SQL Editor as `postgres`.
+2. Run [locked_set_previews.sql](./tests/locked_set_previews.sql) as `postgres`, without an automatic RLS wrapper. Expect **5 PASS results**; fixtures
+   roll back. Like the preview test, it inserts its own groups with the slot indexes and guard triggers set aside.
+
+No tables, columns, or policies change. Names, shapes, tracks, reward links, and palette colors of released groups were already readable by everyone; only the
+puzzles are withheld. The migration adds `public.locked_set_previews()`, a `security definer` function for guests and signed-in players that returns the first
+puzzle of each difficulty (the three a set's card shows) of released core and reward groups, leaving out puzzles the player can already play. The app uses them to show
+sets of shapes the player has not reached, locked and in greyscale until previewed. Packs, daily puzzles, and the rest of a set's puzzles are never returned, and
+previews earn nothing, because recording a solve still requires `can_play_puzzle`. If the function is missing the app logs a warning and shows no locked sets of later shapes.
+
 ## Player accounts and auth email
 
 Players create accounts in the app (email, password, first name); no database change is involved. Supabase Auth owns the users, the first

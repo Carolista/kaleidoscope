@@ -869,6 +869,21 @@ export type Database = {
 				}
 				Returns: string
 			}
+			locked_set_previews: {
+				Args: never
+				Returns: {
+					board_size: string
+					definition: Json
+					difficulty: string
+					id: string
+					name: string
+					palette_id: string
+					published_at: string | null
+					release_at: string | null
+					rotation_allowed: boolean
+					shape_id: string
+				}[]
+			}
 			manage_shape_progression: {
 				Args: { p_shape_ids: string[] }
 				Returns: string[]

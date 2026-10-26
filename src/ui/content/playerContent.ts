@@ -51,5 +51,8 @@ export interface PlayerContent {
 	// Zen's randomizer, the prize for finishing every core and bonus set; only an account earns it.
 	readonly randomizerUnlocked: boolean
 	readonly puzzleSets: readonly PlayerPuzzleSet[]
+	// Sets the player cannot read yet, carrying only the puzzles their cards show. They are
+	// only ever shown locked, never played.
+	readonly previewSets: readonly PlayerPuzzleSet[]
 	readonly rewards: readonly PlayerReward[]
 }
