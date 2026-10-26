@@ -330,6 +330,7 @@ export default function PuzzleDraftLibrary({
 						? 'Assigned puzzles'
 						: 'Puzzle drafts'
 				}
+				count={loading || loadFailed ? undefined : visible.length}
 			>
 				{onNew && canCreate && (
 					<AdminIconButton

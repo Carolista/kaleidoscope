@@ -278,6 +278,11 @@ export default function PuzzleGroupLibrary({
 		<section aria-labelledby="puzzle-groups-title">
 			<AdminSectionHeading
 				id="puzzle-groups-title"
+				count={
+					selected || loading || error || catalog.error
+						? undefined
+						: shown.length
+				}
 				title={
 					selected
 						? `Group: ${selected.row.name}${readOnly ? ' (read-only)' : ''}`

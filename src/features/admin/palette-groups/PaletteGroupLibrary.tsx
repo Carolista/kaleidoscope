@@ -207,6 +207,11 @@ export default function PaletteGroupLibrary({
 		<section aria-labelledby="palette-groups-title">
 			<AdminSectionHeading
 				id="palette-groups-title"
+				count={
+					editing || loading || catalogError
+						? undefined
+						: shown.length
+				}
 				title={
 					editing
 						? `Palette group: ${editing.name}${readOnly ? ' (read-only)' : ''}`

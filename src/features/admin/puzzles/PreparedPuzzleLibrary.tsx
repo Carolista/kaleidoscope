@@ -194,7 +194,11 @@ export default function PreparedPuzzleLibrary({
 
 	return (
 		<section aria-labelledby="prepared-puzzles-title">
-			<AdminSectionHeading id="prepared-puzzles-title" title={title}>
+			<AdminSectionHeading
+				id="prepared-puzzles-title"
+				title={title}
+				count={loading || catalog.error ? undefined : visible.length}
+			>
 				<AdminIconButton
 					icon={faRotate}
 					label="Refresh puzzles"

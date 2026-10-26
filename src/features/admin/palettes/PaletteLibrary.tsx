@@ -297,6 +297,7 @@ export default function PaletteLibrary({
 		<section aria-labelledby="palette-library-title">
 			<AdminSectionHeading
 				id="palette-library-title"
+				count={loading || error ? undefined : visiblePalettes.length}
 				title={
 					catalogStatus === 'assigned'
 						? 'Assigned palettes'
