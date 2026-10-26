@@ -1,11 +1,12 @@
 .page {
 	--admin-surface: color-mix(in srgb, var(--base) 95%, var(--accent));
 	--admin-border: color-mix(in srgb, var(--base) 65%, var(--accent));
-	--admin-blue: #289fce;
-	--admin-red: #ce4141;
-	--admin-green: #4cb782;
-	--admin-yellow: #d8b640;
-	--admin-orange: #e68a3e;
+	--admin-red: #c94444;
+	--admin-yellow: #e5b218;
+	--admin-orange: #e3772a;
+	--admin-green: #5aa23f;
+	--admin-blue: #2184c7;
+	--admin-purple: #963dca;
 	--admin-selected: #243e50;
 	--control-surface: var(--admin-surface);
 	--control-border: var(--admin-border);

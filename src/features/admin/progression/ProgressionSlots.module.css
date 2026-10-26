@@ -62,6 +62,10 @@
 	opacity: 0.7;
 }
 
+.published {
+	color: var(--admin-green);
+}
+
 /* Puzzle thumbnail on the left, the reward on the right. */
 .body {
 	display: flex;

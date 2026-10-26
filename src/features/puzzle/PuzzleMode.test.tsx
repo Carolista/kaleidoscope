@@ -1,11 +1,3 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { renderWithProvider } from '@/test/renderWithProvider'
-import { palettes, testContent } from '@/test/playerContent'
-import type { PlayerContent, PlayerPuzzleSet } from '@/ui/content'
-import { PlayerProgressContext } from '@/ui/content/PlayerProgressContext'
-import { generateHexagonCells } from '@/domain/shapes/hexagon'
 import { withLightness } from '@/domain/palettes'
 import {
 	coordinateKey,
@@ -13,8 +5,8 @@ import {
 	pieceCells,
 	puzzleShapes,
 } from '@/domain/puzzles'
-import PuzzleMode from './PuzzleMode'
-import styles from '@/ui/puzzle/PuzzleBoard.module.css'
+import { generateHexagonCells } from '@/domain/shapes/hexagon'
+import { palettes, testContent } from '@/test/playerContent'
 import {
 	dragTo,
 	hitTest,
@@ -23,6 +15,14 @@ import {
 	stubPointerHitTesting,
 	tileAt,
 } from '@/test/puzzleInteraction'
+import { renderWithProvider } from '@/test/renderWithProvider'
+import type { PlayerContent, PlayerPuzzleSet } from '@/ui/content'
+import { PlayerProgressContext } from '@/ui/content/PlayerProgressContext'
+import styles from '@/ui/puzzle/PuzzleBoard.module.css'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import PuzzleMode from './PuzzleMode'
 
 const seed = 'ui-puzzle'
 const puzzle = generatePuzzle(seed, palettes[1])
@@ -119,10 +119,7 @@ describe('PuzzleMode', () => {
 
 	it("tints the session's icons from the puzzle's palette, not the zen palette", () => {
 		renderPlaying()
-		for (const name of [
-			'Restart',
-			'Back to puzzle set',
-		]) {
+		for (const name of ['Restart', 'Back to puzzle set']) {
 			expect(
 				screen
 					.getByRole('button', { name })
@@ -364,7 +361,7 @@ describe('PuzzleMode', () => {
 			screen.getByRole('button', { name: 'All puzzle sets' }),
 		)
 		expect(screen.getByRole('button', { name: /Extra/ })).toHaveTextContent(
-			'Basic bonus',
+			'Basic (Bonus)',
 		)
 	})
 

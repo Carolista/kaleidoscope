@@ -509,7 +509,7 @@ describe('puzzles and rewards', () => {
 		expect(mocks.manage).toHaveBeenCalledTimes(2)
 	})
 
-	it('disables editing for a published group', async () => {
+	it('shows a published check instead of an edit button for a published group', async () => {
 		mocks.progression.mockResolvedValue(
 			progression({
 				groups: progression().groups.map(group =>
@@ -521,9 +521,17 @@ describe('puzzles and rewards', () => {
 			}),
 		)
 		render(<ProgressionSlots client={client} />)
+		const published = await screen.findByRole('group', {
+			name: 'Hexagon Basic',
+		})
 		expect(
-			await screen.findByRole('button', { name: 'Edit Hexagon Basic' }),
-		).toBeDisabled()
+			within(published).queryByRole('button', {
+				name: 'Edit Hexagon Basic',
+			}),
+		).not.toBeInTheDocument()
+		expect(
+			published.querySelector('svg[data-icon="circle-check"]'),
+		).toBeInTheDocument()
 		expect(
 			screen.getByRole('button', { name: 'Edit Hexagon Rotation' }),
 		).toBeEnabled()

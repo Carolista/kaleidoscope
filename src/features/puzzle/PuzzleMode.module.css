@@ -82,6 +82,10 @@
 	font-size: 1.25rem;
 }
 
+.setComplete {
+	color: #5aa23f;
+}
+
 .previews {
 	display: flex;
 	gap: 0.75rem;

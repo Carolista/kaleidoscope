@@ -6,6 +6,7 @@ import {
 	AdminSectionHeading,
 	errorMessage,
 } from '@/features/admin/common'
+import { ReleaseStatusIcon } from '@/features/admin/release'
 import {
 	checkRewardPattern,
 	findUnavailablePalettes,
@@ -64,13 +65,17 @@ function SlotCard({
 		>
 			<div className={styles.slotHeading}>
 				<h4>{title}</h4>
-				<AdminIconButton
-					icon={faPenToSquare}
-					tone="edit"
-					label={`Edit ${shape} ${title}`}
-					disabled={disabled || !!group?.published}
-					onClick={onEdit}
-				/>
+				{group?.published ? (
+					<ReleaseStatusIcon status="live" label="Published" />
+				) : (
+					<AdminIconButton
+						icon={faPenToSquare}
+						tone="edit"
+						label={`Edit ${shape} ${title}`}
+						disabled={disabled}
+						onClick={onEdit}
+					/>
+				)}
 			</div>
 			<p
 				className={
