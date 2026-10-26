@@ -15,11 +15,15 @@ export interface PalettePickerProps {
 // SELECT_PALETTE).
 function PalettePicker({ newIds, onSelected }: PalettePickerProps) {
 	const { state, selectPalette } = useZenState()
-	const { palettes } = usePlayerContent()
+	const { palettes, lockedPalettes } = usePlayerContent()
 
 	return (
 		<PaletteChoices
 			palettes={palettes}
+			locked={lockedPalettes.map(({ item, unlockedBy }) => ({
+				...item,
+				requirement: `Finish ${unlockedBy} to unlock`,
+			}))}
 			selectedId={state.currentPalette.id}
 			newIds={newIds}
 			onSelect={id => {

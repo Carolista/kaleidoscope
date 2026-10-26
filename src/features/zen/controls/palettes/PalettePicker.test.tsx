@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { TestZenStateProvider as ZenStateProvider } from '@/test/TestZenStateProvider'
 import { palettes, testContent } from '@/test/playerContent'
+import { generatePuzzle } from '@/domain/puzzles'
 import { TestZenStateProvider } from '@/test/TestZenStateProvider'
 import PalettePicker from './PalettePicker'
 import ColorOptions from './ColorOptions'
@@ -47,6 +48,57 @@ describe('PalettePicker', () => {
 				name: 'Select the Cabo color palette',
 			}),
 		).toBeInTheDocument()
+	})
+
+	it('lists palettes still to earn after the available ones, disabled but previewable', async () => {
+		const user = userEvent.setup()
+		const onSelected = vi.fn()
+		render(
+			<TestZenStateProvider
+				content={{
+					...testContent,
+					palettes: palettes.slice(0, 2),
+					puzzleSets: [
+						{
+							id: 'starter',
+							name: 'Starter',
+							shape: 'hexagon',
+							track: 'basic',
+							kind: 'core',
+							puzzles: [
+								{
+									id: 'p1',
+									name: 'P1',
+									difficulty: 'easy',
+									palette: palettes[0],
+									puzzle: generatePuzzle('p1', palettes[0]),
+								},
+							],
+						},
+					],
+					rewards: [
+						{
+							setId: 'starter',
+							palettes: [palettes[2]],
+							bonusSetIds: [],
+						},
+					],
+				}}
+			>
+				<PalettePicker onSelected={onSelected} />
+			</TestZenStateProvider>,
+		)
+		const locked = screen.getByRole('button', {
+			name: 'Club Neon color palette, locked. Finish Starter to unlock',
+		})
+		expect(locked).toHaveAttribute('aria-disabled', 'true')
+		expect(locked).not.toHaveAttribute('aria-pressed')
+		await user.click(locked)
+		expect(onSelected).not.toHaveBeenCalled()
+		fireEvent.pointerDown(locked, { pointerType: 'touch' })
+		expect(locked).toHaveAttribute('data-previewing', 'true')
+		fireEvent.pointerUp(locked, { pointerType: 'touch' })
+		expect(locked).not.toHaveAttribute('data-previewing')
 	})
 
 	it('marks exactly one palette as pressed, and switches which one on click', async () => {

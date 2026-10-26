@@ -79,7 +79,7 @@ export default function PuzzleMode({
 	} | null
 }) {
 	const content = usePlayerContent()
-	const { palettes, puzzleSets } = content
+	const { palettes, puzzleSets, lockedPuzzleSets } = content
 	const { solved, markSolved } = usePlayerProgress()
 	const [seenIntros, setSeenIntros] = useState(loadSeenIntros)
 	const [setId, setSetId] = useState<string | null>(null)
@@ -274,6 +274,7 @@ export default function PuzzleMode({
 				) : (
 					<PuzzleSetList
 						sets={puzzleSets}
+						locked={lockedPuzzleSets}
 						solved={solved}
 						onChoose={setSetId}
 					/>

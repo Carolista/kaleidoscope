@@ -62,7 +62,7 @@ function renderBrowser(ui = <PuzzleMode />) {
 // Opens the first puzzle of the only set, as a player would.
 function renderPlaying() {
 	const view = renderBrowser()
-	fireEvent.click(screen.getByRole('button', { name: /Starter/ }))
+	fireEvent.click(screen.getByRole('button', { name: /^Starter/ }))
 	fireEvent.click(screen.getByRole('button', { name: /^Puzzle 1,/ }))
 	return view
 }
@@ -360,10 +360,14 @@ describe('PuzzleMode', () => {
 			JSON.stringify({ version: 1, solved: ['p2'] }),
 		)
 		renderWithProvider(<PuzzleMode />, bonusContent)
+		const locked = screen.getByRole('button', { name: /^Extra.*locked/ })
+		expect(locked).toHaveAttribute('aria-disabled', 'true')
+		expect(locked).toHaveTextContent('Finish Starter')
+		await user.click(locked)
 		expect(
-			screen.queryByRole('button', { name: /Extra/ }),
+			screen.queryByRole('heading', { name: 'Extra' }),
 		).not.toBeInTheDocument()
-		fireEvent.click(screen.getByRole('button', { name: /Starter/ }))
+		fireEvent.click(screen.getByRole('button', { name: /^Starter/ }))
 		fireEvent.click(screen.getByRole('button', { name: /^Puzzle 1,/ }))
 		solvePuzzle()
 		const reward = await screen.findByRole('dialog', {
@@ -381,9 +385,9 @@ describe('PuzzleMode', () => {
 		await user.click(
 			screen.getByRole('button', { name: 'All puzzle sets' }),
 		)
-		expect(screen.getByRole('button', { name: /Extra/ })).toHaveTextContent(
-			'Basic (Bonus)',
-		)
+		const unlocked = screen.getByRole('button', { name: /Extra/ })
+		expect(unlocked).toHaveTextContent('Basic (Bonus)')
+		expect(unlocked).not.toHaveAttribute('aria-disabled')
 	})
 
 	it('continues through the bonus set it just opened with Next puzzle', async () => {
@@ -421,7 +425,7 @@ describe('PuzzleMode', () => {
 				{ setId: 'set-one', palettes: [], bonusSetIds: ['set-bonus'] },
 			],
 		})
-		fireEvent.click(screen.getByRole('button', { name: /Starter/ }))
+		fireEvent.click(screen.getByRole('button', { name: /^Starter/ }))
 		fireEvent.click(screen.getByRole('button', { name: /^Puzzle 1,/ }))
 		solvePuzzle()
 		await user.click(
@@ -459,7 +463,7 @@ describe('PuzzleMode', () => {
 				},
 			],
 		})
-		fireEvent.click(screen.getByRole('button', { name: /Starter/ }))
+		fireEvent.click(screen.getByRole('button', { name: /^Starter/ }))
 		fireEvent.click(screen.getByRole('button', { name: /^Puzzle 1,/ }))
 		solvePuzzle()
 		const tryInZen = await screen.findByRole('button', {
@@ -490,7 +494,7 @@ describe('PuzzleMode', () => {
 					},
 				],
 			})
-			fireEvent.click(screen.getByRole('button', { name: /Starter/ }))
+			fireEvent.click(screen.getByRole('button', { name: /^Starter/ }))
 			fireEvent.click(screen.getByRole('button', { name: /^Puzzle 1,/ }))
 			solvePuzzle()
 		}
@@ -555,7 +559,7 @@ describe('PuzzleMode', () => {
 			</PlayerProgressContext.Provider>,
 			content,
 		)
-		fireEvent.click(screen.getByRole('button', { name: /Starter/ }))
+		fireEvent.click(screen.getByRole('button', { name: /^Starter/ }))
 		fireEvent.click(screen.getByRole('button', { name: /^Puzzle 1,/ }))
 		solvePuzzle()
 		await user.click(
@@ -599,7 +603,7 @@ describe('PuzzleMode', () => {
 			</PlayerProgressContext.Provider>,
 			content,
 		)
-		fireEvent.click(screen.getByRole('button', { name: /Starter/ }))
+		fireEvent.click(screen.getByRole('button', { name: /^Starter/ }))
 		fireEvent.click(screen.getByRole('button', { name: /^Puzzle 1,/ }))
 		solvePuzzle()
 		await screen.findByRole('dialog', { name: 'Reward earned' })
@@ -649,7 +653,7 @@ describe('PuzzleMode', () => {
 				</PlayerProgressContext.Provider>,
 				content,
 			)
-			fireEvent.click(screen.getByRole('button', { name: /Starter/ }))
+			fireEvent.click(screen.getByRole('button', { name: /^Starter/ }))
 			fireEvent.click(screen.getByRole('button', { name: /^Puzzle 1,/ }))
 			solvePuzzle()
 		}

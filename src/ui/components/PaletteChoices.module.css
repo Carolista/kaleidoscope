@@ -25,7 +25,7 @@
 	transition: border-color 0.15s ease;
 }
 
-.choice:enabled:hover,
+.choice:enabled:not([aria-disabled='true']):hover,
 .choice:focus-visible {
 	border-color: var(--palette-choice-highlight, var(--accent));
 }
@@ -55,8 +55,58 @@
 	opacity: var(--control-disabled-opacity, 0.5);
 }
 
+.lockedHeading {
+	margin: 0.75rem 0 0.25rem;
+	text-align: center;
+	font-size: 0.8125rem;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	opacity: 0.7;
+}
+
+.locked {
+	position: relative;
+	cursor: default;
+	-webkit-touch-callout: none;
+	user-select: none;
+}
+
+/* The lock hangs just outside the row, so it neither covers the colors nor changes the row's size. */
+.lock {
+	position: absolute;
+	top: 50%;
+	left: calc(100% + 0.5rem);
+	transform: translateY(-50%);
+	font-size: 0.875rem;
+	opacity: 0.6;
+}
+
+.lockedStrip {
+	display: flex;
+	filter: grayscale(1);
+	opacity: 0.7;
+	transition:
+		filter 0.2s ease,
+		opacity 0.2s ease;
+}
+
+.locked:focus-visible .lockedStrip,
+.locked[data-previewing] .lockedStrip {
+	filter: none;
+	opacity: 1;
+}
+
+@media (hover: hover) {
+	.locked:hover .lockedStrip {
+		filter: none;
+		opacity: 1;
+	}
+}
+
 @media (prefers-reduced-motion: reduce) {
-	.choice {
+	.choice,
+	.lockedStrip {
 		transition: none;
 	}
 }

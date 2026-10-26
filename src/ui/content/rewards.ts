@@ -1,6 +1,7 @@
 import type { PlayerPalette } from '@/domain/palettes'
 import type { GridShapeId } from '@/domain/shapes'
 import type {
+	Locked,
 	PlayerContent,
 	PlayerPuzzleSet,
 	PlayerReward,
@@ -11,6 +12,8 @@ interface Earned {
 	readonly openSetIds: ReadonlySet<string>
 	readonly palettes: readonly PlayerPalette[]
 	readonly shapes: readonly GridShapeId[]
+	readonly lockedPalettes: readonly Locked<PlayerPalette>[]
+	readonly lockedSets: readonly Locked<PlayerPuzzleSet>[]
 }
 
 // A shape the player can now use in Zen, with the core sets that came with it.
@@ -145,11 +148,34 @@ function earnedRewards(
 			seen.add(palette.id)
 			return true
 		})
-	return { openSetIds: open, palettes, shapes }
+	const setName = (id: string) => sets.get(id)?.name ?? ''
+	const lockedPalettes = content.rewards
+		.filter(reward => !awarded.has(reward))
+		.flatMap(reward =>
+			reward.palettes.map(item => ({
+				item,
+				unlockedBy: setName(reward.setId),
+			})),
+		)
+		.filter(({ item }) => {
+			if (seen.has(item.id)) return false
+			seen.add(item.id)
+			return true
+		})
+	const lockedSets = content.puzzleSets.flatMap(item => {
+		const source = content.rewards.find(reward =>
+			reward.bonusSetIds.includes(item.id),
+		)
+		return !open.has(item.id) && source
+			? [{ item, unlockedBy: setName(source.setId) }]
+			: []
+	})
+	return { openSetIds: open, palettes, shapes, lockedPalettes, lockedSets }
 }
 
 // The content this player may use: core sets and palettes, plus the bonus sets
-// and reward palettes earned by completing sets. Nothing else is shown. For an account the
+// and reward palettes earned by completing sets. What is still to be earned is listed
+// apart, as locked. For an account the
 // shapes (and the randomizer) include what its own solves have opened, which the server
 // confirms when they are recorded, so progress made offline is usable at once.
 export function availableContent(
@@ -157,11 +183,8 @@ export function availableContent(
 	solved: ReadonlySet<string>,
 	account = false,
 ): PlayerContent {
-	const { openSetIds, palettes, shapes } = earnedRewards(
-		content,
-		solved,
-		account,
-	)
+	const { openSetIds, palettes, shapes, lockedPalettes, lockedSets } =
+		earnedRewards(content, solved, account)
 	return {
 		...content,
 		unlockedShapes: shapes,
@@ -173,6 +196,8 @@ export function availableContent(
 			content.randomizerUnlocked ||
 			(account && finishedEverything(content, solved, shapes)),
 		palettes: [...content.palettes, ...palettes],
+		lockedPalettes,
+		lockedPuzzleSets: lockedSets,
 		puzzleSets: content.puzzleSets.filter(set => openSetIds.has(set.id)),
 	}
 }

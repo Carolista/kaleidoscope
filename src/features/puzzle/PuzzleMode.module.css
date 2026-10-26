@@ -76,6 +76,71 @@
 	border-color: color-mix(in srgb, var(--accent) 60%, transparent);
 }
 
+.lockedHeading {
+	margin-top: 0.5rem;
+	text-align: center;
+	font-size: 0.875rem;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	opacity: 0.7;
+}
+
+.lockedSet {
+	cursor: default;
+	-webkit-touch-callout: none;
+	user-select: none;
+}
+
+.lockedSet:hover {
+	background: transparent;
+	border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.lockedRequirement {
+	font-size: 0.9375rem;
+	opacity: 0.75;
+}
+
+/* An invisible character at .setTotalSolved's size gives this smaller text that
+   count's line height, whatever the font. */
+.lockedRequirement::before {
+	content: '\200b';
+	font-size: 1.2rem;
+}
+
+.lockedPreviews,
+.lockedSet .trackDots {
+	filter: grayscale(1);
+	opacity: 0.7;
+	transition:
+		filter 0.2s ease,
+		opacity 0.2s ease;
+}
+
+.lockedSet:focus-visible .lockedPreviews,
+.lockedSet[data-previewing] .lockedPreviews,
+.lockedSet:focus-visible .trackDots,
+.lockedSet[data-previewing] .trackDots {
+	filter: none;
+	opacity: 1;
+}
+
+@media (hover: hover) {
+	.lockedSet:hover .lockedPreviews,
+	.lockedSet:hover .trackDots {
+		filter: none;
+		opacity: 1;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.lockedPreviews,
+	.lockedSet .trackDots {
+		transition: none;
+	}
+}
+
 .setText {
 	display: flex;
 	flex-direction: column;

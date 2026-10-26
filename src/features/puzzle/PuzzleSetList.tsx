@@ -1,6 +1,11 @@
 import { Heading } from '@/ui/components'
-import type { PlayerPuzzleSet } from '@/ui/content'
-import { faCircleCheck, faCircle } from '@fortawesome/pro-solid-svg-icons'
+import type { Locked, PlayerPuzzleSet } from '@/ui/content'
+import { usePressPreview } from '@/ui/hooks'
+import {
+	faCircleCheck,
+	faCircle,
+	faLock,
+} from '@fortawesome/pro-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import PuzzleImage from './PuzzleImage'
 import styles from './PuzzleMode.module.css'
@@ -16,12 +21,71 @@ const trackColors = {
 	rotation: ['--magenta', '--red', '--orange'],
 } as const
 
+function TrackLabel({ set }: { readonly set: PlayerPuzzleSet }) {
+	return (
+		<>
+			<span className={styles.trackDots} aria-hidden="true">
+				{trackColors[set.track].map(color => (
+					<FontAwesomeIcon
+						key={color}
+						icon={faCircle}
+						style={{ color: `var(${color})` }}
+					/>
+				))}
+			</span>
+			{trackLabels[set.track]}
+		</>
+	)
+}
+
+// A bonus set not yet earned: it cannot be opened, but pressing it previews its colors.
+// It uses aria-disabled rather than disabled so it still receives pointer events and focus.
+function LockedSetButton({ item: set, unlockedBy }: Locked<PlayerPuzzleSet>) {
+	const press = usePressPreview()
+	return (
+		<button
+			type="button"
+			className={`${styles.setButton} ${styles.lockedSet}`}
+			aria-disabled="true"
+			aria-label={`${set.name}, bonus ${trackLabels[set.track]} set, locked. Finish ${unlockedBy} to unlock`}
+			{...press}
+		>
+			<span className={styles.setText}>
+				<span className={styles.setName}>{set.name}</span>
+				<span>
+					<TrackLabel set={set} />
+				</span>
+				<span>(Bonus)</span>
+				<span className={styles.lockedRequirement}>
+					<FontAwesomeIcon icon={faLock} aria-hidden="true" /> Finish{' '}
+					{unlockedBy}
+				</span>
+			</span>
+			<span className={`${styles.previews} ${styles.lockedPreviews}`}>
+				{difficultySections(set).map(section => (
+					<span key={section.difficulty} className={styles.preview}>
+						<span
+							className={styles.previewImage}
+							aria-hidden="true"
+						>
+							<PuzzleImage item={section.puzzles[0].item} />
+						</span>
+						{section.puzzles[0].item.palette.name}
+					</span>
+				))}
+			</span>
+		</button>
+	)
+}
+
 export default function PuzzleSetList({
 	sets,
+	locked = [],
 	solved,
 	onChoose,
 }: {
 	readonly sets: readonly PlayerPuzzleSet[]
+	readonly locked?: readonly Locked<PlayerPuzzleSet>[]
 	readonly solved: ReadonlySet<string>
 	readonly onChoose: (setId: string) => void
 }) {
@@ -57,21 +121,7 @@ export default function PuzzleSetList({
 									)}
 								</span>
 								<span>
-									<span
-										className={styles.trackDots}
-										aria-hidden="true"
-									>
-										{trackColors[set.track].map(color => (
-											<FontAwesomeIcon
-												key={color}
-												icon={faCircle}
-												style={{
-													color: `var(${color})`,
-												}}
-											/>
-										))}
-									</span>
-									{trackLabels[set.track]}
+									<TrackLabel set={set} />
 								</span>
 								<span>
 									{set.kind === 'bonus' ? ' (Bonus)' : ''}
@@ -109,6 +159,16 @@ export default function PuzzleSetList({
 								))}
 							</span>
 						</button>
+					</li>
+				))}
+				{locked.length > 0 && (
+					<li className={styles.lockedHeading}>
+						Keep solving to unlock
+					</li>
+				)}
+				{locked.map(entry => (
+					<li key={entry.item.id}>
+						<LockedSetButton {...entry} />
 					</li>
 				))}
 			</ul>

@@ -32,6 +32,8 @@ export function readCachedContent(
 			Array.isArray(content.rewards)
 			? ({
 					...content,
+					lockedPalettes: [],
+					lockedPuzzleSets: [],
 					nextShape: content.nextShape ?? null,
 					randomizerUnlocked: content.randomizerUnlocked === true,
 				} as PlayerContent)

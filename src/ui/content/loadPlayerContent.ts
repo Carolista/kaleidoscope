@@ -307,6 +307,8 @@ export async function loadPlayerContent(
 		: [[order[0]], false]
 	return {
 		palettes,
+		lockedPalettes: [],
+		lockedPuzzleSets: [],
 		unlockedShapes,
 		shapeOrder: order,
 		randomizerUnlocked,

@@ -228,6 +228,8 @@ describe('loadPlayerContent', () => {
 		const content = await loadPlayerContent(fakeClient({}))
 		expect(content).toEqual({
 			palettes: [],
+			lockedPalettes: [],
+			lockedPuzzleSets: [],
 			unlockedShapes: ['hexagon'],
 			shapeOrder: ['hexagon'],
 			nextShape: null,

@@ -13,6 +13,7 @@ export { usePuzzleResume } from './PuzzleResumeContext'
 export type { PuzzleResume, ResumeTarget } from './PuzzleResumeContext'
 export type { PuzzleAttempt } from './puzzleResume'
 export type {
+	Locked,
 	PlayerContent,
 	PlayerPuzzle,
 	PlayerPuzzleSet,

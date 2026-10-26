@@ -97,6 +97,51 @@ describe('availableContent', () => {
 	})
 })
 
+describe('locked content', () => {
+	it('lists the reward palettes and bonus sets still to earn, with what unlocks them', () => {
+		const available = availableContent(content, new Set())
+		expect(
+			available.lockedPalettes.map(({ item, unlockedBy }) => [
+				item.id,
+				unlockedBy,
+			]),
+		).toEqual([
+			[palettes[2].id, 'core'],
+			[palettes[4].id, 'bonus'],
+			[palettes[3].id, 'deeper'],
+		])
+		expect(
+			available.lockedPuzzleSets.map(({ item, unlockedBy }) => [
+				item.id,
+				unlockedBy,
+			]),
+		).toEqual([
+			['bonus', 'core'],
+			['deeper', 'bonus'],
+		])
+	})
+
+	it('moves content out of the locked lists as it is earned', () => {
+		const available = availableContent(content, new Set(['c1', 'c2']))
+		expect(ids(available.lockedPalettes.map(entry => entry.item))).toEqual([
+			palettes[4].id,
+			palettes[3].id,
+		])
+		expect(
+			ids(available.lockedPuzzleSets.map(entry => entry.item)),
+		).toEqual(['deeper'])
+	})
+
+	it('lists nothing once everything is earned', () => {
+		const available = availableContent(
+			content,
+			new Set(['c1', 'c2', 'b1', 'd1']),
+		)
+		expect(available.lockedPalettes).toEqual([])
+		expect(available.lockedPuzzleSets).toEqual([])
+	})
+})
+
 describe('newRewards', () => {
 	it('reports only what the latest solve earned', () => {
 		expect(

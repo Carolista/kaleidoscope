@@ -104,6 +104,8 @@ export const palettes: readonly PlayerPalette[] = [
 // Everything unlocked and nothing to solve, so most tests see the whole app.
 export const testContent: PlayerContent = {
 	palettes,
+	lockedPalettes: [],
+	lockedPuzzleSets: [],
 	unlockedShapes: supportedGridShapes.map(shape => shape.id),
 	shapeOrder: supportedGridShapes.map(shape => shape.id),
 	nextShape: null,
