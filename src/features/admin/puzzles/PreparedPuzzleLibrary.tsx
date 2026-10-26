@@ -19,10 +19,9 @@ import {
 	AdminItemCard,
 	AdminSectionHeading,
 	errorMessage,
-	SeparatorDot,
 } from '@/features/admin/common'
 import { compareGroupOrder } from '@/features/admin/groups'
-import { releaseStateLabel } from '@/features/admin/release'
+import { ReleaseStateIcon, releaseStateLabel } from '@/features/admin/release'
 import {
 	PUZZLE_GROUP_PURPOSES,
 	puzzleGroupPurposeLabels,
@@ -287,6 +286,7 @@ export default function PreparedPuzzleLibrary({
 								}
 								actions={
 									<>
+										<ReleaseStateIcon row={draft.row} />
 										<AdminIconButton
 											icon={
 												status === 'scheduled'
@@ -305,23 +305,19 @@ export default function PreparedPuzzleLibrary({
 							>
 								<strong>{draft.row.name}</strong>
 								<span>
-									{PUZZLE_SHAPE_LABELS[draft.puzzle.shape]}{' '}
-									<SeparatorDot /> {draft.puzzle.recipe.label}
+									{PUZZLE_SHAPE_LABELS[draft.puzzle.shape]}
 								</span>
-								<span>
-									{draft.groupPurpose && (
-										<>
-											{
-												puzzleGroupPurposeLabels[
-													draft.groupPurpose
-												]
-											}{' '}
-											<SeparatorDot />{' '}
-										</>
-									)}
-									{draft.groupName ?? 'Unassigned'}
-								</span>
-								<span>{releaseStateLabel(draft.row)}</span>
+								<span>{draft.puzzle.recipe.label}</span>
+								<span>{draft.groupName ?? 'Unassigned'}</span>
+								{draft.groupPurpose && (
+									<em>
+										{
+											puzzleGroupPurposeLabels[
+												draft.groupPurpose
+											]
+										}
+									</em>
+								)}
 							</AdminItemCard>
 						)
 					})}

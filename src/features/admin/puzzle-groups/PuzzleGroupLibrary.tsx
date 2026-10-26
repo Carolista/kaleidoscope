@@ -9,6 +9,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { useEffect, useRef, useState } from 'react'
 import {
 	managePuzzleGroup,
+	releaseStateOf,
 	puzzleGroupPurposeLabels,
 	puzzleGroupTrackLabels,
 	purposeHasShape,
@@ -33,7 +34,6 @@ import {
 	AdminGroupCard,
 	AdminGroupForm,
 	errorMessage,
-	SeparatorDot,
 } from '@/features/admin/common'
 import { ConfirmDialog, Loading, Select } from '@/ui/components'
 import {
@@ -571,25 +571,22 @@ export default function PuzzleGroupLibrary({
 							}
 						>
 							<strong>{group.row.name}</strong>
-							<span>
-								{puzzleGroupPurposeLabels[group.purpose]}{' '}
-								<SeparatorDot />{' '}
-								{shapeLabel(group.row.shape_id)}
-								{group.track && (
-									<>
-										{' '}
-										<SeparatorDot />{' '}
-										{puzzleGroupTrackLabels[group.track]}
-									</>
-								)}
-							</span>
+							<span>{shapeLabel(group.row.shape_id)}</span>
+							<em>{puzzleGroupPurposeLabels[group.purpose]}</em>
 							<span>
 								{group.members.length}{' '}
 								{group.members.length === 1
 									? 'puzzle'
 									: 'puzzles'}
 							</span>
-							{releaseStateLabel(group.row) && (
+							{group.track && (
+								<span>
+									{puzzleGroupTrackLabels[
+										group.track
+									].toUpperCase()}
+								</span>
+							)}
+							{releaseStateOf(group.row) === 'scheduled' && (
 								<span>{releaseStateLabel(group.row)}</span>
 							)}
 						</AdminGroupCard>

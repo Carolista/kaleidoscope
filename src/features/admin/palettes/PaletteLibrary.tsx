@@ -30,11 +30,10 @@ import {
 	AdminSelectionBar,
 	useCheckedIds,
 	errorMessage,
-	SeparatorDot,
 } from '@/features/admin/common'
 import { useUnsavedDraft } from '@/ui/navigation'
 import PaletteEditor from './PaletteEditor'
-import { releaseStateLabel } from '@/features/admin/release'
+import { ReleaseStateIcon } from '@/features/admin/release'
 import { PaletteGroupLibrary } from '@/features/admin/palette-groups'
 import { useCatalog, useCatalogInvalidation } from '@/features/admin/catalog'
 import {
@@ -570,6 +569,7 @@ export default function PaletteLibrary({
 									}
 									actions={
 										<>
+											<ReleaseStateIcon row={palette} />
 											<AdminIconButton
 												icon={faCopy}
 												label={`Duplicate ${palette.name}`}
@@ -615,20 +615,17 @@ export default function PaletteLibrary({
 									}
 								>
 									<strong>{palette.name}</strong>
-									{releaseStateLabel(palette) && (
-										<span>
-											{releaseStateLabel(palette)}
-										</span>
-									)}
 									{group && (
-										<span>
-											{group.row.name} <SeparatorDot />{' '}
-											{
-												paletteGroupPurposeLabels[
-													group.purpose
-												]
-											}
-										</span>
+										<>
+											<span>{group.row.name}</span>
+											<em>
+												{
+													paletteGroupPurposeLabels[
+														group.purpose
+													]
+												}
+											</em>
+										</>
 									)}
 								</AdminItemCard>
 							)

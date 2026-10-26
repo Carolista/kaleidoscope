@@ -232,9 +232,9 @@ describe('draft library', () => {
 				},
 			])
 			setup()
-			expect(
-				await screen.findByText(`${label} My group`),
-			).toBeInTheDocument()
+			const card = await screen.findByRole('listitem')
+			expect(within(card).getByText('My group')).toBeInTheDocument()
+			expect(within(card).getByText(label)).toBeInTheDocument()
 		},
 	)
 	it('offers only draft groups for assignment, not scheduled or live ones', async () => {
@@ -323,7 +323,9 @@ describe('draft library', () => {
 			'group',
 			{ kind: 'append', puzzleIds: ['draft-id'] },
 		)
-		await screen.findByText(/Core\s*First group/)
+		const card = await screen.findByRole('listitem')
+		expect(within(card).getByText('Core')).toBeInTheDocument()
+		expect(within(card).getByText('First group')).toBeInTheDocument()
 		expect(
 			screen.queryByRole('group', { name: 'Bulk draft actions' }),
 		).not.toBeInTheDocument()
@@ -399,8 +401,16 @@ describe('draft library', () => {
 			group('october', 'daily', null, null),
 		])
 		setup()
-		expect(await screen.findByText('Triangle EASY (S)')).toBeInTheDocument()
-		expect(screen.getByText('Hexagon MODERATE (S+)')).toBeInTheDocument()
+		const triangle = await screen.findByRole('listitem', {
+			name: 'Draft Triangle art',
+		})
+		expect(within(triangle).getByText('Triangle')).toBeInTheDocument()
+		expect(within(triangle).getByText('EASY (S)')).toBeInTheDocument()
+		const hexagon = screen.getByRole('listitem', {
+			name: 'Draft Saved art',
+		})
+		expect(within(hexagon).getByText('Hexagon')).toBeInTheDocument()
+		expect(within(hexagon).getByText('MODERATE (S+)')).toBeInTheDocument()
 		const options = () =>
 			within(screen.getByLabelText('Draft group'))
 				.getAllByRole('option')

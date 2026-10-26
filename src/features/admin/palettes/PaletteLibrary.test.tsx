@@ -147,7 +147,9 @@ describe('palette management', () => {
 		])
 		setup()
 		await screen.findByRole('button', { name: 'Edit Cabo' })
-		expect(screen.getByText('Warm colors Undecided')).toBeInTheDocument()
+		const card = screen.getByRole('listitem', { name: /Cabo/ })
+		expect(within(card).getByText('Warm colors')).toBeInTheDocument()
+		expect(within(card).getByText('Undecided')).toBeInTheDocument()
 		fireEvent.change(screen.getByLabelText('Show palettes'), {
 			target: { value: 'ungrouped' },
 		})
@@ -954,8 +956,10 @@ describe('palette management', () => {
 			},
 		])
 		setup()
-		expect(await screen.findByText(/^Scheduled for /)).toBeInTheDocument()
-		expect(screen.getByText('Live')).toBeInTheDocument()
+		expect(
+			await screen.findByRole('img', { name: /^Scheduled for / }),
+		).toBeInTheDocument()
+		expect(screen.getByRole('img', { name: 'Live' })).toBeInTheDocument()
 		expect(screen.queryByText('Draft')).not.toBeInTheDocument()
 		expect(
 			screen.getByRole('button', { name: 'Delete Cabo' }),

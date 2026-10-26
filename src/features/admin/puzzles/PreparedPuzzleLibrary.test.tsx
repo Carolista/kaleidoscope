@@ -152,7 +152,9 @@ describe('scheduled puzzles', () => {
 			'Puzzle Second scheduled',
 		])
 		expect(screen.queryByText('Live puzzle')).not.toBeInTheDocument()
-		expect(screen.getAllByText(/^Scheduled for /)).toHaveLength(2)
+		expect(
+			screen.getAllByRole('img', { name: /^Scheduled for / }),
+		).toHaveLength(2)
 		expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
 	})
 

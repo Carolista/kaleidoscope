@@ -35,6 +35,7 @@ import {
 	managePaletteGroup,
 	paletteGroupPurposeLabels,
 	paletteProgress,
+	releaseStateOf,
 	PALETTE_GROUP_PURPOSES,
 	type PaletteGroup,
 	type PaletteGroupAction,
@@ -424,16 +425,14 @@ export default function PaletteGroupLibrary({
 							}
 						>
 							<strong>{group.row.name}</strong>
-							<span>
-								{paletteGroupPurposeLabels[group.purpose]}
-							</span>
+							<em>{paletteGroupPurposeLabels[group.purpose]}</em>
 							<span>
 								{group.members.length}{' '}
 								{group.members.length === 1
 									? 'palette'
 									: 'palettes'}
 							</span>
-							{releaseStateLabel(group.row) && (
+							{releaseStateOf(group.row) === 'scheduled' && (
 								<span>{releaseStateLabel(group.row)}</span>
 							)}
 						</AdminGroupCard>
