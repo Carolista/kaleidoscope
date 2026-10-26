@@ -1,10 +1,6 @@
 import { useState } from 'react'
 import { findIntroPalette } from '@/domain/palettes'
-import {
-	completesSet,
-	usePlayerContent,
-	usePlayerProgress,
-} from '@/ui/content'
+import { completesSet, usePlayerContent, usePlayerProgress } from '@/ui/content'
 import type { NewRewards, PlayerPuzzleSet } from '@/ui/content'
 import AccountPromptModal from './AccountPromptModal'
 import {
@@ -69,7 +65,7 @@ export default function PuzzleMode({
 }: {
 	readonly hidden?: boolean
 	// Lets a reward announcement send the player to Zen Mode.
-	readonly onOpenZen?: () => void
+	readonly onOpenZen?: (intent?: 'palette') => void
 	// Opens sign-in and sign-up for a guest; absent where accounts cannot be created.
 	readonly onCreateAccount?: () => void
 	// A guest on a device that has had an account, who is reminded to sign in.
@@ -163,9 +159,9 @@ export default function PuzzleMode({
 		)
 	}
 
-	function openZen() {
+	function openZen(intent?: 'palette') {
 		closeAnnouncement()
-		onOpenZen?.()
+		onOpenZen?.(intent)
 	}
 
 	function openSet(target: PlayerPuzzleSet) {
@@ -183,7 +179,7 @@ export default function PuzzleMode({
 					rewards={announcement.rewards}
 					onClose={closeAnnouncement}
 					onAfterClose={nextAnnouncement}
-					onOpenZen={openZen}
+					onOpenZen={() => openZen('palette')}
 					onOpenSet={openSet}
 				/>
 			)}

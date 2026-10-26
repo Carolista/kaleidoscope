@@ -42,6 +42,14 @@
 		var(--palette-choice-selected-border, transparent);
 }
 
+.new {
+	margin-left: 0.5rem;
+	font-size: 0.75rem;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	color: var(--accent);
+}
+
 .choice:disabled {
 	cursor: default;
 	opacity: var(--control-disabled-opacity, 0.5);

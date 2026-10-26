@@ -61,14 +61,30 @@ export function NewChoicesProvider({
 	}, [content])
 
 	const unseen = unseenChoices(content.palettes, content.unlockedShapes, seen)
+	const newPaletteIds = useMemo(
+		() =>
+			new Set(
+				content.palettes
+					.filter(palette => !seen.palettes.has(palette.id))
+					.map(palette => palette.id),
+			),
+		[content.palettes, seen.palettes],
+	)
 	const choices = useMemo(
 		() => ({
 			newPalettes: unseen.palettes,
 			newShapes: unseen.shapes,
+			newPaletteIds,
 			markPalettesSeen,
 			markShapesSeen,
 		}),
-		[unseen.palettes, unseen.shapes, markPalettesSeen, markShapesSeen],
+		[
+			unseen.palettes,
+			unseen.shapes,
+			newPaletteIds,
+			markPalettesSeen,
+			markShapesSeen,
+		],
 	)
 	return (
 		<NewChoicesContext.Provider value={choices}>

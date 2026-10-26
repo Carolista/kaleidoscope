@@ -463,7 +463,12 @@ changes should be applied to all four SVG assets.
 - [PaletteStrip](./src/ui/components/PaletteStrip.tsx) owns decorative ordered
   colors: square swatches for choices, continuous strips for catalog/group previews.
   [PaletteChoices](./src/ui/components/PaletteChoices.tsx) owns controlled,
-  labelled palette buttons keyed/selected by ID, with optional visible names.
+  labelled palette buttons keyed/selected by ID, with optional visible names and an
+  optional `newIds` set that adds a "NEW!" tag (and "(new)" to the button's name).
+  The selected choice's border color and extra ring width come from the
+  `--palette-choice-selected-border` / `--palette-choice-selected-extra-width`
+  variables; Zen's palette modal sets them to the accent and 1px, so the current
+  palette shows the hover outline, one pixel thicker, as soon as the picker opens.
   Player PalettePicker adapts its local name-based catalog and applies/closes
   immediately; admin owns catalog IDs and bulk selection still requires Apply.
   Keep duplicate colors in their original slots. Interactive painting color
@@ -619,7 +624,7 @@ completed open set grants its reward, repeating so a bonus set can award more. N
 and a reward palette already in the core list is not added twice. Reward palettes follow the core ones in Zen's picker.
 `markSolved` returns what the solve newly earned (`newRewards`), and Puzzle Mode shows it in
 [RewardModal](./src/features/puzzle/RewardModal.tsx): "Reward earned" and "Hooray!" (Mr Dafoe), then the new palettes
-(a color strip and name, with "Try it out in Zen Mode now", which switches mode) and/or the new bonus sets (the first
+(a color strip and name, with "Try it out in Zen Mode now", which switches mode and opens Zen's palette picker) and/or the new bonus sets (the first
 puzzle image of each difficulty and the name, with "Go to puzzle set now", which opens that set; Next puzzle then continues inside that set).
 `markSolved` is async and its result also carries `shapes` and `accountShape`. For an account, the content and shapes it uses include what the player's own solves have opened (see Offline unlocks below).
 
@@ -652,7 +657,7 @@ complete (the same rule as the database's `has_shape`, applied again until nothi
 all are solved. A guest never opens a shape. `markSolved` for an account compares what was available before and after the solve, so a set finished offline still announces its rewards, new shape, and randomizer; it only waits for the server
 when it can reach it. The pending solves are sent together when the connection returns, and `record_puzzle_completions` repeats until nothing changes, so the database confirms the same unlocks in any order. `PlayerContent.shapeOrder` holds the unlock order that this needs.
 
-**New-choice dots.** [NewChoicesProvider](./src/ui/content/NewChoicesProvider.tsx) (mounted inside `PlayerProgressProvider`, keyed by player) tracks which palettes and shapes the player has already seen in Zen's pickers, in `kaleidoscope:seen-choices:<userId | guest>` ([newChoices.ts](./src/ui/content/newChoices.ts)); it is per device. `useNewChoices()` gives `newPalettes`, `newShapes`, and `markPalettesSeen` / `markShapesSeen`. A player with no record starts with everything they currently have counted as seen, so only what is earned or released afterward is new. Zen's palette and shape buttons show a dot (`IconButton`'s `badge`) and add "new ... available" to their label until the picker is opened.
+**New-choice dots.** [NewChoicesProvider](./src/ui/content/NewChoicesProvider.tsx) (mounted inside `PlayerProgressProvider`, keyed by player) tracks which palettes and shapes the player has already seen in Zen's pickers, in `kaleidoscope:seen-choices:<userId | guest>` ([newChoices.ts](./src/ui/content/newChoices.ts)); it is per device. `useNewChoices()` gives `newPalettes`, `newShapes`, and `markPalettesSeen` / `markShapesSeen`. A player with no record starts with everything they currently have counted as seen, so only what is earned or released afterward is new. Zen's palette and shape buttons show a dot (`IconButton`'s `badge`) and add "new ... available" to their label until the picker is opened. `newPaletteIds` names the unseen palettes: `PaletteButton` keeps them when the picker opens (which marks everything seen) and the picker tags them "NEW!" while it is open, so the tags are gone the next time. The palette reward's Zen link calls `onOpenZen('palette')`; `PlayerApp` passes `openPalette` to `ZenMode` for that visit only, and `PaletteButton`'s `initialOpen` opens the picker on arrival (skipped on a first Zen visit, where the controls info opens instead).
 
 **Puzzle resume.** [PuzzleResumeProvider](./src/ui/content/PuzzleResumeProvider.tsx) (mounted inside `PlayerProgressProvider`, keyed by player) keeps one attempt per unfinished puzzle, `{ setId, placements, rotations }`, in
 `kaleidoscope:puzzle-resume:<userId | guest>` ([puzzleResume.ts](./src/ui/content/puzzleResume.ts)); it is per device and never sent to the account. `usePuzzleResume()` gives `target` (the most recently played unfinished puzzle that is still open and unsolved),

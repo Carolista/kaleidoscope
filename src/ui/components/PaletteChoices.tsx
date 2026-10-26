@@ -10,6 +10,7 @@ export interface PaletteChoice {
 export default function PaletteChoices({
 	palettes,
 	selectedId,
+	newIds,
 	onSelect,
 	disabled = false,
 	isDisabled,
@@ -18,6 +19,8 @@ export default function PaletteChoices({
 }: {
 	readonly palettes: readonly PaletteChoice[]
 	readonly selectedId?: string
+	// Palettes to tag with "NEW!".
+	readonly newIds?: ReadonlySet<string>
 	readonly onSelect: (id: string) => void
 	readonly disabled?: boolean
 	// Disables individual choices, for palettes that cannot be picked right now.
@@ -25,6 +28,7 @@ export default function PaletteChoices({
 	readonly showNames?: boolean
 	readonly label?: (palette: PaletteChoice) => string
 }) {
+	const isNew = (palette: PaletteChoice) => newIds?.has(palette.id) ?? false
 	return (
 		<ul className={styles.list}>
 			{palettes.map(palette => (
@@ -33,13 +37,22 @@ export default function PaletteChoices({
 						type="button"
 						className={styles.choice}
 						title={palette.name}
-						aria-label={label(palette)}
+						aria-label={
+							isNew(palette)
+								? `${label(palette)} (new)`
+								: label(palette)
+						}
 						aria-pressed={selectedId === palette.id}
 						disabled={disabled || isDisabled?.(palette)}
 						onClick={() => onSelect(palette.id)}
 					>
 						<PaletteStrip colors={palette.colors} />
 						{showNames && <span>{palette.name}</span>}
+						{isNew(palette) && (
+							<span className={styles.new} aria-hidden="true">
+								NEW!
+							</span>
+						)}
 					</button>
 				</li>
 			))}

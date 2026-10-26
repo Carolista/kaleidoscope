@@ -50,6 +50,9 @@ function Modes({
 }) {
 	const account = useAccount()
 	const { target } = usePuzzleResume()
+	const [openPalette, setOpenPalette] = useState(false)
+	// Only the visit that a palette reward sent the player on opens the picker.
+	if (mode !== 'zen' && openPalette) setOpenPalette(false)
 	const [openRequest, setOpenRequest] = useState<{
 		setId: string
 		puzzleId: string
@@ -79,7 +82,10 @@ function Modes({
 			)}
 			<PuzzleMode
 				hidden={mode !== 'puzzle'}
-				onOpenZen={() => onModeChange('zen')}
+				onOpenZen={intent => {
+					if (intent === 'palette') setOpenPalette(true)
+					onModeChange('zen')
+				}}
 				returningGuest={account.returningGuest}
 				onCreateAccount={onSignIn}
 				openRequest={openRequest}
@@ -89,6 +95,7 @@ function Modes({
 					isFirstVisit={isFirstVisit}
 					showIntro={showIntro}
 					onIntroComplete={onIntroComplete}
+					openPalette={openPalette}
 				/>
 			)}
 		</>

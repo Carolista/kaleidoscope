@@ -469,7 +469,7 @@ describe('PuzzleMode', () => {
 			screen.queryByText('New puzzle set unlocked'),
 		).not.toBeInTheDocument()
 		await user.click(tryInZen)
-		expect(onOpenZen).toHaveBeenCalledOnce()
+		expect(onOpenZen).toHaveBeenCalledExactlyOnceWith('palette')
 	})
 
 	describe('after finishing a set', () => {
@@ -572,6 +572,7 @@ describe('PuzzleMode', () => {
 			screen.getByRole('button', { name: 'Try it out in Zen Mode now!' }),
 		)
 		expect(onOpenZen).toHaveBeenCalledOnce()
+		expect(onOpenZen).not.toHaveBeenCalledWith('palette')
 	})
 
 	it('announces the randomizer last, after the other rewards, and sends the player to Zen', async () => {

@@ -18,10 +18,14 @@ export default function ZenMode({
 	isFirstVisit,
 	showIntro,
 	onIntroComplete,
+	openPalette = false,
 }: {
 	readonly isFirstVisit: boolean
 	readonly showIntro: boolean
 	readonly onIntroComplete: () => void
+	// Opens the palette picker on arrival, unless the first-visit controls info is
+	// already doing so.
+	readonly openPalette?: boolean
 }) {
 	const { state } = useZenState()
 	const svgRef = useRef<SVGSVGElement>(null)
@@ -55,7 +59,9 @@ export default function ZenMode({
 				>
 					<div className={styles.buttonRow}>
 						<EditableAreaToggle />
-						<PaletteButton />
+						<PaletteButton
+							initialOpen={openPalette && !isFirstVisit}
+						/>
 						<RandomizeDesignButton />
 						<ResetDesignButton />
 					</div>

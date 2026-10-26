@@ -4,6 +4,8 @@ import { createContext, useContext } from 'react'
 export interface NewChoices {
 	readonly newPalettes: boolean
 	readonly newShapes: boolean
+	// The palettes behind `newPalettes`, so a picker can mark them. Empty once seen.
+	readonly newPaletteIds: ReadonlySet<string>
 	// Called when the picker is opened: everything it offers now counts as seen.
 	readonly markPalettesSeen: () => void
 	readonly markShapesSeen: () => void

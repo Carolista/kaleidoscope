@@ -519,7 +519,15 @@ playing a puzzle in a palette still grants nothing.
 **Rewards are announced in a dialog, not a line of text.** What a solve earns is a moment worth stopping for, so it opens a
 modal ("Reward earned", "Hooray!") showing the palette strip and name and/or the new set's pictures, each with a link to
 use it now (Zen Mode, or the set). The Zen link only switches mode; it does not change the player's current palette,
-which would alter their design.
+which would alter their design. The palette reward's link also opens Zen's palette picker on arrival, so the player lands
+on the thing they were sent to try; the shape and randomizer links do not. The request lasts for that one visit, and is
+skipped on a first Zen visit so it does not stack on the controls info dialog.
+
+**New palettes are tagged "NEW!" in the picker, once.** The dot on the palette button says something is new; the tag says
+which. Opening the picker marks everything seen (as it always did), so the new ones are kept aside for that one opening,
+and closing without choosing still counts as seen. The tag is also in the button's accessible name, since the visible
+text is hidden from screen readers to avoid reading it twice. The current palette's outline reuses the hover outline
+with an extra inset ring instead of a wider border, so choices do not shift.
 
 ### Accounts
 
