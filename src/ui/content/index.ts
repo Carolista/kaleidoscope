@@ -18,4 +18,5 @@ export type {
 	PlayerPuzzleSet,
 	PlayerReward,
 } from './playerContent'
+export { completesSet } from './rewards'
 export type { NewRewards, UnlockedShape } from './rewards'

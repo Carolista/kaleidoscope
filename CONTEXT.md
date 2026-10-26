@@ -626,6 +626,8 @@ puzzle image of each difficulty and the name, with "Go to puzzle set now", which
 5. **Playing as a guest** ([SignInNudgeModal](./src/features/puzzle/SignInNudgeModal.tsx)), once per browser session (`kaleidoscope:sign-in-nudge` in `sessionStorage`), for a guest on a device that has had an account
    (`returningGuest`): "Please sign in to continue saving your progress." Skipped when the account prompt is shown, and after signing out on purpose in that session.
 The set preview shared by these dialogs is [UnlockedSetItem](./src/features/puzzle/UnlockedSetItem.tsx).
+When the solve finished a set (`completesSet`, for a puzzle not solved before), the announcement is marked `returnToSets`: closing its first dialog, or following a Zen link, clears the open set and puzzle so Puzzle Mode shows the
+set list (also on return from Zen, since it stays mounted). The mark clears on that first close, so a set chosen from a later dialog stays open. A finished set with nothing to announce leaves the player on the solved puzzle.
 
 **Account progress.** For a signed-in player, `PlayerProgressProvider` takes its solved set from the server (`puzzle_completions`, read through
 [accountProgress.ts](./src/ui/content/accountProgress.ts)) and sends each solve to `record_puzzle_completions` (see supabase/README.md, "Apply player progress"), which records

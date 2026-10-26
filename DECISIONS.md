@@ -548,6 +548,11 @@ would make it vanish on the next load. The cost is that a puzzle the server will
 **Unlocking a shape is announced, not silent.** When the reload shows a shape that was not open before, a second dialog after the reward dialog says so, names that it is available in Zen Mode, and lists the shape's core sets
 with a way in. The randomizer, the last prize, is announced in its own dialog after the reward and shape dialogs, pointing at Zen Mode. The announcements run in a fixed order (reward, shape, randomizer, account prompt, sign-in reminder), one at a time, each after the last has finished closing.
 
+**Finishing a set returns the player to the set list.** A solve that finishes a set leaves Puzzle Mode on the set list once its first announcement is closed or its Zen link is followed, rather than anchored to the last puzzle solved,
+because the player's next step is choosing another set. Puzzle Mode stays mounted while Zen is open, so the reset also decides where the player lands when they come back. It happens once per solve, so a set opened from a later
+dialog ("Go to puzzle set now") is not undone. The solve is not moved while its dialog is open, so the player still sees the solved puzzle behind it. A set that finishes with nothing to announce has no dialog to close and
+leaves the player on the solved puzzle.
+
 **Only results sync between devices, so devices do not conflict.** Solved puzzles only ever accumulate and a solve is idempotent, so the account's progress is a union of what each device has solved: the app
 adds whatever the server holds and never removes anything, and no conflict prompt is needed. Rewards, groups, and shape unlocks are derived from that union by the database. A device picks up another device's solves
 when it loads, after a solve that finishes a set, when the browser comes back online, and when a tab becomes visible again (at most every 30 seconds, after sending any solves still pending). What a player has left unfinished

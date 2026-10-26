@@ -472,6 +472,59 @@ describe('PuzzleMode', () => {
 		expect(onOpenZen).toHaveBeenCalledOnce()
 	})
 
+	describe('after finishing a set', () => {
+		function renderFinishing(onOpenZen?: () => void) {
+			localStorage.setItem(
+				'kaleidoscope:puzzle-progress',
+				JSON.stringify({ version: 1, solved: ['p2'] }),
+			)
+			renderWithProvider(<PuzzleMode onOpenZen={onOpenZen} />, {
+				...content,
+				rewards: [
+					{
+						setId: 'set-one',
+						palettes: [
+							{ ...palettes[5], id: 'earned', name: 'Earned' },
+						],
+						bonusSetIds: [],
+					},
+				],
+			})
+			fireEvent.click(screen.getByRole('button', { name: /Starter/ }))
+			fireEvent.click(screen.getByRole('button', { name: /^Puzzle 1,/ }))
+			solvePuzzle()
+		}
+
+		it('returns to the set list when the reward is closed', async () => {
+			const user = userEvent.setup()
+			renderFinishing()
+			await user.click(
+				await screen.findByRole('button', { name: 'Close reward' }),
+			)
+			expect(
+				screen.getByRole('button', { name: /Starter/ }),
+			).toBeVisible()
+			expect(
+				screen.queryByRole('button', { name: 'Back to puzzle set' }),
+			).not.toBeInTheDocument()
+		})
+
+		it('is at the set list when the player comes back from Zen Mode', async () => {
+			const user = userEvent.setup()
+			const onOpenZen = vi.fn()
+			renderFinishing(onOpenZen)
+			await user.click(
+				await screen.findByRole('button', {
+					name: 'Try it out in Zen Mode now!',
+				}),
+			)
+			expect(onOpenZen).toHaveBeenCalledOnce()
+			expect(
+				screen.getByRole('button', { name: /Starter/ }),
+			).toBeVisible()
+		})
+	})
+
 	it('announces an unlocked shape and its core sets after the reward dialog closes', async () => {
 		const user = userEvent.setup()
 		const onOpenZen = vi.fn()
