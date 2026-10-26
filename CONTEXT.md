@@ -49,16 +49,25 @@ with favicon navigation at the left. Admin defaults to dark mode using the share
 neutral charcoal/white theme helper, without initializing player state.
 
 Admin navigation has peer sections: **Puzzles | Palettes | Shapes | Progression | Release**. Puzzles and
-Palettes each offer **Groups** (default) | items; items filter by **Unassigned**
-(default) | **Assigned** | **Scheduled** | **Published**. Everything stays a draft until
-released; the first tab names the unassigned stage. Assigned lists sort by group name, then group position
-([groupOrder](./src/features/admin/groups/groupOrder.ts)); puzzles without a group follow by name. The
-Scheduled and Published item views list what has been released (palettes with Edit/View as before; puzzles through
-[PreparedPuzzleLibrary](./src/features/admin/puzzles/PreparedPuzzleLibrary.tsx): scheduled puzzles open in
-the regular editor until their release, live ones in a read-only view). They carry no release buttons: items are
-released through their groups. Group lists filter by purpose (puzzle groups also by
-shape and track); puzzle items filter by shape and track, and the Assigned view by purpose and group. Palette items (except Drafts) filter by purpose and group; choosing a purpose narrows the group choices to it and hides "No group". Section/view changes use the
-navigation guard and reset lower choices to their defaults.
+Palettes each offer **Groups** (default) | **Individual**. Everything stays a draft until
+released. Individual lists show every item by default, with a **Show status** filter: **Unassigned** |
+**Assigned** | **Scheduled** | **Published**. They sort Unassigned, then Assigned (by group name, then group
+position, [groupOrder](./src/features/admin/groups/groupOrder.ts)), then Scheduled and Published by release time.
+Scheduled and Published items carry no checkbox, bulk actions, or release buttons: items are released through
+their groups. Palettes open with Edit/View; puzzles share one library
+([PuzzleDraftLibrary](./src/features/admin/puzzles/PuzzleDraftLibrary.tsx)) that reads both the draft and the
+prepared catalogs (loading only the ones the status needs): scheduled puzzles open in the regular editor until
+their release, live ones in a
+[read-only view](./src/features/admin/puzzles/PublishedPuzzleView.tsx). Palette group lists filter by status
+(Draft | Scheduled | Published) and purpose; puzzle group lists by purpose, shape, and track. Individual puzzles
+filter by shape and track; except under Unassigned, they also filter by purpose and group. Palettes (except
+Unassigned) filter by purpose and group; choosing a purpose narrows the group choices to it, and "No group" is
+hidden under Assigned or once a purpose is chosen. Section/view changes use the navigation guard and reset lower
+choices to their defaults; changing a filter does not.
+
+Every list heading shows the count of items listed below it ("X total", after filters; hidden while loading, on
+error, or in a detail view). Selection bars show "X selected" between Select all and the bulk icons once
+anything is checked ([AdminLayout](./src/features/admin/common/AdminLayout.tsx)).
 
 **Shapes** is a workbench for the grid sizes (n) and piece mixes behind both
 player modes ([ShapesWorkspace](./src/features/admin/shapes/ShapesWorkspace.tsx)). Each shape's card has a

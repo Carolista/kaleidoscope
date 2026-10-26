@@ -83,6 +83,7 @@ export default function PaletteGroupLibrary({
 	const focusAdd = useRef(false)
 	const [purpose, setPurpose] = useState<PaletteGroupPurpose>('undecided')
 	const [purposeFilter, setPurposeFilter] = useState('all')
+	const [stateFilter, setStateFilter] = useState('all')
 	const [error, setError] = useState('')
 	const [deleteError, setDeleteError] = useState('')
 	const [status, setStatus] = useState('')
@@ -128,7 +129,10 @@ export default function PaletteGroupLibrary({
 		(name !== editing.name || purpose !== editing.purpose || order.dirty)
 	useUnsavedDraft({ dirty, pending: busy })
 	const shown = groups.filter(
-		group => purposeFilter === 'all' || group.purpose === purposeFilter,
+		group =>
+			(purposeFilter === 'all' || group.purpose === purposeFilter) &&
+			(stateFilter === 'all' ||
+				releaseStateOf(group.row) === stateFilter),
 	)
 	useEffect(() => {
 		if (!loading && !creating && focusAdd.current) {
@@ -242,6 +246,19 @@ export default function PaletteGroupLibrary({
 							}}
 						/>
 						<Select
+							id="palette-group-state-filter"
+							aria-label="Show status"
+							value={stateFilter}
+							onChange={event =>
+								setStateFilter(event.target.value)
+							}
+						>
+							<option value="all">All statuses</option>
+							<option value="draft">Draft</option>
+							<option value="scheduled">Scheduled</option>
+							<option value="live">Published</option>
+						</Select>
+						<Select
 							id="palette-group-purpose-filter"
 							aria-label="Show purpose"
 							value={purposeFilter}
@@ -281,7 +298,7 @@ export default function PaletteGroupLibrary({
 				!catalogError &&
 				groups.length > 0 &&
 				shown.length === 0 && (
-					<p>No palette groups match this purpose.</p>
+					<p>No palette groups match these filters.</p>
 				)}
 			{creating && (
 				<GroupCreationDialog

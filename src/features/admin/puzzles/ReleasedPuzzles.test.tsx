@@ -13,10 +13,11 @@ import {
 	type PuzzleGroup,
 } from '@/features/admin/services'
 import type { Database } from '@/lib/supabase'
-import PreparedPuzzleLibrary from './PreparedPuzzleLibrary'
+import PuzzleDraftLibrary from './PuzzleDraftLibrary'
 
 const mocks = vi.hoisted(() => ({
 	prepared: vi.fn(),
+	drafts: vi.fn(),
 	groups: vi.fn(),
 	preview: vi.fn(),
 }))
@@ -25,6 +26,7 @@ vi.mock('@/features/admin/services/puzzleLibrary', async importOriginal => ({
 		typeof import('@/features/admin/services/puzzleLibrary')
 	>()),
 	loadPreparedPuzzles: (...args: unknown[]) => mocks.prepared(...args),
+	loadPuzzleDrafts: (...args: unknown[]) => mocks.drafts(...args),
 }))
 vi.mock('@/features/admin/services/puzzleGroups', async importOriginal => ({
 	...(await importOriginal<
@@ -119,10 +121,16 @@ const groupRow = (
 
 function renderLibrary(status: 'scheduled' | 'published') {
 	return render(
-		<PreparedPuzzleLibrary
+		<PuzzleDraftLibrary
 			client={client}
-			status={status}
 			palettes={[palette]}
+			initialView={{
+				status,
+				purpose: 'all',
+				shape: 'all',
+				track: 'all',
+				group: 'all',
+			}}
 		/>,
 	)
 }
@@ -134,6 +142,7 @@ beforeEach(() => {
 		prepared('b', 'First scheduled', soon, core, 1),
 		prepared('c', 'Live puzzle', past, daily),
 	])
+	mocks.drafts.mockResolvedValue([])
 	mocks.groups.mockResolvedValue([
 		groupRow('core', 'Core basic', soon),
 		groupRow('daily', 'Daily month', past),
@@ -144,7 +153,7 @@ describe('scheduled puzzles', () => {
 	it('lists only scheduled puzzles, earliest release first, with their release times', async () => {
 		renderLibrary('scheduled')
 		expect(
-			await screen.findByRole('heading', { name: 'Scheduled puzzles' }),
+			await screen.findByRole('heading', { name: 'Puzzles' }),
 		).toBeInTheDocument()
 		const cards = await screen.findAllByRole('listitem')
 		expect(cards.map(card => card.getAttribute('aria-label'))).toEqual([
@@ -216,7 +225,7 @@ describe('published puzzles', () => {
 	it('lists live puzzles without release buttons, and opens a read-only view', async () => {
 		renderLibrary('published')
 		expect(
-			await screen.findByRole('heading', { name: 'Published puzzles' }),
+			await screen.findByRole('heading', { name: 'Puzzles' }),
 		).toBeInTheDocument()
 		expect(screen.getByText('Live puzzle')).toBeInTheDocument()
 		expect(screen.queryByText('First scheduled')).not.toBeInTheDocument()
@@ -256,5 +265,50 @@ describe('published puzzles', () => {
 		mocks.prepared.mockRejectedValue(new Error('Offline'))
 		renderLibrary('published')
 		expect(await screen.findByRole('alert')).toHaveTextContent('Offline')
+	})
+})
+
+describe('all puzzles', () => {
+	it('mixes drafts with scheduled and live puzzles in status order, selecting only drafts', async () => {
+		const base = prepared('d', 'Loose draft', soon, null)
+		mocks.drafts.mockResolvedValue([
+			{
+				...base,
+				row: { ...base.row, published_at: null, release_at: null },
+			},
+		])
+		render(
+			<PuzzleDraftLibrary
+				client={client}
+				palettes={[palette]}
+				onNew={vi.fn()}
+			/>,
+		)
+		await screen.findByText('Loose draft')
+		await screen.findByText('Live puzzle')
+		expect(
+			screen
+				.getAllByRole('listitem')
+				.map(card => card.getAttribute('aria-label')),
+		).toEqual([
+			'Draft Loose draft',
+			'Puzzle First scheduled',
+			'Puzzle Second scheduled',
+			'Puzzle Live puzzle',
+		])
+		expect(screen.getByText('4 total')).toBeInTheDocument()
+		expect(
+			screen.getAllByRole('checkbox', { name: /^Select draft / }),
+		).toHaveLength(1)
+		expect(
+			screen.getByRole('button', { name: 'New puzzle' }),
+		).toBeInTheDocument()
+		fireEvent.change(screen.getByLabelText('Show status'), {
+			target: { value: 'scheduled' },
+		})
+		expect(
+			screen.queryByRole('button', { name: 'New puzzle' }),
+		).not.toBeInTheDocument()
+		expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
 	})
 })

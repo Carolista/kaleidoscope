@@ -14,15 +14,6 @@ import { ReleaseOverview } from '@/features/admin/release'
 import { ShapesWorkspace } from '@/features/admin/shapes'
 import { useNavigationGuard } from '@/ui/navigation'
 
-type CatalogStatus = 'drafts' | 'assigned' | 'scheduled' | 'published'
-
-const catalogStatuses = [
-	{ value: 'drafts', label: 'Unassigned' },
-	{ value: 'assigned', label: 'Assigned' },
-	{ value: 'scheduled', label: 'Scheduled' },
-	{ value: 'published', label: 'Published' },
-] as const
-
 export default function AdminWorkspace({
 	client,
 }: {
@@ -32,7 +23,6 @@ export default function AdminWorkspace({
 		'puzzles' | 'palettes' | 'shapes' | 'progression' | 'release'
 	>('puzzles')
 	const [view, setView] = useState<'groups' | 'items'>('groups')
-	const [status, setStatus] = useState<CatalogStatus>('drafts')
 	const [progressionView, setProgressionView] = useState<'order' | 'rewards'>(
 		'rewards',
 	)
@@ -57,7 +47,6 @@ export default function AdminWorkspace({
 					requestNavigation(() => {
 						setSection(next)
 						setView('groups')
-						setStatus('drafts')
 						setProgressionView('rewards')
 						setVisit(value => value + 1)
 					})
@@ -95,45 +84,26 @@ export default function AdminWorkspace({
 						label={`${itemLabel} views`}
 						items={[
 							{ value: 'groups', label: 'Groups' },
-							{ value: 'items', label: itemLabel },
+							{ value: 'items', label: 'Individual' },
 						]}
 						value={view}
 						onChange={next =>
 							requestNavigation(() => {
 								setView(next)
-								setStatus('drafts')
 								setVisit(value => value + 1)
 							})
 						}
 					/>
-					{view === 'items' && (
-						<AdminNavigation
-							label={`${itemLabel} status`}
-							items={catalogStatuses}
-							value={status}
-							onChange={next =>
-								requestNavigation(() => {
-									setStatus(next)
-									setVisit(value => value + 1)
-								})
-							}
-						/>
-					)}
 					{section === 'palettes' ? (
 						<PaletteLibrary
-							key={`${view}-${status}-${visit}`}
+							key={`${view}-${visit}`}
 							client={client}
 							view={view === 'groups' ? 'groups' : 'palettes'}
-							catalogStatus={status}
 						/>
 					) : view === 'groups' ? (
 						<PuzzleGroupLibrary key={visit} client={client} />
 					) : (
-						<PuzzleAuthoring
-							key={`${status}-${visit}`}
-							client={client}
-							catalogStatus={status}
-						/>
+						<PuzzleAuthoring key={visit} client={client} />
 					)}
 				</>
 			)}

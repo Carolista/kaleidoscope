@@ -168,15 +168,6 @@ beforeEach(() => {
 			groupPurpose: 'core',
 			groupTrack: 'basic',
 		},
-		{
-			...draft,
-			row: {
-				...draft.row,
-				id: 'prepared',
-				name: 'Prepared design',
-				release_at: '2099-01-01',
-			},
-		},
 	])
 	const assignedPalette = {
 		...palette,
@@ -222,6 +213,18 @@ function choose(menu: string, label: string) {
 			{ name: label },
 		),
 	)
+}
+
+function showStatus(label: string) {
+	const values: Record<string, string> = {
+		Unassigned: 'drafts',
+		Assigned: 'assigned',
+		Scheduled: 'scheduled',
+		Published: 'published',
+	}
+	fireEvent.change(screen.getByLabelText('Show status'), {
+		target: { value: values[label] },
+	})
 }
 
 describe('admin workspace navigation', () => {
@@ -294,27 +297,28 @@ describe('admin workspace navigation', () => {
 		).toBeInTheDocument()
 	})
 
-	it('separates unassigned puzzle drafts from assigned puzzles and shows scheduled and published puzzles', async () => {
+	it('lists every puzzle by default and filters by status', async () => {
 		render(<AdminWorkspace client={client} />)
-		choose('Puzzles views', 'Puzzles')
+		choose('Puzzles views', 'Individual')
+		for (const name of [
+			'Edit draft Unassigned design',
+			'Edit draft Assigned design',
+			'Edit puzzle Scheduled design',
+			'View puzzle Live design',
+		])
+			expect(
+				await screen.findByRole('button', { name }),
+			).toBeInTheDocument()
+		expect(
+			screen.getByRole('heading', { name: 'Puzzles' }),
+		).toBeInTheDocument()
+		expect(screen.getByText('4 total')).toBeInTheDocument()
+		expect(
+			screen.queryByRole('navigation', { name: 'Puzzles status' }),
+		).not.toBeInTheDocument()
+		showStatus('Assigned')
 		expect(
 			await screen.findByRole('button', {
-				name: 'Edit draft Unassigned design',
-			}),
-		).toBeInTheDocument()
-		expect(
-			screen.queryByRole('button', {
-				name: 'Edit draft Assigned design',
-			}),
-		).not.toBeInTheDocument()
-		expect(
-			screen.queryByRole('button', {
-				name: 'Edit draft Prepared design',
-			}),
-		).not.toBeInTheDocument()
-		choose('Puzzles status', 'Assigned')
-		expect(
-			await screen.findByRole('button', {
 				name: 'Edit draft Assigned design',
 			}),
 		).toBeInTheDocument()
@@ -323,73 +327,69 @@ describe('admin workspace navigation', () => {
 				name: 'Edit draft Unassigned design',
 			}),
 		).not.toBeInTheDocument()
-		choose('Puzzles status', 'Scheduled')
-		expect(
-			await screen.findByRole('heading', { name: 'Scheduled puzzles' }),
-		).toBeInTheDocument()
+		showStatus('Scheduled')
 		expect(
 			await screen.findByRole('button', {
 				name: 'Edit puzzle Scheduled design',
 			}),
 		).toBeInTheDocument()
 		expect(screen.queryByText('Live design')).not.toBeInTheDocument()
-		choose('Puzzles status', 'Published')
-		expect(
-			await screen.findByRole('heading', { name: 'Published puzzles' }),
-		).toBeInTheDocument()
+		showStatus('Published')
 		expect(
 			await screen.findByRole('button', {
 				name: 'View puzzle Live design',
 			}),
 		).toBeInTheDocument()
 		expect(screen.queryByText('Scheduled design')).not.toBeInTheDocument()
-		choose('Puzzles status', 'Unassigned')
+		showStatus('Unassigned')
 		expect(
 			await screen.findByRole('button', {
 				name: 'Edit draft Unassigned design',
 			}),
 		).toBeInTheDocument()
+		expect(screen.queryByText('Live design')).not.toBeInTheDocument()
 	})
 
-	it('separates palette drafts and group assignments without leaking scheduled or published palettes', async () => {
+	it('lists every palette by default and filters by status', async () => {
 		render(<AdminWorkspace client={client} />)
 		choose('Admin sections', 'Palettes')
-		choose('Palettes views', 'Palettes')
+		choose('Palettes views', 'Individual')
+		for (const name of [
+			'Edit Unassigned colors',
+			'Edit Assigned colors',
+			'View Scheduled colors',
+			'View Published colors',
+		])
+			expect(
+				await screen.findByRole('button', { name }),
+			).toBeInTheDocument()
+		expect(screen.getByText('4 total')).toBeInTheDocument()
+		showStatus('Unassigned')
 		expect(
-			await screen.findByRole('button', {
-				name: 'Edit Unassigned colors',
-			}),
+			screen.getByRole('button', { name: 'Edit Unassigned colors' }),
 		).toBeInTheDocument()
-		expect(
-			screen.queryByRole('button', { name: 'Edit Assigned colors' }),
-		).not.toBeInTheDocument()
-		expect(screen.queryByText('Scheduled colors')).not.toBeInTheDocument()
-		expect(screen.queryByText('Published colors')).not.toBeInTheDocument()
-		choose('Palettes status', 'Assigned')
+		expect(screen.queryByText('Assigned colors')).not.toBeInTheDocument()
+		showStatus('Assigned')
 		expect(
 			await screen.findByRole('button', { name: 'Edit Assigned colors' }),
 		).toBeInTheDocument()
 		expect(
 			screen.queryByRole('button', { name: 'Edit Unassigned colors' }),
 		).not.toBeInTheDocument()
-		for (const label of ['Scheduled', 'Published']) {
-			choose('Palettes status', label)
-			expect(
-				screen.getByRole('heading', { name: `${label} palettes` }),
-			).toBeInTheDocument()
-		}
+		showStatus('Scheduled')
+		expect(screen.getByText('Scheduled colors')).toBeInTheDocument()
+		expect(screen.queryByText('Published colors')).not.toBeInTheDocument()
+		showStatus('Published')
+		expect(screen.getByText('Published colors')).toBeInTheDocument()
+		expect(screen.queryByText('Scheduled colors')).not.toBeInTheDocument()
 		choose('Palettes views', 'Groups')
 		expect(
 			await screen.findByRole('button', {
 				name: 'Edit group Color collection',
 			}),
 		).toBeInTheDocument()
-		choose('Palettes views', 'Palettes')
-		expect(
-			await screen.findByRole('button', {
-				name: 'Edit Unassigned colors',
-			}),
-		).toBeInTheDocument()
+		choose('Palettes views', 'Individual')
+		expect(screen.getByText('4 total')).toBeInTheDocument()
 	})
 
 	it('guards top-level navigation with a staged group order and keeps the editor mounted when canceled', async () => {
@@ -409,23 +409,23 @@ describe('admin workspace navigation', () => {
 		).toBeInTheDocument()
 		fireEvent.click(screen.getByRole('button', { name: 'Keep editing' }))
 		expect(screen.getByText('1. Second member')).toBeInTheDocument()
-		choose('Puzzles views', 'Puzzles')
+		choose('Puzzles views', 'Individual')
 		fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }))
 		expect(
-			await screen.findByRole('heading', { name: 'Puzzle drafts' }),
+			await screen.findByRole('heading', { name: 'Puzzles' }),
 		).toBeInTheDocument()
 		expect(mocks.manageGroup).not.toHaveBeenCalled()
 	})
 
-	it('guards status changes from an unsaved palette and blocks section changes during group saves', async () => {
+	it('guards view changes from an unsaved palette and blocks section changes during group saves', async () => {
 		render(<AdminWorkspace client={client} />)
 		choose('Admin sections', 'Palettes')
-		choose('Palettes views', 'Palettes')
+		choose('Palettes views', 'Individual')
 		await clickWhenEnabled('New palette')
 		fireEvent.change(screen.getByLabelText('Palette name'), {
 			target: { value: 'Keep my colors' },
 		})
-		choose('Palettes status', 'Assigned')
+		choose('Palettes views', 'Groups')
 		fireEvent.click(screen.getByRole('button', { name: 'Keep editing' }))
 		expect(screen.getByLabelText('Palette name')).toHaveValue(
 			'Keep my colors',
@@ -474,7 +474,7 @@ describe('admin workspace navigation', () => {
 			}),
 		).toBeInTheDocument()
 		expect(screen.queryByLabelText('Group name')).not.toBeInTheDocument()
-		choose('Puzzles views', 'Puzzles')
+		choose('Puzzles views', 'Individual')
 		fireEvent.click(
 			await screen.findByRole('button', {
 				name: 'Edit draft Unassigned design',
@@ -485,7 +485,7 @@ describe('admin workspace navigation', () => {
 				name: 'Edit draft Unassigned design',
 			}),
 		).not.toBeInTheDocument()
-		choose('Puzzles status', 'Unassigned')
+		choose('Puzzles views', 'Individual')
 		expect(
 			await screen.findByRole('button', {
 				name: 'Edit draft Unassigned design',
@@ -495,7 +495,7 @@ describe('admin workspace navigation', () => {
 		expect(
 			screen.getByRole('heading', { name: 'New puzzle' }),
 		).toBeInTheDocument()
-		choose('Puzzles status', 'Unassigned')
+		choose('Puzzles views', 'Individual')
 		expect(
 			await screen.findByRole('button', {
 				name: 'Edit draft Unassigned design',
@@ -507,12 +507,12 @@ describe('admin workspace navigation', () => {
 		await screen.findByRole('button', {
 			name: 'Edit group Design collection',
 		})
-		choose('Puzzles views', 'Puzzles')
+		choose('Puzzles views', 'Individual')
 		await screen.findByRole('button', {
 			name: 'Edit draft Unassigned design',
 		})
-		choose('Puzzles status', 'Assigned')
-		choose('Puzzles status', 'Unassigned')
+		showStatus('Assigned')
+		showStatus('Unassigned')
 		choose('Puzzles views', 'Groups')
 		expect(
 			screen.getByRole('button', {
@@ -523,7 +523,7 @@ describe('admin workspace navigation', () => {
 		await screen.findByRole('button', {
 			name: 'Edit group Color collection',
 		})
-		choose('Palettes views', 'Palettes')
+		choose('Palettes views', 'Individual')
 		expect(
 			screen.getByRole('button', { name: 'Edit Unassigned colors' }),
 		).toBeInTheDocument()

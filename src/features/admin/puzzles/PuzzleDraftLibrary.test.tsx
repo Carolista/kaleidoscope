@@ -12,8 +12,15 @@ import iconStyles from '@/ui/components/IconButton.module.css'
 import PuzzleDraftLibrary from './PuzzleDraftLibrary'
 import { useNavigationGuard } from '@/ui/navigation'
 
+async function chooseStatus(value: string) {
+	const select = await screen.findByLabelText('Show status')
+	await waitFor(() => expect(select).toBeEnabled())
+	fireEvent.change(select, { target: { value } })
+}
+
 const mocks = vi.hoisted(() => ({
 	load: vi.fn(),
+	prepared: vi.fn(),
 	edit: vi.fn(),
 	remove: vi.fn(),
 	bulk: vi.fn(),
@@ -29,6 +36,7 @@ vi.mock('@/features/admin/services/puzzleGroups', () => ({
 }))
 vi.mock('@/features/admin/services/puzzleLibrary', () => ({
 	loadPuzzleDrafts: (...args: unknown[]) => mocks.load(...args),
+	loadPreparedPuzzles: (...args: unknown[]) => mocks.prepared(...args),
 	editPuzzleDraft: (...args: unknown[]) => mocks.edit(...args),
 	deletePuzzleDraft: (...args: unknown[]) => mocks.remove(...args),
 	bulkPuzzleDrafts: (...args: unknown[]) => mocks.bulk(...args),
@@ -88,6 +96,7 @@ const draft: LibraryDraft = {
 beforeEach(() => {
 	vi.resetAllMocks()
 	mocks.load.mockResolvedValue([draft])
+	mocks.prepared.mockResolvedValue([])
 	mocks.edit.mockResolvedValue(undefined)
 	mocks.remove.mockResolvedValue(undefined)
 	mocks.bulk.mockResolvedValue(undefined)
@@ -183,7 +192,7 @@ describe('draft library', () => {
 		)
 		setup()
 		expect(screen.getByRole('status')).toHaveTextContent(
-			'Loading puzzle drafts...',
+			'Loading puzzles...',
 		)
 		expect(screen.getByRole('status').querySelector('img')).toHaveAttribute(
 			'aria-hidden',
@@ -199,9 +208,9 @@ describe('draft library', () => {
 				fail = reject
 			}),
 		)
-		fireEvent.click(screen.getByRole('button', { name: 'Refresh drafts' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Refresh puzzles' }))
 		expect(screen.getByRole('status')).toHaveTextContent(
-			'Refreshing puzzle drafts…',
+			'Refreshing puzzles…',
 		)
 		await act(async () => {
 			fail(new Error('Drafts offline'))
@@ -209,10 +218,10 @@ describe('draft library', () => {
 		expect(screen.queryByRole('status')).not.toBeInTheDocument()
 		expect(screen.getByRole('alert')).toHaveTextContent('Drafts offline')
 		expect(
-			screen.queryByText('No drafts match this view.'),
+			screen.queryByText('No puzzles match this view.'),
 		).not.toBeInTheDocument()
 		expect(
-			screen.getByRole('button', { name: 'Refresh drafts' }),
+			screen.getByRole('button', { name: 'Refresh puzzles' }),
 		).toBeEnabled()
 	})
 	it.each([
@@ -617,7 +626,7 @@ describe('draft library', () => {
 			target: { value: 'easy-small' },
 		})
 		fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }))
-		await screen.findByRole('heading', { name: 'Puzzle drafts' })
+		await screen.findByRole('heading', { name: 'Puzzles' })
 		const unload = new Event('beforeunload', { cancelable: true })
 		window.dispatchEvent(unload)
 		expect(unload.defaultPrevented).toBe(false)
@@ -678,8 +687,8 @@ describe('draft library', () => {
 	})
 	it('keeps gallery controls fixed and places compact bulk icons alongside select all', async () => {
 		setup()
-		const refresh = screen.getByRole('button', { name: 'Refresh drafts' })
-		expect(refresh).toHaveAttribute('title', 'Refresh drafts')
+		const refresh = screen.getByRole('button', { name: 'Refresh puzzles' })
+		expect(refresh).toHaveAttribute('title', 'Refresh puzzles')
 		expect(refresh.querySelector('svg')).toHaveAttribute(
 			'data-icon',
 			'rotate',
@@ -875,7 +884,7 @@ describe('draft library', () => {
 			screen.getByRole('button', { name: 'Edit draft Saved art' }),
 		).toBeDisabled()
 		expect(
-			screen.getByRole('button', { name: 'Refresh drafts' }),
+			screen.getByRole('button', { name: 'Refresh puzzles' }),
 		).toBeDisabled()
 		expect(
 			screen.getByRole('checkbox', { name: 'Select draft Saved art' }),
@@ -946,9 +955,9 @@ describe('draft library', () => {
 			<PuzzleDraftLibrary
 				client={getSupabaseClient()}
 				palettes={[palette, other]}
-				catalogStatus="assigned"
 			/>,
 		)
+		await chooseStatus('assigned')
 		await screen.findByRole('button', { name: 'Edit draft Zebra' })
 		expect(
 			screen
@@ -995,9 +1004,9 @@ describe('draft library', () => {
 			<PuzzleDraftLibrary
 				client={getSupabaseClient()}
 				palettes={[palette, other]}
-				catalogStatus="assigned"
 			/>,
 		)
+		await chooseStatus('assigned')
 		const filter = await screen.findByLabelText('Show group')
 		await waitFor(() =>
 			expect(
@@ -1041,9 +1050,9 @@ describe('draft library', () => {
 			<PuzzleDraftLibrary
 				client={getSupabaseClient()}
 				palettes={[palette, other]}
-				catalogStatus="drafts"
 			/>,
 		)
+		await chooseStatus('drafts')
 		await screen.findByRole('button', { name: 'Edit draft Saved art' })
 		expect(screen.queryByLabelText('Show group')).not.toBeInTheDocument()
 		expect(screen.queryByLabelText('Show purpose')).not.toBeInTheDocument()
@@ -1125,7 +1134,7 @@ describe('draft library', () => {
 		).toHaveAttribute('data-icon', 'trash-can')
 		const editor = await open()
 		expect(
-			screen.queryByRole('heading', { name: 'Puzzle drafts' }),
+			screen.queryByRole('heading', { name: 'Puzzles' }),
 		).not.toBeInTheDocument()
 		expect(
 			screen.getByRole('button', { name: 'Randomize puzzle' }),
@@ -1147,7 +1156,7 @@ describe('draft library', () => {
 			screen.queryByRole('button', { name: 'Edit draft Saved art' }),
 		).not.toBeInTheDocument()
 		expect(
-			screen.getByText('No drafts match this view.'),
+			screen.getByText('No puzzles match this view.'),
 		).toBeInTheDocument()
 	})
 	it('recolors without resetting playtest selection and saves only editable metadata', async () => {
@@ -1183,7 +1192,7 @@ describe('draft library', () => {
 		)
 		await screen.findByText('Draft changes saved.')
 		expect(
-			screen.getByRole('heading', { name: 'Puzzle drafts' }),
+			screen.getByRole('heading', { name: 'Puzzles' }),
 		).toBeInTheDocument()
 		expect(screen.queryByRole('article')).not.toBeInTheDocument()
 		await waitFor(() => expect(mocks.load).toHaveBeenCalledTimes(2))
@@ -1209,7 +1218,7 @@ describe('draft library', () => {
 		finish()
 		await screen.findByText('Draft changes saved.')
 		expect(
-			screen.getByRole('heading', { name: 'Puzzle drafts' }),
+			screen.getByRole('heading', { name: 'Puzzles' }),
 		).toBeInTheDocument()
 	})
 	it('warns before leaving unsaved metadata, but not after a successful save', async () => {
@@ -1226,7 +1235,7 @@ describe('draft library', () => {
 		fireEvent.click(screen.getByRole('button', { name: 'Keep editing' }))
 		fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }))
 		await screen.findByText('Draft changes saved.')
-		await screen.findByRole('heading', { name: 'Puzzle drafts' })
+		await screen.findByRole('heading', { name: 'Puzzles' })
 		const unload = new Event('beforeunload', { cancelable: true })
 		window.dispatchEvent(unload)
 		expect(unload.defaultPrevented).toBe(false)
@@ -1263,7 +1272,7 @@ describe('draft library', () => {
 		)
 		mocks.load.mockResolvedValue([])
 		fireEvent.click(screen.getByRole('button', { name: 'Confirm delete' }))
-		await screen.findByText('No drafts match this view.')
+		await screen.findByText('No puzzles match this view.')
 		expect(mocks.remove).toHaveBeenCalledTimes(2)
 		expect(screen.queryByRole('article')).not.toBeInTheDocument()
 	})
@@ -1300,7 +1309,7 @@ describe('draft library', () => {
 		fireEvent.click(randomize)
 		await waitFor(() => expect(randomize).toBeEnabled())
 		fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }))
-		await screen.findByRole('heading', { name: 'Puzzle drafts' })
+		await screen.findByRole('heading', { name: 'Puzzles' })
 		expect(mocks.replace).toHaveBeenCalledWith(
 			expect.anything(),
 			draft.row.id,
@@ -1326,14 +1335,14 @@ describe('draft library', () => {
 			<PuzzleDraftLibrary
 				client={getSupabaseClient()}
 				palettes={[palette, other]}
-				catalogStatus="assigned"
 				onNew={onNew}
 			/>,
 		)
+		await chooseStatus('assigned')
 		const filter = await screen.findByLabelText('Show group')
 		expect(
-			screen.queryByRole('button', { name: 'New puzzle' }),
-		).not.toBeInTheDocument()
+			screen.getByRole('button', { name: 'New puzzle' }),
+		).toBeInTheDocument()
 		expect(
 			within(filter)
 				.getAllByRole('option')
@@ -1347,7 +1356,13 @@ describe('draft library', () => {
 			expect.objectContaining({
 				row: expect.objectContaining({ id: 'group' }),
 			}),
-			{ purpose: 'all', shape: 'all', track: 'all', group: 'group' },
+			{
+				status: 'assigned',
+				purpose: 'all',
+				shape: 'all',
+				track: 'all',
+				group: 'group',
+			},
 		)
 	})
 
@@ -1378,9 +1393,9 @@ describe('draft library', () => {
 			<PuzzleDraftLibrary
 				client={getSupabaseClient()}
 				palettes={[palette, other]}
-				catalogStatus="assigned"
 			/>,
 		)
+		await chooseStatus('assigned')
 		fireEvent.click(
 			await screen.findByRole('checkbox', {
 				name: 'Select draft Daily art',
@@ -1424,9 +1439,9 @@ describe('draft library', () => {
 			<PuzzleDraftLibrary
 				client={getSupabaseClient()}
 				palettes={[palette, other]}
-				catalogStatus="drafts"
 			/>,
 		)
+		await chooseStatus('drafts')
 		fireEvent.click(
 			await screen.findByRole('checkbox', {
 				name: 'Select draft Saved art',
@@ -1443,14 +1458,15 @@ describe('draft library', () => {
 			<PuzzleDraftLibrary
 				client={getSupabaseClient()}
 				palettes={[palette, other]}
-				catalogStatus="drafts"
 				onNew={onNew}
 			/>,
 		)
+		await chooseStatus('drafts')
 		fireEvent.click(
 			await screen.findByRole('button', { name: 'New puzzle' }),
 		)
 		expect(onNew).toHaveBeenCalledWith(undefined, {
+			status: 'drafts',
 			purpose: 'all',
 			shape: 'all',
 			track: 'all',
@@ -1474,9 +1490,9 @@ describe('draft library', () => {
 			<PuzzleDraftLibrary
 				client={getSupabaseClient()}
 				palettes={[palette, other]}
-				catalogStatus="assigned"
 			/>,
 		)
+		await chooseStatus('assigned')
 		fireEvent.change(await screen.findByLabelText('Show group'), {
 			target: { value: 'group' },
 		})
@@ -1511,7 +1527,7 @@ describe('draft library', () => {
 		expect(await screen.findByRole('alert')).toHaveTextContent(
 			'Network unavailable',
 		)
-		fireEvent.click(screen.getByRole('button', { name: 'Refresh drafts' }))
+		fireEvent.click(screen.getByRole('button', { name: 'Refresh puzzles' }))
 		await screen.findByRole('button', { name: 'Edit draft Saved art' })
 	})
 })

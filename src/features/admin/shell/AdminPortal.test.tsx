@@ -25,6 +25,7 @@ const mocks = vi.hoisted(() => ({
 let authCallback: (event: AuthChangeEvent, session: Session | null) => void
 vi.mock('@/features/admin/services/puzzleLibrary', () => ({
 	loadPuzzleDrafts: async () => [],
+	loadPreparedPuzzles: async () => [],
 }))
 vi.mock('@/features/admin/services/puzzleGroups', () => ({
 	loadPuzzleGroups: async () => [],
@@ -64,7 +65,7 @@ async function openPaletteCatalog() {
 	fireEvent.click(
 		within(
 			screen.getByRole('navigation', { name: 'Palettes views' }),
-		).getByRole('button', { name: 'Palettes' }),
+		).getByRole('button', { name: 'Individual' }),
 	)
 }
 
@@ -342,7 +343,7 @@ describe('AdminPortal', () => {
 				await screen.findByRole('navigation', {
 					name: 'Puzzles views',
 				}),
-			).getByRole('button', { name: 'Puzzles' }),
+			).getByRole('button', { name: 'Individual' }),
 		)
 		fireEvent.click(
 			await screen.findByRole('button', { name: 'New puzzle' }),

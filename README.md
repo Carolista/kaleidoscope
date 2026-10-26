@@ -100,14 +100,15 @@ Press the target to see it at the board's size over the board (press it again or
 Escape to put it back), and use the grid icon among the buttons, or Settings, to
 turn the lines between the target's tiles off when they blur small colors.
 The admin workspace has peer **Puzzles | Palettes | Shapes | Progression | Release** sections. Puzzles and
-Palettes each open on **Groups**, with an items view filtered by Unassigned, Assigned,
-Scheduled, or Published. Releases are scheduled from the **Release** section (a shape's core and bonus groups
+Palettes each open on **Groups**, with an **Individual** view that lists everything and can be filtered by
+status (Unassigned, Assigned, Scheduled, or Published); palette groups filter by status too. Each list heading
+shows how many items are listed, and selecting items shows how many are selected. Releases are scheduled from the **Release** section (a shape's core and bonus groups
 go out together as a package) or, for other groups, from their cards.
 Assigned puzzles and palettes list in set order: set name, then position in the set.
-In the Assigned views, **New puzzle** / **New palette** appears only while the list
-is filtered to one draft set; the new item is created directly in that set (a puzzle
-takes the set's shape and Set/pack use). Unassigned views create unassigned drafts.
-Selected items in the Assigned views can be bulk **Unassign**ed from their sets
+**New puzzle** / **New palette** appears everywhere except the Scheduled and Published filters. While the
+list is filtered to one draft set, the new item is created directly in that set (a puzzle
+takes the set's shape and Set/pack use); otherwise it is an unassigned draft.
+Selected drafts can be bulk **Unassign**ed from their sets
 (one request per set); their designs are unchanged.
 Loaded catalogs are cached for the session, so switching views is instant; lists
 reload after your own saves or with **Refresh**. In the puzzle drafts view,
@@ -117,7 +118,7 @@ drafts atomically; reopening uses the stored definition rather than regeneration
 After saving, name/palette/recipe choices apply to the next generation without
 changing the saved puzzle. A revised name survives randomization; an unchanged
 saved name clears.
-Unsaved work is guarded when leaving the workspace; choose the **Unassigned** tab
+Unsaved work is guarded when leaving the workspace; choose the **Individual** tab
 to return to the gallery. Every add/edit form also has a **Cancel** button (**Back**
 once saved or read-only) that returns to the same list, filters included, asking
 before it discards edits. The playtest Restart sits beside the pieces.

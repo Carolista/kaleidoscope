@@ -15,6 +15,12 @@ import PaletteLibrary from './PaletteLibrary'
 import { useState } from 'react'
 import { useNavigationGuard } from '@/ui/navigation'
 
+async function chooseStatus(value: string) {
+	const select = await screen.findByLabelText('Show status')
+	await waitFor(() => expect(select).toBeEnabled())
+	fireEvent.change(select, { target: { value } })
+}
+
 const mocks = vi.hoisted(() => ({
 	load: vi.fn(),
 	manage: vi.fn(),
@@ -293,13 +299,8 @@ describe('palette management', () => {
 
 	it('keeps the unassignment dialog open with the error when a removal fails', async () => {
 		mocks.groups.mockResolvedValue([paletteGroup])
-		render(
-			<PaletteLibrary
-				client={client}
-				view="palettes"
-				catalogStatus="assigned"
-			/>,
-		)
+		render(<PaletteLibrary client={client} view="palettes" />)
+		await chooseStatus('assigned')
 		fireEvent.click(
 			await screen.findByRole('checkbox', { name: 'Select Cabo' }),
 		)
@@ -425,13 +426,8 @@ describe('palette management', () => {
 				members: [a1, a2],
 			},
 		])
-		render(
-			<PaletteLibrary
-				client={client}
-				view="palettes"
-				catalogStatus="assigned"
-			/>,
-		)
+		render(<PaletteLibrary client={client} view="palettes" />)
+		await chooseStatus('assigned')
 		await screen.findByRole('button', { name: 'Edit Zebra' })
 		expect(
 			screen
@@ -452,26 +448,23 @@ describe('palette management', () => {
 			members: [],
 		}
 		mocks.groups.mockResolvedValue([paletteGroup, prepared])
-		render(
-			<PaletteLibrary
-				client={client}
-				view="palettes"
-				catalogStatus="assigned"
-			/>,
-		)
+		render(<PaletteLibrary client={client} view="palettes" />)
+		await chooseStatus('assigned')
 		await screen.findByRole('button', { name: 'Edit Cabo' })
 		expect(
 			screen.queryByRole('option', { name: 'No group' }),
 		).not.toBeInTheDocument()
 		expect(
-			screen.queryByRole('button', { name: 'New palette' }),
-		).not.toBeInTheDocument()
+			screen.getByRole('button', { name: 'New palette' }),
+		).toBeInTheDocument()
 		fireEvent.change(screen.getByLabelText('Show palettes'), {
 			target: { value: 'live-set' },
 		})
+		fireEvent.click(screen.getByRole('button', { name: 'New palette' }))
 		expect(
-			screen.queryByRole('button', { name: 'New palette' }),
+			screen.queryByText(/This palette will be added to/),
 		).not.toBeInTheDocument()
+		fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
 		fireEvent.change(screen.getByLabelText('Show palettes'), {
 			target: { value: 'set-one' },
 		})
@@ -498,13 +491,8 @@ describe('palette management', () => {
 
 	it('keeps New palette unassigned from the Unassigned view', async () => {
 		mocks.groups.mockResolvedValue([paletteGroup])
-		render(
-			<PaletteLibrary
-				client={client}
-				view="palettes"
-				catalogStatus="drafts"
-			/>,
-		)
+		render(<PaletteLibrary client={client} view="palettes" />)
+		await chooseStatus('drafts')
 		await clickWhenEnabled('New palette')
 		fireEvent.change(screen.getByLabelText('Palette name'), {
 			target: { value: 'Loose' },
@@ -518,13 +506,8 @@ describe('palette management', () => {
 
 	it('adds a duplicate to the filtered group', async () => {
 		mocks.groups.mockResolvedValue([paletteGroup])
-		render(
-			<PaletteLibrary
-				client={client}
-				view="palettes"
-				catalogStatus="assigned"
-			/>,
-		)
+		render(<PaletteLibrary client={client} view="palettes" />)
+		await chooseStatus('assigned')
 		await screen.findByRole('button', { name: 'Duplicate Cabo' })
 		fireEvent.change(screen.getByLabelText('Show palettes'), {
 			target: { value: 'set-one' },
@@ -548,13 +531,8 @@ describe('palette management', () => {
 
 	it('leaves a duplicate unassigned when no group is filtered', async () => {
 		mocks.groups.mockResolvedValue([paletteGroup])
-		render(
-			<PaletteLibrary
-				client={client}
-				view="palettes"
-				catalogStatus="assigned"
-			/>,
-		)
+		render(<PaletteLibrary client={client} view="palettes" />)
+		await chooseStatus('assigned')
 		fireEvent.click(
 			await screen.findByRole('button', { name: 'Duplicate Cabo' }),
 		)
@@ -571,13 +549,8 @@ describe('palette management', () => {
 
 	it('cancels the editor back to the same filtered list, asking before discarding edits', async () => {
 		mocks.groups.mockResolvedValue([paletteGroup])
-		render(
-			<PaletteLibrary
-				client={client}
-				view="palettes"
-				catalogStatus="assigned"
-			/>,
-		)
+		render(<PaletteLibrary client={client} view="palettes" />)
+		await chooseStatus('assigned')
 		await screen.findByRole('button', { name: 'Edit Cabo' })
 		fireEvent.change(screen.getByLabelText('Show palettes'), {
 			target: { value: 'set-one' },
@@ -597,13 +570,8 @@ describe('palette management', () => {
 
 	it('retries a failed group assignment with the same palette ID', async () => {
 		mocks.groups.mockResolvedValue([paletteGroup])
-		render(
-			<PaletteLibrary
-				client={client}
-				view="palettes"
-				catalogStatus="assigned"
-			/>,
-		)
+		render(<PaletteLibrary client={client} view="palettes" />)
+		await chooseStatus('assigned')
 		await screen.findByRole('button', { name: 'Edit Cabo' })
 		fireEvent.change(screen.getByLabelText('Show palettes'), {
 			target: { value: 'set-one' },
@@ -1430,9 +1398,10 @@ describe('scheduled and published palette views', () => {
 
 	it('lists only scheduled palettes, with no release buttons, creation, or selection', async () => {
 		mocks.load.mockResolvedValue(prepared)
-		render(<PaletteLibrary client={client} catalogStatus="scheduled" />)
+		render(<PaletteLibrary client={client} />)
+		await chooseStatus('scheduled')
 		expect(
-			await screen.findByRole('heading', { name: 'Scheduled palettes' }),
+			await screen.findByRole('heading', { name: 'Palettes' }),
 		).toBeInTheDocument()
 		expect(screen.getByText('Scheduled art')).toBeInTheDocument()
 		expect(screen.queryByText('Live art')).not.toBeInTheDocument()
@@ -1448,9 +1417,10 @@ describe('scheduled and published palette views', () => {
 
 	it('lists only live palettes with nothing to schedule or cancel', async () => {
 		mocks.load.mockResolvedValue(prepared)
-		render(<PaletteLibrary client={client} catalogStatus="published" />)
+		render(<PaletteLibrary client={client} />)
+		await chooseStatus('published')
 		expect(
-			await screen.findByRole('heading', { name: 'Published palettes' }),
+			await screen.findByRole('heading', { name: 'Palettes' }),
 		).toBeInTheDocument()
 		expect(screen.getByText('Live art')).toBeInTheDocument()
 		expect(screen.queryByText('Scheduled art')).not.toBeInTheDocument()

@@ -698,8 +698,11 @@ its definitions keep `geometry.radius` and `hexagon-v2`.
 Palettes are not subordinate to puzzles: they also serve Zen Mode later. Top-level
 admin sections are peers (Puzzles | Palettes | Shapes, with a future orchestration
 view for groups/rewards/packs/rollout). Within a content section, Groups is the
-default view and items filter by release status (Unassigned | Assigned | Scheduled |
-Published), so both sections share one mental model.
+default view and **Individual** lists items with a status filter (All by default, then Unassigned |
+Assigned | Scheduled | Published), so both sections share one mental model. Status is a filter rather than a
+nested nav: mixed lists let released items sit beside drafts, with bulk actions limited to drafts and New
+available except when filtered to Scheduled or Published. Palette groups filter by release status too, since
+publishing palette packs differs from publishing the individual palettes that rewards and puzzle packs need.
 
 The admin is a single user, so the catalog cache favors speed over freshness:
 keep loaded catalogs for the session in a provider (not module state, which

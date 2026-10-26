@@ -35,6 +35,12 @@ const palette = {
 	name: 'Test palette',
 	colors: ['#112233', '#223344', '#334455', '#445566', '#556677'] as const,
 }
+async function chooseStatus(value: string) {
+	const select = await screen.findByLabelText('Show status')
+	await waitFor(() => expect(select).toBeEnabled())
+	fireEvent.change(select, { target: { value } })
+}
+
 const mocks = vi.hoisted(() => ({
 	from: vi.fn(),
 	rpc: vi.fn(),
@@ -47,6 +53,7 @@ vi.mock('@/lib/supabase/supabaseClient', () => ({
 }))
 vi.mock('@/features/admin/services/puzzleLibrary', () => ({
 	loadPuzzleDrafts: async () => mocks.drafts(),
+	loadPreparedPuzzles: async () => [],
 }))
 vi.mock('@/features/admin/services/paletteGroups', () => ({
 	loadPaletteGroups: () => mocks.paletteGroups(),
@@ -261,7 +268,7 @@ describe('admin puzzle lab', () => {
 		fireEvent.click(
 			within(
 				screen.getByRole('navigation', { name: 'Palettes views' }),
-			).getByRole('button', { name: 'Palettes' }),
+			).getByRole('button', { name: 'Individual' }),
 		)
 		fireEvent.click(
 			await screen.findByRole('button', { name: 'Edit Test palette' }),
@@ -299,7 +306,7 @@ describe('admin puzzle lab', () => {
 		fireEvent.click(
 			within(
 				screen.getByRole('navigation', { name: 'Puzzles views' }),
-			).getByRole('button', { name: 'Puzzles' }),
+			).getByRole('button', { name: 'Individual' }),
 		)
 		fireEvent.click(
 			await screen.findByRole('button', { name: 'New puzzle' }),
@@ -386,7 +393,7 @@ describe('admin puzzle lab', () => {
 	it('starts in the library and warns before discarding an unsaved new puzzle', async () => {
 		setup(undefined, false)
 		expect(
-			screen.getByRole('heading', { name: 'Puzzle drafts' }),
+			screen.getByRole('heading', { name: 'Puzzles' }),
 		).toBeInTheDocument()
 		expect(screen.queryByLabelText('Recipe')).not.toBeInTheDocument()
 		fireEvent.click(screen.getByRole('button', { name: 'New puzzle' }))
@@ -404,7 +411,7 @@ describe('admin puzzle lab', () => {
 		).toBeInTheDocument()
 		fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }))
 		expect(
-			screen.getByRole('heading', { name: 'Puzzle drafts' }),
+			screen.getByRole('heading', { name: 'Puzzles' }),
 		).toBeInTheDocument()
 	})
 
@@ -660,16 +667,9 @@ describe('admin puzzle lab', () => {
 			return baseFrom(table)
 		})
 		cleanup()
-		render(
-			<PuzzleAuthoring
-				client={getSupabaseClient()}
-				catalogStatus="assigned"
-			/>,
-		)
+		render(<PuzzleAuthoring client={getSupabaseClient()} />)
+		await chooseStatus('assigned')
 		await screen.findByRole('button', { name: 'Edit draft Member' })
-		expect(
-			screen.queryByRole('button', { name: 'New puzzle' }),
-		).not.toBeInTheDocument()
 		fireEvent.change(screen.getByLabelText('Show group'), {
 			target: { value: 'group-t' },
 		})
