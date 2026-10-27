@@ -7,6 +7,7 @@
 }
 
 .choice {
+	position: relative;
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
@@ -42,8 +43,13 @@
 		var(--palette-choice-selected-border, transparent);
 }
 
+/* Like the lock, the tag hangs just outside the row so the palette stays centered. */
 .new {
-	margin-left: 0.5rem;
+	position: absolute;
+	top: 50%;
+	left: calc(100% + 0.5rem);
+	transform: translateY(-50%);
+	white-space: nowrap;
 	font-size: 0.75rem;
 	font-weight: 700;
 	letter-spacing: 0.04em;
