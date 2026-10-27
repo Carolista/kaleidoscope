@@ -395,7 +395,6 @@ export default function ShapeCard({
 					<PuzzlePlaytest
 						key={`${shapeId}-${recipe.id}-${sizeString}-${mixString}-${sample}`}
 						puzzle={preview.puzzle}
-						layout="stage"
 						actions={
 							<AdminIconButton
 								icon={faWandMagicSparkles}

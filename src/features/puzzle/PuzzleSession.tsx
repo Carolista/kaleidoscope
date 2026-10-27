@@ -17,6 +17,9 @@ import { pickCelebration } from './celebration'
 import styles from './PuzzleMode.module.css'
 import { nextUnsolvedPuzzle } from './setProgress'
 
+// Header, controls, and footer around the stage, which a wide screen's height must also hold.
+const PAGE_ROOM = 350
+
 export default function PuzzleSession({
 	set,
 	item,
@@ -65,6 +68,7 @@ export default function PuzzleSession({
 			hidden={hidden}
 			layout="stage"
 			wide
+			pageRoom={PAGE_ROOM}
 			solvedMessage="Puzzle solved! Your design matches the target."
 			contentRef={contentRef}
 			celebration={celebration}

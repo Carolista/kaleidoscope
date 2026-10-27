@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
 	packPuzzleStage,
 	puzzlePieceRadii,
@@ -13,8 +13,9 @@ import { tileSizes } from './tileSizes'
 const LANDSCAPE_MIN_WIDTH = 760
 const LANDSCAPE_MIN_HEIGHT = 420
 const LANDSCAPE_MAX_HEIGHT = 720
-// Room kept for the page around the stage when fitting its height.
-const LANDSCAPE_PAGE_ROOM = 200
+// Room kept for the page around the stage when fitting its height, unless the
+// caller says its page needs more.
+export const DEFAULT_PAGE_ROOM = 200
 const RESIZE_DELAY_MS = 120
 // A stage starts packing this far before it scrolls into view.
 const NEAR_SCREEN = '600px'
@@ -53,7 +54,11 @@ function remember(key: string, layout: StageLayout | null) {
 // screen. `status` is 'pending' until packed, and 'failed' when nothing fits,
 // so callers can keep their usual layout. `height` is the room to hold in the
 // meantime and afterwards.
-export function useStageLayout(puzzle: Puzzle, enabled: boolean) {
+export function useStageLayout(
+	puzzle: Puzzle,
+	enabled: boolean,
+	pageRoom = DEFAULT_PAGE_ROOM,
+) {
 	const element = useRef<HTMLDivElement>(null)
 	const [measure, setMeasure] = useState<Measure>(lastMeasure)
 	const [measured, setMeasured] = useState(false)
@@ -62,7 +67,8 @@ export function useStageLayout(puzzle: Puzzle, enabled: boolean) {
 	)
 	const [, packed] = useState(0)
 
-	useEffect(() => {
+	// Before paint, so the first frame already knows whether there is room.
+	useLayoutEffect(() => {
 		const node = element.current
 		if (!enabled || !node) return
 		let timer: ReturnType<typeof setTimeout> | undefined
@@ -125,7 +131,7 @@ export function useStageLayout(puzzle: Puzzle, enabled: boolean) {
 	const landscape = width >= LANDSCAPE_MIN_WIDTH
 	const stageHeight = Math.min(
 		LANDSCAPE_MAX_HEIGHT,
-		Math.max(LANDSCAPE_MIN_HEIGHT, viewportHeight - LANDSCAPE_PAGE_ROOM),
+		Math.max(LANDSCAPE_MIN_HEIGHT, viewportHeight - pageRoom),
 	)
 	const key =
 		enabled && board && pieceRadii && width > 0

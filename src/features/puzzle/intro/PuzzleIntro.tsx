@@ -11,6 +11,9 @@ import styles from './PuzzleIntro.module.css'
 const INTRO_SEED = 'intro-3'
 const RECIPES = { basic: PUZZLE_RECIPES[0], rotation: PUZZLE_RECIPES[1] }
 const PIECE_COUNT = 3
+// Header, welcome text, guidance, and footer around the stage, which a wide
+// screen's height must also hold.
+const PAGE_ROOM = 500
 
 interface PuzzleIntroProps {
 	readonly track: IntroTrack
@@ -82,6 +85,10 @@ function PuzzleIntro({ track, palette, onContinue }: PuzzleIntroProps) {
 			)}
 			<PuzzlePlay
 				puzzle={puzzle}
+				layout="stage"
+				wide
+				pageRoom={PAGE_ROOM}
+				hidePaletteName
 				solvedMessage="Puzzle solved! Your design matches the target."
 				onSolve={() => setSolved(true)}
 				onProgress={progress => {

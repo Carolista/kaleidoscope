@@ -356,8 +356,9 @@ so the pieces use the board's empty corners and notches. Narrower than 760px the
 (the target is at most 240px); from 760px it fits the screen's height with the target on the left and
 pieces on the right. The player's puzzle opts in with `wide`, so from 840px it grows past the 640px
 page column (up to 1100px, centered). Where nothing can be measured, or nothing fits, `PuzzlePlay`
-keeps its original layout, the goal image and tray in a compact row above the full-width board, which
-the tutorial and the admin puzzle editors still use.
+keeps its original layout, the goal image and tray in a compact row above the full-width board. The player's
+puzzle, the tutorials, the admin puzzle editors, and the Shapes workbench all use the stage; `pageRoom` sets the
+height the page needs around a wide stage (200px by default, 350px for the player, 500px for the tutorials).
 Pressing the target (a transparent button over it) shows it over the board at the board's size:
 it grows out of the thumbnail while fading in and shrinks back when pressed again, tapped, or
 Escape is pressed (`PeekOverlay`; picking up a piece or solving hides it, and reduced motion skips the

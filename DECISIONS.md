@@ -134,8 +134,8 @@ the rules about generation, shared play, and keeping puzzle state out of Zen sti
   shadow; an earlier tiny box with overflowing content went invisible in iOS
   Safari once the shadow filter was applied.
 - Keep the goal image and uniformly scaled tray pieces together above the
-  full-width board (the original tray layout, still used by the tutorial and the
-  admin puzzle editors; players and the Shapes workbench use the stage layout
+  full-width board (the original tray layout, now only the fallback when the stage
+  cannot be measured or nothing fits; every view uses the stage layout
   below), without visible instructions or piece labels. Celebrate a
   solve with a brief "Congrats!" fade (Mr Dafoe, accent fill, base outline) over
   the board instead of a dialog, so players can appreciate the finished design.
@@ -213,8 +213,6 @@ slots (sized for a piece's worst turn) pushed everything apart and capped the ta
   (`kaleidoscope:puzzle:targetGridLines`, on by default), changed from a grid icon among each screen's
   other actions (not floating on the target, where it looked lost over the board) and from a Game settings
   checkbox. Admin playtests have no Settings, so they only have the icon.
-- **Not done:** the tutorial puzzle and the admin puzzle editors still use the tray layout, and the page
-  room kept around a wide stage when fitting its height (200px, chosen for the admin) is untuned for the player.
 
 ## Admin authoring lab
 

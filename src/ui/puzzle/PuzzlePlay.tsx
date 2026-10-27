@@ -121,6 +121,8 @@ export default function PuzzlePlay({
 	aboveBoard,
 	layout = 'tray',
 	wide = false,
+	pageRoom,
+	hidePaletteName = false,
 	children,
 }: {
 	readonly ref?: Ref<PuzzlePlayHandle>
@@ -149,6 +151,11 @@ export default function PuzzlePlay({
 	// On large screens, grows past the page's column (centered on it) so the
 	// stage has room for the wide layout. For pages that are narrower than the screen.
 	readonly wide?: boolean
+	// Height in pixels the page needs around a wide stage (header, headings, controls),
+	// which the stage leaves out of the screen's height. For callers with more page than the default.
+	readonly pageRoom?: number
+	// Leaves out the palette's name below the board, e.g. in tutorials.
+	readonly hidePaletteName?: boolean
 	// Rendered below the board, e.g. player actions and dialogs.
 	readonly children?: ReactNode
 }) {
@@ -179,7 +186,7 @@ export default function PuzzlePlay({
 		layout: stageLayout,
 		status: stageStatus,
 		height: stageHeight,
-	} = useStageLayout(currentPuzzle, layout === 'stage')
+	} = useStageLayout(currentPuzzle, layout === 'stage', pageRoom)
 	// Until the stage is packed it holds its place; the old layout is only for
 	// when nothing fits.
 	const onStage = layout === 'stage' && stageStatus !== 'failed'
@@ -876,9 +883,11 @@ export default function PuzzlePlay({
 				{solved ? solvedMessage : message}
 			</div>
 			{children}
-			<div className={styles.paletteName}>
-				{currentPuzzle.paletteName}
-			</div>
+			{!hidePaletteName && (
+				<div className={styles.paletteName}>
+					{currentPuzzle.paletteName}
+				</div>
+			)}
 			{drag?.moved && !hidden && (
 				<PieceGraphic
 					shape={currentPuzzle.shape}
