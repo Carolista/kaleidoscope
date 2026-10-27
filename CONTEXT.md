@@ -395,7 +395,7 @@ replaces that set's puzzle grid. Both are a fixed small-hexagon puzzle (seed `in
 3, 2, and 1 tiles, five colors; rotation turns the two larger pieces) played on the shared
 `PuzzlePlay`, built from the track's tutorial palette (Mindfulness for basic, Stillness for
 rotation). Guidance sits just above the board and changes with progress (`PuzzlePlay`'s `onProgress`
-reports pieces placed and whether any is turned; `aboveBoard` is the slot). The slot reserves three
+reports pieces placed and whether any is turned; `aboveBoard` is the slot). The slot reserves four
 lines and shows **Continue** in the same place after the solve, under a **Congratulations!** heading.
 Completion is stored in `kaleidoscope:puzzle-intro` (`{ version: 1, seen: [...] }`) only on Continue,
 so an unfinished tutorial repeats on reload. A device that has already solved a puzzle in a track

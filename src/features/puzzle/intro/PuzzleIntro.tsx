@@ -34,7 +34,7 @@ function guidance(track: IntroTrack, placed: number, hasRotated: boolean) {
 		return hasRotated
 			? 'Keep tapping until the colors line up with the picture, then drag the piece onto the board.'
 			: 'These pieces can turn! Tap a piece in the tray to rotate it.'
-	return 'Match the picture at the top. Drag each piece onto the board, or tap a piece and then a tile.'
+	return 'Match the picture in the corner. Tap it to move it over the board at full size. Drag each piece onto the board, or tap a piece and then a tile.'
 }
 
 function PuzzleIntro({ track, palette, onContinue }: PuzzleIntroProps) {

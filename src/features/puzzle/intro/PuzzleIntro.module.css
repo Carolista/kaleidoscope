@@ -27,7 +27,7 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	min-height: calc(3 * 1.4 * 1.1rem);
+	min-height: calc(4 * 1.4 * 1.1rem);
 }
 
 .guidance .message {
