@@ -259,7 +259,8 @@ The modern app lives in [src/](./src). Leave the original
 ## Stack and commands
 
 React 19, TypeScript, Vite, CSS Modules, Vitest, React Testing Library/jsdom,
-ESLint, Prettier, Node/npm.
+ESLint, Prettier, Node 24 LTS/npm (version set in `.nvmrc`, which CI also reads;
+`engines` requires `>=24.22.1`).
 
 | Command | Purpose |
 | --- | --- |
