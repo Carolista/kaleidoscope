@@ -199,6 +199,17 @@ slots (sized for a piece's worst turn) pushed everything apart and capped the ta
   tallest height seen for that shape, mode, and width so a new puzzle does not make the page jump. A
   wrapper that shrinks to its content (a centered flex column) leaves nothing to measure: wrappers of a
   stage need `width: 100%`.
+- **The stage must be able to shrink.** The grids around it use `minmax(0, 1fr)` columns. With the
+  default `auto` column the stage's fixed pixel width set the column's minimum, so narrowing the window
+  never narrowed the stage and it kept its wide layout until a refresh.
+- **Hidden is not "nowhere to measure".** Puzzle Mode is mounted hidden while the player is on Home, so
+  the first read there is 0 wide. Only an element with no hidden ancestor and no layout (tests) falls
+  back to the tray layout; a hidden stage holds its place and packs once shown. Otherwise the tray
+  flashed for about 200ms on first show.
+- **Page room is per screen.** A wide stage fits the screen's height less the page around it
+  (`pageRoom`, 200px by default for the admin; 350px for the player, 500px for the tutorials, which have a
+  header, welcome text, and guidance). The numbers are measured, not derived, so adjust them if those
+  screens gain or lose height.
 - **Return to tray:** a piece dropped anywhere off the board's own cells goes back to its slot, replacing
   the old tray hit-test.
 - **Peek:** pressing the target shows it over the board at the board's size, so the picture can be
@@ -636,6 +647,12 @@ the lesson identical for everyone and independent of released content or tuning.
 `PuzzlePlay`, with guidance in an `aboveBoard` slot just above the board (not below, as in Zen, where
 the palette sits below) so phone players need not scroll to see the next step. Continue takes the same
 slot after the solve for the same reason.
+
+**The tutorial uses the stage layout and teaches the target peek.** The basic tutorial's opening
+message says the target can be tapped to see it over the board at full size, as one more sentence in
+the guidance that is already there rather than a separate step. The rotation tutorial does not repeat
+it. The guidance slot reserves four lines for the longest message, and the tutorial hides the palette
+name below the board (`hidePaletteName`).
 
 **Seen means completed, tracked separately.** Unlike Zen's key-exists rule, puzzles write nothing
 until play, so completion has its own versioned key, written on Continue. Solved puzzles already on

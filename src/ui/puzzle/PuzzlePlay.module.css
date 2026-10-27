@@ -21,6 +21,8 @@
 
 .content {
 	display: grid;
+	/* minmax(0, ...) so the column can shrink below a wide stage when the window narrows. */
+	grid-template-columns: minmax(0, 1fr);
 	justify-items: center;
 	gap: 1rem;
 	width: 100%;
@@ -191,6 +193,7 @@
    boxes are padded like their SVGs, so the SVG fills its box. */
 .stageHost {
 	display: grid;
+	grid-template-columns: minmax(0, 1fr);
 	justify-items: center;
 	gap: 1rem;
 	width: 100%;

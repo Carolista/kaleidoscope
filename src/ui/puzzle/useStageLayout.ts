@@ -79,7 +79,9 @@ export function useStageLayout(
 			}
 			lastMeasure = next
 			if (next.width > 0) hasMeasuredRoom = true
-			setMeasured(true)
+			// Puzzle Mode is mounted hidden while the player is elsewhere; that is not
+			// "nowhere to measure", so keep holding the stage's place until it is shown.
+			if (!node.closest('[hidden]')) setMeasured(true)
 			setMeasure(previous =>
 				previous.width === next.width &&
 				previous.viewportHeight === next.viewportHeight
