@@ -262,6 +262,7 @@ interface PuzzleBoardProps {
 	readonly placements?: PuzzlePlacements
 	readonly selectedId?: string | null
 	readonly svgRef?: Ref<SVGSVGElement>
+	// `keyboard` is true for keys and for assistive-technology clicks (click detail 0).
 	readonly onActivate?: (cell: AxialCoord, keyboard: boolean) => void
 	readonly onReturn?: (cell: AxialCoord) => void
 	readonly onGrab?: (
@@ -383,7 +384,8 @@ export default function PuzzleBoard({
 						}
 						onClick={
 							interactive
-								? () => onActivate?.(cell, false)
+								? event =>
+										onActivate?.(cell, event.detail === 0)
 								: undefined
 						}
 						onDoubleClick={

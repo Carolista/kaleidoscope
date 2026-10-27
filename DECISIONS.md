@@ -250,6 +250,13 @@ persistent exclusions derive from saved puzzles, not a separate blacklist table;
 deleting an unused draft frees its seed unless another saved row still uses it.
 Different seeds can yield visually identical designs.
 
+Pointer and touch players place pieces by dragging only. Tap-a-piece-then-tap-a-tile
+placement was removed: a piece lands with its first tile on the tapped cell, so on
+multi-tile pieces only one cell worked and players hunted for it, and on rotation
+puzzles it never worked. Tapping a placed piece still selects it, because its outline
+helps players see where one tile ends and the next begins. Keyboard and
+assistive-technology activation (click detail 0) keep select-then-place, since those
+players cannot drag (WCAG 2.5.7). The intro does not teach tapping to place.
 Tray clicks/taps rotate 60 degrees; dragging moves. Return board pieces via
 double-click/double-tap or dragging back, preserving orientation; there are no
 separate rotate/return buttons. A piece on the board turns only while it is held

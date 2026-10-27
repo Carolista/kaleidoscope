@@ -239,9 +239,12 @@ Palette distribution and release tools are described under Release.
 In rotation-enabled playtests, click/tap a tray piece to rotate 60 degrees
 (180 for diamond star and pinwheel, whose tiles only realign after a half turn;
 triangle and hexagram tiles flip between pointing up and down);
-dragging moves it without rotating. Double-click/double-tap a board piece or drag
-it back to return it to the tray, preserving orientation. Keyboard: Enter/Space
-rotates/selects in tray, board activation places, Delete/Backspace on an occupied
+dragging moves it without rotating. Pointer and touch players place pieces only by
+dragging: tapping a tray piece or an empty tile does not place anything. Tapping a
+placed piece selects it, which shows its outline. Double-click/double-tap a board
+piece or drag it back to return it to the tray, preserving orientation. Keyboard and
+assistive technology (clicks with detail 0, such as screen-reader activation) can
+still place: Enter/Space rotates/selects in tray, board activation places, Delete/Backspace on an occupied
 tile returns its piece. A piece turns in the tray, or while held: the R key, a
 mouse right-click, or a tap from a second finger on touch (it turns about the
 grabbed tile and re-checks for an open spot). A held piece snaps to the nearest

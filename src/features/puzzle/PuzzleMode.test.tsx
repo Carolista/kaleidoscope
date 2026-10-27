@@ -66,6 +66,12 @@ function renderPlaying() {
 	fireEvent.click(screen.getByRole('button', { name: /^Puzzle 1,/ }))
 	return view
 }
+// Click detail 0 is how keys and assistive technology activate a control.
+function placeByKeyboard(piece: Element, tile: Element) {
+	fireEvent.click(piece)
+	fireEvent.keyDown(tile, { key: 'Enter' })
+}
+
 function solvePuzzle(target = puzzle) {
 	for (const [index, piece] of target.pieces.entries()) {
 		dragTo(
@@ -916,6 +922,46 @@ describe('PuzzleMode', () => {
 		).toHaveLength(6)
 	})
 
+	it('does not place a piece when a pointer taps the tray and then a tile', async () => {
+		const user = userEvent.setup()
+		renderPlaying()
+		const anchor = tileAt(
+			coordinateKey(puzzle.solution[puzzle.pieces[0].id]),
+		)
+		await user.click(pieceButton(0))
+		await user.click(anchor)
+		expect(pieceButton(0)).toHaveAccessibleName(/in tray/)
+		expect(screen.getByRole('status')).toHaveTextContent(
+			'Drag a piece from the tray onto the board.',
+		)
+	})
+
+	it('places a piece when assistive technology clicks the tray and then a tile', () => {
+		renderPlaying()
+		const anchor = tileAt(
+			coordinateKey(puzzle.solution[puzzle.pieces[0].id]),
+		)
+		fireEvent.click(pieceButton(0))
+		fireEvent.click(anchor)
+		expect(pieceButton(0)).toHaveAccessibleName(/on board/)
+	})
+
+	it('highlights a placed piece when tapped without moving it', async () => {
+		const user = userEvent.setup()
+		renderPlaying()
+		const anchor = tileAt(
+			coordinateKey(puzzle.solution[puzzle.pieces[0].id]),
+		)
+		placeByKeyboard(pieceButton(0), anchor)
+		await user.click(anchor)
+		expect(anchor).toHaveAttribute('aria-pressed', 'true')
+		await user.click(
+			tileAt(coordinateKey(puzzle.solution[puzzle.pieces[1].id])),
+		)
+		expect(pieceButton(0)).toHaveAccessibleName(/on board/)
+		expect(anchor).toHaveAttribute('aria-pressed', 'true')
+	})
+
 	it('accepts a fitting wrong placement, lets it be returned, and restarts', async () => {
 		const user = userEvent.setup()
 		renderPlaying()
@@ -923,8 +969,10 @@ describe('PuzzleMode', () => {
 			piece => piece.tiles.length === 1,
 		)
 		const other = puzzle.pieces.find(piece => piece.tiles.length > 1)!
-		await user.click(pieceButton(singleIndex))
-		await user.click(tileAt(coordinateKey(puzzle.solution[other.id])))
+		placeByKeyboard(
+			pieceButton(singleIndex),
+			tileAt(coordinateKey(puzzle.solution[other.id])),
+		)
 		expect(pieceButton(singleIndex)).toHaveAccessibleName(/on board/)
 		expect(screen.getByRole('status')).not.toHaveTextContent('solved')
 		dragTo(
@@ -998,25 +1046,22 @@ describe('PuzzleMode', () => {
 		)
 		const multi = puzzle.pieces[multiIndex]
 		const anchor = tileAt(coordinateKey(puzzle.solution[multi.id]))
-		await user.click(pieceButton(multiIndex))
-		await user.click(anchor)
-		await user.click(pieceButton(singleIndex))
-		await user.click(anchor)
+		placeByKeyboard(pieceButton(multiIndex), anchor)
+		placeByKeyboard(pieceButton(singleIndex), anchor)
 		expect(screen.getByRole('status')).toHaveTextContent(
 			'overlaps another piece',
 		)
 		expect(pieceButton(singleIndex)).toHaveAccessibleName(/in tray/)
 		await user.click(screen.getByRole('button', { name: 'Restart' }))
-		await user.click(pieceButton(multiIndex))
-		await user.click(anchor)
+		placeByKeyboard(pieceButton(multiIndex), anchor)
 		const outsideAnchor = Object.keys(puzzle.target).find(key => {
 			const [q, r] = key.split(',').map(Number)
 			return pieceCells(multi, { q, r }).some(
 				tile => !Object.hasOwn(puzzle.target, coordinateKey(tile)),
 			)
 		})!
-		await user.click(anchor)
-		await user.click(tileAt(outsideAnchor))
+		fireEvent.keyDown(anchor, { key: 'Enter' })
+		fireEvent.keyDown(tileAt(outsideAnchor), { key: 'Enter' })
 		expect(screen.getByRole('status')).toHaveTextContent(
 			'inside the outlined wedge',
 		)
@@ -1029,8 +1074,7 @@ describe('PuzzleMode', () => {
 		const index = puzzle.pieces.findIndex(piece => piece.tiles.length === 2)
 		const piece = puzzle.pieces[index]
 		const anchor = tileAt(coordinateKey(puzzle.solution[piece.id]))
-		await user.click(pieceButton(index))
-		await user.click(anchor)
+		placeByKeyboard(pieceButton(index), anchor)
 		expect(pieceButton(index)).toBeDisabled()
 		expect(screen.queryByText('On board')).not.toBeInTheDocument()
 		await user.click(pieceButton(index))
@@ -1275,8 +1319,8 @@ describe('PuzzleMode', () => {
 	it('keeps progress while hidden and moves to the next puzzle in the set', async () => {
 		const user = userEvent.setup()
 		const view = renderPlaying()
-		await user.click(pieceButton(0))
-		await user.click(
+		placeByKeyboard(
+			pieceButton(0),
 			tileAt(coordinateKey(puzzle.solution[puzzle.pieces[0].id])),
 		)
 		view.rerender(<PuzzleMode hidden />)

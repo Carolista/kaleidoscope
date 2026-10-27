@@ -237,7 +237,9 @@ export default function PuzzlePlay({
 		if (!solved) reportState()
 	}, [placements, rotations, solved])
 
-	function selectPiece(id: string) {
+	// Selecting only highlights a piece for pointer players, who place by dragging.
+	// Keyboard and assistive technology cannot drag, so for them it arms placement.
+	function selectPiece(id: string, keyboard: boolean) {
 		if (solved) return
 		if (suppressClickRef.current) {
 			suppressClickRef.current = false
@@ -245,7 +247,9 @@ export default function PuzzlePlay({
 		}
 		setSelectedId(id)
 		setMessage(
-			'Select a wedge tile to place this piece, or drag it into position.',
+			keyboard
+				? 'Select a wedge tile to place this piece, or drag it into position.'
+				: 'Drag this piece to move it.',
 		)
 	}
 
@@ -310,18 +314,21 @@ export default function PuzzlePlay({
 		}
 		const occupied = pieceAt(cell)
 		// A piece already on the board has nowhere to move on top of another piece, so
-		// clicking that piece selects it. A piece from the tray still gets the overlap feedback.
+		// activating that piece selects it. A piece from the tray still gets the overlap feedback.
 		if (
+			keyboard &&
 			selectedId &&
 			!(occupied && placements[selectedId]) &&
-			occupied?.id !== selectedId &&
-			(keyboard || !currentPuzzle.rotationAllowed)
+			occupied?.id !== selectedId
 		)
 			placeAt(selectedId, cell)
-		else {
-			if (occupied) selectPiece(occupied.id)
-			else setMessage('Choose a piece from the tray first.')
-		}
+		else if (occupied) selectPiece(occupied.id, keyboard)
+		else
+			setMessage(
+				keyboard
+					? 'Choose a piece from the tray first.'
+					: 'Drag a piece from the tray onto the board.',
+			)
 	}
 
 	function startDrag(
@@ -580,14 +587,14 @@ export default function PuzzlePlay({
 		setMessage('Piece returned to the tray.')
 	}
 
-	function activateTrayPiece(id: string) {
+	function activateTrayPiece(id: string, keyboard: boolean) {
 		if (solved || placements[id]) return
 		if (suppressClickRef.current) {
 			suppressClickRef.current = false
 			return
 		}
 		lastTouchTapRef.current = null
-		selectPiece(id)
+		selectPiece(id, keyboard)
 		if (currentPuzzle.rotationAllowed) {
 			setRotations(previous => ({
 				...previous,
@@ -731,7 +738,9 @@ export default function PuzzlePlay({
 						: undefined
 				}
 				disabled={Boolean(placements[piece.id])}
-				onClick={() => activateTrayPiece(piece.id)}
+				onClick={event =>
+					activateTrayPiece(piece.id, event.detail === 0)
+				}
 				onPointerDown={event => {
 					const tileIndex =
 						event.target instanceof Element
