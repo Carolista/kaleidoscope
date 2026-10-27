@@ -19,7 +19,7 @@ export default function AccountPromptModal({
 	readonly onCreateAccount: () => void
 }) {
 	const titleId = useId()
-	const name = PUZZLE_SHAPE_LABELS[shape]
+	const shapeName = PUZZLE_SHAPE_LABELS[shape]
 	return (
 		<Modal
 			open={open}
@@ -43,8 +43,8 @@ export default function AccountPromptModal({
 						You&rsquo;ve finished every puzzle set open to guests.
 					</Heading>
 					<p className={styles.text}>
-						Create a free account to unlock {name}, with new puzzle
-						sets and a new shape to design with in Zen Mode.
+						Create a free account to unlock {shapeName}, with new
+						puzzle sets and a new shape to design with in Zen Mode.
 					</p>
 					<Button variant="primary" onClick={onCreateAccount}>
 						Sign in or create an account

@@ -1,5 +1,7 @@
-import { useId } from 'react'
 import { Button, Heading, Modal, ModalHeader } from '@/ui/components'
+import { faMagicWandSparkles } from '@fortawesome/pro-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { useId } from 'react'
 import styles from './RewardModal.module.css'
 
 // The last prize: finishing every core and bonus set earns Zen's randomizer.
@@ -32,21 +34,32 @@ export default function RandomizerUnlockedModal({
 			}
 		>
 			<div className={styles.content}>
-				<p className={styles.hooray}>You did it!</p>
+				<p className={styles.hooray}>Awesome job!</p>
 				<section className={styles.reward}>
 					<Heading level={3} className={styles.subheading}>
-						Every puzzle set, solved!
+						You're a Master Solver.
 					</Heading>
 					<p className={styles.text}>
-						You finished all 24 puzzle sets of 24 puzzles each. That
-						takes real dedication, and it deserves something
-						special.
+						You completed all <strong>24 core puzzle sets</strong> —
+						576 puzzles in total. That takes real dedication, and it
+						deserves something special!
 					</p>
 					<p className={styles.text}>
-						Your reward is the <strong>Randomizer</strong> in Zen
-						Mode: one tap creates a surprise design in your current
-						palette.
+						UNLOCKED
+						<br />
+						<strong>Zen Mode Randomizer</strong>
 					</p>
+					<p>
+						Generate stunning new designs instantly with the tap of
+						a button!
+					</p>
+					<p className={styles.text}>
+						Look for the sparkling magic wand:
+					</p>
+					<span className={styles.icon}>
+						<FontAwesomeIcon icon={faMagicWandSparkles} />
+					</span>
+
 					<Button variant="primary" onClick={onOpenZen}>
 						Try it out in Zen Mode now!
 					</Button>

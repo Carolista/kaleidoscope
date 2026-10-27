@@ -9,13 +9,11 @@ import {
 import { useAccount } from '@/features/account'
 import {
 	Button,
-	Checkbox,
 	DarkModeToggle,
 	Heading,
 	Modal,
 	ModalHeader,
 } from '@/ui/components'
-import { useTargetGridLines } from '@/ui/puzzle'
 import ChangeEmailForm from './ChangeEmailForm'
 import ChangePasswordForm from './ChangePasswordForm'
 import WhenProgressToImport from './WhenProgressToImport'
@@ -41,7 +39,6 @@ export default function SettingsDialog({
 	readonly showGameSettings?: boolean
 }) {
 	const liveAccount = useAccount()
-	const [targetGridLines, setTargetGridLines] = useTargetGridLines()
 	const titleId = useId()
 	const [editing, setEditing] = useState<Editing>(null)
 	const emailButtonRef = useRef<HTMLButtonElement>(null)
@@ -123,7 +120,7 @@ export default function SettingsDialog({
 							<p className={styles.greeting}>
 								{account.firstName
 									? `Hi, ${account.firstName}!`
-									: 'Hi there!'}
+									: 'Hello!'}
 							</p>
 							<Button
 								className={styles.withIcon}
@@ -278,11 +275,6 @@ export default function SettingsDialog({
 							Game settings
 						</Heading>
 						<DarkModeToggle />
-						<Checkbox
-							label="Show grid lines on puzzle targets"
-							checked={targetGridLines}
-							onChange={setTargetGridLines}
-						/>
 					</section>
 				)}
 			</div>

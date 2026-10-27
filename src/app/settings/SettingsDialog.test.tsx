@@ -1,11 +1,11 @@
-import { describe, expect, it, vi } from 'vitest'
-import { act, render, screen, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { AccountProvider } from '@/features/account'
 import { fakeClient, sessionFor } from '@/test/fakeAccountClient'
 import { TestZenStateProvider } from '@/test/TestZenStateProvider'
-import { PlayerProgressContext } from '@/ui/content/PlayerProgressContext'
 import type { GuestImport } from '@/ui/content'
+import { PlayerProgressContext } from '@/ui/content/PlayerProgressContext'
+import { act, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
 import SettingsDialog from './SettingsDialog'
 
 function renderSettings(
@@ -89,24 +89,6 @@ describe('SettingsDialog', () => {
 		expect(
 			screen.getByRole('button', { name: 'Switch to dark mode' }),
 		).toBeInTheDocument()
-	})
-
-	it('turns grid lines on puzzle targets on and off, and remembers it', async () => {
-		const user = userEvent.setup()
-		localStorage.removeItem('kaleidoscope:puzzle:targetGridLines')
-		renderSettings(fakeClient())
-		const checkbox = await screen.findByRole('checkbox', {
-			name: 'Show grid lines on puzzle targets',
-		})
-		expect(checkbox).toBeChecked()
-		await user.click(checkbox)
-		expect(checkbox).not.toBeChecked()
-		expect(
-			localStorage.getItem('kaleidoscope:puzzle:targetGridLines'),
-		).toBe('false')
-		await user.click(checkbox)
-		expect(checkbox).toBeChecked()
-		localStorage.removeItem('kaleidoscope:puzzle:targetGridLines')
 	})
 
 	it('greets a signed-in player, shows the email, and signs out', async () => {

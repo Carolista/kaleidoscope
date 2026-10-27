@@ -617,7 +617,7 @@ describe('PuzzleMode', () => {
 		const special = await screen.findByRole('dialog', {
 			name: 'A very special reward',
 		})
-		expect(special).toHaveTextContent('all 24 puzzle sets of 24 puzzles')
+		expect(special).toHaveTextContent('all 24 core puzzle sets')
 		await user.click(
 			screen.getByRole('button', { name: 'Try it out in Zen Mode now!' }),
 		)
