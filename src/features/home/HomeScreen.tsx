@@ -16,14 +16,14 @@ interface Area {
 const AREAS: readonly Area[] = [
 	{
 		id: 'puzzle',
-		title: 'Puzzle',
-		tagline: 'Engage your mind with clever geometric puzzles.',
+		title: 'Puzzle Mode',
+		tagline: 'Engage your mind with beautiful geometric puzzles.',
 		icon: faPuzzlePieceSimple,
 	},
 	{
 		id: 'zen',
-		title: 'Zen',
-		tagline: 'Relax and unwind with colorful creations.',
+		title: 'Zen Mode',
+		tagline: 'Relax and create colorful kaleidoscopes.',
 		icon: faSpa,
 	},
 ]
