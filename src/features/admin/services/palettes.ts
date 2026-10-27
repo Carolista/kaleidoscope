@@ -57,6 +57,12 @@ export type PaletteAction =
 			readonly palette: Palette
 	  }
 	| { readonly kind: 'delete'; readonly previous: CatalogPalette }
+	// Changes a scheduled or live palette; players see the new values at once.
+	| {
+			readonly kind: 'correct'
+			readonly previous: CatalogPalette
+			readonly palette: Palette
+	  }
 
 export async function managePalette(
 	client: SupabaseClient<Database>,
@@ -78,6 +84,23 @@ export async function managePalette(
 			p_expected_revision: action.previous.revision,
 		})
 		if (error) throw new Error(`Unable to delete palette: ${error.message}`)
+		if (data !== id)
+			throw new Error(
+				'The palette change was not confirmed. Refresh the catalog before retrying.',
+			)
+		return
+	}
+	if (action.kind === 'correct') {
+		const { data, error } = await client.rpc('correct_published_palette', {
+			p_id: id,
+			p_name: action.palette.name.trim(),
+			p_colors: [...action.palette.colors],
+			p_expected_name: action.previous.name,
+			p_expected_colors: [...action.previous.colors],
+			p_expected_revision: action.previous.revision,
+		})
+		if (error)
+			throw new Error(`Unable to correct palette: ${error.message}`)
 		if (data !== id)
 			throw new Error(
 				'The palette change was not confirmed. Refresh the catalog before retrying.',

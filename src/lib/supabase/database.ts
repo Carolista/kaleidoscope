@@ -811,6 +811,17 @@ export type Database = {
 				}
 				Returns: string[]
 			}
+			correct_published_palette: {
+				Args: {
+					p_colors: string[]
+					p_expected_colors: string[]
+					p_expected_name: string
+					p_expected_revision: number
+					p_id: string
+					p_name: string
+				}
+				Returns: string
+			}
 			delete_palette_draft: {
 				Args: {
 					p_expected_colors: string[]

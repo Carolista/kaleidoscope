@@ -953,6 +953,56 @@ describe('palette management', () => {
 		expect(mocks.manage).not.toHaveBeenCalled()
 	})
 
+	it('unlocks a live palette only after confirmation and saves it as a correction', async () => {
+		mocks.load.mockResolvedValue([
+			{
+				...samplePalette,
+				id: 'live',
+				name: 'Live art',
+				published_at: '2000-01-01',
+				release_at: '2000-01-01',
+			},
+		])
+		setup()
+		fireEvent.click(
+			await screen.findByRole('button', { name: 'View Live art' }),
+		)
+		fireEvent.click(screen.getByRole('button', { name: 'Unlock to edit' }))
+		fireEvent.click(
+			await screen.findByRole('button', { name: 'Keep read-only' }),
+		)
+		await waitFor(() =>
+			expect(screen.getByLabelText('Palette name')).toBeDisabled(),
+		)
+		fireEvent.click(screen.getByRole('button', { name: 'Unlock to edit' }))
+		fireEvent.click(
+			await screen.findByRole('button', { name: 'Unlock palette' }),
+		)
+		await waitFor(() =>
+			expect(screen.getByLabelText('Palette name')).toBeEnabled(),
+		)
+		expect(screen.getByRole('status')).toHaveTextContent(
+			'Editing a live palette.',
+		)
+		fireEvent.change(screen.getByLabelText('Color 1'), {
+			target: { value: '#123456' },
+		})
+		fireEvent.click(screen.getByRole('button', { name: 'Save correction' }))
+		expect(
+			await screen.findByText(/Corrected live palette "Live art"/),
+		).toBeInTheDocument()
+		expect(mocks.manage).toHaveBeenCalledWith(
+			expect.anything(),
+			expect.objectContaining({
+				kind: 'correct',
+				previous: expect.objectContaining({ id: 'live' }),
+				palette: expect.objectContaining({
+					colors: ['#123456', ...samplePalette.colors.slice(1)],
+				}),
+			}),
+		)
+	})
+
 	it('creates a palette with a retry-stable ID and reloads after a successful save', async () => {
 		const { isProtected } = setup()
 		await clickWhenEnabled('New palette')

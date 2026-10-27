@@ -210,10 +210,10 @@ the initial migration. Zen still uses its local array and is unchanged.
   is an unassigned draft (in no palette group and unreferenced). It confirms the
   names and deletes them in one all-or-nothing request; apply the
   [bulk palette deletion migration](#apply-bulk-palette-deletion) first.
-- Scheduled/live palettes are read-only here, but can be duplicated. Palettes are
+- Scheduled/live palettes open read-only and can be duplicated; an explicit unlock allows a
+  correction (see [Published palette corrections](#published-palette-corrections)). Palettes are
   released and returned to draft with the groups that use them (see
-  [Apply the release tools](#apply-the-release-tools)); exceptional published color
-  corrections are a separate later tool.
+  [Apply the release tools](#apply-the-release-tools)).
 
 Save returns to the palette library and refreshes it, along with the cached
 catalog used by puzzle authoring selectors and group previews; saved puzzle
@@ -258,6 +258,17 @@ validate names and exactly five ordered hex colors. The RPC never accepts releas
 metadata or a new revision from the client. It adds no player write permissions.
 The hosted migration and rollback-only assertions have been confirmed successful
 by the owner.
+
+## Published palette corrections
+
+Run [20261026020000_correct_published_palettes.sql](./migrations/20261026020000_correct_published_palettes.sql)
+once in the Dashboard SQL Editor, including its transaction. It adds `correct_published_palette`, the
+counterpart of `manage_palette_draft` for scheduled/live palettes only (drafts are rejected). It has caller
+RLS, an explicit admin check, READ COMMITTED isolation, and the shared catalog lock, and compares the loaded
+name, colors, and revision before updating; an identical retry confirms without incrementing `revision`
+again. The existing palettes trigger increments `revision` on a color change and records old/new colors,
+the revision, and the admin in `palette_corrections`; name-only changes are not logged. Release metadata
+still cannot change. Regenerate types after applying.
 
 ## Apply using the Dashboard
 

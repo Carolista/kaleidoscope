@@ -42,7 +42,7 @@ and signed-in players' solves are saved to the account (which opens Triangle and
 | --- | ------------------------------------------------------------- | -------------- |
 | A1  | Product and content rules                                     | ✅ mostly      |
 | A2  | Supabase foundation: schema, RLS, Auth, admin role, types     | ✅             |
-| A3  | Admin portal: everything needed for 2A content                | ✅ (daily groups and palette correction remain) |
+| A3  | Admin portal: everything needed for 2A content                | ✅ (daily groups remain) |
 | A4  | Player accounts, explicit guest import, offline/cloud sync    | ✅             |
 | A5  | Content access and puzzle-set progression in Puzzle and Zen   | ✅ (the fixed introductory sequence and server-side solution checking are deferred) |
 | A6  | Harden, verify, and launch Puzzle Mode                        | ⬜             |
@@ -147,7 +147,7 @@ Rules:
 5. ✅ **Shapes section** (first pass): a workbench to try grid sizes (n) and piece mixes per recipe with a
    playable sample, locked for shapes that already have puzzles; nothing is saved, and chosen values are copied
    into code. Still open: splitting piece mixes per recipe in code, and any stored shape settings.
-6. ⬜ **Exceptional palette correction** for live palettes, keeping the revision and audit history.
+6. ✅ **Exceptional palette correction** for live palettes: unlock with confirmation, edit name and colors, keeping the revision and audit history.
 7. ⬜ **End-to-end admin check** in the hosted project.
 
 Moved to 2B: daily puzzle scheduling (part of B4) and pricing and merchandising

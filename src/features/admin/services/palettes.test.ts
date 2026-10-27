@@ -172,6 +172,34 @@ describe('draft palette operations', () => {
 		},
 	)
 
+	it('corrects a published palette through its own verified operation', async () => {
+		const rpc = vi.fn().mockResolvedValue({ data: palette.id, error: null })
+		await managePalette(client({ rpc }), {
+			kind: 'correct',
+			previous: palette,
+			palette: { ...palette, name: ' Fixed ' },
+		})
+		expect(rpc).toHaveBeenCalledExactlyOnceWith(
+			'correct_published_palette',
+			{
+				p_id: palette.id,
+				p_name: 'Fixed',
+				p_colors: [...palette.colors],
+				p_expected_name: palette.name,
+				p_expected_colors: [...palette.colors],
+				p_expected_revision: 3,
+			},
+		)
+		rpc.mockResolvedValue({ data: 'other-id', error: null })
+		await expect(
+			managePalette(client({ rpc }), {
+				kind: 'correct',
+				previous: palette,
+				palette,
+			}),
+		).rejects.toThrow('not confirmed')
+	})
+
 	it('preserves the caller-provided create ID on retry', async () => {
 		const rpc = vi
 			.fn()

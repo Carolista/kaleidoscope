@@ -756,9 +756,13 @@ retry-stable ID; Duplicate copies only the selected palette's ordered colors, no
 its publication, references, or ownership.
 
 Draft palettes support name/color edits and confirmed deletion only when unused.
-Scheduled/live rows are read-only in this workspace, with duplication still
-available. Exceptional published-color correction and release controls remain
-separate future work. Recheck draft state and every dependency under the catalog
+Scheduled/live rows open read-only, with duplication still available.
+**Published palettes can be corrected, but only deliberately.** The editor offers "Unlock to edit",
+which asks for confirmation (changes reach players at once and are logged); once unlocked it shows a
+persistent warning banner and "Save correction", and locks again on leaving. A correction may change the
+name and colors, and goes through its own function, `correct_published_palette`, never the draft one. Color
+changes bump `revision` and are written to `palette_corrections` with the admin's ID; players read colors by
+palette ID, so nothing else needs republishing. Recheck draft state and every dependency under the catalog
 lock using invoker RLS/admin authorization; compare loaded name, ordered colors,
 and revision so name-only concurrent edits are also detected. Preserve inputs on
 errors/conflicts rather than silently overwriting changes. Delete palettes from the
