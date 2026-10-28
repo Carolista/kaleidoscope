@@ -47,12 +47,13 @@ function isLightPage() {
 // progress has opened (later shapes, earned bonus sets); a guest reads as a guest.
 const loadFromDatabase = (userId: string | null) =>
 	userId
-		? loadPlayerContent(getPlayerClient(), { account: true })
+		? loadPlayerContent(getPlayerClient(), { account: { userId } })
 		: loadPlayerContent(getGuestClient())
 
 // Resolved when used, so a build without Supabase only fails when an account is in play.
 const databaseProgress: AccountProgressApi = {
-	loadSolved: () => supabaseAccountProgress(getPlayerClient()).loadSolved(),
+	loadSolved: userId =>
+		supabaseAccountProgress(getPlayerClient()).loadSolved(userId),
 	record: ids => supabaseAccountProgress(getPlayerClient()).record(ids),
 }
 
@@ -110,7 +111,7 @@ export function PlayerContentProvider({
 		async (forUser: string | null): Promise<Loaded> => {
 			const [content, solved] = await Promise.all([
 				load(forUser),
-				forUser ? progress.loadSolved() : [],
+				forUser ? progress.loadSolved(forUser) : [],
 			])
 			cacheContent(content, forUser)
 			return { userId: forUser, content, solved }

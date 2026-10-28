@@ -34,6 +34,23 @@ describe('palette presentation', () => {
 		},
 	)
 
+	it('tags only the new palettes with NEW! and mentions it in their name', () => {
+		render(
+			<PaletteChoices
+				palettes={palettes}
+				onSelect={vi.fn()}
+				newIds={new Set(['second'])}
+			/>,
+		)
+		const [first, second] = screen.getAllByRole('button')
+		expect(within(first).queryByText('NEW!')).not.toBeInTheDocument()
+		expect(within(second).getByText('NEW!')).toBeInTheDocument()
+		expect(first).toHaveAccessibleName('Select the Same name color palette')
+		expect(second).toHaveAccessibleName(
+			'Select the Same name color palette (new)',
+		)
+	})
+
 	it('can disable individual choices while the rest stay selectable', async () => {
 		const user = userEvent.setup()
 		const onSelect = vi.fn()

@@ -26,9 +26,29 @@
 	pointer-events: none;
 }
 
+/* The opening fade has already played while content was loading, so the content
+   that arrives afterward fades in on its own instead of appearing all at once. */
+.arriving {
+	animation: arrive 1s ease-out both;
+}
+
+@keyframes arrive {
+	from {
+		opacity: 0;
+	}
+
+	to {
+		opacity: 1;
+	}
+}
+
 @media (prefers-reduced-motion: reduce) {
 	.page > :not(header) {
 		transition: none;
+	}
+
+	.arriving {
+		animation: none;
 	}
 }
 

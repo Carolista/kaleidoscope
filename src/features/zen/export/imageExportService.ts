@@ -1,5 +1,8 @@
 export interface ExportImageOptions {
 	readonly backgroundColor: string
+	// Leaves the background transparent, and clears cells painted with
+	// `backgroundColor` too, since they represent empty space.
+	readonly transparent?: boolean
 	readonly maxDimension?: number
 	readonly includeGridLines?: boolean
 }
@@ -21,6 +24,7 @@ export async function exportSvgAsPngBlob(
 	svg: SVGSVGElement,
 	{
 		backgroundColor,
+		transparent = false,
 		maxDimension = DEFAULT_MAX_DIMENSION,
 		includeGridLines = true,
 	}: ExportImageOptions,
@@ -30,7 +34,13 @@ export async function exportSvgAsPngBlob(
 	const width = Math.round(viewBoxWidth * scale)
 	const height = Math.round(viewBoxHeight * scale)
 
-	const clone = buildExportClone(svg, width, height, includeGridLines)
+	const clone = buildExportClone(
+		svg,
+		width,
+		height,
+		includeGridLines,
+		transparent ? backgroundColor : null,
+	)
 
 	const svgUrl = URL.createObjectURL(
 		new Blob([new XMLSerializer().serializeToString(clone)], {
@@ -45,8 +55,10 @@ export async function exportSvgAsPngBlob(
 		canvas.height = height
 		const ctx = canvas.getContext('2d')
 		if (!ctx) throw new Error('Canvas 2D context is unavailable')
-		ctx.fillStyle = backgroundColor
-		ctx.fillRect(0, 0, width, height)
+		if (!transparent) {
+			ctx.fillStyle = backgroundColor
+			ctx.fillRect(0, 0, width, height)
+		}
 		ctx.drawImage(image, 0, 0, width, height)
 		return await canvasToPngBlob(canvas)
 	} finally {
@@ -63,12 +75,14 @@ export function buildExportClone(
 	width: number,
 	height: number,
 	includeGridLines = true,
+	clearFill: string | null = null,
 ): SVGSVGElement {
 	const clone = svg.cloneNode(true) as SVGSVGElement
 	clone.setAttribute('width', String(width))
 	clone.setAttribute('height', String(height))
 	inlineCellStrokes(svg, clone, includeGridLines)
 	forceFullOpacity(clone)
+	if (clearFill) clearMatchingFills(clone, clearFill)
 	return clone
 }
 
@@ -81,6 +95,20 @@ export function buildExportClone(
 function forceFullOpacity(clonedSvg: SVGSVGElement) {
 	for (const cell of clonedSvg.querySelectorAll('polygon, circle')) {
 		;(cell as SVGElement).style.opacity = '1'
+	}
+}
+
+// Cells painted with the base color are negative space, so a transparent
+// export drops their fill (their outline still follows the grid-lines
+// setting).
+function clearMatchingFills(clonedSvg: SVGSVGElement, color: string) {
+	const target = color.toLowerCase()
+	for (const cell of clonedSvg.querySelectorAll<SVGElement>(
+		'polygon, circle',
+	)) {
+		if (cell.getAttribute('fill')?.toLowerCase() === target) {
+			cell.setAttribute('fill', 'none')
+		}
 	}
 }
 

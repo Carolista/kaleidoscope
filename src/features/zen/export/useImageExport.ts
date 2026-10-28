@@ -28,7 +28,7 @@ function canShareFiles(file: File): boolean {
 	)
 }
 
-type Variant = 'withLines' | 'withoutLines'
+type Variant = `${'withLines' | 'withoutLines'}-${'opaque' | 'transparent'}`
 
 interface ExportSession {
 	active: boolean
@@ -43,6 +43,7 @@ export function useImageExport(
 	open: boolean,
 	backgroundColor: string,
 	includeGridLines = true,
+	transparent = false,
 ): UseImageExportResult {
 	const [previews, setPreviews] = useState<
 		Partial<Record<Variant, ExportState>>
@@ -53,7 +54,9 @@ export function useImageExport(
 		setPreviews({})
 	}
 	const sessionRef = useRef<ExportSession | null>(null)
-	const variant = includeGridLines ? 'withLines' : 'withoutLines'
+	const variant: Variant = `${includeGridLines ? 'withLines' : 'withoutLines'}-${
+		transparent ? 'transparent' : 'opaque'
+	}`
 	const exportState: ExportState = open
 		? (previews[variant] ?? { status: 'generating' })
 		: { status: 'generating' }
@@ -92,6 +95,7 @@ export function useImageExport(
 
 		exportSvgAsPngBlob(session.svg, {
 			backgroundColor: session.backgroundColor,
+			transparent,
 			includeGridLines,
 		})
 			.then(blob => {
@@ -116,7 +120,7 @@ export function useImageExport(
 					}))
 				}
 			})
-	}, [open, includeGridLines, variant])
+	}, [open, includeGridLines, transparent, variant])
 
 	function handleDownload() {
 		if (exportState.status !== 'ready') return

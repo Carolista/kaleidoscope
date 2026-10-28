@@ -120,4 +120,36 @@ describe('buildExportClone', () => {
 			expect(cell).toHaveStyle({ opacity: '0.2' })
 		},
 	)
+
+	it.each(['polygon', 'circle'])(
+		'clears only base-colored %s fills when asked to, keeping strokes',
+		cellType => {
+			const svg =
+				cellType === 'polygon'
+					? buildSvgWithDimmedPolygon()
+					: buildSvgWithDimmedCircle()
+			const empty = svg.querySelector<SVGElement>(cellType)!
+			empty.setAttribute('fill', '#FFFFFF')
+			const painted = empty.cloneNode() as SVGElement
+			painted.setAttribute('fill', '#123456')
+			svg.appendChild(painted)
+
+			const [clearedCell, paintedCell] = buildExportClone(
+				svg,
+				100,
+				100,
+				true,
+				'#ffffff',
+			).querySelectorAll<SVGElement>(cellType)
+			expect(clearedCell).toHaveAttribute('fill', 'none')
+			expect(clearedCell).toHaveAttribute('stroke')
+			expect(paintedCell).toHaveAttribute('fill', '#123456')
+			expect(empty).toHaveAttribute('fill', '#FFFFFF')
+
+			const kept = buildExportClone(svg, 100, 100).querySelector(
+				cellType,
+			)!
+			expect(kept).toHaveAttribute('fill', '#FFFFFF')
+		},
+	)
 })

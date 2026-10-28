@@ -8,7 +8,7 @@ import {
 	HEXAGON_GRID_RADII,
 } from '@/domain/shapes/hexagon'
 import { ColorSwatches } from '@/features/zen/controls/palettes'
-import styles from './IntroSequence.module.css'
+import styles from './ZenIntro.module.css'
 
 // The intro uses the smallest hexagon: six tiles, with the center already base
 // color so the player fills the other five, one per palette color.
@@ -18,7 +18,7 @@ const CENTER_GROUP_ID = generateHexagonCells(INTRO_RADIUS).find(
 	cell => cell.q === 0 && cell.r === 0,
 )!.groupId
 
-interface IntroSequenceProps {
+interface ZenIntroProps {
 	readonly onContinue: () => void
 }
 
@@ -27,7 +27,7 @@ interface IntroDesign {
 	readonly groupColors: Readonly<Record<string, string>>
 }
 
-function IntroSequence({ onContinue }: IntroSequenceProps) {
+function ZenIntro({ onContinue }: ZenIntroProps) {
 	const { state } = useZenState()
 	const [design, setDesign] = useState<IntroDesign>({
 		selectedColor: null,
@@ -156,4 +156,4 @@ function IntroSequence({ onContinue }: IntroSequenceProps) {
 	)
 }
 
-export default IntroSequence
+export default ZenIntro

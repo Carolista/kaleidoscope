@@ -8,6 +8,7 @@ import {
 } from 'react'
 import type { AccountProgressApi } from './accountProgress'
 import type { PlayerContent } from './playerContent'
+import { NewChoicesProvider } from './NewChoicesProvider'
 import { PlayerContentContext } from './PlayerContentContext'
 import { PlayerProgressContext } from './PlayerProgressContext'
 import { PuzzleResumeProvider } from './PuzzleResumeProvider'
@@ -119,18 +120,20 @@ export function PlayerProgressProvider({
 	const queueRef = useRef<Promise<unknown>>(Promise.resolve())
 
 	// Sends everything pending, one request at a time. Resolves false when the server
-	// could not be reached, leaving the solves pending for a later try.
+	// could not be reached, leaving the solves pending for a later try. A solve the server
+	// skipped stays pending too, rather than being forgotten while still shown as solved.
 	const flush = useCallback((): Promise<boolean> => {
 		if (!userId || !api) return Promise.resolve(true)
 		const run = queueRef.current.then(async () => {
 			const ids = [...pendingRef.current]
 			if (!ids.length) return true
+			let recorded: string[]
 			try {
-				await api.record(ids)
+				recorded = await api.record(ids)
 			} catch {
 				return false
 			}
-			ids.forEach(id => pendingRef.current.delete(id))
+			recorded.forEach(id => pendingRef.current.delete(id))
 			setStore(previous =>
 				previous.userId === userId
 					? { ...previous, pending: new Set(pendingRef.current) }
@@ -329,14 +332,20 @@ export function PlayerProgressProvider({
 	return (
 		<PlayerProgressContext.Provider value={progress}>
 			<PlayerContentContext.Provider value={available}>
-				<PuzzleResumeProvider
+				<NewChoicesProvider
 					key={userId ?? 'guest'}
 					userId={userId}
 					content={available}
-					solved={solved}
 				>
-					{children}
-				</PuzzleResumeProvider>
+					<PuzzleResumeProvider
+						key={userId ?? 'guest'}
+						userId={userId}
+						content={available}
+						solved={solved}
+					>
+						{children}
+					</PuzzleResumeProvider>
+				</NewChoicesProvider>
 			</PlayerContentContext.Provider>
 		</PlayerProgressContext.Provider>
 	)

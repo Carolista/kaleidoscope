@@ -1,7 +1,12 @@
 import { useMemo } from 'react'
 import type { CSSProperties, PointerEvent, Ref } from 'react'
+import type { Point } from '@/domain/geometry'
 import type { AxialCoord } from '@/domain/shapes/hexagon'
-import { pointsToSvgAttr, polygonBoundingBox } from '@/domain/geometry'
+import {
+	enclosingCircle,
+	pointsToSvgAttr,
+	polygonBoundingBox,
+} from '@/domain/geometry'
 import { brightenAndSaturate } from '@/domain/palettes'
 import {
 	coordinateKey,
@@ -16,21 +21,24 @@ import type {
 	PuzzleShapeId,
 } from '@/domain/puzzles'
 import styles from './PuzzleBoard.module.css'
+import { tileSizes } from './tileSizes'
 
-// SVG units per tile: a hexagon's circumradius, a triangle's side (also used
-// by hexagram), a diamond-star or pinwheel lattice step, or an inner ring's
-// circle diameter.
-const tileSizes: Readonly<Record<PuzzleShapeId, number>> = {
-	hexagon: 16,
-	triangle: 28,
-	diamondStar: 48,
-	hexagram: 28,
-	circleRings: 30,
-	pinwheel: 22,
-}
+// Board units around a held piece kept for its shadow and lift.
+const HELD_SHADOW_ROOM = 16
 
 function cornersFor(shape: PuzzleShapeId, cell: PlacedCoord) {
 	return puzzleShapes[shape].corners(cell, tileSizes[shape])
+}
+
+// Where a piece's tiles sit when they are not on the board.
+function pieceCornersFor(shape: PuzzleShapeId, tile: AxialCoord) {
+	const { corners, pieceCorners } = puzzleShapes[shape]
+	return (pieceCorners ?? corners)(tile, tileSizes[shape])
+}
+
+function pieceCenterFor(shape: PuzzleShapeId, tile: AxialCoord) {
+	const { center, pieceCenter } = puzzleShapes[shape]
+	return (pieceCenter ?? center)(tile, tileSizes[shape])
 }
 
 function polygonPoints(shape: PuzzleShapeId, cell: PlacedCoord): string {
@@ -40,12 +48,29 @@ function polygonPoints(shape: PuzzleShapeId, cell: PlacedCoord): string {
 function viewBoxFor(
 	shape: PuzzleShapeId,
 	cells: readonly PlacedCoord[],
+	cornersOf: (
+		shape: PuzzleShapeId,
+		cell: PlacedCoord,
+	) => Point[] = cornersFor,
 ): string {
 	const { minX, minY, maxX, maxY } = polygonBoundingBox(
-		cells.map(cell => cornersFor(shape, cell)),
+		cells.map(cell => cornersOf(shape, cell)),
 	)
 	const padding = 3
 	return `${minX - padding} ${minY - padding} ${maxX - minX + padding * 2} ${maxY - minY + padding * 2}`
+}
+
+// A square view box of `side` board units centered on the circle that just
+// holds the piece, so the stage's circle for it holds the drawing too.
+function stageViewBox(
+	shape: PuzzleShapeId,
+	tiles: readonly AxialCoord[],
+	side: number,
+): string {
+	const { x, y } = enclosingCircle(
+		tiles.flatMap(tile => pieceCornersFor(shape, tile)),
+	)
+	return `${x - side / 2} ${y - side / 2} ${side} ${side}`
 }
 
 function pieceOutline(
@@ -77,20 +102,60 @@ export function PieceGraphic({
 	shape,
 	piece,
 	drag,
+	stage,
 }: {
 	readonly shape: PuzzleShapeId
 	readonly piece: PuzzlePiece
+	// Draws the piece centered in a circle of this pixel diameter, at this many
+	// pixels per board unit, instead of in a square slot at one pixel per unit.
+	readonly stage?: { readonly unit: number; readonly diameter: number }
 	readonly drag?: {
 		readonly x: number
 		readonly y: number
 		readonly offset: AxialCoord
 		readonly scale: number
+		// Draws the piece at its board position for this anchor, locked to the
+		// board's screen transform, instead of following the pointer.
+		readonly snap?: {
+			readonly anchor: AxialCoord
+			readonly board: Pick<DOMMatrix, 'a' | 'b' | 'c' | 'd' | 'e' | 'f'>
+		}
 	}
 }) {
-	const grabbed = drag
-		? puzzleShapes[shape].center(drag.offset, tileSizes[shape])
-		: null
-	const [minX, minY, width, height] = viewBoxFor(shape, piece.tiles)
+	const snap = drag?.snap
+	const tiles = snap ? pieceCells(piece, snap.anchor) : piece.tiles
+	const grabbedCell =
+		drag && snap
+			? {
+					q: snap.anchor.q + drag.offset.q,
+					r: snap.anchor.r + drag.offset.r,
+				}
+			: drag?.offset
+	const grabbed = !grabbedCell
+		? null
+		: snap
+			? puzzleShapes[shape].center(grabbedCell, tileSizes[shape])
+			: pieceCenterFor(shape, grabbedCell)
+	const screen =
+		drag && snap && grabbed
+			? {
+					x:
+						snap.board.a * grabbed.x +
+						snap.board.c * grabbed.y +
+						snap.board.e,
+					y:
+						snap.board.b * grabbed.x +
+						snap.board.d * grabbed.y +
+						snap.board.f,
+				}
+			: drag
+				? { x: drag.x, y: drag.y }
+				: null
+	const [minX, minY, width, height] = viewBoxFor(
+		shape,
+		piece.tiles,
+		pieceCornersFor,
+	)
 		.split(' ')
 		.map(Number)
 	// Reserve the largest rotated bounds so tray slots and tile scale stay fixed.
@@ -103,6 +168,7 @@ export function PieceGraphic({
 				const bounds = viewBoxFor(
 					shape,
 					piece.tiles.map(tile => rotateCoordinate(tile, rotation)),
+					pieceCornersFor,
 				)
 					.split(' ')
 					.map(Number)
@@ -110,29 +176,68 @@ export function PieceGraphic({
 			}),
 		),
 	)
-	const viewBox = `${minX + width / 2 - side / 2} ${minY + height / 2 - side / 2} ${side} ${side}`
+	const viewBox = stage
+		? stageViewBox(shape, piece.tiles, stage.diameter / stage.unit)
+		: `${minX + width / 2 - side / 2} ${minY + height / 2 - side / 2} ${side} ${side}`
+	// A held piece's box is sized to hold the whole piece and its shadow, centered
+	// on the grabbed tile. Relying on overflow outside a tiny box left the piece
+	// invisible in iOS Safari once a filter was applied.
+	const half =
+		drag && grabbed
+			? Math.max(
+					...tiles.flatMap(tile =>
+						(snap
+							? cornersFor(shape, tile)
+							: pieceCornersFor(shape, tile)
+						).map(point =>
+							Math.max(
+								Math.abs(point.x - grabbed.x),
+								Math.abs(point.y - grabbed.y),
+							),
+						),
+					),
+				) *
+					1.1 +
+				HELD_SHADOW_ROOM
+			: 0
 	return (
 		<svg
 			viewBox={
-				grabbed ? `${grabbed.x - 0.5} ${grabbed.y - 0.5} 1 1` : viewBox
+				grabbed
+					? `${grabbed.x - half} ${grabbed.y - half} ${2 * half} ${2 * half}`
+					: viewBox
 			}
-			className={drag ? styles.draggedPiece : undefined}
-			style={
+			className={
 				drag
-					? {
-							left: drag.x - drag.scale / 2,
-							top: drag.y - drag.scale / 2,
-							width: drag.scale,
-							height: drag.scale,
-						}
-					: { width: side, height: side }
+					? snap
+						? styles.draggedPiece
+						: `${styles.draggedPiece} ${styles.floatingPiece}`
+					: undefined
+			}
+			style={
+				drag && screen
+					? ({
+							left: screen.x - half * drag.scale,
+							top: screen.y - half * drag.scale,
+							width: 2 * half * drag.scale,
+							height: 2 * half * drag.scale,
+							// The shadow follows the board's scale: 4 tile units of lift.
+							'--lift': `${drag.scale * 4}px`,
+						} as CSSProperties)
+					: stage
+						? { width: stage.diameter, height: stage.diameter }
+						: { width: side, height: side }
 			}
 			aria-hidden="true"
 		>
-			{piece.tiles.map((tile, index) => (
+			{tiles.map((tile, index) => (
 				<polygon
 					key={coordinateKey(tile)}
-					points={polygonPoints(shape, tile)}
+					points={
+						snap
+							? polygonPoints(shape, tile)
+							: pointsToSvgAttr(pieceCornersFor(shape, tile))
+					}
 					fill={tile.color}
 					data-piece-tile={index}
 					className={styles.pieceTile}
@@ -151,10 +256,13 @@ interface PuzzleBoardProps {
 	// False drops the lines between cells, for small thumbnails.
 	readonly gridlines?: boolean
 	readonly solved?: boolean
+	// Fades the graphic, like a tray piece that is already on the board.
+	readonly dimmed?: boolean
 	readonly pieces?: readonly PuzzlePiece[]
 	readonly placements?: PuzzlePlacements
 	readonly selectedId?: string | null
 	readonly svgRef?: Ref<SVGSVGElement>
+	// `keyboard` is true for keys and for assistive-technology clicks (click detail 0).
 	readonly onActivate?: (cell: AxialCoord, keyboard: boolean) => void
 	readonly onReturn?: (cell: AxialCoord) => void
 	readonly onGrab?: (
@@ -171,6 +279,7 @@ export default function PuzzleBoard({
 	target = false,
 	gridlines = true,
 	solved = false,
+	dimmed = false,
 	pieces = [],
 	placements = {},
 	selectedId,
@@ -206,7 +315,9 @@ export default function PuzzleBoard({
 			ref={svgRef}
 			viewBox={viewBoxFor(shape, cells)}
 			className={styles.gridGraphic}
+			data-dimmed={dimmed || undefined}
 			role={target ? 'img' : 'group'}
+			data-puzzle-board={target ? undefined : ''}
 			aria-label={label ?? (target ? 'Target design' : 'Puzzle board')}
 		>
 			{cells.map(cell => {
@@ -273,7 +384,8 @@ export default function PuzzleBoard({
 						}
 						onClick={
 							interactive
-								? () => onActivate?.(cell, false)
+								? event =>
+										onActivate?.(cell, event.detail === 0)
 								: undefined
 						}
 						onDoubleClick={

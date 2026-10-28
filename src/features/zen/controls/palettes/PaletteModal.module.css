@@ -5,4 +5,7 @@
 .content {
 	display: flex;
 	justify-content: center;
+	/* Same accent outline as hover, one pixel thicker, without shifting layout. */
+	--palette-choice-selected-border: var(--accent);
+	--palette-choice-selected-extra-width: 1px;
 }

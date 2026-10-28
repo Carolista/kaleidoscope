@@ -19,7 +19,7 @@ Mode. The KALEID★SCOPE title returns Home from anywhere, and the header's Zen/
 The greeting is "Hi, Ada!" for a signed-in player (or "Welcome back!" without a first name) and "Welcome!" for a guest, with a link
 to sign in or create an account. The page frame (header and the logo's opening animation) appears immediately; the app loads
 what this player may use from Supabase (as a guest, or with their own session once it is known who is playing) in the meantime (see Player content below), and shows a loading message in
-place of the screens only if that is not done when the logo has moved up. Puzzle Mode lists the core puzzle sets and any bonus sets earned, then a set's
+place of the screens only if that is not done when the logo has moved up. Puzzle Mode lists the core puzzle sets and any bonus sets earned (each with its track label, a three-dot color cue, and progress), then a set's
 puzzles by difficulty, and plays one on the shared `PuzzlePlay` surface; a guest's solved puzzle IDs stay
 on the device, and a signed-in player's are saved to the account. Solving the last puzzle of a set that earns something opens a "Reward earned" dialog
 (see Player content). Its independent local React state survives mode switches but not reloads; it never
@@ -49,21 +49,30 @@ with favicon navigation at the left. Admin defaults to dark mode using the share
 neutral charcoal/white theme helper, without initializing player state.
 
 Admin navigation has peer sections: **Puzzles | Palettes | Shapes | Progression | Release**. Puzzles and
-Palettes each offer **Groups** (default) | items; items filter by **Unassigned**
-(default) | **Assigned** | **Scheduled** | **Published**. Everything stays a draft until
-released; the first tab names the unassigned stage. Assigned lists sort by group name, then group position
-([groupOrder](./src/features/admin/groups/groupOrder.ts)); puzzles without a group follow by name. The
-Scheduled and Published item views list what has been released (palettes with Edit/View as before; puzzles through
-[PreparedPuzzleLibrary](./src/features/admin/puzzles/PreparedPuzzleLibrary.tsx): scheduled puzzles open in
-the regular editor until their release, live ones in a read-only view). They carry no release buttons: items are
-released through their groups. Group lists filter by purpose (puzzle groups also by
-shape and track); puzzle items filter by shape and track, and the Assigned view by purpose and group. Palette items (except Drafts) filter by purpose and group; choosing a purpose narrows the group choices to it and hides "No group". Section/view changes use the
-navigation guard and reset lower choices to their defaults.
+Palettes each offer **Groups** (default) | **Individual**. Everything stays a draft until
+released. Individual lists show every item by default, with a **Show status** filter: **Unassigned** |
+**Assigned** | **Scheduled** | **Published**. They sort Unassigned, then Assigned (by group name, then group
+position, [groupOrder](./src/features/admin/groups/groupOrder.ts)), then Scheduled and Published by release time.
+Scheduled and Published items carry no checkbox, bulk actions, or release buttons: items are released through
+their groups. Palettes open with Edit/View; puzzles share one library
+([PuzzleDraftLibrary](./src/features/admin/puzzles/PuzzleDraftLibrary.tsx)) that reads both the draft and the
+prepared catalogs (loading only the ones the status needs): scheduled puzzles open in the regular editor until
+their release, live ones in a
+[read-only view](./src/features/admin/puzzles/PublishedPuzzleView.tsx). Palette group lists filter by status
+(Draft | Scheduled | Published) and purpose; puzzle group lists by purpose, shape, and track. Individual puzzles
+filter by shape and track; except under Unassigned, they also filter by purpose and group. Palettes (except
+Unassigned) filter by purpose and group; choosing a purpose narrows the group choices to it, and "No group" is
+hidden under Assigned or once a purpose is chosen. Section/view changes use the navigation guard and reset lower
+choices to their defaults; changing a filter does not.
+
+Every list heading shows the count of items listed below it ("X total", after filters; hidden while loading, on
+error, or in a detail view). Selection bars show "X selected" between Select all and the bulk icons once
+anything is checked ([AdminLayout](./src/features/admin/common/AdminLayout.tsx)).
 
 **Shapes** is a workbench for the grid sizes (n) and piece mixes behind both
 player modes ([ShapesWorkspace](./src/features/admin/shapes/ShapesWorkspace.tsx)). Each shape's card has a
 Grid sizes table (Size, n, Wedge, Total) and a Recipes table (Preview eye button, Difficulty (Size),
-Pieces, Distribution) above a centered, playable sample with Restart and Randomize buttons. A shape that
+Pieces, Distribution) above a playable sample on the stage layout, with Restart, a target grid lines toggle, and Randomize buttons. A shape that
 already has puzzles (drafts included, counted by `loadShapePuzzleCounts`) is locked and read-only. For
 other shapes n and each recipe's distribution can be edited to try values out: it checks that the pieces
 add up to the wedge, marks every changed value ("Changed", with the shipped value shown), and builds
@@ -230,10 +239,18 @@ Palette distribution and release tools are described under Release.
 In rotation-enabled playtests, click/tap a tray piece to rotate 60 degrees
 (180 for diamond star and pinwheel, whose tiles only realign after a half turn;
 triangle and hexagram tiles flip between pointing up and down);
-dragging moves it without rotating. Double-click/double-tap a board piece or drag
-it back to return it to the tray, preserving orientation. Keyboard: Enter/Space
-rotates/selects in tray, board activation places, Delete/Backspace on an occupied
-tile returns its piece. Rotation happens only in the tray. Containers stay square
+dragging moves it without rotating. Pointer and touch players place pieces only by
+dragging: tapping a tray piece or an empty tile does not place anything. Tapping a
+placed piece selects it, which shows its outline. Double-click/double-tap a board
+piece or drag it back to return it to the tray, preserving orientation. Keyboard and
+assistive technology (clicks with detail 0, such as screen-reader activation) can
+still place: Enter/Space rotates/selects in tray, board activation places, Delete/Backspace on an occupied
+tile returns its piece. A piece turns in the tray, or while held: the R key, a
+mouse right-click, or a tap from a second finger on touch (it turns about the
+grabbed tile and re-checks for an open spot). A held piece snaps to the nearest
+open spot within a very short reach and otherwise floats with a soft shadow;
+on touch it is held above the fingertip, by 60, 56, or 50 pixels on small,
+medium, and large boards. Containers stay square
 across all orientations, with one subtle selected/focus border and normal disabled
 cursor. Players get a short tutorial the first time they meet turning pieces (see Puzzle tutorials).
 
@@ -245,7 +262,8 @@ The modern app lives in [src/](./src). Leave the original
 ## Stack and commands
 
 React 19, TypeScript, Vite, CSS Modules, Vitest, React Testing Library/jsdom,
-ESLint, Prettier, Node/npm.
+ESLint, Prettier, Node 24 LTS/npm (version set in `.nvmrc`, which CI also reads;
+`engines` requires `>=24.22.1`).
 
 | Command | Purpose |
 | --- | --- |
@@ -308,8 +326,8 @@ The footer is one small line of copyright.
 [app/settings/](./src/app/settings/) holds `SettingsDialog` (hosted by `PlayerApp`, titled "Settings"). Signed in, it shows
 a greeting with Sign out, then User settings (the email as text, with "Change email" and "Change password" side by side; clicking
 either replaces both with its form, and Cancel or Save brings them back with focus returned), then Import progress
-(only while guest solves are waiting), then Game settings (the light/dark toggle, a labelled button; more settings will
-join it). A guest sees an Account section with "Sign in or create an account", which hands over to `AccountDialog`, then Game settings.
+(only while guest solves are waiting), then Game settings (the light/dark toggle, a labelled button, and "Show grid lines on
+puzzle targets", a checkbox; more settings will join them). A guest sees an Account section with "Sign in or create an account", which hands over to `AccountDialog`, then Game settings.
 While content is still loading, Game settings is left out. `CredentialForm` is the shared shell of the two forms. It lives under `app/` because features may not import each other.
 
 On each page load, the logo starts centered over the theme's base color.
@@ -327,8 +345,32 @@ the first puzzle of each difficulty with "x of 8" below it. A set opens to its p
 difficulty subheadings, four to a row, as borderless solved images (no grid lines) with a round
 check badge at the top right once solved. Choosing one plays it. On narrow screens the card's
 text sits top left and the three images wrap to the bottom right.
-Play places the goal image and equal-scale tray pieces in a compact row
-above the full-width board. Boards and pieces use the Zen look: empty tiles are
+After the open sets, a "Keep solving to unlock" heading lists the sets the player has not earned, in
+the same order (shape, core before bonus, basic before rotation). A locked card has the same layout, with the shape ("Triangle · Basic")
+and "(Bonus)" for bonus sets, and the lock icon and "Finish <set>" (or "Finish a Hexagon set" for a shape's core sets) in place of the count. Its images and
+track dots are greyscale and fade to color while the card is hovered, focused, or pressed (see Locked content). It is `aria-disabled`, not
+`disabled`, and its label says what unlocks it.
+Play lays the target, board, and tray pieces out as one **stage**
+([stageLayout.ts](./src/domain/puzzles/stageLayout.ts), `layout="stage"` on `PuzzlePlay`; see DECISIONS.md,
+"Puzzle stage layout"): the board is the biggest shape, the target sits in the upper left corner at 90% of
+the room kept for it, and each tray piece is a circle that holds it in every turn, drawn at 0.5 to 0.75
+of the board's own tile size and gathered toward the upper right, spread out as far as the room allows,
+so the pieces use the board's empty corners and notches. Narrower than 760px the stage grows upward
+(the target is at most 240px); from 760px it fits the screen's height with the target on the left and
+pieces on the right. The player's puzzle opts in with `wide`, so from 840px it grows past the 640px
+page column (up to 1100px, centered). Where nothing can be measured, or nothing fits, `PuzzlePlay`
+keeps its original layout, the goal image and tray in a compact row above the full-width board. The player's
+puzzle, the tutorials, the admin puzzle editors, and the Shapes workbench all use the stage; `pageRoom` sets the
+height the page needs around a wide stage (200px by default, 350px for the player, 500px for the tutorials).
+Pressing the target (a transparent button over it) shows it over the board at the board's size:
+it grows out of the thumbnail while fading in and shrinks back when pressed again, tapped, or
+Escape is pressed (`PeekOverlay`; picking up a piece or solving hides it, and reduced motion skips the
+animation). Once the puzzle is solved the reference is no longer needed: the target fades to match the tray's placed-piece ghosts (`PuzzleBoard`'s `dimmed`, opacity 0.45 plus grayscale) and its button is disabled. A grid icon among each screen's actions (Back, Next, Grid lines, Restart for players;
+beside Restart in admin playtests) and a Game settings checkbox turn the lines between the target's tiles
+off and on, on the target and the peek only: the board keeps its lines so empty tiles stay distinct. The
+choice is remembered per device in `kaleidoscope:puzzle:targetGridLines`, on by default
+([targetGridPreference.ts](./src/ui/puzzle/targetGridPreference.ts)).
+Boards and pieces use the Zen look: empty tiles are
 `var(--accent)` with a `var(--base)` stroke, only the wedge is at full opacity until
 solved, and each placed piece gets a single thicker `var(--base)` outline (the selected
 piece adds a thin solid accent line, drawn above the other outlines so shared edges stay visible; clicking
@@ -340,7 +382,8 @@ puzzle in the set; absent when none) is always present so the icons beside it ne
 disabled until the puzzle is solved and again once clicked.
 Opening a puzzle, or choosing Next, swipes it in: the target, tray, and board (not the
 icon row, which stays put) fly in from the right while the previous puzzle's painted copy flies off
-to the left over 560ms (`usePuzzleSwipe`, same inert-clone technique as Zen's grid swap; skipped for
+to the left over 700ms (`usePuzzleSwipe`, same inert-clone technique as Zen's grid swap; the copy resumes
+each CSS animation where the original was, so a finished "Congrats!" does not replay as it leaves; skipped for
 reduced motion; `body` hides horizontal overflow so the travel adds no scrollbar).
 The icon row sits 2rem below the board (the board graphic itself has no bottom margin).
 The reverse-rotate icon restarts the current puzzle and the left-from-bracket icon returns to the set. The icons under
@@ -355,7 +398,7 @@ replaces that set's puzzle grid. Both are a fixed small-hexagon puzzle (seed `in
 3, 2, and 1 tiles, five colors; rotation turns the two larger pieces) played on the shared
 `PuzzlePlay`, built from the track's tutorial palette (Mindfulness for basic, Stillness for
 rotation). Guidance sits just above the board and changes with progress (`PuzzlePlay`'s `onProgress`
-reports pieces placed and whether any is turned; `aboveBoard` is the slot). The slot reserves three
+reports pieces placed and whether any is turned; `aboveBoard` is the slot). The slot reserves four
 lines and shows **Continue** in the same place after the solve, under a **Congratulations!** heading.
 Completion is stored in `kaleidoscope:puzzle-intro` (`{ version: 1, seen: [...] }`) only on Continue,
 so an unfinished tutorial repeats on reload. A device that has already solved a puzzle in a track
@@ -407,7 +450,7 @@ changes should be applied to all four SVG assets.
   [main.tsx](./src/main.tsx) imports core CSS and disables automatic CSS injection.
   No Kit script or Kit dependency.
 - Self-hosted fonts: Righteous 400 (player header, mode button, headings and modal titles); Mr Dafoe 400
-  (intro Welcome/Congratulations headings; the Puzzle Mode solve "Congrats!"); Urbanist 200, 400, 400 italic, and 700
+  (intro Welcome/Congratulations headings; the Puzzle Mode solve "Congrats!"); Urbanist 200, 400, 400 italic, 600, and 800
   (body text and default bold headings).
 - Text case: `toTitleCase` in [ui/text/](./src/ui/text/) (AP-style: articles, conjunctions, and prepositions of three letters
   or fewer stay lowercase unless first or after a colon; "in"/"out" stay capitalized after "sign"/"log"; words with their own capitals are
@@ -430,11 +473,19 @@ changes should be applied to all four SVG assets.
 - [PaletteStrip](./src/ui/components/PaletteStrip.tsx) owns decorative ordered
   colors: square swatches for choices, continuous strips for catalog/group previews.
   [PaletteChoices](./src/ui/components/PaletteChoices.tsx) owns controlled,
-  labelled palette buttons keyed/selected by ID, with optional visible names.
+  labelled palette buttons keyed/selected by ID, with optional visible names and an
+  optional `newIds` set that adds a "NEW!" tag (and "(new)" to the button's name).
+  The selected choice's border color and extra ring width come from the
+  `--palette-choice-selected-border` / `--palette-choice-selected-extra-width`
+  variables; Zen's palette modal sets them to the accent and 1px, so the current
+  palette shows the hover outline, one pixel thicker, as soon as the picker opens.
   Player PalettePicker adapts its local name-based catalog and applies/closes
   immediately; admin owns catalog IDs and bulk selection still requires Apply.
   Keep duplicate colors in their original slots. Interactive painting color
-  buttons remain the separate ColorSwatches component.
+  buttons remain the separate ColorSwatches component. An optional `locked` list (choices with a
+  `requirement`) adds a "Keep solving to unlock" heading and unselectable rows after the rest: a greyscale
+  strip with a lock hanging just outside the row, so nothing is covered or resized, the same label and title with
+  the requirement, and `aria-disabled` so it still takes pointer events and focus.
 - [AdminLayout](./src/features/admin/common/AdminLayout.tsx) supplies section
   headings/actions, feedback, gallery framing, and ordered member rows. Puzzle,
   palette, and landscape-group cards retain their domain content/layouts; don't
@@ -519,14 +570,14 @@ Test files and `src/test/` are exempt so tests can reach internals and mock exac
 | [features/puzzle/](./src/features/puzzle/) | Player Puzzle Mode: set list, difficulty grid of solved images, play session with the Congrats overlay and Next, the first-use tutorials (`intro/`), the announcement dialogs (`RewardModal`, `ShapeUnlockedModal`, `AccountPromptModal`, `SignInNudgeModal`), and the device's completed-tutorial record (`introProgress.ts`) and one-time prompt flags (`accountPrompt.ts`) |
 | [features/admin/](./src/features/admin/) | Lazy-loaded admin portal. `shell/` (portal, workspace, navigation), `catalog/` (session cache), `common/` (layout, icon button, form), `groups/` (shared group editing), one folder per content area (`puzzles/`, `puzzle-groups/`, `palettes/`, `palette-groups/`), `services/` (Supabase reads/writes), `testing/` |
 | [ui/components/](./src/ui/components/) | Shared controls: buttons, `Heading`, `DarkModeToggle` (a labelled button), `ui/text` (`toTitleCase`, `TextCaseContext`), palette-tinted `Checkbox`, native `Modal`, `ModalHeader`, `ConfirmDialog` and its dismissal preferences, form fields, loading, palette strips/choices |
-| [ui/content/](./src/ui/content/) | Player content: `loadPlayerContent` (released core palettes, core and bonus puzzle sets, rewards, shape order, an account's unlocked shapes), `PlayerContentProvider` (loads before the app starts, for the guest or the signed-in player), `PlayerProgressProvider` (the player's solved puzzles on the device or account, `usePlayerProgress` with `markSolved` and `guestImport`, and `usePlayerContent` over what has been earned, via `rewards.ts`), `accountProgress.ts` (reads and records an account's solves), `solvedPuzzles.ts` (the guest save, the per-account cache with pending solves, and the import decision), and the offline content cache, and `PuzzleResumeProvider` / `puzzleResume.ts` (per-device unfinished puzzles) |
+| [ui/content/](./src/ui/content/) | Player content: `loadPlayerContent` (released core palettes, core and bonus puzzle sets, rewards, shape order, an account's unlocked shapes), `PlayerContentProvider` (loads before the app starts, for the guest or the signed-in player), `PlayerProgressProvider` (the player's solved puzzles on the device or account, `usePlayerProgress` with `markSolved` and `guestImport`, and `usePlayerContent` over what has been earned, via `rewards.ts`), `accountProgress.ts` (reads and records an account's solves), `solvedPuzzles.ts` (the guest save, the per-account cache with pending solves, and the import decision), and the offline content cache, `NewChoicesProvider` / `newChoices.ts` (which palettes and shapes the player has seen), and `PuzzleResumeProvider` / `puzzleResume.ts` (per-device unfinished puzzles) |
 | [ui/theme/](./src/ui/theme/) | `PlayerThemeContext` (dark mode, active palette, toggle), `useDuotoneIconTint`, and `DuotoneTintColorContext` (lets a mode, such as a puzzle session, tint icons from its own color) |
-| [ui/hooks/](./src/ui/hooks/) | `useModalState`, `useIsTouchDevice` |
+| [ui/hooks/](./src/ui/hooks/) | `useModalState`, `useIsTouchDevice`, `usePressPreview` (the `data-previewing` state for a finger or pen held on locked content) |
 | [ui/navigation/](./src/ui/navigation/) | App-wide unsaved-work navigation guard |
-| [ui/puzzle/](./src/ui/puzzle/) | Shared `PuzzlePlay` (target, tray, board, optional `celebration` text, `onProgress`, `aboveBoard` slot, pointer/keyboard interaction) and shape-neutral `PuzzleBoard` |
+| [ui/puzzle/](./src/ui/puzzle/) | Shared `PuzzlePlay` (target, tray, board, optional `celebration` text, `onProgress`, `aboveBoard` slot, `layout` of `'tray'` or `'stage'`, `wide`, pointer/keyboard interaction) and shape-neutral `PuzzleBoard`; `useStageLayout` (measures, packs after paint once near the screen, caches layouts, reserves height), `PeekOverlay` (the target growing over the board), and `targetGridPreference.ts` (`useTargetGridLines`, `useTargetGridToggle`) |
 | [domain/shapes/](./src/domain/shapes/) | React-free shape catalog, sizes, registry, and one folder per shape (grid, layout, types). The catalog's `supportedGridShapes` order is the single shape order (unlock order, Circle Rings last); `PUZZLE_SHAPE_IDS`, `PUZZLE_SHAPE_LABELS`, and every shape menu derive from it |
-| [domain/geometry/](./src/domain/geometry/) | `Point`, shared geometry math, symmetry engine, cell grouping, SVG points |
-| [domain/puzzles/](./src/domain/puzzles/) | Pure seeded puzzle generation, authoring, stored-definition readers (`readAuthoredPuzzle` for admins, `readPlayablePuzzle` for players, which never sees seeds or solutions), placement validation, and completion; per-shape adapters in `puzzleShapes.ts` |
+| [domain/geometry/](./src/domain/geometry/) | `Point`, shared geometry math (including `enclosingCircle`), symmetry engine, cell grouping, SVG points, and the occupancy grid (`pointInPolygon`, covered cells, exact distance to them) |
+| [domain/puzzles/](./src/domain/puzzles/) | Pure seeded puzzle generation, authoring, stored-definition readers (`readAuthoredPuzzle` for admins, `readPlayablePuzzle` for players, which never sees seeds or solutions), placement validation (`unplaceableTiles`), magnet snapping for held pieces (`puzzleSnap.ts`), the stage packer (`stageLayout.ts`: `packPuzzleStage` places the board, target, and piece circles), and completion; per-shape adapters in `puzzleShapes.ts` |
 | [domain/palettes/](./src/domain/palettes/) | Palette types (`Palette`, `PlayerPalette` with an ID), color math, light/dark theme colors, tutorial palette IDs (`introPalettes.ts`); no bundled palette list |
 | [lib/supabase/](./src/lib/supabase/) | Supabase browser clients (`getSupabaseClient` for the admin's session, `getGuestClient` for content reads, with no stored session, `getPlayerClient` for the signed-in player under its own storage key with PKCE) and generated database types |
 | [test/](./src/test/) | Vitest setup, shared render/interaction helpers, and `playerContent.ts` (sample palettes and content for tests) |
@@ -566,6 +617,9 @@ in [loadPlayerContent](./src/ui/content/loadPlayerContent.ts):
 - **unlocked shapes:** only the first shape in `shape_progression` for guests (a Zen design on a locked shape
   starts fresh). For an account, the first shape, any `shape_grants`, and each shape after one whose core group the account has completed
   (its own `group_completions`), which mirrors the database's `has_shape`;
+- **preview sets:** released core and bonus groups the player cannot read yet (every later shape, and the bonus sets of an account that has not been granted them), kept apart in `previewSets`
+  with only the puzzles `locked_set_previews()` returns (the first of each difficulty, the three a card shows). They are never played or counted toward completion;
+  rewards of preview sets are kept so locked palettes and sets can say what unlocks them. A failure loading them is logged and the load continues without them;
 - **next shape:** the first shape in the order still locked (`nextShape`), which names what a guest is invited to unlock.
 The load is network first. A success is cached in `kaleidoscope:content` (an account's in `kaleidoscope:content:<userId>`, never shared with a guest's); if the network fails the last cache for that player is
 used, and with no cache the player sees the error with Try again. With no released palettes it shows "Nothing has been
@@ -573,11 +627,18 @@ released yet" with Check again, since Zen needs a palette. The catalog does not 
 Until content is ready the provider shows its `gate`: `AppEntry` supplies the app's own frame (`PlayerApp` with a `gate`, under
 `ProvisionalTheme`), so the loading, error, and nothing-released messages (`ContentGateView`) appear in the page's main area
 under the opening logo; with no `gate` they take a page of their own. The real app replaces the frame once content is ready and
-continues the opening animation from where it was (`entranceHandoff`; the star joins its spin part-way).
+continues the opening animation from where it was (`entranceHandoff`; the star joins its spin part-way, and a title still moving into the header carries on from its place in the move). Content that arrives once the title has settled fades in over a second (`arriving` on `main`); otherwise the opening's own fade brings it in.
 A guest's solved puzzles are stored on the device as `{ version: 1, solved: [puzzle IDs] }` in `kaleidoscope:puzzle-progress`
 and are never merged into an account automatically (see Account progress below). The cache format is version 3 (it gained `rewards`, then `shapeOrder`; older caches
-are ignored). For an account the load also asks the database for the next tier of free puzzles (`preview_puzzles()`: bonus sets of shapes the player has, and the core and bonus sets of the one shape after them), so
+are ignored; `previewSets` defaults to empty for a cache saved without it). For an account the load also asks the database for the next tier of free puzzles (`preview_puzzles()`: bonus sets of shapes the player has, and the core and bonus sets of the one shape after them), so
 that a set finished offline can open them; a failure there is logged and the load continues without them.
+
+**Locked content.** `availableContent` also fills `lockedPalettes` and `lockedPuzzleSets` (each a `Locked<T>`: the item and `unlockedBy`, the
+name of what unlocks it) from what is loaded but not earned: reward palettes of sets not yet complete, bonus sets (unlocked by the set that rewards them),
+and core sets of shapes not yet open (unlocked by "a <previous shape> set", since either core set opens the next shape). Raw loaded content leaves both lists empty.
+Zen's palette picker and the Puzzle Sets list show them after the earned items. Only earnable content is shown: pack and daily groups are never loaded for this.
+Preview is a press-and-hold: `@media (hover: hover)` handles the mouse, and `usePressPreview` sets `data-previewing` for touch and pen
+on pointer down, ending on release, cancel (a scroll starting), or leaving, and blocks the long-press context menu.
 
 **Earned content.** [PlayerProgressProvider](./src/ui/content/PlayerProgressProvider.tsx) keeps the solved puzzles and
 gives every mode the same `usePlayerContent()`: [availableContent](./src/ui/content/rewards.ts) keeps all core sets and
@@ -586,7 +647,7 @@ completed open set grants its reward, repeating so a bonus set can award more. N
 and a reward palette already in the core list is not added twice. Reward palettes follow the core ones in Zen's picker.
 `markSolved` returns what the solve newly earned (`newRewards`), and Puzzle Mode shows it in
 [RewardModal](./src/features/puzzle/RewardModal.tsx): "Reward earned" and "Hooray!" (Mr Dafoe), then the new palettes
-(a color strip and name, with "Try it out in Zen Mode now", which switches mode) and/or the new bonus sets (the first
+(a color strip and name, with "Try it out in Zen Mode now", which switches mode and opens Zen's palette picker) and/or the new bonus sets (the first
 puzzle image of each difficulty and the name, with "Go to puzzle set now", which opens that set; Next puzzle then continues inside that set).
 `markSolved` is async and its result also carries `shapes` and `accountShape`. For an account, the content and shapes it uses include what the player's own solves have opened (see Offline unlocks below).
 
@@ -602,13 +663,15 @@ puzzle image of each difficulty and the name, with "Go to puzzle set now", which
 5. **Playing as a guest** ([SignInNudgeModal](./src/features/puzzle/SignInNudgeModal.tsx)), once per browser session (`kaleidoscope:sign-in-nudge` in `sessionStorage`), for a guest on a device that has had an account
    (`returningGuest`): "Please sign in to continue saving your progress." Skipped when the account prompt is shown, and after signing out on purpose in that session.
 The set preview shared by these dialogs is [UnlockedSetItem](./src/features/puzzle/UnlockedSetItem.tsx).
+When the solve finished a set (`completesSet`, for a puzzle not solved before), the announcement is marked `returnToSets`: closing its first dialog, or following a Zen link, clears the open set and puzzle so Puzzle Mode shows the
+set list (also on return from Zen, since it stays mounted). The mark clears on that first close, so a set chosen from a later dialog stays open. A finished set with nothing to announce leaves the player on the solved puzzle.
 
 **Account progress.** For a signed-in player, `PlayerProgressProvider` takes its solved set from the server (`puzzle_completions`, read through
 [accountProgress.ts](./src/ui/content/accountProgress.ts)) and sends each solve to `record_puzzle_completions` (see supabase/README.md, "Apply player progress"), which records
 it and everything it earns, including opening the next shape. The account's progress and unconfirmed solves are cached in `kaleidoscope:puzzle-progress:<userId>`
-(`{ solved, pending }`), separate from the guest save. A solve that cannot reach the server stays pending and is sent on the next load or when the browser goes back online. A solve that does not finish a set
+(`{ solved, pending }`), separate from the guest save. A solve that cannot reach the server stays pending and is sent on the next load or when the browser goes back online; so does a solve the server answered but did not record (it skips puzzles the player may not play), since only the ids `record` returns leave the pending list. Every progress read names the player (`.eq('user_id', …)`), because an admin's session reads every account's rows under the `admin_crud` policies. A solve that does not finish a set
 is sent in the background; one that does waits for the server, then reloads the content, so the dialogs above can report what it opened. Server solves are merged in, never removed, so something
-solved on another device appears and a solve the server declined is still shown locally. `PlayerProgressProvider` also refreshes (sends anything pending, reloads, merges the server's solves) when the browser comes back online
+solved on another device appears and a solve the server declined is still shown locally (and stays pending, so it is retried). `PlayerProgressProvider` also refreshes (sends anything pending, reloads, merges the server's solves) when the browser comes back online
 and when the tab becomes visible again, at most every 30 seconds, so a device left open picks up another device's solves. There are no conflict prompts: solves only accumulate, and in-progress puzzle state is per-device (see DECISIONS, "Only results sync
 between devices"). Another device's rewards appear without a dialog. Deferred: server-side solution checking.
 
@@ -616,6 +679,8 @@ between devices"). Another device's rewards appear without a dialog. Deferred: s
 complete (the same rule as the database's `has_shape`, applied again until nothing changes), the core sets of open shapes are the open sets, and the randomizer is earned locally once every shape is open, each has at least four sets, and
 all are solved. A guest never opens a shape. `markSolved` for an account compares what was available before and after the solve, so a set finished offline still announces its rewards, new shape, and randomizer; it only waits for the server
 when it can reach it. The pending solves are sent together when the connection returns, and `record_puzzle_completions` repeats until nothing changes, so the database confirms the same unlocks in any order. `PlayerContent.shapeOrder` holds the unlock order that this needs.
+
+**New-choice dots.** [NewChoicesProvider](./src/ui/content/NewChoicesProvider.tsx) (mounted inside `PlayerProgressProvider`, keyed by player) tracks which palettes and shapes the player has already seen in Zen's pickers, in `kaleidoscope:seen-choices:<userId | guest>` ([newChoices.ts](./src/ui/content/newChoices.ts)); it is per device. `useNewChoices()` gives `newPalettes`, `newShapes`, and `markPalettesSeen` / `markShapesSeen`. A player with no record starts with everything they currently have counted as seen, so only what is earned or released afterward is new. Zen's palette and shape buttons show a dot (`IconButton`'s `badge`) and add "new ... available" to their label until the picker is opened. `newPaletteIds` names the unseen palettes: `PaletteButton` keeps them when the picker opens (which marks everything seen) and the picker tags them "NEW!" while it is open, so the tags are gone the next time. The palette reward's Zen link calls `onOpenZen('palette')`; `PlayerApp` passes `openPalette` to `ZenMode` for that visit only, and `PaletteButton`'s `initialOpen` opens the picker on arrival (skipped on a first Zen visit, where the controls info opens instead).
 
 **Puzzle resume.** [PuzzleResumeProvider](./src/ui/content/PuzzleResumeProvider.tsx) (mounted inside `PlayerProgressProvider`, keyed by player) keeps one attempt per unfinished puzzle, `{ setId, placements, rotations }`, in
 `kaleidoscope:puzzle-resume:<userId | guest>` ([puzzleResume.ts](./src/ui/content/puzzleResume.ts)); it is per device and never sent to the account. `usePuzzleResume()` gives `target` (the most recently played unfinished puzzle that is still open and unsolved),

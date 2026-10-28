@@ -22,7 +22,13 @@ import { useNavigationGuard, useUnsavedDraft } from '@/ui/navigation'
 import { DraftRecoveryNotice, useDraftRecovery } from '@/features/admin/drafts'
 import styles from './PaletteEditor.module.css'
 import { releaseState } from './releaseState'
-import { Button, FormField, Input, Loading } from '@/ui/components'
+import {
+	Button,
+	ConfirmDialog,
+	FormField,
+	Input,
+	Loading,
+} from '@/ui/components'
 
 const fallbackError = 'Unable to manage palettes.'
 
@@ -71,7 +77,11 @@ export default function PaletteEditor({
 	const [usage, setUsage] = useState<PaletteUsage | null>(null)
 	const [usageError, setUsageError] = useState('')
 	const [usageLoading, setUsageLoading] = useState(!!initial)
-	const readOnly = !!initial?.published_at || !!initial?.release_at
+	const published = !!initial?.published_at || !!initial?.release_at
+	// Corrections to scheduled or live palettes need a deliberate unlock.
+	const [unlocked, setUnlocked] = useState(false)
+	const [confirmingUnlock, setConfirmingUnlock] = useState(false)
+	const readOnly = published && !unlocked
 	const dirty =
 		!readOnly &&
 		(name !== (initial?.name ?? '') ||
@@ -124,7 +134,7 @@ export default function PaletteEditor({
 			const palette = { name: name.trim(), colors: validColors }
 			if (initial) {
 				await managePalette(client, {
-					kind: 'update',
+					kind: published ? 'correct' : 'update',
 					previous: initial,
 					palette,
 				})
@@ -144,6 +154,12 @@ export default function PaletteEditor({
 					})
 			}
 			recovery.discard()
+			if (initial && published) {
+				onSaved(
+					`Corrected ${releaseState(initial).toLowerCase()} palette "${palette.name}". Players see the new colors right away.`,
+				)
+				return
+			}
 			onSaved(
 				`Saved "${palette.name}" as a draft palette${!initial && targetGroup ? ` in "${targetGroup.name}"` : ''}.`,
 			)
@@ -166,6 +182,17 @@ export default function PaletteEditor({
 			)}
 			{readOnly && (
 				<p>{initial && releaseState(initial)} palette (read-only).</p>
+			)}
+			{published && unlocked && (
+				<p className={styles.liveWarning} role="status">
+					<strong>
+						Editing a{' '}
+						{initial && releaseState(initial).toLowerCase()}{' '}
+						palette.
+					</strong>{' '}
+					Saved changes reach players immediately and are logged as a
+					correction.
+				</p>
 			)}
 			{!readOnly && (
 				<DraftRecoveryNotice
@@ -202,6 +229,14 @@ export default function PaletteEditor({
 							>
 								{readOnly ? 'Back' : 'Cancel'}
 							</Button>
+							{readOnly && (
+								<Button
+									disabled={busy}
+									onClick={() => setConfirmingUnlock(true)}
+								>
+									Unlock to edit
+								</Button>
+							)}
 							{!readOnly && (
 								<Button
 									type="submit"
@@ -213,7 +248,7 @@ export default function PaletteEditor({
 										(!!initial && !dirty)
 									}
 								>
-									Save
+									{published ? 'Save correction' : 'Save'}
 								</Button>
 							)}
 						</div>
@@ -285,6 +320,21 @@ export default function PaletteEditor({
 				</AdminForm>
 				<PaletteSandbox colors={validColors} />
 			</div>
+			{initial && published && (
+				<ConfirmDialog
+					open={confirmingUnlock}
+					title="Edit a published palette?"
+					closeLabel="Close unlock confirmation"
+					message={`"${initial.name}" is ${releaseState(initial).toLowerCase()}. Changes you save are visible to players immediately and recorded as a correction.`}
+					confirmLabel="Unlock palette"
+					cancelLabel="Keep read-only"
+					onConfirm={() => {
+						setUnlocked(true)
+						setConfirmingUnlock(false)
+					}}
+					onCancel={() => setConfirmingUnlock(false)}
+				/>
+			)}
 			{initial && (
 				<section aria-label="Palette usage">
 					<AdminSectionHeading

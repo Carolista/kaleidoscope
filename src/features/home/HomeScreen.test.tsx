@@ -16,13 +16,13 @@ describe('HomeScreen', () => {
 	it('offers Puzzle then Zen, each with its tagline', async () => {
 		const user = userEvent.setup()
 		const { onOpenPuzzle, onOpenZen } = renderHome()
-		const puzzle = screen.getByRole('button', { name: 'Puzzle' })
-		const zen = screen.getByRole('button', { name: 'Zen' })
+		const puzzle = screen.getByRole('button', { name: 'Puzzle Mode' })
+		const zen = screen.getByRole('button', { name: 'Zen Mode' })
 		expect(puzzle).toHaveAccessibleDescription(
-			'Engage your mind with clever geometric puzzles.',
+			'Engage your mind with beautiful geometric puzzles.',
 		)
 		expect(zen).toHaveAccessibleDescription(
-			'Relax and unwind with colorful creations.',
+			'Relax and create colorful kaleidoscopes.',
 		)
 		expect(
 			puzzle.compareDocumentPosition(zen) &

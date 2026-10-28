@@ -105,12 +105,38 @@ the rules about generation, shared play, and keeping puzzle state out of Zen sti
   `PuzzlePlay` and neither side needs a preview flag.
 - Accept any non-overlapping placement inside the wedge. Match the completed
   colors to determine success, then remove interaction and piece/wedge outlines.
-- Render the dragged piece at board scale with the grabbed tile centered on the
-  pointer, not as an offset translucent copy or snapped preview. Muted mirrored
+- Render the dragged piece at board scale. Over a wedge tile where every tile of
+  the piece fits, it snaps to that exact board position (the pull reaches only
+  `SNAP_REACH`, 0.02 of a tile, beyond a tile's own area, in
+  `puzzleSnap.ts`), so what shows is what lands. It never snaps onto an occupied
+  spot. With no open spot in reach it floats under the pointer, slightly enlarged
+  and casting a soft shadow that clears, with a scale and shadow transition,
+  when it settles. A color or opacity cue was tried and dropped because it
+  depends on the palette (a faded color can look like another palette color);
+  a blur or frosted-glass cue was considered and not built, since the
+  snap-or-float state already says whether a spot works. A placed piece lifted
+  off the board leaves its spot empty until it lands again. Muted mirrored
   tiles reveal full color on completion; placed tray entries are disabled and
   desaturated until returned.
+- Held pieces turn while held on rotation puzzles, about the grabbed tile and
+  re-checking for an open spot after each turn: the R key (not with Ctrl, Cmd, or
+  Alt), right-click for a mouse only (a trackpad two-finger tap would lift the
+  held finger), or a tap from a second finger on touch. The turn is kept where the
+  piece lands or when a tray piece is dropped in the air, and discarded when a
+  piece lifted from the board is dropped nowhere valid, so it never ends up
+  half-turned.
+- On touch the held piece is drawn above the fingertip so the finger does not
+  cover it, and the piece, not the finger, decides where it snaps, lands, or
+  drops into the tray. The clearance is 60/56/50 CSS pixels for small, medium,
+  and large boards (`TOUCH_HOLD_OFFSETS`), tuned by hand on a phone because
+  larger boards have smaller pieces. It flips below the finger near the top of
+  the screen. The held piece's box is sized to hold the whole piece and its
+  shadow; an earlier tiny box with overflowing content went invisible in iOS
+  Safari once the shadow filter was applied.
 - Keep the goal image and uniformly scaled tray pieces together above the
-  full-width board, without visible instructions or piece labels. Celebrate a
+  full-width board (the original tray layout, now only the fallback when the stage
+  cannot be measured or nothing fits; every view uses the stage layout
+  below), without visible instructions or piece labels. Celebrate a
   solve with a brief "Congrats!" fade (Mr Dafoe, accent fill, base outline) over
   the board instead of a dialog, so players can appreciate the finished design.
   `PuzzlePlay` takes it as an opt-in `celebration` prop; it is hidden from
@@ -132,10 +158,72 @@ the rules about generation, shared play, and keeping puzzle state out of Zen sti
   along with the board. Only the target/tray/board unit (`PuzzlePlay`'s `contentRef`)
   moves, so the controls beneath do not. The outgoing puzzle is an inert DOM copy
   captured on unmount, which keeps the solved design intact without keeping two live sessions.
+  The copy resumes each CSS animation at the point the original had reached
+  (`document.getAnimations`), because a cloned element restarts its animations: the
+  finished "Congrats!" fade otherwise replayed as the solved puzzle flew out.
 - `size="sm"` remains a Modal variant but no player view uses it now.
 - Generate new seeds with `crypto.getRandomValues`, which works over local
   network HTTP. `crypto.randomUUID` requires a secure context and can prevent
   even Zen Mode from mounting when the puzzle component initializes.
+
+## Puzzle stage layout, target peek, and target grid lines
+
+Large boards and some shapes left the target too small to read, because the tray's square
+slots (sized for a piece's worst turn) pushed everything apart and capped the target at 120px.
+
+- **One stage, not boxes.** The board, target, and pieces are positioned items in one box,
+  packed by the pure `packPuzzleStage` ([stageLayout.ts](./src/domain/puzzles/stageLayout.ts)). The
+  board is the biggest "ball"; the target and each piece fill the room left around it. The packer is
+  exact enough to guarantee no overlaps (tested for every shape in both orientations) and is
+  deterministic. `PuzzlePlay` opts in with `layout="stage"`; it falls back to the original layout when
+  nothing can be measured or nothing fits.
+- **Pieces are circles.** Each piece sits in the smallest circle that holds it in every turn it can
+  take (about its own center, `enclosingCircle`), so rotating never moves it or bumps a neighbor and
+  no overlap or dimming during rotation was needed. Measured against square slots, the old tray reserved
+  3 to 6 times the area the pieces cover.
+- **Piece scale 0.5 to 0.75 of the board's tile size,** largest that fits. Capped at 0.75 (not 1.0)
+  because full size was crowded and spread pieces to every side of the board; the floor was lowered from
+  0.6 so pieces shrink before they scatter. A held piece still scales up to the board's own size.
+- **Target:** in the upper left corner (it must start within 5% of the corner; a smaller target or a
+  taller stage is used when the board blocks it), drawn at 90% of the room kept for it so it does not cling
+  to the board. In portrait it is at most 240px, so wide columns do not give a huge target and a tall stage.
+- **Pieces gather toward the upper right** (centers stay in the right 60%), found with a gravity-style
+  search, then spread to the loosest spacing that still fits (22, 16, 11, then 7px), so they sit loosely in
+  the corner instead of hugging the board.
+- **Two orientations.** Under 760px wide the stage grows upward from a full-width board (up to 45% extra
+  height before the target shrinks). From 760px it fits the screen's height, with the target on the left.
+  The player's puzzle sets `wide`, so from 840px it grows past the 640px page column (up to 1100px,
+  centered) to reach the wide layout; the header and other pages keep the narrow column.
+- **Packing stays cheap and the page stays still.** Packing runs after paint, only once the stage is near
+  the screen (the Shapes page has six), results are cached across remounts, and the stage reserves the
+  tallest height seen for that shape, mode, and width so a new puzzle does not make the page jump. A
+  wrapper that shrinks to its content (a centered flex column) leaves nothing to measure: wrappers of a
+  stage need `width: 100%`.
+- **The stage must be able to shrink.** The grids around it use `minmax(0, 1fr)` columns. With the
+  default `auto` column the stage's fixed pixel width set the column's minimum, so narrowing the window
+  never narrowed the stage and it kept its wide layout until a refresh.
+- **Hidden is not "nowhere to measure".** Puzzle Mode is mounted hidden while the player is on Home, so
+  the first read there is 0 wide. Only an element with no hidden ancestor and no layout (tests) falls
+  back to the tray layout; a hidden stage holds its place and packs once shown. Otherwise the tray
+  flashed for about 200ms on first show.
+- **Page room is per screen.** A wide stage fits the screen's height less the page around it
+  (`pageRoom`, 200px by default for the admin; 350px for the player, 500px for the tutorials, which have a
+  header, welcome text, and guidance). The numbers are measured, not derived, so adjust them if those
+  screens gain or lose height.
+- **Return to tray:** a piece dropped anywhere off the board's own cells goes back to its slot, replacing
+  the old tray hit-test.
+- **Peek:** pressing the target shows it over the board at the board's size, so the picture can be
+  studied at the size that matters. It grows out of the thumbnail (Web Animations, FLIP style, about half a
+  second) and shrinks back; a tap, Escape, picking up a piece, or solving closes it; reduced motion swaps
+  instantly. The board hides only once the target has arrived. The finished closing animation is left to
+  hold its invisible end until React removes the overlay: cancelling first flashed the target over the
+  board for a frame.
+- **Target grid lines** can be turned off, on the target and the peek only. Tile outlines blur colors
+  together at small sizes. The board keeps its lines (without them empty tiles are the same color), and
+  nothing else (thumbnails, Zen, export) is affected. It is a device preference
+  (`kaleidoscope:puzzle:targetGridLines`, on by default), changed from a grid icon among each screen's
+  other actions (not floating on the target, where it looked lost over the board) and from a Game settings
+  checkbox. Admin playtests have no Settings, so they only have the icon.
 
 ## Admin authoring lab
 
@@ -162,9 +250,22 @@ persistent exclusions derive from saved puzzles, not a separate blacklist table;
 deleting an unused draft frees its seed unless another saved row still uses it.
 Different seeds can yield visually identical designs.
 
+Pointer and touch players place pieces by dragging only. Tap-a-piece-then-tap-a-tile
+placement was removed: a piece lands with its first tile on the tapped cell, so on
+multi-tile pieces only one cell worked and players hunted for it, and on rotation
+puzzles it never worked. Tapping a placed piece still selects it, because its outline
+helps players see where one tile ends and the next begins. Keyboard and
+assistive-technology activation (click detail 0) keep select-then-place, since those
+players cannot drag (WCAG 2.5.7). The intro does not teach tapping to place.
 Tray clicks/taps rotate 60 degrees; dragging moves. Return board pieces via
-double-click/double-tap or dragging back, preserving orientation; no board rotation
-or separate rotate/return buttons. Keyboard equivalents remain available.
+double-click/double-tap or dragging back, preserving orientation; there are no
+separate rotate/return buttons. A piece on the board turns only while it is held
+(see Puzzle Mode decisions above for the R key, right-click, and second-finger
+tap). Tapping a placed piece to turn it in place, pivoting on other tiles when
+the tapped one did not fit, was built and removed: on small boards there was
+often no room until the piece was already in the right spot, and the shifting
+pivot made landings hard to predict. Double-tap to return stays, and rapid taps
+are not turned into rotations. Keyboard equivalents remain available.
 Stable square containers reserve all orientations at consistent tile scale,
 with one subtle selected/focus border. Players meet rotation through a first-use tutorial (see Puzzle tutorials).
 The admin lab does not mount Zen state or write player progress. Named drafts
@@ -325,8 +426,8 @@ so that row spans the state columns with "N of M live".
 
 **Release means the content exists and is locked, not that players see it.** `published_at` approves content
 and `release_at` is when it goes live; a scheduled item stays editable until its release instant, a live one never
-changes (except a palette color correction). What a player is shown is a separate rule in the player app. The plan is
-to start with owned content only and later add a way to see what could be unlocked or bought.
+changes (except a palette color correction). What a player is shown is a separate rule in the player app. Players use
+only what they own, and see what could be earned locked (see Player content); buying comes with the store.
 
 **Everything is released through groups.** Palettes and puzzles are never released or cancelled singly. Releasing a
 group also releases what it depends on, in dependency order: palettes, puzzles, then the group. A dependency already
@@ -384,11 +485,19 @@ release instant) and uses the eye icon.
 
 ### Player content
 
-**Players see only what they have.** The player app loads one set of content before it starts: the palettes of released
+**Players use only what they have, and see what they can earn.** The player app loads one set of content before it starts: the palettes of released
 core palette groups (these are Zen's palettes), the released core puzzle sets, and the unlocked shapes (for guests, the
-first shape in the unlock order). A way to show what could be unlocked or bought comes later; for now locked content is
-simply absent. The database stays the authority (guest reads are limited to released content and the first shape's
+first shape in the unlock order). The database stays the authority for what can be played (guest reads of puzzles are limited to released content and the first shape's
 core groups); the app filters again by release state so drafts never appear even under elevated access.
+
+**Earnable content is shown locked, as a preview.** Reward palettes, bonus sets, and the sets of later shapes appear after the earned ones, disabled and in
+greyscale, and show in full color only while hovered, focused, or pressed. This invites players on without a level or XP system. Only content earned through
+puzzles is shown: pack and daily content stays invisible until the store exists (phase 2B, where unavailable packs will use the same treatment). The indicator is a lock icon
+and a "Keep solving to unlock" heading, because the lock sits outside the colors and nothing moves when content unlocks; dashed borders were tried and rejected. Rows use `aria-disabled` rather than `disabled`
+so they still receive hover, touch, and focus events; touch previews end on `pointercancel` so scrolling the list does not flash colors.
+Names, shapes, reward links, and palette colors of released groups were already readable by everyone, so showing them needed no new access. What a locked set
+shows is limited to the three puzzle images on its card: `locked_set_previews()` returns the first puzzle of each difficulty (for guests too), never the other 21,
+and recording solves still requires `can_play_puzzle`. The cost is that those few target designs are readable before they are earned. This supersedes "the plan is to start with owned content only" under Releases.
 
 **Players never read authoring data.** Seeds and known solutions stay admin-only, so the player reads a puzzle through its
 stored definition and its own palette alone (`readPlayablePuzzle`); a puzzle's ID stands in for its seed.
@@ -428,13 +537,21 @@ instead of storing grants: a set is complete when all its puzzles are solved, co
 bonus sets, and a bonus set can award more. Deriving keeps one source of truth and keeps the unmerged guest save
 simple, and the later account import only has to carry solved IDs. The tradeoff is that a guest can read the first shape's
 bonus puzzles by editing requests; that is accepted because guests are local-only anyway and later shapes stay gated.
-Bonus sets stay hidden until earned (see "Players see only what they have"). Earned palettes are Zen palettes;
+Bonus sets stay locked until earned (shown disabled; see "Earnable content is shown locked"). Earned palettes are Zen palettes;
 playing a puzzle in a palette still grants nothing.
 
 **Rewards are announced in a dialog, not a line of text.** What a solve earns is a moment worth stopping for, so it opens a
 modal ("Reward earned", "Hooray!") showing the palette strip and name and/or the new set's pictures, each with a link to
 use it now (Zen Mode, or the set). The Zen link only switches mode; it does not change the player's current palette,
-which would alter their design.
+which would alter their design. The palette reward's link also opens Zen's palette picker on arrival, so the player lands
+on the thing they were sent to try; the shape and randomizer links do not. The request lasts for that one visit, and is
+skipped on a first Zen visit so it does not stack on the controls info dialog.
+
+**New palettes are tagged "NEW!" in the picker, once.** The dot on the palette button says something is new; the tag says
+which. Opening the picker marks everything seen (as it always did), so the new ones are kept aside for that one opening,
+and closing without choosing still counts as seen. The tag is also in the button's accessible name, since the visible
+text is hidden from screen readers to avoid reading it twice. The current palette's outline reuses the hover outline
+with an extra inset ring instead of a wider border, so choices do not shift.
 
 ### Accounts
 
@@ -455,8 +572,18 @@ also derived in the app from the solved IDs, for the dialogs. The function check
 group or the next shape. Because of that, the solve that finishes a set waits for the server before announcing its rewards, so a bonus set is never missing from its own announcement. Other solves are sent in the background and kept
 (per account, with a pending list) until the server takes them. Server solves are only ever added to the local set. An account's caches are never shared with the guest's.
 
+**Progress reads name the player, and a skipped solve stays pending.** An admin signed in to the player app has the `admin_crud` policies on every progress table, so a read that relies on row-level security alone
+(`puzzle_completions`, `group_completions`, `shape_grants`, `feature_grants`) returns every account's rows and would show the admin a blend of other accounts' progress. Every player read therefore filters by `user_id`, whoever
+is signed in. `record_puzzle_completions` returns only the puzzles it recorded, and only those leave the pending list; a puzzle it skipped stays pending (and is retried) instead of being forgotten while still shown as solved, which
+would make it vanish on the next load. The cost is that a puzzle the server will never accept is resent with each flush, which is cheap and keeps the failure visible rather than silent.
+
 **Unlocking a shape is announced, not silent.** When the reload shows a shape that was not open before, a second dialog after the reward dialog says so, names that it is available in Zen Mode, and lists the shape's core sets
 with a way in. The randomizer, the last prize, is announced in its own dialog after the reward and shape dialogs, pointing at Zen Mode. The announcements run in a fixed order (reward, shape, randomizer, account prompt, sign-in reminder), one at a time, each after the last has finished closing.
+
+**Finishing a set returns the player to the set list.** A solve that finishes a set leaves Puzzle Mode on the set list once its first announcement is closed or its Zen link is followed, rather than anchored to the last puzzle solved,
+because the player's next step is choosing another set. Puzzle Mode stays mounted while Zen is open, so the reset also decides where the player lands when they come back. It happens once per solve, so a set opened from a later
+dialog ("Go to puzzle set now") is not undone. The solve is not moved while its dialog is open, so the player still sees the solved puzzle behind it. A set that finishes with nothing to announce has no dialog to close and
+leaves the player on the solved puzzle.
 
 **Only results sync between devices, so devices do not conflict.** Solved puzzles only ever accumulate and a solve is idempotent, so the account's progress is a union of what each device has solved: the app
 adds whatever the server holds and never removes anything, and no conflict prompt is needed. Rewards, groups, and shape unlocks are derived from that union by the database. A device picks up another device's solves
@@ -499,7 +626,7 @@ opened in the browser that asked for them. Closing the new-password dialog early
 The confirmation goes to the new address only: with Supabase's "Secure email change" on, the old address also gets the message, but without a confirmation link, so the setting is off, and the old address is told afterwards by the "Email address changed" notification (which names both addresses, since that is its purpose; the other auth emails carry no player-supplied text). The password re-check, not a second confirmation, is what guards the change. The change-email message is branded like the others. Settings lives under `app/` rather than `features/`, because it composes account, import, and theme and features may not import each other. The account dialog is now only for signed-out players and email links, so there is one place for account details.
 
 **Header simplified to a mode button and a Settings button.** Two mode icons plus a theme toggle plus an account button crowded the title (and overflowed under about 356px). A single "[icon] MODE" button that opens a mode dialog says where the player is, scales to Community Share and other modes later, and the
-theme toggle moved into Settings' Game settings, where audio and a grid toggle can join it. The Settings button wears the same accent fill as the mode button so the two weigh the same. The footer is a single small line.
+theme toggle moved into Settings' Game settings, where audio and a grid toggle can join it (the grid toggle now has: grid lines on puzzle targets, see "Puzzle stage layout"). The Settings button wears the same accent fill as the mode button so the two weigh the same. The footer is a single small line.
 
 **Text is title case in the player app, by a utility rather than CSS.** `text-transform: capitalize` capitalizes every word ("Sign In Or Create An Account"), so a real `toTitleCase` (AP-style small-word list, first word and post-colon words capitalized, "Sign In"/"Log Out" kept as verbs, words with their own capitals untouched) is applied by `Button` and `Heading`, enabled for the player app through `TextCaseContext` so the admin portal keeps its own wording. Asset names are title-cased when player content loads, display only, so
 what the admin types is not rewritten. A name that capitalizes a small word on purpose is evened out, and a Zen save that still names a palette by an old, non-title-case `schemeName` would start fresh (accepted, as with other older saves). Buttons and fields use one shared height, 2rem, and body-font text, instead of Righteous capitals, which overpowered everything else in the modals.
@@ -527,6 +654,12 @@ the lesson identical for everyone and independent of released content or tuning.
 `PuzzlePlay`, with guidance in an `aboveBoard` slot just above the board (not below, as in Zen, where
 the palette sits below) so phone players need not scroll to see the next step. Continue takes the same
 slot after the solve for the same reason.
+
+**The tutorial uses the stage layout and teaches the target peek.** The basic tutorial's opening
+message says the target can be tapped to see it over the board at full size, as one more sentence in
+the guidance that is already there rather than a separate step. The rotation tutorial does not repeat
+it. The guidance slot reserves four lines for the longest message, and the tutorial hides the palette
+name below the board (`hidePaletteName`).
 
 **Seen means completed, tracked separately.** Unlike Zen's key-exists rule, puzzles write nothing
 until play, so completion has its own versioned key, written on Continue. Solved puzzles already on
@@ -585,8 +718,13 @@ its definitions keep `geometry.radius` and `hexagon-v2`.
   a hex ring, so each circle maps to the hex cell at the same ring position; hex
   neighbours are the touching circles and 60-degree rotation maps rings onto
   themselves. It reuses the hexagon adapter and small and medium piece sizes (wedges 6/9/12; large is
-  5 rings with [4, 3, 2, 2, 1]). Placed
-  pieces look slightly stretched in outer rings, accepted as the trade-off.
+  5 rings with [4, 3, 2, 2, 1]). Pieces are hex offsets, but the board bends the
+  hex lattice into rings, so offsets are not board positions. Off the board (tray
+  and free dragging) a piece is drawn on an even hex lattice of equal circles
+  (`pieceCorners`/`pieceCenter` on the puzzle shape). Over a wedge tile the dragged
+  piece snaps and draws at its exact board position, so what shows is what lands.
+  The bend between that and the tray drawing is accepted. Puzzles are unaffected by
+  layout changes, since they depend only on the hex topology.
 - **Shape is chosen at creation and fixed.** Puzzles pick it in the New form; groups
   pick it in the group-creation dialog. Assign to group offers only groups that
   accept every selected puzzle (shape and track), except daily groups, which mix shapes.
@@ -598,8 +736,11 @@ its definitions keep `geometry.radius` and `hexagon-v2`.
 Palettes are not subordinate to puzzles: they also serve Zen Mode later. Top-level
 admin sections are peers (Puzzles | Palettes | Shapes, with a future orchestration
 view for groups/rewards/packs/rollout). Within a content section, Groups is the
-default view and items filter by release status (Unassigned | Assigned | Scheduled |
-Published), so both sections share one mental model.
+default view and **Individual** lists items with a status filter (All by default, then Unassigned |
+Assigned | Scheduled | Published), so both sections share one mental model. Status is a filter rather than a
+nested nav: mixed lists let released items sit beside drafts, with bulk actions limited to drafts and New
+available except when filtered to Scheduled or Published. Palette groups filter by release status too, since
+publishing palette packs differs from publishing the individual palettes that rewards and puzzle packs need.
 
 The admin is a single user, so the catalog cache favors speed over freshness:
 keep loaded catalogs for the session in a provider (not module state, which
@@ -622,9 +763,13 @@ retry-stable ID; Duplicate copies only the selected palette's ordered colors, no
 its publication, references, or ownership.
 
 Draft palettes support name/color edits and confirmed deletion only when unused.
-Scheduled/live rows are read-only in this workspace, with duplication still
-available. Exceptional published-color correction and release controls remain
-separate future work. Recheck draft state and every dependency under the catalog
+Scheduled/live rows open read-only, with duplication still available.
+**Published palettes can be corrected, but only deliberately.** The editor offers "Unlock to edit",
+which asks for confirmation (changes reach players at once and are logged); once unlocked it shows a
+persistent warning banner and "Save correction", and locks again on leaving. A correction may change the
+name and colors, and goes through its own function, `correct_published_palette`, never the draft one. Color
+changes bump `revision` and are written to `palette_corrections` with the admin's ID; players read colors by
+palette ID, so nothing else needs republishing. Recheck draft state and every dependency under the catalog
 lock using invoker RLS/admin authorization; compare loaded name, ordered colors,
 and revision so name-only concurrent edits are also detected. Preserve inputs on
 errors/conflicts rather than silently overwriting changes. Delete palettes from the
@@ -679,11 +824,19 @@ Hexagon padding and circle-radius bounds remain separate from polygon bounds.
   hexagon, not a star. Sizes 2/3/4 are available; large remains the default
   with 192 cells/20 groups.
 - **Circle rings:** ring `n` has `6n` circles. The center and first ring share a
-  minimum diameter; later rings grow by `1/12` of it per step. Spacing factor
-  `1.04` satisfies within-ring and between-ring non-overlap constraints.
-  Three/four/five rings are available; large remains the default with
-  91 cells/12 groups. Six was the first large size; more rings forced overly subtle
-  growth or tight spacing.
+  minimum diameter. Each later ring's circle size is solved so its circles just
+  fit, around the ring and against the previous ring along the spokes, with
+  spacing factor `1.04` (see `ringMetrics` in `circleRingsLayout.ts`). Diameters
+  grow about 1.00, 1.05, 1.07, 1.09, 1.10 times the minimum for rings 1 to 5.
+  An earlier fixed growth step of `1/12` per ring (33% by ring 5) widened the gap
+  between rings from 4% of a diameter at ring 1 to 27% at ring 5 and lowered
+  packing density from 0.73 to 0.64. Tight sizing was chosen over faster growth:
+  at the same canvas size circles render about 21% larger and every gap is even.
+  This is the densest fit for 6n rings at D6 symmetry; skipping a +6 step in the
+  ring counts grows faster but breaks hex adjacency and makes growth lumpy, and a
+  true hex lattice cannot grow in size. Three/four/five rings are available; large
+  remains the default with 91 cells/12 groups. Six was the first large size; more
+  rings made the outer rings too crowded.
 - **Pinwheel:** eight unequal-sided spokes with uniform 2:1 parallelogram cells,
   3 x 2, 3 x 3, or 4 x 3 steps per spoke (rows x columns). Large remains the default with
   96 cells/12 groups. Equal-sided rhombi looked like a star.
@@ -908,6 +1061,16 @@ Duotone secondary layers use the first palette color normalized to lightness
 with the decorative `faDot` icon through a shared `SeparatorDot`. Because an icon cannot sit
 inside a string, services such as palette usage return label parts rather than joined text, and
 the screen reader hears the parts without a separator.
+
+**Rainbow palette:** `--red`, `--orange`, `--yellow`, `--green`, `--blue`, `--purple`, and
+`--magenta` are defined once on `:root` in `index.css` for both the player and admin sides.
+Admin's `--admin-*` colors alias them in dark mode and override them with literal values in
+light mode; the player side has no light variants because it has no fixed light theme. Use the
+shared names rather than hard-coding hex values.
+
+**Track indicator:** each puzzle set in the player list shows three `faCircle` dots before the
+track label as a quick visual cue: Basic is green/blue/purple and Rotation is magenta/red/orange.
+The dots are decorative (`aria-hidden`), so the label alone names the track.
 
 **Background flicker constraint:** set literal background colors without transitions.
 The synchronous `index.html` bootstrap handles pre-mount paint; `App` renders

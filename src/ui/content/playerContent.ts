@@ -28,11 +28,21 @@ export interface PlayerReward {
 	readonly bonusSetIds: readonly string[]
 }
 
+// Earnable content the player does not have yet, shown disabled with a color preview.
+export interface Locked<T> {
+	readonly item: T
+	// The name of the set whose completion unlocks it.
+	readonly unlockedBy: string
+}
+
 // Everything released that this player may read. The app uses it through
 // `availableContent`, which keeps only what the player has earned.
 export interface PlayerContent {
 	// Zen's palettes, in the order the admin arranged them; once earned, reward palettes follow.
 	readonly palettes: readonly PlayerPalette[]
+	// Only `availableContent` fills the locked lists; loaded content leaves them empty.
+	readonly lockedPalettes: readonly Locked<PlayerPalette>[]
+	readonly lockedPuzzleSets: readonly Locked<PlayerPuzzleSet>[]
 	readonly unlockedShapes: readonly GridShapeId[]
 	// Every shape, in the order they unlock.
 	readonly shapeOrder: readonly GridShapeId[]
@@ -41,5 +51,8 @@ export interface PlayerContent {
 	// Zen's randomizer, the prize for finishing every core and bonus set; only an account earns it.
 	readonly randomizerUnlocked: boolean
 	readonly puzzleSets: readonly PlayerPuzzleSet[]
+	// Sets the player cannot read yet, carrying only the puzzles their cards show. They are
+	// only ever shown locked, never played.
+	readonly previewSets: readonly PlayerPuzzleSet[]
 	readonly rewards: readonly PlayerReward[]
 }

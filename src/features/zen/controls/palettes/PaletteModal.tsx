@@ -6,9 +6,10 @@ import styles from './PaletteModal.module.css'
 export interface PaletteModalProps {
 	readonly open: boolean
 	readonly onClose: () => void
+	readonly newIds?: ReadonlySet<string>
 }
 
-function PaletteModal({ open, onClose }: PaletteModalProps) {
+function PaletteModal({ open, onClose, newIds }: PaletteModalProps) {
 	const titleId = useId()
 	return (
 		<Modal
@@ -26,7 +27,7 @@ function PaletteModal({ open, onClose }: PaletteModalProps) {
 			}
 		>
 			<div className={styles.content}>
-				<PalettePicker onSelected={onClose} />
+				<PalettePicker newIds={newIds} onSelected={onClose} />
 			</div>
 		</Modal>
 	)

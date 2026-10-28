@@ -30,11 +30,10 @@ import {
 	AdminSelectionBar,
 	useCheckedIds,
 	errorMessage,
-	SeparatorDot,
 } from '@/features/admin/common'
 import { useUnsavedDraft } from '@/ui/navigation'
 import PaletteEditor from './PaletteEditor'
-import { releaseStateLabel } from '@/features/admin/release'
+import { ReleaseStateIcon } from '@/features/admin/release'
 import { PaletteGroupLibrary } from '@/features/admin/palette-groups'
 import { useCatalog, useCatalogInvalidation } from '@/features/admin/catalog'
 import {
@@ -50,14 +49,34 @@ import { compareGroupOrder, memberGroupOrderKey } from '@/features/admin/groups'
 
 const fallbackError = 'Unable to manage palettes.'
 
+type PaletteStatus = 'drafts' | 'assigned' | 'scheduled' | 'published'
+type PaletteStatusFilter = 'all' | PaletteStatus
+
+const statusOrder: readonly PaletteStatus[] = [
+	'drafts',
+	'assigned',
+	'scheduled',
+	'published',
+]
+
+function statusRank(status: PaletteStatus) {
+	return statusOrder.indexOf(status)
+}
+
+function isDraft(palette: CatalogPalette) {
+	return !palette.published_at && !palette.release_at
+}
+
+function releaseTime(palette: CatalogPalette) {
+	return Date.parse(palette.release_at ?? '') || 0
+}
+
 export default function PaletteLibrary({
 	client,
 	view = 'palettes',
-	catalogStatus,
 }: {
 	readonly client: SupabaseClient<Database>
 	readonly view?: 'groups' | 'palettes'
-	readonly catalogStatus?: 'drafts' | 'assigned' | 'scheduled' | 'published'
 }) {
 	const paletteCatalog = useCatalog('palettes', client, view === 'palettes')
 	const groupCatalog = useCatalog('paletteGroups', client)
@@ -70,17 +89,24 @@ export default function PaletteLibrary({
 		(view === 'palettes' && paletteCatalog.error) || groupCatalog.error
 	const error = catalogError ? errorMessage(catalogError, fallbackError) : ''
 	const [status, setStatus] = useState('')
-	const [purposeFilter, setPurposeFilter] = useState('all')
+	const [statusFilter, setStatusFilter] = useState<PaletteStatusFilter>('all')
+	const [purposeChoice, setPurposeFilter] = useState('all')
 	const [filterChoice, setFilter] = useState('all')
 	const [targetChoice, setTargetGroup] = useState('')
+	// Unassigned palettes have no group, so group filters only apply to the other statuses.
+	const showGroupFilters = statusFilter !== 'drafts'
+	const purposeFilter = showGroupFilters ? purposeChoice : 'all'
 	const groupOptions = groups.filter(
 		group => purposeFilter === 'all' || group.purpose === purposeFilter,
 	)
-	// Drop choices that no longer exist after the catalog or purpose changes.
+	// Drop choices that no longer exist after the catalog, purpose, or status changes.
 	const filter =
-		filterChoice === 'all' ||
-		(filterChoice === 'ungrouped' && purposeFilter === 'all') ||
-		groupOptions.some(group => group.row.id === filterChoice)
+		showGroupFilters &&
+		(filterChoice === 'all' ||
+			(filterChoice === 'ungrouped' &&
+				purposeFilter === 'all' &&
+				statusFilter !== 'assigned') ||
+			groupOptions.some(group => group.row.id === filterChoice))
 			? filterChoice
 			: 'all'
 	const targetGroup = groups.some(
@@ -112,46 +138,46 @@ export default function PaletteLibrary({
 			!group.row.published_at &&
 			!group.row.release_at,
 	)
-	const prepared =
-		catalogStatus === 'scheduled' || catalogStatus === 'published'
 	const canCreate =
-		!prepared && (catalogStatus !== 'assigned' || !!filteredGroup)
+		statusFilter !== 'scheduled' && statusFilter !== 'published'
 	const filteredPalettes = palettes.filter(palette => {
 		const group = groupOf(palette.id)
 		return (
 			(purposeFilter === 'all' || group?.purpose === purposeFilter) &&
 			(filter === 'all' ||
 				(filter === 'ungrouped' ? !group : group?.row.id === filter)) &&
-			(!catalogStatus ||
-				(prepared
-					? releaseStateOf(palette) ===
-						(catalogStatus === 'scheduled' ? 'scheduled' : 'live')
-					: !palette.published_at &&
-						!palette.release_at &&
-						!!group === (catalogStatus === 'assigned')))
+			(statusFilter === 'all' || paletteStatus(palette) === statusFilter)
 		)
 	})
-	const visiblePalettes =
-		catalogStatus === 'assigned'
-			? [...filteredPalettes].sort((a, b) =>
-					compareGroupOrder(
+	// Unassigned, then assigned in group order, then scheduled and live by release time.
+	const visiblePalettes = [...filteredPalettes].sort(
+		(a, b) =>
+			statusRank(paletteStatus(a)) - statusRank(paletteStatus(b)) ||
+			(paletteStatus(a) === 'assigned'
+				? compareGroupOrder(
 						memberGroupOrderKey(a, groups),
 						memberGroupOrderKey(b, groups),
-					),
-				)
-			: filteredPalettes
-	const selection = useCheckedIds(visiblePalettes.map(palette => palette.id))
+					)
+				: releaseTime(a) - releaseTime(b)),
+	)
+	// Scheduled and live palettes take no bulk actions.
+	const selectable = visiblePalettes.filter(isDraft)
+	const selection = useCheckedIds(selectable.map(palette => palette.id))
 	const checked = selection.checked
 	function groupOf(id: string) {
 		return groups.find(group =>
 			group.members.some(member => member.id === id),
 		)
 	}
+	function paletteStatus(palette: CatalogPalette): PaletteStatus {
+		const state = releaseStateOf(palette)
+		if (state === 'scheduled') return 'scheduled'
+		if (state === 'live') return 'published'
+		return groupOf(palette.id) ? 'assigned' : 'drafts'
+	}
 	// Only unassigned drafts may be deleted.
 	function deletable(palette: CatalogPalette) {
-		return (
-			!palette.published_at && !palette.release_at && !groupOf(palette.id)
-		)
+		return paletteStatus(palette) === 'drafts'
 	}
 	function refresh(preserveSelection = false, palettes = true) {
 		if (!preserveSelection) selection.clear()
@@ -298,15 +324,8 @@ export default function PaletteLibrary({
 		<section aria-labelledby="palette-library-title">
 			<AdminSectionHeading
 				id="palette-library-title"
-				title={
-					catalogStatus === 'assigned'
-						? 'Assigned palettes'
-						: catalogStatus === 'scheduled'
-							? 'Scheduled palettes'
-							: catalogStatus === 'published'
-								? 'Published palettes'
-								: 'Palettes'
-				}
+				count={loading || error ? undefined : visiblePalettes.length}
+				title="Palettes"
 			>
 				{canCreate && (
 					<AdminIconButton
@@ -328,7 +347,25 @@ export default function PaletteLibrary({
 					disabled={busy || loading}
 					onClick={() => refresh()}
 				/>
-				{catalogStatus !== 'drafts' && (
+				<Select
+					id="palette-status-filter"
+					aria-label="Show status"
+					value={statusFilter}
+					disabled={loading || busy}
+					onChange={event => {
+						setStatusFilter(
+							event.target.value as PaletteStatusFilter,
+						)
+						selection.clear()
+					}}
+				>
+					<option value="all">All statuses</option>
+					<option value="drafts">Unassigned</option>
+					<option value="assigned">Assigned</option>
+					<option value="scheduled">Scheduled</option>
+					<option value="published">Published</option>
+				</Select>
+				{showGroupFilters && (
 					<>
 						<Select
 							id="palette-purpose-filter"
@@ -358,7 +395,7 @@ export default function PaletteLibrary({
 							}}
 						>
 							<option value="all">All groups</option>
-							{catalogStatus !== 'assigned' &&
+							{statusFilter !== 'assigned' &&
 								purposeFilter === 'all' && (
 									<option value="ungrouped">No group</option>
 								)}
@@ -491,10 +528,10 @@ export default function PaletteLibrary({
 					}
 				/>
 			)}
-			{!loading && !error && !prepared && (
+			{!loading && !error && (
 				<AdminSelectionBar
 					label="Bulk palette actions"
-					shown={visiblePalettes.length}
+					shown={selectable.length}
 					checked={checked.size}
 					disabled={busy}
 					onSelectAll={selection.setAll}
@@ -554,13 +591,13 @@ export default function PaletteLibrary({
 										!!group?.row.release_at
 									}
 									onSelect={
-										prepared
-											? undefined
-											: value =>
+										isDraft(palette)
+											? value =>
 													selection.toggle(
 														palette.id,
 														value,
 													)
+											: undefined
 									}
 									preview={
 										<PaletteStrip
@@ -570,6 +607,7 @@ export default function PaletteLibrary({
 									}
 									actions={
 										<>
+											<ReleaseStateIcon row={palette} />
 											<AdminIconButton
 												icon={faCopy}
 												label={`Duplicate ${palette.name}`}
@@ -615,20 +653,17 @@ export default function PaletteLibrary({
 									}
 								>
 									<strong>{palette.name}</strong>
-									{releaseStateLabel(palette) && (
-										<span>
-											{releaseStateLabel(palette)}
-										</span>
-									)}
 									{group && (
-										<span>
-											{group.row.name} <SeparatorDot />{' '}
-											{
-												paletteGroupPurposeLabels[
-													group.purpose
-												]
-											}
-										</span>
+										<>
+											<span>{group.row.name}</span>
+											<em>
+												{
+													paletteGroupPurposeLabels[
+														group.purpose
+													]
+												}
+											</em>
+										</>
 									)}
 								</AdminItemCard>
 							)

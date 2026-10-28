@@ -68,7 +68,7 @@ function Probe() {
 }
 
 function api(
-	record: AccountProgressApi['record'] = () => Promise.resolve([]),
+	record: AccountProgressApi['record'] = ids => Promise.resolve([...ids]),
 ): AccountProgressApi {
 	return { loadSolved: () => Promise.resolve([]), record }
 }
@@ -277,7 +277,9 @@ describe('PlayerProgressProvider for an account', () => {
 			'kaleidoscope:puzzle-progress',
 			JSON.stringify({ version: 1, solved: ['guest-only'] }),
 		)
-		const record = vi.fn(() => Promise.resolve([] as string[]))
+		const record = vi.fn((ids: readonly string[]) =>
+			Promise.resolve([...ids]),
+		)
 		renderAccount({ api: api(record), solved: ['c1'] })
 		expect([...progress.solved]).toEqual(['c1'])
 		await act(async () => {
@@ -391,7 +393,7 @@ describe('PlayerProgressProvider for an account', () => {
 		const record = vi
 			.fn<AccountProgressApi['record']>()
 			.mockRejectedValueOnce(new Error('Offline'))
-			.mockResolvedValue([])
+			.mockImplementation(ids => Promise.resolve([...ids]))
 		const reload = vi.fn(() => Promise.resolve(null))
 		renderAccount({ api: api(record), reload })
 		await act(async () => {
@@ -410,6 +412,27 @@ describe('PlayerProgressProvider for an account', () => {
 			expect(loadAccountProgressCache('user-1').pending.size).toBe(0),
 		)
 		expect(reload).toHaveBeenCalled()
+	})
+
+	it('keeps a solve the server skipped pending instead of forgetting it', async () => {
+		const record = vi.fn<AccountProgressApi['record']>(ids =>
+			Promise.resolve(ids.filter(id => id !== 'c2')),
+		)
+		renderAccount({ api: api(record) })
+		await act(async () => {
+			await progress.markSolved('c1')
+		})
+		await act(async () => {
+			await progress.markSolved('c2')
+		})
+		await waitFor(() => expect(record).toHaveBeenCalledTimes(2))
+		await waitFor(() =>
+			expect(loadAccountProgressCache('user-1')).toEqual({
+				solved: new Set(['c1', 'c2']),
+				pending: new Set(['c2']),
+			}),
+		)
+		expect(progress.solved.has('c2')).toBe(true)
 	})
 
 	it('opens what a finished set earns while offline, then sends the solves when back online', async () => {
@@ -432,8 +455,10 @@ describe('PlayerProgressProvider for an account', () => {
 			],
 		}
 		let online = false
-		const record = vi.fn<AccountProgressApi['record']>(() =>
-			online ? Promise.resolve([]) : Promise.reject(new Error('Offline')),
+		const record = vi.fn<AccountProgressApi['record']>(ids =>
+			online
+				? Promise.resolve([...ids])
+				: Promise.reject(new Error('Offline')),
 		)
 		const reload = vi.fn(() => Promise.resolve(null))
 		renderAccount({ api: api(record), reload, content: offline })

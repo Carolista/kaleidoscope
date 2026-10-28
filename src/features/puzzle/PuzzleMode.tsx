@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { findIntroPalette } from '@/domain/palettes'
-import { usePlayerContent, usePlayerProgress } from '@/ui/content'
+import { completesSet, usePlayerContent, usePlayerProgress } from '@/ui/content'
 import type { NewRewards, PlayerPuzzleSet } from '@/ui/content'
 import AccountPromptModal from './AccountPromptModal'
 import {
@@ -28,6 +28,8 @@ interface Announcement {
 	readonly rewards: NewRewards
 	readonly queue: readonly Stage[]
 	readonly open: boolean
+	// The solve finished a set, so the player goes back to the set list on closing.
+	readonly returnToSets: boolean
 }
 
 // What a solve has to announce, in the order the player should hear it. A guest is
@@ -63,7 +65,7 @@ export default function PuzzleMode({
 }: {
 	readonly hidden?: boolean
 	// Lets a reward announcement send the player to Zen Mode.
-	readonly onOpenZen?: () => void
+	readonly onOpenZen?: (intent?: 'palette') => void
 	// Opens sign-in and sign-up for a guest; absent where accounts cannot be created.
 	readonly onCreateAccount?: () => void
 	// A guest on a device that has had an account, who is reminded to sign in.
@@ -76,7 +78,8 @@ export default function PuzzleMode({
 		readonly nonce: number
 	} | null
 }) {
-	const { palettes, puzzleSets } = usePlayerContent()
+	const content = usePlayerContent()
+	const { palettes, puzzleSets, lockedPuzzleSets } = content
 	const { solved, markSolved } = usePlayerProgress()
 	const [seenIntros, setSeenIntros] = useState(loadSeenIntros)
 	const [setId, setSetId] = useState<string | null>(null)
@@ -114,6 +117,9 @@ export default function PuzzleMode({
 	}
 
 	async function solve(id: string) {
+		const finishedSet =
+			!solved.has(id) &&
+			completesSet(content, id, new Set([...solved, id]))
 		const earned = await markSolved(id)
 		const queue = announcementsFor(
 			earned,
@@ -123,11 +129,26 @@ export default function PuzzleMode({
 		if (!queue.length) return
 		if (queue.includes('account')) markAccountPromptSeen()
 		if (queue.includes('signIn')) markSignInNudgeShown()
-		setAnnouncement({ rewards: earned, queue, open: true })
+		setAnnouncement({
+			rewards: earned,
+			queue,
+			open: true,
+			returnToSets: finishedSet,
+		})
 	}
 
+	// A finished set sends the player back to the set list to pick another, once, so a
+	// set opened from a later dialog is not undone. Puzzle Mode stays mounted while Zen
+	// is open, so this is also where the player finds it on returning.
 	function closeAnnouncement() {
-		setAnnouncement(current => current && { ...current, open: false })
+		if (announcement?.returnToSets) {
+			setSetId(null)
+			setPuzzleId(null)
+		}
+		setAnnouncement(
+			current =>
+				current && { ...current, open: false, returnToSets: false },
+		)
 	}
 
 	function nextAnnouncement() {
@@ -138,9 +159,9 @@ export default function PuzzleMode({
 		)
 	}
 
-	function openZen() {
+	function openZen(intent?: 'palette') {
 		closeAnnouncement()
-		onOpenZen?.()
+		onOpenZen?.(intent)
 	}
 
 	function openSet(target: PlayerPuzzleSet) {
@@ -158,7 +179,7 @@ export default function PuzzleMode({
 					rewards={announcement.rewards}
 					onClose={closeAnnouncement}
 					onAfterClose={nextAnnouncement}
-					onOpenZen={openZen}
+					onOpenZen={() => openZen('palette')}
 					onOpenSet={openSet}
 				/>
 			)}
@@ -253,6 +274,7 @@ export default function PuzzleMode({
 				) : (
 					<PuzzleSetList
 						sets={puzzleSets}
+						locked={lockedPuzzleSets}
 						solved={solved}
 						onChoose={setSetId}
 					/>

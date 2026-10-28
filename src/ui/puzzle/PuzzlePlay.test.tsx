@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { palettes } from '@/test/playerContent'
 import {
@@ -16,7 +16,10 @@ import {
 	stubPointerHitTesting,
 	tileAt,
 } from '@/test/puzzleInteraction'
+import { IconButton } from '@/ui/components'
 import PuzzlePlay from './PuzzlePlay'
+import { useTargetGridToggle } from './targetGridPreference'
+import boardStyles from './PuzzleBoard.module.css'
 import styles from './PuzzlePlay.module.css'
 
 function renderPlay(puzzle: Puzzle) {
@@ -28,6 +31,305 @@ function renderPlay(puzzle: Puzzle) {
 		/>,
 	)
 }
+
+describe('PuzzlePlay target grid lines', () => {
+	stubPointerHitTesting()
+
+	const key = 'kaleidoscope:puzzle:targetGridLines'
+	afterEach(() => {
+		localStorage.removeItem(key)
+		cleanup()
+	})
+
+	function targetCell(container: HTMLElement) {
+		return container
+			.querySelector('svg[aria-label="Target design"]')
+			?.querySelector('polygon') as SVGPolygonElement
+	}
+
+	// The toggle lives with each screen's own actions, so the host supplies it.
+	function Host({ puzzle }: { readonly puzzle: Puzzle }) {
+		const toggle = useTargetGridToggle()
+		return (
+			<PuzzlePlay
+				puzzle={puzzle}
+				solvedMessage="Solved."
+				trayAction={<IconButton {...toggle} />}
+			/>
+		)
+	}
+	const renderWithToggle = (puzzle: Puzzle) =>
+		render(<Host puzzle={puzzle} />)
+
+	it('draws the target with grid lines, and can drop them and bring them back', async () => {
+		const user = userEvent.setup()
+		const puzzle = generatePuzzle(
+			'target-grid',
+			palettes[1],
+			PUZZLE_RECIPES[0],
+		)
+		const { container } = renderWithToggle(puzzle)
+		const toggle = screen.getByRole('button', {
+			name: 'Grid lines on the target',
+		})
+		expect(toggle).toHaveAttribute('aria-pressed', 'true')
+		// With lines, a tile keeps the stylesheet's outline; without, its
+		// outline takes its own fill so the tiles meet without seams.
+		expect(targetCell(container).style.stroke).toBe('')
+		await user.click(toggle)
+		expect(toggle).toHaveAttribute('aria-pressed', 'false')
+		expect(targetCell(container).style.stroke).not.toBe('')
+		expect(localStorage.getItem(key)).toBe('false')
+		await user.click(toggle)
+		expect(targetCell(container).style.stroke).toBe('')
+	})
+
+	it('keeps the board lines whatever the target does', async () => {
+		const user = userEvent.setup()
+		const puzzle = generatePuzzle(
+			'board-grid',
+			palettes[1],
+			PUZZLE_RECIPES[0],
+		)
+		const { container } = renderWithToggle(puzzle)
+		await user.click(
+			screen.getByRole('button', { name: 'Grid lines on the target' }),
+		)
+		const boardCell = container
+			.querySelector('svg[data-puzzle-board]')
+			?.querySelector('polygon') as SVGPolygonElement
+		expect(boardCell.style.stroke).toBe('')
+	})
+
+	it('starts without lines when that was chosen before', () => {
+		localStorage.setItem(key, 'false')
+		const puzzle = generatePuzzle(
+			'target-grid-saved',
+			palettes[1],
+			PUZZLE_RECIPES[0],
+		)
+		const { container } = renderWithToggle(puzzle)
+		expect(
+			screen.getByRole('button', { name: 'Grid lines on the target' }),
+		).toHaveAttribute('aria-pressed', 'false')
+		expect(targetCell(container).style.stroke).not.toBe('')
+	})
+})
+
+describe('PuzzlePlay target peek', () => {
+	stubPointerHitTesting()
+
+	function setup() {
+		const puzzle = generatePuzzle(
+			'peek-target',
+			palettes[1],
+			PUZZLE_RECIPES[0],
+		)
+		const { container } = renderPlay(puzzle)
+		const board = () => container.querySelector(`.${styles.board}`)
+		const peek = () => container.querySelector(`.${styles.peek}`)
+		return { puzzle, board, peek }
+	}
+
+	it('shows the target over the board when the target is pressed, and hides it again', async () => {
+		const user = userEvent.setup()
+		const { board, peek } = setup()
+		const toggle = screen.getByRole('button', {
+			name: 'Show target over the board',
+		})
+		expect(toggle).toHaveAttribute('aria-pressed', 'false')
+		expect(peek()).toBeNull()
+		await user.click(toggle)
+		expect(toggle).toHaveAttribute('aria-pressed', 'true')
+		expect(peek()).not.toBeNull()
+		expect(board()).toHaveAttribute('data-peeking')
+		await user.click(toggle)
+		expect(peek()).toBeNull()
+		expect(board()).not.toHaveAttribute('data-peeking')
+	})
+
+	it('grows out of the target and shrinks back when animation is available', async () => {
+		const user = userEvent.setup()
+		const animations: {
+			playbackRate: number
+			onfinish: (() => void) | null
+			reverse: () => void
+			cancel: () => void
+			keyframes: Keyframe[]
+		}[] = []
+		const animate = vi.fn(function (this: Element, keyframes: Keyframe[]) {
+			const fake = {
+				playbackRate: 1,
+				onfinish: null as (() => void) | null,
+				reverse() {
+					fake.playbackRate *= -1
+				},
+				cancel: vi.fn(),
+				keyframes,
+			}
+			animations.push(fake)
+			return fake
+		})
+		Object.defineProperty(Element.prototype, 'animate', {
+			configurable: true,
+			value: animate,
+		})
+		// The overlay's picture is three times the size of the target's.
+		const rect = vi
+			.spyOn(Element.prototype, 'getBoundingClientRect')
+			.mockImplementation(function (this: Element) {
+				const width = this.closest(`.${styles.peek}`) ? 300 : 100
+				return new DOMRect(10, 20, width, width)
+			})
+		try {
+			const { board, peek } = setup()
+			const toggle = screen.getByRole('button', {
+				name: 'Show target over the board',
+			})
+			await user.click(toggle)
+			expect(animate).toHaveBeenCalledTimes(1)
+			const [from, to] = animations[0].keyframes
+			expect(from.opacity).toBe(0)
+			expect(String(from.transform)).toContain('scale(0.3333')
+			expect(to).toMatchObject({ transform: 'none', opacity: 1 })
+			// The board stays visible until the target has arrived.
+			expect(board()).not.toHaveAttribute('data-peeking')
+			act(() => animations[0].onfinish?.())
+			expect(board()).toHaveAttribute('data-peeking')
+
+			await user.click(toggle)
+			expect(animations[0].playbackRate).toBe(-1)
+			expect(peek()).toHaveAttribute('data-closing')
+			expect(board()).not.toHaveAttribute('data-peeking')
+			act(() => animations[0].onfinish?.())
+			expect(peek()).toBeNull()
+			// Left to hold its invisible end state until removed, so it cannot flash.
+			expect(animations[0].cancel).not.toHaveBeenCalled()
+		} finally {
+			rect.mockRestore()
+			Reflect.deleteProperty(Element.prototype, 'animate')
+		}
+	})
+
+	it('hides again when the overlay is tapped or Escape is pressed', async () => {
+		const user = userEvent.setup()
+		const { peek } = setup()
+		const toggle = screen.getByRole('button', {
+			name: 'Show target over the board',
+		})
+		await user.click(toggle)
+		await user.click(peek() as Element)
+		expect(peek()).toBeNull()
+		await user.click(toggle)
+		await user.keyboard('{Escape}')
+		expect(peek()).toBeNull()
+	})
+
+	it('hides when a piece is picked up so the board can be played', async () => {
+		const user = userEvent.setup()
+		const { peek } = setup()
+		await user.click(
+			screen.getByRole('button', { name: 'Show target over the board' }),
+		)
+		fireEvent.pointerDown(pieceButton(0), {
+			button: 0,
+			pointerId: 1,
+			pointerType: 'mouse',
+		})
+		expect(peek()).toBeNull()
+	})
+
+	it('hides once the puzzle is solved', async () => {
+		const user = userEvent.setup()
+		const { puzzle, peek } = setup()
+		await user.click(
+			screen.getByRole('button', { name: 'Show target over the board' }),
+		)
+		for (const [index, piece] of puzzle.pieces.entries())
+			dragTo(
+				pieceButton(index),
+				tileAt(
+					coordinateKey(
+						pieceCells(piece, puzzle.solution[piece.id])[0],
+					),
+				),
+			)
+		expect(screen.getByRole('status')).toHaveTextContent('Solved.')
+		expect(peek()).toBeNull()
+	})
+
+	it('dims the target and turns off peeking once the puzzle is solved', () => {
+		const puzzle = generatePuzzle(
+			'dim-target',
+			palettes[1],
+			PUZZLE_RECIPES[0],
+		)
+		const { container } = renderPlay(puzzle)
+		const target = container.querySelector(
+			'svg[aria-label="Target design"]',
+		)
+		expect(target).not.toHaveAttribute('data-dimmed')
+		for (const [index, piece] of puzzle.pieces.entries())
+			dragTo(
+				pieceButton(index),
+				tileAt(
+					coordinateKey(
+						pieceCells(piece, puzzle.solution[piece.id])[0],
+					),
+				),
+			)
+		expect(target).toHaveAttribute('data-dimmed')
+		expect(
+			screen.getByRole('button', { name: 'Show target over the board' }),
+		).toBeDisabled()
+	})
+})
+
+describe('PuzzlePlay on the stage', () => {
+	stubPointerHitTesting()
+
+	it('packs the target, pieces, and board once measured, and still plays', async () => {
+		vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(
+			366,
+		)
+		const puzzle = generatePuzzle(
+			'stage-play',
+			palettes[1],
+			PUZZLE_RECIPES[3],
+		)
+		render(
+			<PuzzlePlay
+				puzzle={puzzle}
+				layout="stage"
+				solvedMessage="Solved."
+				trayAction={<button type="button">Restart</button>}
+			/>,
+		)
+		const pieces = await screen.findByRole('group', {
+			name: 'Puzzle pieces',
+		})
+		expect(pieces.querySelectorAll('button')).toHaveLength(
+			puzzle.pieces.length,
+		)
+		expect(screen.getAllByRole('button', { name: 'Restart' })).toHaveLength(
+			1,
+		)
+		expect(screen.getByRole('img', { name: 'Target design' })).toBeTruthy()
+		dragTo(
+			pieceButton(0),
+			tileAt(
+				coordinateKey(
+					pieceCells(
+						puzzle.pieces[0],
+						puzzle.solution[puzzle.pieces[0].id],
+					)[0],
+				),
+			),
+		)
+		expect(pieceButton(0)).toHaveAccessibleName(/on board/)
+		vi.restoreAllMocks()
+	})
+})
 
 describe('PuzzlePlay', () => {
 	stubPointerHitTesting()
@@ -77,6 +379,138 @@ describe('PuzzlePlay', () => {
 		expect(onProgress).toHaveBeenLastCalledWith({
 			placed: 1,
 			rotated: true,
+		})
+	})
+
+	describe('rotating a held piece', () => {
+		const recipe = PUZZLE_RECIPES.find(
+			value => value.id === 'moderate-small',
+		)!
+		const rotated = generatePuzzle('tray-rotation', palettes[1], recipe)
+		const index = rotated.pieces.findIndex(piece => piece.tiles.length > 1)
+
+		function hold(pointerType: 'mouse' | 'touch') {
+			renderPlay(rotated)
+			const button = pieceButton(index)
+			hitTest.mockReturnValue(null)
+			fireEvent.pointerDown(button, {
+				pointerId: 1,
+				pointerType,
+				button: 0,
+				clientX: 10,
+				clientY: 10,
+			})
+			fireEvent.pointerMove(button, {
+				pointerId: 1,
+				pointerType,
+				clientX: 100,
+				clientY: 100,
+			})
+			const graphic = document.querySelector(
+				`.${boardStyles.draggedPiece}`,
+			)!
+			const points = (svg: Element) =>
+				[...svg.querySelectorAll('polygon')].map(tile =>
+					tile.getAttribute('points'),
+				)
+			return { button, graphic, points }
+		}
+
+		it('holds a touched piece above the fingertip, but a mouse piece at the pointer', () => {
+			const centerOf = (graphic: Element) => {
+				const style = (graphic as SVGElement).style
+				return {
+					x: parseFloat(style.left) + parseFloat(style.width) / 2,
+					y: parseFloat(style.top) + parseFloat(style.height) / 2,
+				}
+			}
+			const touch = hold('touch')
+			expect(centerOf(touch.graphic).x).toBeCloseTo(100, 6)
+			expect(centerOf(touch.graphic).y).toBeLessThan(100)
+			cleanup()
+			const mouse = hold('mouse')
+			expect(centerOf(mouse.graphic)).toEqual({ x: 100, y: 100 })
+		})
+
+		it('turns with the R key and keeps the turn when dropped in the air', () => {
+			const { button, graphic, points } = hold('mouse')
+			const trayBefore = points(button.querySelector('svg')!)
+			const before = points(graphic)
+			fireEvent.keyDown(window, { key: 'r' })
+			expect(points(graphic)).not.toEqual(before)
+			fireEvent.pointerUp(button, {
+				pointerId: 1,
+				pointerType: 'mouse',
+				clientX: 100,
+				clientY: 100,
+			})
+			expect(points(button.querySelector('svg')!)).not.toEqual(trayBefore)
+		})
+
+		it('ignores R with a modifier, so browser shortcuts still work', () => {
+			const { graphic, points } = hold('mouse')
+			const before = points(graphic)
+			fireEvent.keyDown(window, { key: 'r', metaKey: true })
+			expect(points(graphic)).toEqual(before)
+		})
+
+		it('turns with a right-click while a mouse holds the piece', () => {
+			const { graphic, points } = hold('mouse')
+			const before = points(graphic)
+			expect(fireEvent.contextMenu(document.body)).toBe(false)
+			expect(points(graphic)).not.toEqual(before)
+		})
+
+		it('turns when a second finger taps, but not for a second mouse event', () => {
+			const { graphic, points } = hold('touch')
+			const before = points(graphic)
+			fireEvent.pointerDown(document.body, {
+				pointerId: 1,
+				pointerType: 'touch',
+			})
+			expect(points(graphic)).toEqual(before)
+			fireEvent.pointerDown(document.body, {
+				pointerId: 2,
+				pointerType: 'touch',
+			})
+			expect(points(graphic)).not.toEqual(before)
+		})
+
+		it('leaves a lifted board piece as it was when the turn is dropped nowhere', async () => {
+			renderPlay(rotated)
+			const piece = rotated.pieces[index]
+			const button = pieceButton(index)
+			const user = userEvent.setup()
+			for (let i = 0; i < (rotated.solution[piece.id].rotation ?? 0); i++)
+				await user.click(button)
+			const destination = tileAt(
+				coordinateKey(rotated.solution[piece.id]),
+			)
+			dragTo(button, destination)
+			const placedFill = destination.getAttribute('fill')
+			hitTest.mockReturnValue(null)
+			fireEvent.pointerDown(destination, {
+				pointerId: 5,
+				pointerType: 'mouse',
+				button: 0,
+				clientX: 10,
+				clientY: 10,
+			})
+			fireEvent.pointerMove(destination, {
+				pointerId: 5,
+				pointerType: 'mouse',
+				clientX: 300,
+				clientY: 300,
+			})
+			fireEvent.keyDown(window, { key: 'r' })
+			fireEvent.pointerUp(destination, {
+				pointerId: 5,
+				pointerType: 'mouse',
+				clientX: 300,
+				clientY: 300,
+			})
+			expect(button).toHaveAccessibleName(/on board/)
+			expect(destination).toHaveAttribute('fill', placedFill)
 		})
 	})
 

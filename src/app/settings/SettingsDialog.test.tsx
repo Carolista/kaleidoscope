@@ -1,11 +1,11 @@
-import { describe, expect, it, vi } from 'vitest'
-import { act, render, screen, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { AccountProvider } from '@/features/account'
 import { fakeClient, sessionFor } from '@/test/fakeAccountClient'
 import { TestZenStateProvider } from '@/test/TestZenStateProvider'
-import { PlayerProgressContext } from '@/ui/content/PlayerProgressContext'
 import type { GuestImport } from '@/ui/content'
+import { PlayerProgressContext } from '@/ui/content/PlayerProgressContext'
+import { act, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
 import SettingsDialog from './SettingsDialog'
 
 function renderSettings(

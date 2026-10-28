@@ -19,7 +19,37 @@
 }
 
 .gridLinesToggle {
+	margin-bottom: 0.5rem;
+}
+
+.transparentToggle {
 	margin-bottom: 1rem;
+}
+
+/* Neutral checkerboard so transparency reads in both light and dark
+   modes. */
+.checkerboard {
+	border-radius: 4px;
+	background-color: #fff;
+	background-image:
+		linear-gradient(
+			45deg,
+			#ccc 25%,
+			transparent 25%,
+			transparent 75%,
+			#ccc 75%
+		),
+		linear-gradient(
+			45deg,
+			#ccc 25%,
+			transparent 25%,
+			transparent 75%,
+			#ccc 75%
+		);
+	background-size: 16px 16px;
+	background-position:
+		0 0,
+		8px 8px;
 }
 
 .image {

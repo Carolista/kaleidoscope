@@ -44,7 +44,7 @@ export default function RewardModal({
 					<section className={styles.reward}>
 						<Heading level={3} className={styles.subheading}>
 							New palette{palettes.length === 1 ? '' : 's'}{' '}
-							unlocked:
+							unlocked
 						</Heading>
 						{palettes.map(palette => (
 							<div key={palette.id} className={styles.item}>
@@ -64,7 +64,7 @@ export default function RewardModal({
 							className={styles.link}
 							onClick={onOpenZen}
 						>
-							Try it out in Zen Mode now
+							Try it out in Zen Mode now!
 						</button>
 					</section>
 				)}
@@ -72,7 +72,7 @@ export default function RewardModal({
 					<section className={styles.reward}>
 						<Heading level={3} className={styles.subheading}>
 							New puzzle set{bonusSets.length === 1 ? '' : 's'}{' '}
-							unlocked:
+							unlocked
 						</Heading>
 						{bonusSets.map(set => (
 							<UnlockedSetItem

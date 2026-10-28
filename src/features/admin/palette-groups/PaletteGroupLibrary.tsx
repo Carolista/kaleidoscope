@@ -35,6 +35,7 @@ import {
 	managePaletteGroup,
 	paletteGroupPurposeLabels,
 	paletteProgress,
+	releaseStateOf,
 	PALETTE_GROUP_PURPOSES,
 	type PaletteGroup,
 	type PaletteGroupAction,
@@ -82,6 +83,7 @@ export default function PaletteGroupLibrary({
 	const focusAdd = useRef(false)
 	const [purpose, setPurpose] = useState<PaletteGroupPurpose>('undecided')
 	const [purposeFilter, setPurposeFilter] = useState('all')
+	const [stateFilter, setStateFilter] = useState('all')
 	const [error, setError] = useState('')
 	const [deleteError, setDeleteError] = useState('')
 	const [status, setStatus] = useState('')
@@ -127,7 +129,10 @@ export default function PaletteGroupLibrary({
 		(name !== editing.name || purpose !== editing.purpose || order.dirty)
 	useUnsavedDraft({ dirty, pending: busy })
 	const shown = groups.filter(
-		group => purposeFilter === 'all' || group.purpose === purposeFilter,
+		group =>
+			(purposeFilter === 'all' || group.purpose === purposeFilter) &&
+			(stateFilter === 'all' ||
+				releaseStateOf(group.row) === stateFilter),
 	)
 	useEffect(() => {
 		if (!loading && !creating && focusAdd.current) {
@@ -206,6 +211,11 @@ export default function PaletteGroupLibrary({
 		<section aria-labelledby="palette-groups-title">
 			<AdminSectionHeading
 				id="palette-groups-title"
+				count={
+					editing || loading || catalogError
+						? undefined
+						: shown.length
+				}
 				title={
 					editing
 						? `Palette group: ${editing.name}${readOnly ? ' (read-only)' : ''}`
@@ -235,6 +245,19 @@ export default function PaletteGroupLibrary({
 								onChanged()
 							}}
 						/>
+						<Select
+							id="palette-group-state-filter"
+							aria-label="Show status"
+							value={stateFilter}
+							onChange={event =>
+								setStateFilter(event.target.value)
+							}
+						>
+							<option value="all">All statuses</option>
+							<option value="draft">Draft</option>
+							<option value="scheduled">Scheduled</option>
+							<option value="live">Published</option>
+						</Select>
 						<Select
 							id="palette-group-purpose-filter"
 							aria-label="Show purpose"
@@ -275,7 +298,7 @@ export default function PaletteGroupLibrary({
 				!catalogError &&
 				groups.length > 0 &&
 				shown.length === 0 && (
-					<p>No palette groups match this purpose.</p>
+					<p>No palette groups match these filters.</p>
 				)}
 			{creating && (
 				<GroupCreationDialog
@@ -424,16 +447,14 @@ export default function PaletteGroupLibrary({
 							}
 						>
 							<strong>{group.row.name}</strong>
-							<span>
-								{paletteGroupPurposeLabels[group.purpose]}
-							</span>
+							<em>{paletteGroupPurposeLabels[group.purpose]}</em>
 							<span>
 								{group.members.length}{' '}
 								{group.members.length === 1
 									? 'palette'
 									: 'palettes'}
 							</span>
-							{releaseStateLabel(group.row) && (
+							{releaseStateOf(group.row) === 'scheduled' && (
 								<span>{releaseStateLabel(group.row)}</span>
 							)}
 						</AdminGroupCard>

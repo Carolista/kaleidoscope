@@ -50,7 +50,7 @@ Today, the application reflects how my engineering approach has evolved. It has 
 - **Mobile-friendly modals:** Dialogs gently drift into focus and fade away on close, with animations skipped for reduced-motion preferences. Titles and close controls stay visible while content scrolls, with edge indicators for more options and background scrolling locked through closing.
 - **Automatic save:** All board patterns, your active board, per-shape size choices, and preferences are restored from browser storage on your next visit. Undo history starts fresh each session.
 - **Home, accounts:** The app opens on a Home screen with a greeting and a card each for Puzzle Mode and Zen Mode (the title takes you back). You can play as a guest, or create an account with email and password at any time and reset a forgotten password by email. An account saves your solved puzzles, unlocks the next shape, and can take in the progress you made as a guest on that device.
-- **Puzzle Mode:** Choose a released puzzle set, see its puzzles as solved pictures grouped by difficulty, and play one: arrange the pieces to match the target, with mirrored placement, mouse/touch dragging, keyboard-friendly select-and-place controls, and rotation where a set allows it. Solved puzzles are remembered on your device. Zen Mode offers the shapes and palettes you have unlocked.
+- **Puzzle Mode:** Choose a released puzzle set, see its puzzles as solved pictures grouped by difficulty, and play one: arrange the pieces to match the target, with mirrored placement, mouse/touch dragging, keyboard-friendly select-and-place controls, and rotation where a set allows it. The target is large and sits beside the board, with the pieces gathered in the board's empty corners, and a press brings it over the board at full size; grid lines on the target can be turned off. Solved puzzles are remembered on your device. Zen Mode offers the shapes and palettes you have unlocked.
 
 <!-- ## Visuals -->
 
@@ -89,20 +89,26 @@ screens stack the columns. The compact header groups account, sign-out, and them
 controls, with favicon navigation back to the player app. Admin defaults to dark
 mode and uses the same neutral charcoal/white theme colors as the player app.
 
-Click/tap tray pieces to rotate in rotation-enabled recipes; drag to move.
+Click/tap tray pieces to rotate in rotation-enabled recipes; drag to move. While
+holding a piece, press R (or right-click with a mouse, or tap with a second finger
+on touch) to turn it; it snaps to an open spot nearby or floats with a soft shadow.
 Double-click/double-tap board pieces or drag back to return them to the tray.
 Keyboard users can rotate/select with Enter/Space, activate a board tile to place,
-and use Delete/Backspace on an occupied tile to return its piece. Square tray
-slots stay fixed through rotation and use one subtle selected border.
+and use Delete/Backspace on an occupied tile to return its piece. Each tray piece
+keeps its place through rotation and uses one subtle selected border.
+Press the target to see it at the board's size over the board (press it again or
+Escape to put it back), and use the grid icon among the buttons, or Settings, to
+turn the lines between the target's tiles off when they blur small colors.
 The admin workspace has peer **Puzzles | Palettes | Shapes | Progression | Release** sections. Puzzles and
-Palettes each open on **Groups**, with an items view filtered by Unassigned, Assigned,
-Scheduled, or Published. Releases are scheduled from the **Release** section (a shape's core and bonus groups
+Palettes each open on **Groups**, with an **Individual** view that lists everything and can be filtered by
+status (Unassigned, Assigned, Scheduled, or Published); palette groups filter by status too. Each list heading
+shows how many items are listed, and selecting items shows how many are selected. Releases are scheduled from the **Release** section (a shape's core and bonus groups
 go out together as a package) or, for other groups, from their cards.
 Assigned puzzles and palettes list in set order: set name, then position in the set.
-In the Assigned views, **New puzzle** / **New palette** appears only while the list
-is filtered to one draft set; the new item is created directly in that set (a puzzle
-takes the set's shape and Set/pack use). Unassigned views create unassigned drafts.
-Selected items in the Assigned views can be bulk **Unassign**ed from their sets
+**New puzzle** / **New palette** appears everywhere except the Scheduled and Published filters. While the
+list is filtered to one draft set, the new item is created directly in that set (a puzzle
+takes the set's shape and Set/pack use); otherwise it is an unassigned draft.
+Selected drafts can be bulk **Unassign**ed from their sets
 (one request per set); their designs are unchanged.
 Loaded catalogs are cached for the session, so switching views is instant; lists
 reload after your own saves or with **Refresh**. In the puzzle drafts view,
@@ -112,7 +118,7 @@ drafts atomically; reopening uses the stored definition rather than regeneration
 After saving, name/palette/recipe choices apply to the next generation without
 changing the saved puzzle. A revised name survives randomization; an unchanged
 saved name clears.
-Unsaved work is guarded when leaving the workspace; choose the **Unassigned** tab
+Unsaved work is guarded when leaving the workspace; choose the **Individual** tab
 to return to the gallery. Every add/edit form also has a **Cancel** button (**Back**
 once saved or read-only) that returns to the same list, filters included, asking
 before it discards edits. The playtest Restart sits beside the pieces.

@@ -27,6 +27,8 @@ export interface IconButtonProps extends Omit<
 	readonly label: string
 	readonly title?: string
 	readonly size?: IconButtonSize
+	// Shows a small dot on the button to draw attention to something new.
+	readonly badge?: boolean
 	readonly iconStyle?: ComponentProps<typeof FontAwesomeIcon>['style']
 }
 
@@ -35,6 +37,7 @@ function IconButton({
 	label,
 	title,
 	size = 'md',
+	badge = false,
 	type = 'button',
 	className,
 	style,
@@ -53,6 +56,7 @@ function IconButton({
 			title={title ?? label}
 		>
 			<FontAwesomeIcon icon={icon} aria-hidden="true" style={iconStyle} />
+			{badge && <span className={styles.badge} aria-hidden="true" />}
 		</button>
 	)
 }

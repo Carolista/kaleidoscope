@@ -54,11 +54,12 @@
 	overscroll-behavior: contain;
 }
 
+/* Reaches past .body by the scroller's 6px bleed, so no content shows below the fade. */
 .edge {
 	position: absolute;
-	left: 0;
-	right: 0;
-	height: 28px;
+	left: -6px;
+	right: -6px;
+	height: 34px;
 	display: flex;
 	justify-content: center;
 	align-items: center;
@@ -67,12 +68,14 @@
 }
 
 .topEdge {
-	top: 0;
+	top: -6px;
+	padding-top: 6px;
 	background: linear-gradient(to bottom, var(--base, #fff), transparent);
 }
 
 .bottomEdge {
-	bottom: 0;
+	bottom: -6px;
+	padding-bottom: 6px;
 	background: linear-gradient(to top, var(--base, #fff), transparent);
 }
 

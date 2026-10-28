@@ -118,6 +118,7 @@ describe('SaveImageModal', () => {
 				true,
 				expect.any(String),
 				checked,
+				false,
 			)
 		}
 		expect(screen.getByRole('button', { name: 'Download' })).toBeDisabled()
@@ -134,7 +135,51 @@ describe('SaveImageModal', () => {
 			true,
 			expect.any(String),
 			false,
+			false,
 		)
+	})
+
+	it('toggles a transparent background with a checkerboard preview and remembers it', async () => {
+		mockUseImageExport.mockReturnValue({
+			exportState: {
+				status: 'ready',
+				blob: new Blob(['png']),
+				url: 'blob:preview',
+				filename: 'design.png',
+			},
+			canShare: false,
+			handleDownload: vi.fn(),
+			handleShare: vi.fn(),
+		})
+		const svgRef = { current: null }
+		const { unmount } = renderWithProvider(
+			<SaveImageModal open svgRef={svgRef} onClose={() => {}} />,
+		)
+		const toggle = screen.getByRole('checkbox', {
+			name: 'Transparent background',
+		})
+		expect(toggle).not.toBeChecked()
+		const preview = screen.getByRole('img').parentElement
+		expect(preview?.className).not.toContain('checkerboard')
+
+		await userEvent.setup().click(toggle)
+		expect(toggle).toBeChecked()
+		expect(preview?.className).toContain('checkerboard')
+		expect(mockUseImageExport).toHaveBeenLastCalledWith(
+			svgRef,
+			true,
+			expect.any(String),
+			true,
+			true,
+		)
+		unmount()
+
+		renderWithProvider(
+			<SaveImageModal open svgRef={svgRef} onClose={() => {}} />,
+		)
+		expect(
+			screen.getByRole('checkbox', { name: 'Transparent background' }),
+		).toBeChecked()
 	})
 
 	it('keeps the export session alive until its closing animation finishes', () => {
@@ -177,6 +222,7 @@ describe('SaveImageModal', () => {
 			true,
 			expect.any(String),
 			true,
+			false,
 		)
 		expect(screen.getByRole('img')).toHaveAttribute('src', 'blob:preview')
 		act(() => animations[1].onfinish?.())
@@ -185,6 +231,7 @@ describe('SaveImageModal', () => {
 			false,
 			expect.any(String),
 			true,
+			false,
 		)
 		expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 	})

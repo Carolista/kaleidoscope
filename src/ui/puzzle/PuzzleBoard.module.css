@@ -5,6 +5,12 @@
 	overflow: visible;
 }
 
+/* Matches the faded pieces in the tray (.piece:disabled in PuzzlePlay). */
+.gridGraphic[data-dimmed] {
+	opacity: 0.45;
+	filter: grayscale(0.8);
+}
+
 .targetCell,
 .mirrorCell,
 .wedgeCell,
@@ -61,4 +67,26 @@
 	z-index: 10;
 	pointer-events: none;
 	overflow: visible;
+	/* The piece itself rises and lowers with its shadow, so the shadow never
+	   lags behind the piece like dust. */
+	transition:
+		filter 250ms ease-out,
+		transform 250ms ease-out;
+}
+
+/* A held piece with no open spot nearby floats: it grows slightly and casts a
+   soft shadow, and it settles (back to scale 1, no shadow) when it snaps into
+   a spot. Shadow works on any palette, unlike a color change. */
+.floatingPiece {
+	transform: scale(1.01);
+	filter: drop-shadow(
+		calc(var(--lift) * -0.8) calc(var(--lift) * 0.8) calc(var(--lift) * 0.9)
+			rgb(0 0 0 / 0.75)
+	);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.draggedPiece {
+		transition: none;
+	}
 }

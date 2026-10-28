@@ -54,14 +54,14 @@ export default function ShapeUnlockedModal({
 						className={styles.link}
 						onClick={onOpenZen}
 					>
-						Try it out in Zen Mode now
+						Try it out in Zen Mode now!
 					</button>
 				</section>
 				{sets.length > 0 && (
 					<section className={styles.reward}>
 						<Heading level={3} className={styles.subheading}>
 							New puzzle set{sets.length === 1 ? '' : 's'}{' '}
-							unlocked:
+							unlocked
 						</Heading>
 						{sets.map(set => (
 							<UnlockedSetItem

@@ -5,3 +5,8 @@ import styles from './Header.module.css'
 export function releaseOpeningTitle(title: HTMLElement) {
 	title.classList.remove(styles.openingTitle)
 }
+
+// Puts the centered opening layout back, for an entrance that has to start over.
+export function restoreOpeningTitle(title: HTMLElement) {
+	title.classList.add(styles.openingTitle)
+}

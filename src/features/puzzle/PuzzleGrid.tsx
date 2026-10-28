@@ -32,7 +32,7 @@ export default function PuzzleGrid({
 				</Heading>
 			</div>
 			<p className={styles.progress}>
-				{solvedCount(set.puzzles, solved)} of {set.puzzles.length}
+				{solvedCount(set.puzzles, solved)}/{set.puzzles.length}
 			</p>
 			{difficultySections(set).map(section => {
 				const label = PUZZLE_DIFFICULTY_LABELS[section.difficulty]
@@ -62,6 +62,7 @@ export default function PuzzleGrid({
 											>
 												<PuzzleImage item={item} />
 											</span>
+											{item.name}
 											{done && (
 												<span
 													className={styles.check}

@@ -1,8 +1,7 @@
-import { useId, type CSSProperties } from 'react'
+import { useId } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core'
 import { faPuzzlePieceSimple, faSpa } from '@fortawesome/pro-solid-svg-icons'
-import { usePlayerContent } from '@/ui/content'
 import styles from './HomeScreen.module.css'
 
 interface Area {
@@ -10,32 +9,27 @@ interface Area {
 	readonly title: string
 	readonly tagline: string
 	readonly icon: IconDefinition
+	// File name under public/graphics.
+	readonly image: string
 }
 
 // In the order they are offered. A community area joins these in a later phase.
 const AREAS: readonly Area[] = [
 	{
 		id: 'puzzle',
-		title: 'Puzzle',
-		tagline: 'Engage your mind with clever geometric puzzles.',
+		title: 'Puzzle Mode',
+		tagline: 'Engage your mind with beautiful geometric puzzles.',
 		icon: faPuzzlePieceSimple,
+		image: 'puzzle.png',
 	},
 	{
 		id: 'zen',
-		title: 'Zen',
-		tagline: 'Relax and unwind with colorful creations.',
+		title: 'Zen Mode',
+		tagline: 'Relax and create colorful kaleidoscopes.',
 		icon: faSpa,
+		image: 'zen.png',
 	},
 ]
-
-// Diagonal bands, one per palette color.
-function bands(colors: readonly string[]) {
-	const step = 100 / colors.length
-	const stops = colors.map(
-		(color, slot) => `${color} ${slot * step}% ${(slot + 1) * step}%`,
-	)
-	return `linear-gradient(120deg, ${stops.join(', ')})`
-}
 
 function greeting(signedIn: boolean, name: string | null) {
 	if (!signedIn) return 'Welcome!'
@@ -60,7 +54,6 @@ export default function HomeScreen({
 	// A puzzle was left unfinished, so its card takes the player back to it.
 	readonly continuePuzzle?: boolean
 }) {
-	const { palettes } = usePlayerContent()
 	const idPrefix = useId()
 	const open = { puzzle: onOpenPuzzle, zen: onOpenZen }
 	return (
@@ -80,8 +73,7 @@ export default function HomeScreen({
 				)}
 			</div>
 			<div className={styles.cards}>
-				{AREAS.map((area, index) => {
-					const palette = palettes[index % palettes.length]
+				{AREAS.map(area => {
 					const resuming = area.id === 'puzzle' && continuePuzzle
 					const title = resuming ? 'Continue' : area.title
 					const tagline = resuming
@@ -96,19 +88,16 @@ export default function HomeScreen({
 							aria-describedby={`${idPrefix}-${area.id}-tagline`}
 							onClick={open[area.id]}
 						>
-							{palette && (
-								<span
-									className={styles.bands}
-									style={
-										{
-											backgroundImage: bands(
-												palette.colors,
-											),
-										} as CSSProperties
-									}
-									aria-hidden="true"
+							<span className={styles.art} aria-hidden="true">
+								<img
+									src={`${import.meta.env.BASE_URL}graphics/${area.image}`}
+									alt=""
+									width={960}
+									height={540}
+									draggable={false}
+									className={styles.image}
 								/>
-							)}
+							</span>
 							<span className={styles.caption}>
 								<span className={styles.titleRow}>
 									<FontAwesomeIcon

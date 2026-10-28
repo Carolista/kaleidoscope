@@ -120,7 +120,7 @@ export default function SettingsDialog({
 							<p className={styles.greeting}>
 								{account.firstName
 									? `Hi, ${account.firstName}!`
-									: 'Hi there!'}
+									: 'Hello!'}
 							</p>
 							<Button
 								className={styles.withIcon}

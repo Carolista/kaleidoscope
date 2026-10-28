@@ -6,6 +6,7 @@ import {
 	AdminMemberList,
 	AdminMemberRow,
 	AdminSectionHeading,
+	AdminSelectionBar,
 } from './AdminLayout'
 import styles from './AdminLayout.module.css'
 
@@ -33,6 +34,37 @@ describe('admin presentation', () => {
 		expect(screen.getByRole('button')).toBeDisabled()
 		expect(screen.getByRole('alert')).toHaveTextContent('Could not save.')
 		expect(screen.getByRole('status')).toHaveTextContent('Palette loaded.')
+	})
+
+	it('shows the listed total beside a heading only when a count is given', () => {
+		const { rerender } = render(
+			<AdminSectionHeading id="title" title="Palettes" count={3} />,
+		)
+		expect(screen.getByText('3 total')).toBeInTheDocument()
+		rerender(<AdminSectionHeading id="title" title="Palettes" />)
+		expect(screen.queryByText(/total/)).not.toBeInTheDocument()
+	})
+
+	it('shows how many cards are selected only once any are checked', () => {
+		const props = {
+			label: 'Bulk actions',
+			shown: 5,
+			disabled: false,
+			onSelectAll: () => {},
+			onClear: () => {},
+		}
+		const { rerender } = render(
+			<AdminSelectionBar {...props} checked={0}>
+				<button>Act</button>
+			</AdminSelectionBar>,
+		)
+		expect(screen.queryByText(/selected/)).not.toBeInTheDocument()
+		rerender(
+			<AdminSelectionBar {...props} checked={2}>
+				<button>Act</button>
+			</AdminSelectionBar>,
+		)
+		expect(screen.getByText('2 selected')).toBeInTheDocument()
 	})
 
 	it.each(['puzzles', 'palettes', 'groups'] as const)(

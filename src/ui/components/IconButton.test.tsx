@@ -42,6 +42,15 @@ describe('IconButton', () => {
 		expect(button).toHaveAttribute('title', 'Undo (Ctrl/Cmd+Z)')
 	})
 
+	it('shows a dot only when asked to', () => {
+		const { container, rerender } = render(
+			<IconButton icon={faEraser} label="Reset" />,
+		)
+		expect(container.querySelector('[class*="badge"]')).toBeNull()
+		rerender(<IconButton icon={faEraser} label="Reset" badge />)
+		expect(container.querySelector('[class*="badge"]')).not.toBeNull()
+	})
+
 	it('can be disabled', () => {
 		render(
 			<IconButton

@@ -12,6 +12,7 @@ import {
 	tileAt,
 } from '@/test/puzzleInteraction'
 import PuzzleMode from './PuzzleMode'
+import playStyles from '@/ui/puzzle/PuzzlePlay.module.css'
 
 type FakeAnimation = { cancel: () => void; onfinish: (() => void) | null }
 
@@ -107,6 +108,62 @@ describe('puzzle swipe', () => {
 				node => (node as HTMLElement).inert,
 			),
 		).toHaveLength(0)
+	})
+
+	it('keeps finished animations in the outgoing copy finished, so the Congrats text does not replay', () => {
+		const celebrate = (root: ParentNode) =>
+			[...root.querySelectorAll(`.${playStyles.celebration}`)].map(
+				element => element,
+			)
+		// The outgoing copy is marked inert (as a property, which jsdom keeps off the attributes).
+		const inCopy = (element: Element) => {
+			for (
+				let node: Element | null = element;
+				node;
+				node = node.parentElement
+			)
+				if ((node as HTMLElement).inert) return true
+			return false
+		}
+		// One fake CSS animation per celebration element, as a browser would
+		// report: the original finished, and a copy that starts from zero.
+		const fakes = new Map<
+			Element,
+			{
+				effect: { target: Element }
+				animationName: string
+				currentTime: number
+			}
+		>()
+		const originalGetAnimations = document.getAnimations
+		document.getAnimations = () =>
+			celebrate(document).map(element => {
+				if (!fakes.has(element)) {
+					const isCopy = inCopy(element)
+					fakes.set(element, {
+						effect: { target: element },
+						animationName: 'celebrate',
+						currentTime: isCopy ? 0 : 1600,
+					})
+				}
+				return fakes.get(element) as unknown as Animation
+			})
+		try {
+			open()
+			for (const [index, piece] of first.pieces.entries()) {
+				dragTo(
+					pieceButton(index),
+					tileAt(coordinateKey(first.solution[piece.id])),
+				)
+			}
+			expect(celebrate(document)).toHaveLength(1)
+			fireEvent.click(screen.getByRole('button', { name: 'Next puzzle' }))
+			const copied = celebrate(document).find(inCopy)
+			expect(copied).toBeDefined()
+			expect(fakes.get(copied as Element)?.currentTime).toBe(1600)
+		} finally {
+			document.getAnimations = originalGetAnimations
+		}
 	})
 
 	it('swaps instantly when the user prefers reduced motion', () => {

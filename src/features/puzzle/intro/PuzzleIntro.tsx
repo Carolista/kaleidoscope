@@ -11,6 +11,9 @@ import styles from './PuzzleIntro.module.css'
 const INTRO_SEED = 'intro-3'
 const RECIPES = { basic: PUZZLE_RECIPES[0], rotation: PUZZLE_RECIPES[1] }
 const PIECE_COUNT = 3
+// Header, welcome text, guidance, and footer around the stage, which a wide
+// screen's height must also hold.
+const PAGE_ROOM = 500
 
 interface PuzzleIntroProps {
 	readonly track: IntroTrack
@@ -31,7 +34,7 @@ function guidance(track: IntroTrack, placed: number, hasRotated: boolean) {
 		return hasRotated
 			? 'Keep tapping until the colors line up with the picture, then drag the piece onto the board.'
 			: 'These pieces can turn! Tap a piece in the tray to rotate it.'
-	return 'Match the picture at the top. Drag each piece onto the board, or tap a piece and then a tile.'
+	return 'Match the picture in the corner. Tap it to move it over the board at full size. Drag each piece from the tray onto the board.'
 }
 
 function PuzzleIntro({ track, palette, onContinue }: PuzzleIntroProps) {
@@ -82,6 +85,10 @@ function PuzzleIntro({ track, palette, onContinue }: PuzzleIntroProps) {
 			)}
 			<PuzzlePlay
 				puzzle={puzzle}
+				layout="stage"
+				wide
+				pageRoom={PAGE_ROOM}
+				hidePaletteName
 				solvedMessage="Puzzle solved! Your design matches the target."
 				onSolve={() => setSolved(true)}
 				onProgress={progress => {

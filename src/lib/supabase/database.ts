@@ -811,6 +811,17 @@ export type Database = {
 				}
 				Returns: string[]
 			}
+			correct_published_palette: {
+				Args: {
+					p_colors: string[]
+					p_expected_colors: string[]
+					p_expected_name: string
+					p_expected_revision: number
+					p_id: string
+					p_name: string
+				}
+				Returns: string
+			}
 			delete_palette_draft: {
 				Args: {
 					p_expected_colors: string[]
@@ -868,6 +879,21 @@ export type Database = {
 					p_track?: string
 				}
 				Returns: string
+			}
+			locked_set_previews: {
+				Args: never
+				Returns: {
+					board_size: string
+					definition: Json
+					difficulty: string
+					id: string
+					name: string
+					palette_id: string
+					published_at: string | null
+					release_at: string | null
+					rotation_allowed: boolean
+					shape_id: string
+				}[]
 			}
 			manage_shape_progression: {
 				Args: { p_shape_ids: string[] }

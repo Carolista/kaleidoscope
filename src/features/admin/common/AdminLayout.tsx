@@ -8,17 +8,25 @@ export function AdminSectionHeading({
 	id,
 	title,
 	level = 2,
+	count,
 	children,
 }: {
 	readonly id: string
 	readonly title: ReactNode
 	readonly level?: 2 | 3
+	// Items listed below the heading; omit while loading or when no list is shown.
+	readonly count?: number
 	readonly children?: ReactNode
 }) {
 	const Heading = level === 2 ? 'h2' : 'h3'
 	return (
 		<div className={styles.heading}>
-			<Heading id={id}>{title}</Heading>
+			<div className={styles.title}>
+				<Heading id={id}>{title}</Heading>
+				{count !== undefined && (
+					<span className={styles.count}>{count} total</span>
+				)}
+			</div>
 			{children && <div className={styles.actions}>{children}</div>}
 		</div>
 	)
@@ -148,6 +156,9 @@ export function AdminSelectionBar({
 				disabled={disabled}
 				onChange={onSelectAll}
 			/>
+			{checked > 0 && (
+				<span className={styles.selectedCount}>{checked} selected</span>
+			)}
 			{checked > 0 && (
 				<div
 					className={styles.bulkActions}

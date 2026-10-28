@@ -4,7 +4,9 @@ import {
 	faCircleExclamation,
 } from '@fortawesome/pro-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { releaseStateOf } from '@/features/admin/services'
 import styles from './ReleaseStatusIcon.module.css'
+import { releaseStateLabel } from './releaseText'
 
 const icons = {
 	live: faCircleCheck,
@@ -35,6 +37,21 @@ export default function ReleaseStatusIcon({
 			<FontAwesomeIcon icon={icons[status]} aria-hidden="true" />
 		</span>
 	)
+}
+
+// The mark for a card's own release state, labeled with the date when scheduled;
+// nothing for a draft.
+export function ReleaseStateIcon({
+	row,
+}: {
+	readonly row: {
+		readonly published_at: string | null
+		readonly release_at: string | null
+	}
+}) {
+	const state = releaseStateOf(row)
+	if (state === 'draft') return null
+	return <ReleaseStatusIcon status={state} label={releaseStateLabel(row)} />
 }
 
 // Reward palettes go out one by one with what awards them, never as a group,

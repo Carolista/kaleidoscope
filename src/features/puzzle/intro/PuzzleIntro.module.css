@@ -9,8 +9,8 @@
 }
 
 .exclamation {
-	font-family: 'Mr Dafoe', cursive;
-	font-size: clamp(1.75rem, 8vw, 3rem);
+	font-family: 'Hurricane', cursive;
+	font-size: clamp(2.1rem, 9.6vw, 3.6rem);
 	font-weight: 400;
 	margin: 0;
 }
@@ -27,7 +27,7 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	min-height: calc(3 * 1.4 * 1.1rem);
+	min-height: calc(4 * 1.4 * 1.1rem);
 }
 
 .guidance .message {

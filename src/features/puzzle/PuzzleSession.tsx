@@ -1,16 +1,24 @@
 import { Button, PlayerIconButton } from '@/ui/components'
 import type { PlayerPuzzle, PlayerPuzzleSet } from '@/ui/content'
 import { usePuzzleResume } from '@/ui/content'
-import { PuzzlePlay, type PuzzlePlayHandle } from '@/ui/puzzle'
+import {
+	PuzzlePlay,
+	type PuzzlePlayHandle,
+	useTargetGridToggle,
+} from '@/ui/puzzle'
 import { DuotoneTintColorContext } from '@/ui/theme'
 import {
 	faLeftFromBracket,
 	faRotateReverse,
 } from '@fortawesome/sharp-duotone-solid-svg-icons'
-import { useRef, useState } from 'react'
 import type { Ref } from 'react'
+import { useRef, useState } from 'react'
+import { pickCelebration } from './celebration'
 import styles from './PuzzleMode.module.css'
 import { nextUnsolvedPuzzle } from './setProgress'
+
+// Header, controls, and footer around the stage, which a wide screen's height must also hold.
+const PAGE_ROOM = 350
 
 export default function PuzzleSession({
 	set,
@@ -33,7 +41,10 @@ export default function PuzzleSession({
 }) {
 	const [justSolved, setJustSolved] = useState(false)
 	const [advancing, setAdvancing] = useState(false)
+	// Picked when solved rather than during render, so re-renders never change it.
+	const [celebration, setCelebration] = useState('')
 	const play = useRef<PuzzlePlayHandle>(null)
+	const gridToggle = useTargetGridToggle()
 	const resume = usePuzzleResume()
 	// Read once: the board starts from what was left, and the session is rebuilt per puzzle.
 	const [earlier] = useState(() => resume.attemptFor(item.id))
@@ -55,11 +66,15 @@ export default function PuzzleSession({
 				resume.save(item.id, { setId: set.id, ...state })
 			}
 			hidden={hidden}
+			layout="stage"
+			wide
+			pageRoom={PAGE_ROOM}
 			solvedMessage="Puzzle solved! Your design matches the target."
 			contentRef={contentRef}
-			celebration="Congrats!"
+			celebration={celebration}
 			onSolve={() => {
 				resume.clear(item.id)
+				setCelebration(pickCelebration())
 				setJustSolved(true)
 				onSolved(item.id)
 			}}
@@ -83,6 +98,7 @@ export default function PuzzleSession({
 							Next puzzle
 						</Button>
 					)}
+					<PlayerIconButton {...gridToggle} />
 					<PlayerIconButton
 						icon={faRotateReverse}
 						label="Restart"

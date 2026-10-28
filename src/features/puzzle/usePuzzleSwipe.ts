@@ -3,6 +3,13 @@ import { useCallback, useLayoutEffect, useRef } from 'react'
 export const SWIPE_MS = 700
 const SWIPE_EASING = 'cubic-bezier(0.4, 0, 0.2, 1)'
 
+interface RunningAnimation {
+	// The animated element's place among the copied node and its descendants.
+	readonly index: number
+	readonly name: string
+	readonly time: number
+}
+
 interface Snapshot {
 	readonly clone: HTMLElement
 	readonly left: number
@@ -10,11 +17,54 @@ interface Snapshot {
 	readonly width: number
 	readonly height: number
 	readonly transform: string
+	readonly animations: readonly RunningAnimation[]
+}
+
+// Every element in a node and its descendants, in document order, which is the
+// same for a node and its clone.
+function elementsOf(node: HTMLElement): Element[] {
+	return [node, ...node.querySelectorAll('*')]
+}
+
+// The CSS animations playing or holding their end state in a node, with how far
+// along each is. A clone starts every animation again from zero, which would
+// replay finished ones (like the "Congrats!" fade) in the copy that flies away.
+function recordAnimations(node: HTMLElement): RunningAnimation[] {
+	if (typeof document.getAnimations !== 'function') return []
+	const elements = elementsOf(node)
+	return document.getAnimations().flatMap(animation => {
+		const target = (animation.effect as KeyframeEffect | null)?.target
+		const index = target ? elements.indexOf(target) : -1
+		const name = (animation as Partial<CSSAnimation>).animationName
+		const time = Number(animation.currentTime)
+		return index < 0 || !name || Number.isNaN(time)
+			? []
+			: [{ index, name, time }]
+	})
+}
+
+// Puts the clone's animations where the original's were when it was copied.
+function resumeAnimations(
+	clone: HTMLElement,
+	recorded: readonly RunningAnimation[],
+) {
+	if (!recorded.length || typeof document.getAnimations !== 'function') return
+	const elements = elementsOf(clone)
+	for (const animation of document.getAnimations()) {
+		const target = (animation.effect as KeyframeEffect | null)?.target
+		const index = target ? elements.indexOf(target) : -1
+		const name = (animation as Partial<CSSAnimation>).animationName
+		const match = recorded.find(
+			item => item.index === index && item.name === name,
+		)
+		if (match) animation.currentTime = match.time
+	}
 }
 
 function captureSnapshot(node: HTMLElement): Snapshot {
 	// If the puzzle is replaced mid-entrance, the copy starts where it is now.
 	const { transform } = getComputedStyle(node)
+	const animations = recordAnimations(node)
 	const clone = node.cloneNode(true) as HTMLElement
 	clone.setAttribute('aria-hidden', 'true')
 	clone.inert = true
@@ -27,6 +77,7 @@ function captureSnapshot(node: HTMLElement): Snapshot {
 		width: node.offsetWidth,
 		height: node.offsetHeight,
 		transform,
+		animations,
 	}
 }
 
@@ -96,6 +147,7 @@ export function usePuzzleSwipe(puzzleKey: string | null) {
 				pointerEvents: 'none',
 			})
 			stage.appendChild(clone)
+			resumeAnimations(clone, snapshot.animations)
 			const leaving = clone
 			exit = leaving.animate(
 				[

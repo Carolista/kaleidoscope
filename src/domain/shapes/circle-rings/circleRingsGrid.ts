@@ -13,8 +13,8 @@ import type { CircleRingsLayout } from './circleRingsLayout'
 // Number of rings surrounding the center dot. More rings pack the outer
 // rings' growing circle counts too tightly to keep every circle at a
 // comfortable minimum touch-target size (~30px) at the grid's max
-// on-screen width; 5 rings leaves enough room for a clearly visible
-// size increase ring-to-ring while keeping that floor. Yields 12
+// on-screen width; 5 rings keeps that floor with a slight, even size
+// increase ring-to-ring. Yields 12
 // clickable groups (see circleRingsGrid.test.ts).
 export const CIRCLE_RINGS_GRID_SIZE = 5
 export const CIRCLE_RINGS_GRID_SIZES: Record<GridSize, number> = {

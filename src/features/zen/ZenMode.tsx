@@ -10,7 +10,7 @@ import { GridShapeButton } from '@/features/zen/controls/shapes'
 import { ColorOptions, PaletteButton } from '@/features/zen/controls/palettes'
 import { SaveImageButton } from '@/features/zen/export'
 import { GridTransition, ShapeGrid } from '@/features/zen/grid'
-import { IntroSequence } from '@/features/zen/intro'
+import { ZenIntro } from '@/features/zen/intro'
 import { useZenState } from '@/features/zen/state'
 import styles from './ZenMode.module.css'
 
@@ -18,16 +18,20 @@ export default function ZenMode({
 	isFirstVisit,
 	showIntro,
 	onIntroComplete,
+	openPalette = false,
 }: {
 	readonly isFirstVisit: boolean
 	readonly showIntro: boolean
 	readonly onIntroComplete: () => void
+	// Opens the palette picker on arrival, unless the first-visit controls info is
+	// already doing so.
+	readonly openPalette?: boolean
 }) {
 	const { state } = useZenState()
 	const svgRef = useRef<SVGSVGElement>(null)
 
 	return showIntro ? (
-		<IntroSequence onContinue={onIntroComplete} />
+		<ZenIntro onContinue={onIntroComplete} />
 	) : (
 		<>
 			<GridTransition
@@ -55,7 +59,9 @@ export default function ZenMode({
 				>
 					<div className={styles.buttonRow}>
 						<EditableAreaToggle />
-						<PaletteButton />
+						<PaletteButton
+							initialOpen={openPalette && !isFirstVisit}
+						/>
 						<RandomizeDesignButton />
 						<ResetDesignButton />
 					</div>

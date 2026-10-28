@@ -247,8 +247,9 @@ export default function AccountDialog({
 				<form key={view} className={styles.form} onSubmit={submit}>
 					{view === 'forgot' && (
 						<p className={styles.intro}>
-							Enter your account's email and we'll send you a link
-							to choose a new password.
+							Enter the email address associate with your
+							Kaleidoscope Puzzle account and we'll send you a
+							link to choose a new password.
 						</p>
 					)}
 					{view === 'signUp' && (

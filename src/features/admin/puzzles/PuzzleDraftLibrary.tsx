@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import {
+	faEye,
 	faPenToSquare,
 	faTrashCan,
 	faRotate,
@@ -22,6 +23,7 @@ import {
 	managePuzzleGroup,
 	PUZZLE_GROUP_PURPOSES,
 	puzzleGroupPurposeLabels,
+	releaseStateOf,
 	type LibraryDraft,
 	type PuzzleGroup,
 } from '@/features/admin/services'
@@ -37,7 +39,6 @@ import {
 	AdminSelectionBar,
 	useCheckedIds,
 	errorMessage,
-	SeparatorDot,
 } from '@/features/admin/common'
 import {
 	Button,
@@ -47,7 +48,9 @@ import {
 	Select,
 } from '@/ui/components'
 import { useCatalog, useCatalogInvalidation } from '@/features/admin/catalog'
+import { ReleaseStateIcon, releaseStateLabel } from '@/features/admin/release'
 import PuzzleDraftEditor from './PuzzleDraftEditor'
+import PublishedPuzzleView from './PublishedPuzzleView'
 import { useUnsavedDraft } from '@/ui/navigation'
 import { useModalState } from '@/ui/hooks'
 import { compareGroupOrder } from '@/features/admin/groups'
@@ -60,12 +63,39 @@ function groupOrderKey(draft: LibraryDraft) {
 	}
 }
 
+export type PuzzleStatus = 'drafts' | 'assigned' | 'scheduled' | 'published'
+export type PuzzleStatusFilter = 'all' | PuzzleStatus
+
+const statusOrder: readonly PuzzleStatus[] = [
+	'drafts',
+	'assigned',
+	'scheduled',
+	'published',
+]
+
+function puzzleStatus(draft: LibraryDraft): PuzzleStatus {
+	const state = releaseStateOf(draft.row)
+	if (state === 'scheduled') return 'scheduled'
+	if (state === 'live') return 'published'
+	return draft.assigned ? 'assigned' : 'drafts'
+}
+
+// Only drafts take bulk actions; scheduled and live puzzles are managed through their group.
+function isEditable(status: PuzzleStatus) {
+	return status === 'drafts' || status === 'assigned'
+}
+
+function releaseTime(draft: LibraryDraft) {
+	return Date.parse(draft.row.release_at ?? '') || 0
+}
+
 // Only unassigned drafts may be deleted, singly or in bulk.
 function deletable(draft: LibraryDraft) {
 	return !draft.assigned && !draft.row.published_at && !draft.row.release_at
 }
 
 export interface LibraryView {
+	readonly status: PuzzleStatusFilter
 	readonly purpose: string
 	readonly shape: string
 	readonly track: string
@@ -79,7 +109,6 @@ export default function PuzzleDraftLibrary({
 	palettes,
 	onNew,
 	initialView,
-	catalogStatus,
 	onRefreshPalettes,
 	palettesLoading,
 	palettesRefreshing,
@@ -90,20 +119,35 @@ export default function PuzzleDraftLibrary({
 	readonly onNew?: (group?: PuzzleGroup, view?: LibraryView) => void
 	// Restores the filters after returning from the creation form.
 	readonly initialView?: LibraryView
-	readonly catalogStatus?: 'drafts' | 'assigned'
 	readonly onRefreshPalettes?: () => void
 	readonly palettesLoading?: boolean
 	readonly palettesRefreshing?: boolean
 	readonly palettesError?: boolean
 }) {
-	const draftCatalog = useCatalog('puzzleDrafts', client)
+	const [statusFilter, setStatusFilter] = useState<PuzzleStatusFilter>(
+		initialView?.status ?? 'all',
+	)
+	// Each source loads only when the chosen status can include its puzzles.
+	const showDrafts =
+		statusFilter !== 'scheduled' && statusFilter !== 'published'
+	const showPrepared =
+		statusFilter !== 'drafts' && statusFilter !== 'assigned'
+	const draftCatalog = useCatalog('puzzleDrafts', client, showDrafts)
+	const preparedCatalog = useCatalog('preparedPuzzles', client, showPrepared)
 	const invalidate = useCatalogInvalidation()
-	const drafts: readonly LibraryDraft[] = draftCatalog.data ?? []
-	const loading = draftCatalog.loading
-	const loadFailed = !!draftCatalog.error && !loading
+	const puzzles: readonly LibraryDraft[] = [
+		...(draftCatalog.data ?? []),
+		...(preparedCatalog.data ?? []),
+	]
+	const loading = draftCatalog.loading || preparedCatalog.loading
+	const refreshing = draftCatalog.refreshing || preparedCatalog.refreshing
+	const catalogError =
+		(showDrafts && draftCatalog.error) ||
+		(showPrepared && preparedCatalog.error)
+	const loadFailed = !!catalogError && !loading
 	const [selectedId, setSelectedId] = useState<string | null>(null)
 	const [error, setError] = useState('')
-	const [purposeFilter, setPurposeFilter] = useState(
+	const [purposeChoice, setPurposeFilter] = useState(
 		initialView?.purpose ?? 'all',
 	)
 	const [shapeFilter, setShapeFilter] = useState(initialView?.shape ?? 'all')
@@ -120,34 +164,13 @@ export default function PuzzleDraftLibrary({
 	const [actionError, setActionError] = useState('')
 	const bulkWorking = useRef(false)
 	useUnsavedDraft({ dirty: false, pending: bulkBusy })
-	const groupFilterActive =
-		catalogStatus === 'assigned' &&
-		groupChoice !== 'all' &&
-		groupChoice !== 'none'
-	const groupCatalog = useCatalog(
-		'puzzleGroups',
-		client,
-		action?.kind === 'group' || groupFilterActive,
-	)
-	// Released groups are locked, so only drafts can receive puzzles.
-	const draftGroups: readonly PuzzleGroup[] = (
-		groupCatalog.data ?? []
-	).filter(group => !group.row.published_at && !group.row.release_at)
-	const groupsLoading = groupCatalog.loading
-	const groupsError =
-		action?.kind === 'group' && groupCatalog.error
-			? errorMessage(groupCatalog.error, fallbackError)
-			: ''
-	const selected = drafts.find(value => value.row.id === selectedId)
-	const inStatus = drafts.filter(
-		value =>
-			!catalogStatus ||
-			(!value.row.published_at &&
-				!value.row.release_at &&
-				value.assigned === (catalogStatus === 'assigned')),
+	const selected = puzzles.find(value => value.row.id === selectedId)
+	const inStatus = puzzles.filter(
+		value => statusFilter === 'all' || puzzleStatus(value) === statusFilter,
 	)
 	// Unassigned drafts never belong to a group, so only offer those filters elsewhere.
-	const showGroupFilters = catalogStatus !== 'drafts'
+	const showGroupFilters = statusFilter !== 'drafts'
+	const purposeFilter = showGroupFilters ? purposeChoice : 'all'
 	const inPurpose = inStatus.filter(
 		value =>
 			purposeFilter === 'all' || value.groupPurpose === purposeFilter,
@@ -160,18 +183,34 @@ export default function PuzzleDraftLibrary({
 		),
 	].sort((a, b) => a[1].localeCompare(b[1]))
 	const shownGroup =
-		groupChoice === 'all' ||
-		groupChoice === 'none' ||
-		groupOptions.some(([id]) => id === groupChoice)
+		showGroupFilters &&
+		(groupChoice === 'all' ||
+			(groupChoice === 'none' && statusFilter !== 'assigned') ||
+			groupOptions.some(([id]) => id === groupChoice))
 			? groupChoice
 			: 'all'
+	const groupFilterActive = shownGroup !== 'all' && shownGroup !== 'none'
+	const groupCatalog = useCatalog(
+		'puzzleGroups',
+		client,
+		action?.kind === 'group' || groupFilterActive,
+	)
+	const groupsLoading = groupCatalog.loading
+	const groupsError =
+		action?.kind === 'group' && groupCatalog.error
+			? errorMessage(groupCatalog.error, fallbackError)
+			: ''
+	// Released groups are locked, so only drafts can receive puzzles.
+	const draftGroups: readonly PuzzleGroup[] = (
+		groupCatalog.data ?? []
+	).filter(group => !group.row.published_at && !group.row.release_at)
 	// New puzzles join the filtered group when it is still an editable draft.
 	const filteredGroup = groupFilterActive
 		? draftGroups.find(
 				group => group.row.id === shownGroup && !group.row.release_at,
 			)
 		: undefined
-	const canCreate = catalogStatus !== 'assigned' || !!filteredGroup
+	const canCreate = showDrafts
 	const filtered = inPurpose.filter(
 		value =>
 			(shapeFilter === 'all' || value.row.shape_id === shapeFilter) &&
@@ -182,19 +221,29 @@ export default function PuzzleDraftLibrary({
 					? !value.groupId
 					: value.groupId === shownGroup)),
 	)
-	const visible =
-		catalogStatus === 'assigned'
-			? [...filtered].sort((a, b) =>
-					compareGroupOrder(groupOrderKey(a), groupOrderKey(b)),
-				)
-			: filtered
-	const selection = useCheckedIds(visible.map(draft => draft.row.id))
-	const checked = visible.filter(draft => selection.checked.has(draft.row.id))
+	// Unassigned, then assigned in group order, then scheduled and live by release time.
+	const visible = [...filtered].sort((a, b) => {
+		const state = puzzleStatus(a)
+		return (
+			statusOrder.indexOf(state) - statusOrder.indexOf(puzzleStatus(b)) ||
+			(state === 'drafts'
+				? 0
+				: (state === 'assigned'
+						? 0
+						: releaseTime(a) - releaseTime(b)) ||
+					compareGroupOrder(groupOrderKey(a), groupOrderKey(b)))
+		)
+	})
+	const selectable = visible.filter(draft => isEditable(puzzleStatus(draft)))
+	const selection = useCheckedIds(selectable.map(draft => draft.row.id))
+	const checked = selectable.filter(draft =>
+		selection.checked.has(draft.row.id),
+	)
 	// Groups accept only puzzles matching their shape and track, so the choices depend on the batch.
 	const canAssign = checked.every(draft => !draft.assigned)
 	const assigning =
 		action?.kind === 'group'
-			? drafts.filter(draft => action.ids.includes(draft.row.id))
+			? puzzles.filter(draft => action.ids.includes(draft.row.id))
 			: []
 	const assignableGroups = draftGroups.filter(group =>
 		assigning.every(draft => groupAcceptsPuzzle(group.row, draft.row)),
@@ -242,7 +291,7 @@ export default function PuzzleDraftLibrary({
 			} else if (action.kind === 'unassign') {
 				// One request per group; a failure part-way leaves earlier groups unassigned.
 				const byGroup = new Map<string, string[]>()
-				for (const draft of drafts)
+				for (const draft of puzzles)
 					if (draft.groupId && action.ids.includes(draft.row.id))
 						byGroup.set(draft.groupId, [
 							...(byGroup.get(draft.groupId) ?? []),
@@ -286,10 +335,23 @@ export default function PuzzleDraftLibrary({
 			setBulkBusy(false)
 		}
 	}
+	const selectedStatus = selected ? puzzleStatus(selected) : null
+	if (selected && selectedStatus === 'published') {
+		return (
+			<PublishedPuzzleView
+				puzzle={selected}
+				palettes={palettes}
+				onBack={() => setSelectedId(null)}
+			/>
+		)
+	}
 	if (selected) {
+		const prepared = selectedStatus === 'scheduled'
+		const sourceCatalog = prepared ? preparedCatalog : draftCatalog
 		return (
 			<>
 				<AdminFeedback status={status} />
+				{prepared && <p>{releaseStateLabel(selected.row)}.</p>}
 				<PuzzleDraftEditor
 					key={selected.row.id}
 					client={client}
@@ -302,7 +364,7 @@ export default function PuzzleDraftLibrary({
 					onCancel={() => setSelectedId(null)}
 					onChanged={(status, updated) => {
 						setStatus(status)
-						draftCatalog.update(previous =>
+						sourceCatalog.update(previous =>
 							updated
 								? previous.map(value =>
 										value.row.id === updated.row.id
@@ -316,7 +378,10 @@ export default function PuzzleDraftLibrary({
 						)
 						setSelectedId(null)
 						// Names, palettes, and designs also appear in group previews.
-						invalidate('puzzleDrafts', 'puzzleGroups')
+						invalidate(
+							prepared ? 'preparedPuzzles' : 'puzzleDrafts',
+							'puzzleGroups',
+						)
 					}}
 				/>
 			</>
@@ -326,11 +391,8 @@ export default function PuzzleDraftLibrary({
 		<section aria-labelledby="draft-library-title">
 			<AdminSectionHeading
 				id="draft-library-title"
-				title={
-					catalogStatus === 'assigned'
-						? 'Assigned puzzles'
-						: 'Puzzle drafts'
-				}
+				title="Puzzles"
+				count={loading || loadFailed ? undefined : visible.length}
 			>
 				{onNew && canCreate && (
 					<AdminIconButton
@@ -339,7 +401,8 @@ export default function PuzzleDraftLibrary({
 						disabled={bulkBusy}
 						onClick={() =>
 							onNew(filteredGroup, {
-								purpose: purposeFilter,
+								status: statusFilter,
+								purpose: purposeChoice,
 								shape: shapeFilter,
 								track: trackFilter,
 								group: groupChoice,
@@ -349,15 +412,38 @@ export default function PuzzleDraftLibrary({
 				)}
 				<AdminIconButton
 					icon={faRotate}
-					label="Refresh drafts"
+					label="Refresh puzzles"
 					disabled={loading || bulkBusy}
 					onClick={() => {
 						selection.clear()
 						setAction(null)
 						setError('')
-						void draftCatalog.refresh().catch(() => {})
+						if (showDrafts)
+							void draftCatalog.refresh().catch(() => {})
+						if (showPrepared)
+							void preparedCatalog.refresh().catch(() => {})
 					}}
 				/>
+				<Select
+					id="draft-status-filter"
+					aria-label="Show status"
+					value={statusFilter}
+					disabled={bulkBusy}
+					onChange={event => {
+						setStatusFilter(
+							event.target.value as PuzzleStatusFilter,
+						)
+						setSelectedId(null)
+						selection.clear()
+						setAction(null)
+					}}
+				>
+					<option value="all">All statuses</option>
+					<option value="drafts">Unassigned</option>
+					<option value="assigned">Assigned</option>
+					<option value="scheduled">Scheduled</option>
+					<option value="published">Published</option>
+				</Select>
 				<Select
 					id="draft-shape-filter"
 					aria-label="Show shape"
@@ -425,7 +511,7 @@ export default function PuzzleDraftLibrary({
 							}}
 						>
 							<option value="all">All groups</option>
-							{catalogStatus !== 'assigned' && (
+							{statusFilter !== 'assigned' && (
 								<option value="none">No group</option>
 							)}
 							{groupOptions.map(([id, name]) => (
@@ -440,8 +526,8 @@ export default function PuzzleDraftLibrary({
 			<AdminFeedback
 				error={
 					error ||
-					(draftCatalog.error
-						? errorMessage(draftCatalog.error, fallbackError)
+					(catalogError
+						? errorMessage(catalogError, fallbackError)
 						: '')
 				}
 				status={status}
@@ -458,16 +544,16 @@ export default function PuzzleDraftLibrary({
 			{loading ? (
 				<Loading
 					label={
-						draftCatalog.refreshing
-							? 'Refreshing puzzle drafts…'
-							: 'Loading puzzle drafts...'
+						refreshing
+							? 'Refreshing puzzles…'
+							: 'Loading puzzles...'
 					}
 				/>
 			) : loadFailed ? null : (
 				<>
 					<AdminSelectionBar
 						label="Bulk draft actions"
-						shown={visible.length}
+						shown={selectable.length}
 						checked={checked.length}
 						disabled={bulkBusy}
 						onSelectAll={value => {
@@ -490,7 +576,7 @@ export default function PuzzleDraftLibrary({
 							disabled={bulkBusy || !canAssign}
 							onClick={() => startAction('group', selection.ids)}
 						/>
-						{catalogStatus !== 'drafts' && (
+						{statusFilter !== 'drafts' && (
 							<AdminIconButton
 								icon={faLinkSlash}
 								label="Unassign from groups"
@@ -583,7 +669,7 @@ export default function PuzzleDraftLibrary({
 											: `Change palette for ${action.ids.length} draft${action.ids.length === 1 ? '' : 's'}?`}
 							</p>
 							<ul>
-								{drafts
+								{puzzles
 									.filter(draft =>
 										action.ids.includes(draft.row.id),
 									)
@@ -685,7 +771,17 @@ export default function PuzzleDraftLibrary({
 							)}
 						</ConfirmDialog>
 					)}
-					{!visible.length && <p>No drafts match this view.</p>}
+					{!visible.length && (
+						<p>
+							{inStatus.length
+								? 'No puzzles match this view.'
+								: statusFilter === 'scheduled'
+									? 'No puzzles are scheduled. Groups are scheduled from the Release tab, or from Puzzles > Groups.'
+									: statusFilter === 'published'
+										? 'No puzzles are live yet.'
+										: 'No puzzles match this view.'}
+						</p>
+					)}
 					<AdminGallery layout="puzzles">
 						{visible.map(draft => {
 							const palette = palettes.find(
@@ -694,19 +790,28 @@ export default function PuzzleDraftLibrary({
 							const preview = palette
 								? renderAuthoredPuzzle(draft.puzzle, palette)
 								: null
+							const state = puzzleStatus(draft)
+							const released = !isEditable(state)
 							return (
 								<AdminItemCard
 									key={draft.row.id}
-									label={`Draft ${draft.row.name}`}
+									label={`${released ? 'Puzzle' : 'Draft'} ${draft.row.name}`}
 									selectLabel={`Select draft ${draft.row.name}`}
 									selected={selection.checked.has(
 										draft.row.id,
 									)}
 									selectDisabled={bulkBusy}
-									onSelect={value => {
-										selection.toggle(draft.row.id, value)
-										setAction(null)
-									}}
+									onSelect={
+										released
+											? undefined
+											: value => {
+													selection.toggle(
+														draft.row.id,
+														value,
+													)
+													setAction(null)
+												}
+									}
 									preview={
 										preview ? (
 											<span
@@ -726,12 +831,29 @@ export default function PuzzleDraftLibrary({
 									}
 									actions={
 										<>
+											{released && (
+												<ReleaseStateIcon
+													row={draft.row}
+												/>
+											)}
 											<AdminIconButton
-												icon={faPenToSquare}
+												icon={
+													state === 'published'
+														? faEye
+														: faPenToSquare
+												}
 												tone="edit"
 												disabled={bulkBusy}
-												label={`Edit draft ${draft.row.name}`}
-												title={`Edit ${draft.row.name}`}
+												label={
+													released
+														? `${state === 'scheduled' ? 'Edit' : 'View'} puzzle ${draft.row.name}`
+														: `Edit draft ${draft.row.name}`
+												}
+												title={
+													released
+														? undefined
+														: `Edit ${draft.row.name}`
+												}
 												onClick={() => {
 													setStatus('')
 													setAction(null)
@@ -761,26 +883,24 @@ export default function PuzzleDraftLibrary({
 											PUZZLE_SHAPE_LABELS[
 												draft.puzzle.shape
 											]
-										}{' '}
-										<SeparatorDot />{' '}
-										{draft.puzzle.recipe.label}
+										}
 									</span>
+									<span>{draft.puzzle.recipe.label}</span>
 									<span>
-										{draft.groupPurpose && (
-											<>
-												{
-													puzzleGroupPurposeLabels[
-														draft.groupPurpose
-													]
-												}{' '}
-												<SeparatorDot />{' '}
-											</>
-										)}
 										{draft.groupName ??
 											(draft.assigned
 												? 'Assigned'
 												: 'Unassigned')}
 									</span>
+									{draft.groupPurpose && (
+										<em>
+											{
+												puzzleGroupPurposeLabels[
+													draft.groupPurpose
+												]
+											}
+										</em>
+									)}
 								</AdminItemCard>
 							)
 						})}

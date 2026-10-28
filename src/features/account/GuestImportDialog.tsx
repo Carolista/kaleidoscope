@@ -1,6 +1,6 @@
-import { useId, useState } from 'react'
 import { Button, Modal, ModalHeader } from '@/ui/components'
 import { usePlayerProgress } from '@/ui/content'
+import { useId, useState } from 'react'
 import styles from './AccountDialog.module.css'
 
 // Offers a signed-in player the puzzles they solved as a guest on this device. It opens by itself
@@ -64,7 +64,10 @@ export default function GuestImportDialog({
 					on this device. Import {count === 1 ? 'it' : 'them'} to keep
 					that progress in your account, along with anything it earns.
 				</p>
-				<p>Your guest save stays on this device either way.</p>
+				<p>
+					The puzzles you completed as a guest on this device will
+					remain saved either way.
+				</p>
 				{failed && (
 					<p className={styles.error} role="alert">
 						We couldn&rsquo;t import your progress right now. Please

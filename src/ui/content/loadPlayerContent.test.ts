@@ -64,6 +64,7 @@ function fakeClient(
 		data: unknown
 		error: { message: string } | null
 	}> = () => Promise.resolve({ data: [], error: null }),
+	filters: [string, string, unknown][] = [],
 ): SupabaseClient<Database> {
 	return {
 		rpc,
@@ -74,7 +75,10 @@ function fakeClient(
 					: { data: data[table] ?? [], error: null }
 			const query = {
 				select: () => query,
-				eq: () => query,
+				eq: (column: string, value: unknown) => {
+					filters.push([table, column, value])
+					return query
+				},
 				in: () => query,
 				order: () => query,
 				then: (resolve: (value: typeof result) => unknown) =>
@@ -181,7 +185,7 @@ describe('loadPlayerContent', () => {
 				],
 				shape_grants: [{ shape_id: 'hexagram' }],
 			}),
-			{ account: true },
+			{ account: { userId: 'user-1' } },
 		)
 		expect(content.unlockedShapes).toEqual([
 			'hexagon',
@@ -199,10 +203,23 @@ describe('loadPlayerContent', () => {
 		expect(content.nextShape).toBe('diamondStar')
 	})
 
+	it("asks only for the signed-in player's own progress", async () => {
+		const filters: [string, string, unknown][] = []
+		await loadPlayerContent(fakeClient({}, undefined, undefined, filters), {
+			account: { userId: 'user-1' },
+		})
+		for (const table of [
+			'group_completions',
+			'shape_grants',
+			'feature_grants',
+		])
+			expect(filters).toContainEqual([table, 'user_id', 'user-1'])
+	})
+
 	it("reports a failure to read an account's progress", async () => {
 		await expect(
 			loadPlayerContent(fakeClient({}, 'group_completions'), {
-				account: true,
+				account: { userId: 'user-1' },
 			}),
 		).rejects.toThrow('group_completions failed')
 	})
@@ -211,6 +228,9 @@ describe('loadPlayerContent', () => {
 		const content = await loadPlayerContent(fakeClient({}))
 		expect(content).toEqual({
 			palettes: [],
+			lockedPalettes: [],
+			lockedPuzzleSets: [],
+			previewSets: [],
 			unlockedShapes: ['hexagon'],
 			shapeOrder: ['hexagon'],
 			nextShape: null,
@@ -364,7 +384,7 @@ describe('loadPlayerContent', () => {
 		const account = await loadPlayerContent(
 			fakeClient(data, undefined, rpc),
 			{
-				account: true,
+				account: { userId: 'user-1' },
 			},
 		)
 		expect(rpc).toHaveBeenCalledWith('preview_puzzles')
@@ -374,10 +394,51 @@ describe('loadPlayerContent', () => {
 		])
 		expect(account.puzzleSets[0].puzzles[0].palette.id).toBe('p1')
 
+		expect(rpc).toHaveBeenCalledWith('locked_set_previews')
+
 		rpc.mockClear()
 		const guest = await loadPlayerContent(fakeClient(data, undefined, rpc))
-		expect(rpc).not.toHaveBeenCalled()
+		expect(rpc).not.toHaveBeenCalledWith('preview_puzzles')
 		expect(guest.puzzleSets).toEqual([])
+	})
+
+	it('keeps a set the player cannot read apart, with only its card puzzles, and keeps its rewards', async () => {
+		const { palettes: _embedded, ...card } = puzzle('card')
+		void _embedded
+		const data = {
+			puzzle_groups: [
+				{
+					...group('later', [null], { purpose: 'core' }),
+					puzzle_group_members: [
+						{ position: 1, puzzle_id: 'card', puzzles: null },
+						{ position: 2, puzzle_id: 'hidden', puzzles: null },
+					],
+				},
+			],
+			palettes: [palette('p1')],
+			reward_rules: [
+				{
+					group_id: 'later',
+					reward_palettes: [{ palettes: palette('p2') }],
+					reward_puzzle_groups: [],
+				},
+			],
+		}
+		const rpc = vi.fn((name: string) =>
+			Promise.resolve({
+				data: name === 'locked_set_previews' ? [card] : [],
+				error: null,
+			}),
+		)
+		const content = await loadPlayerContent(
+			fakeClient(data, undefined, rpc as never),
+		)
+		expect(content.puzzleSets).toEqual([])
+		expect(content.previewSets.map(set => set.id)).toEqual(['later'])
+		expect(content.previewSets[0].puzzles.map(item => item.id)).toEqual([
+			'card',
+		])
+		expect(content.rewards.map(reward => reward.setId)).toEqual(['later'])
 	})
 
 	it('still loads when the previews cannot be read', async () => {
@@ -392,7 +453,7 @@ describe('loadPlayerContent', () => {
 						error: { message: 'missing' },
 					}),
 			),
-			{ account: true },
+			{ account: { userId: 'user-1' } },
 		)
 		expect(content.puzzleSets.map(set => set.id)).toEqual(['core'])
 	})

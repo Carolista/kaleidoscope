@@ -404,7 +404,9 @@ describe('puzzle group workspace', () => {
 			name: 'Group First group',
 		})
 		expect(card).toHaveClass(layoutStyles.groupCard)
-		expect(within(card).getByText('Core Hexagon Basic')).toBeInTheDocument()
+		expect(within(card).getByText('Core')).toBeInTheDocument()
+		expect(within(card).getByText('Hexagon')).toBeInTheDocument()
+		expect(within(card).getByText('BASIC')).toBeInTheDocument()
 		expect(within(card).getByText('2 puzzles')).toBeInTheDocument()
 		expect(
 			card.querySelector('svg polygon[fill="#112233"]'),
@@ -428,11 +430,11 @@ describe('puzzle group workspace', () => {
 		).toHaveAttribute('title', 'New group')
 	})
 	it.each([
-		['reward', 'rotation', 'Reward Hexagon Rotation'],
-		['pack', 'mixed', 'Pack Hexagon Mixed'],
+		['reward', 'rotation', 'Reward', 'ROTATION'],
+		['pack', 'mixed', 'Pack', 'MIXED'],
 	] as const)(
 		'labels %s groups and explicitly shows empty groups',
-		async (purpose, track, label) => {
+		async (purpose, track, label, trackLabel) => {
 			mocks.load.mockResolvedValue([
 				{
 					...draftGroup,
@@ -443,7 +445,12 @@ describe('puzzle group workspace', () => {
 				},
 			])
 			setup()
-			await screen.findByText(label)
+			const card = await screen.findByRole('listitem', {
+				name: /^Group /,
+			})
+			expect(within(card).getByText(label)).toBeInTheDocument()
+			expect(within(card).getByText('Hexagon')).toBeInTheDocument()
+			expect(within(card).getByText(trackLabel)).toBeInTheDocument()
 			expect(screen.getByText('0 puzzles')).toBeInTheDocument()
 			expect(screen.getByText('Empty group')).toBeInTheDocument()
 		},
@@ -463,7 +470,9 @@ describe('puzzle group workspace', () => {
 			},
 		])
 		setup()
-		await screen.findByText('Daily All shapes')
+		const card = await screen.findByRole('listitem', { name: /^Group / })
+		expect(within(card).getByText('Daily')).toBeInTheDocument()
+		expect(within(card).getByText('All shapes')).toBeInTheDocument()
 	})
 	it('confirms deletion, allows cancellation, and retains confirmation after failure for retry', async () => {
 		setup()
@@ -696,9 +705,10 @@ describe('puzzle group workspace', () => {
 		)
 		expect(isProtected()).toBe(false)
 		fireEvent.click(screen.getByRole('button', { name: 'Groups tab' }))
-		expect(
-			await screen.findByText('Pack Triangle Mixed'),
-		).toBeInTheDocument()
+		const card = await screen.findByRole('listitem', { name: /^Group / })
+		expect(within(card).getByText('Pack')).toBeInTheDocument()
+		expect(within(card).getByText('Triangle')).toBeInTheDocument()
+		expect(within(card).getByText('MIXED')).toBeInTheDocument()
 	})
 	it('drops the shape and track when a group becomes daily', async () => {
 		setup()
@@ -1001,7 +1011,10 @@ describe('releasing groups', () => {
 	it('shows a live group without release buttons', async () => {
 		mocks.load.mockResolvedValue([livePack])
 		setup()
-		expect(await screen.findByText('Live')).toBeInTheDocument()
+		expect(
+			await screen.findByRole('img', { name: 'Live' }),
+		).toBeInTheDocument()
+		expect(screen.queryByText('Live')).not.toBeInTheDocument()
 		expect(
 			screen.queryByRole('button', { name: /chedule/ }),
 		).not.toBeInTheDocument()

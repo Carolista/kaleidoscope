@@ -158,7 +158,62 @@ describe('palette group loading feedback', () => {
 		).toBeInTheDocument()
 		fireEvent.change(filter, { target: { value: 'reward' } })
 		expect(
-			screen.getByText('No palette groups match this purpose.'),
+			screen.getByText('No palette groups match these filters.'),
+		).toBeInTheDocument()
+	})
+
+	it('filters palette groups by release status, defaulting to all', () => {
+		const withRelease = (
+			id: string,
+			release: { published_at: string | null; release_at: string | null },
+		) => ({
+			...group,
+			row: { ...group.row, id, name: `${id} group`, ...release },
+		})
+		render(
+			<PaletteGroupLibrary
+				client={client}
+				groups={[
+					withRelease('draft', {
+						published_at: null,
+						release_at: null,
+					}),
+					withRelease('scheduled', {
+						published_at: '2026-01-01T00:00:00Z',
+						release_at: '2999-01-01T00:00:00Z',
+					}),
+					withRelease('live', {
+						published_at: '2000-01-01T00:00:00Z',
+						release_at: '2000-01-01T00:00:00Z',
+					}),
+				]}
+				loading={false}
+				catalogError=""
+				onChanged={vi.fn()}
+				onOrderSaved={vi.fn()}
+			/>,
+		)
+		const filter = screen.getByLabelText('Show status')
+		expect(
+			Array.from(filter.querySelectorAll('option')).map(
+				option => option.textContent,
+			),
+		).toEqual(['All statuses', 'Draft', 'Scheduled', 'Published'])
+		expect(screen.getByText('3 total')).toBeInTheDocument()
+		fireEvent.change(filter, { target: { value: 'scheduled' } })
+		expect(screen.getByText('1 total')).toBeInTheDocument()
+		expect(
+			screen.getByRole('listitem', {
+				name: 'Palette group scheduled group',
+			}),
+		).toBeInTheDocument()
+		fireEvent.change(filter, { target: { value: 'live' } })
+		expect(
+			screen.getByRole('listitem', { name: 'Palette group live group' }),
+		).toBeInTheDocument()
+		fireEvent.change(filter, { target: { value: 'draft' } })
+		expect(
+			screen.getByRole('listitem', { name: 'Palette group draft group' }),
 		).toBeInTheDocument()
 	})
 

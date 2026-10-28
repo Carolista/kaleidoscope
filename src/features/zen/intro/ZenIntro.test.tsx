@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { palettes, testContent } from '@/test/playerContent'
 import { renderWithProvider } from '@/test/renderWithProvider'
 import { getThemeColors, INTRO_PALETTE_IDS } from '@/domain/palettes'
-import IntroSequence from './IntroSequence'
+import ZenIntro from './ZenIntro'
 
 const FIRST_PALETTE_COLORS = palettes[0].colors
 
@@ -19,13 +19,13 @@ async function placeColor(
 	await user.click(screen.getAllByRole('button', { name: /^Paint tile/ })[0])
 }
 
-describe('IntroSequence', () => {
+describe('ZenIntro', () => {
 	beforeEach(() => {
 		localStorage.clear()
 	})
 
 	it('starts with the welcome message, the Harmony palette, and no paintable tiles', () => {
-		renderWithProvider(<IntroSequence onContinue={vi.fn()} />)
+		renderWithProvider(<ZenIntro onContinue={vi.fn()} />)
 
 		expect(
 			screen.getByRole('heading', { name: 'Welcome!' }),
@@ -51,7 +51,7 @@ describe('IntroSequence', () => {
 
 	it('uses the Zen intro palette when it is available', () => {
 		const harmony = { ...palettes[3], id: INTRO_PALETTE_IDS.zen }
-		renderWithProvider(<IntroSequence onContinue={vi.fn()} />, {
+		renderWithProvider(<ZenIntro onContinue={vi.fn()} />, {
 			...testContent,
 			palettes: [palettes[0], harmony],
 		})
@@ -62,7 +62,7 @@ describe('IntroSequence', () => {
 
 	it('offers exactly five paintable tiles of six once a color is chosen, with the center already base color', async () => {
 		const user = userEvent.setup()
-		renderWithProvider(<IntroSequence onContinue={vi.fn()} />)
+		renderWithProvider(<ZenIntro onContinue={vi.fn()} />)
 
 		await user.click(screen.getByRole('button', { name: 'Color 1' }))
 
@@ -84,7 +84,7 @@ describe('IntroSequence', () => {
 
 	it('locks the painted tile, disables the used color, and advances the message', async () => {
 		const user = userEvent.setup()
-		renderWithProvider(<IntroSequence onContinue={vi.fn()} />)
+		renderWithProvider(<ZenIntro onContinue={vi.fn()} />)
 
 		await placeColor(user, 1)
 
@@ -109,7 +109,7 @@ describe('IntroSequence', () => {
 
 	it('never repaints an already painted tile', async () => {
 		const user = userEvent.setup()
-		renderWithProvider(<IntroSequence onContinue={vi.fn()} />)
+		renderWithProvider(<ZenIntro onContinue={vi.fn()} />)
 
 		await placeColor(user, 1)
 		await user.click(screen.getByRole('button', { name: 'Color 2' }))
@@ -122,7 +122,7 @@ describe('IntroSequence', () => {
 	it('shows congratulations and a Continue button after five tiles, and calls onContinue', async () => {
 		const onContinue = vi.fn()
 		const user = userEvent.setup()
-		renderWithProvider(<IntroSequence onContinue={onContinue} />)
+		renderWithProvider(<ZenIntro onContinue={onContinue} />)
 
 		for (let i = 1; i <= 5; i++) {
 			await placeColor(user, i)
@@ -141,7 +141,7 @@ describe('IntroSequence', () => {
 
 	it('does not save anything to storage', async () => {
 		const user = userEvent.setup()
-		renderWithProvider(<IntroSequence onContinue={vi.fn()} />)
+		renderWithProvider(<ZenIntro onContinue={vi.fn()} />)
 
 		await placeColor(user, 1)
 

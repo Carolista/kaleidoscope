@@ -88,15 +88,14 @@ async function loadShapeOrder(client: SupabaseClient<Database>) {
 type PaletteRow = Released & { id: string; name: string; colors: string[] }
 type PuzzleRow = Tables<'puzzles'> & { palettes: PaletteRow | null }
 
-// Free puzzles this account has not earned yet but needs on hand, so that a set finished
-// offline can open what it earns. The database returns only the next tier (see
-// `preview_puzzles`). They earn nothing by being loaded. A failure is not fatal: the player
-// just waits for a connection to open what they earn.
-async function loadPreviewPuzzles(
+// Puzzle rows the player cannot read through the table, which a function returns on purpose.
+// A failure is not fatal: the app simply has less to show.
+async function loadPreviewRows(
 	client: SupabaseClient<Database>,
+	source: 'preview_puzzles' | 'locked_set_previews',
 ): Promise<Map<string, PuzzleRow>> {
 	try {
-		const { data, error } = await client.rpc('preview_puzzles')
+		const { data, error } = await client.rpc(source)
 		if (error) throw new Error(error.message)
 		if (!data.length) return new Map()
 		const paletteIds = [...new Set(data.map(row => row.palette_id))]
@@ -118,11 +117,47 @@ async function loadPreviewPuzzles(
 	}
 }
 
+// Free puzzles this account has not earned yet but needs on hand, so that a set finished
+// offline can open what it earns. The database returns only the next tier (see
+// `preview_puzzles`). They earn nothing by being loaded.
+const loadNextTierPuzzles = (client: SupabaseClient<Database>) =>
+	loadPreviewRows(client, 'preview_puzzles')
+
+// The few puzzles each set shows on its card, for sets the player cannot read yet (see
+// `locked_set_previews`).
+const loadCardPuzzles = (client: SupabaseClient<Database>) =>
+	loadPreviewRows(client, 'locked_set_previews')
+
+function toPlayerPuzzle(row: PuzzleRow): PlayerPuzzle[] {
+	if (!isLive(row)) return []
+	const palette = toPalette(row.palettes)
+	const difficulty = PUZZLE_RECIPES.find(
+		value => value.difficulty === row.difficulty,
+	)?.difficulty
+	if (!palette || !difficulty) return []
+	try {
+		return [
+			{
+				id: row.id,
+				name: displayName(row.name),
+				difficulty,
+				palette,
+				puzzle: readPlayablePuzzle(row, palette),
+			},
+		]
+	} catch (cause) {
+		console.error(cause)
+		return []
+	}
+}
+
+// Sets the player can read, and apart from them the sets they cannot, which hold only the
+// puzzles their cards show.
 async function loadPuzzleSets(
 	client: SupabaseClient<Database>,
 	account: boolean,
-): Promise<PlayerPuzzleSet[]> {
-	const [{ data, error }, previews] = await Promise.all([
+): Promise<{ sets: PlayerPuzzleSet[]; previewSets: PlayerPuzzleSet[] }> {
+	const [{ data, error }, nextTier, cards] = await Promise.all([
 		client
 			.from('puzzle_groups')
 			.select(
@@ -130,56 +165,44 @@ async function loadPuzzleSets(
 			)
 			.in('purpose', ['core', 'reward']),
 		account
-			? loadPreviewPuzzles(client)
+			? loadNextTierPuzzles(client)
 			: Promise.resolve(new Map<string, PuzzleRow>()),
+		loadCardPuzzles(client),
 	])
 	if (error) throw new Error(error.message)
-	return data.flatMap(group => {
+	const sets: PlayerPuzzleSet[] = []
+	const previewSets: PlayerPuzzleSet[] = []
+	for (const group of data) {
 		const { shape_id: shape, track } = group
 		if (
 			!isLive(group) ||
 			!isGridShapeId(shape) ||
 			(track !== 'basic' && track !== 'rotation')
 		)
-			return []
-		const puzzles = [...group.puzzle_group_members]
-			.sort(byPosition)
-			.flatMap((member): PlayerPuzzle[] => {
-				const row = member.puzzles ?? previews.get(member.puzzle_id)
-				if (!row || !isLive(row)) return []
-				const palette = toPalette(row.palettes)
-				const difficulty = PUZZLE_RECIPES.find(
-					value => value.difficulty === row.difficulty,
-				)?.difficulty
-				if (!palette || !difficulty) return []
-				try {
-					return [
-						{
-							id: row.id,
-							name: displayName(row.name),
-							difficulty,
-							palette,
-							puzzle: readPlayablePuzzle(row, palette),
-						},
-					]
-				} catch (cause) {
-					console.error(cause)
-					return []
-				}
-			})
-		return puzzles.length
-			? [
-					{
-						id: group.id,
-						name: displayName(group.name),
-						shape,
-						track,
-						kind: group.purpose === 'reward' ? 'bonus' : 'core',
-						puzzles,
-					},
-				]
-			: []
-	})
+			continue
+		const members = [...group.puzzle_group_members].sort(byPosition)
+		const puzzles = members.flatMap(member => {
+			const row = member.puzzles ?? nextTier.get(member.puzzle_id)
+			return row ? toPlayerPuzzle(row) : []
+		})
+		const preview = !puzzles.length
+		const shown = preview
+			? members.flatMap(member => {
+					const row = cards.get(member.puzzle_id)
+					return row ? toPlayerPuzzle(row) : []
+				})
+			: puzzles
+		if (!shown.length) continue
+		;(preview ? previewSets : sets).push({
+			id: group.id,
+			name: displayName(group.name),
+			shape,
+			track,
+			kind: group.purpose === 'reward' ? 'bonus' : 'core',
+			puzzles: shown,
+		})
+	}
+	return { sets, previewSets }
 }
 
 // What completing a set gives: reward palettes and bonus sets, as the database links them.
@@ -239,16 +262,19 @@ function sortSets(
 }
 
 // Mirrors the database's `has_shape`: the first shape, a granted shape, or the shape after
-// one whose core group the account has completed. The account's own rows are all it can read.
+// one whose core group the account has completed. Rows are asked for by player, since an
+// admin's session can read every account's.
 async function loadAccountShapes(
 	client: SupabaseClient<Database>,
+	userId: string,
 	order: readonly GridShapeId[],
 ): Promise<GridShapeId[]> {
 	const [completions, grants] = await Promise.all([
 		client
 			.from('group_completions')
-			.select('puzzle_groups(shape_id, purpose)'),
-		client.from('shape_grants').select('shape_id'),
+			.select('puzzle_groups(shape_id, purpose)')
+			.eq('user_id', userId),
+		client.from('shape_grants').select('shape_id').eq('user_id', userId),
 	])
 	if (completions.error) throw new Error(completions.error.message)
 	if (grants.error) throw new Error(grants.error.message)
@@ -271,10 +297,12 @@ async function loadAccountShapes(
 // The server grants the randomizer once, permanently, when every free set is complete.
 async function loadRandomizerGrant(
 	client: SupabaseClient<Database>,
+	userId: string,
 ): Promise<boolean> {
 	const { data, error } = await client
 		.from('feature_grants')
 		.select('feature')
+		.eq('user_id', userId)
 		.eq('feature', 'zen_randomizer')
 	if (error) throw new Error(error.message)
 	return data.length > 0
@@ -284,29 +312,33 @@ async function loadRandomizerGrant(
 // further shapes as it finishes core sets, which the database enforces as it answers.
 export async function loadPlayerContent(
 	client: SupabaseClient<Database>,
-	{ account = false }: { readonly account?: boolean } = {},
+	{ account }: { readonly account?: { readonly userId: string } } = {},
 ): Promise<PlayerContent> {
-	const [palettes, shapeOrder, puzzleSets, rewards] = await Promise.all([
+	const [palettes, shapeOrder, loadedSets, rewards] = await Promise.all([
 		loadPalettes(client),
 		loadShapeOrder(client),
-		loadPuzzleSets(client, account),
+		loadPuzzleSets(client, !!account),
 		loadRewards(client),
 	])
 	const order = shapeOrder.length ? shapeOrder : [supportedGridShapes[0].id]
-	const sets = sortSets(puzzleSets, order)
+	const sets = sortSets(loadedSets.sets, order)
+	const previewSets = sortSets(loadedSets.previewSets, order)
 	const [unlockedShapes, randomizerUnlocked] = account
 		? await Promise.all([
-				loadAccountShapes(client, order),
-				loadRandomizerGrant(client),
+				loadAccountShapes(client, account.userId, order),
+				loadRandomizerGrant(client, account.userId),
 			])
 		: [[order[0]], false]
 	return {
 		palettes,
+		lockedPalettes: [],
+		lockedPuzzleSets: [],
 		unlockedShapes,
 		shapeOrder: order,
 		randomizerUnlocked,
 		nextShape: order.find(shape => !unlockedShapes.includes(shape)) ?? null,
 		puzzleSets: sets,
-		rewards: usableRewards(rewards, sets),
+		previewSets,
+		rewards: usableRewards(rewards, [...sets, ...previewSets]),
 	}
 }

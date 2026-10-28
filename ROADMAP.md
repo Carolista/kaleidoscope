@@ -42,7 +42,7 @@ and signed-in players' solves are saved to the account (which opens Triangle and
 | --- | ------------------------------------------------------------- | -------------- |
 | A1  | Product and content rules                                     | ✅ mostly      |
 | A2  | Supabase foundation: schema, RLS, Auth, admin role, types     | ✅             |
-| A3  | Admin portal: everything needed for 2A content                | ✅ (daily groups and palette correction remain) |
+| A3  | Admin portal: everything needed for 2A content                | ✅ (daily groups remain) |
 | A4  | Player accounts, explicit guest import, offline/cloud sync    | ✅             |
 | A5  | Content access and puzzle-set progression in Puzzle and Zen   | ✅ (the fixed introductory sequence and server-side solution checking are deferred) |
 | A6  | Harden, verify, and launch Puzzle Mode                        | ⬜             |
@@ -119,11 +119,11 @@ Rules:
 - ✅ Puzzle groups: create with a purpose (Undecided/Core/Reward/Daily/Pack), shape, and track, edit them while unpublished, add members, drag to reorder, remove, delete (migration `20261020000000`).
 - ✅ Palettes: create, edit, duplicate, sandbox preview, usage details, single and bulk delete.
 - ✅ Palette groups (`palette_groups` table, purposes Undecided/Core/Reward/Pack): create, assign, reorder, delete.
-- ✅ Navigation: Puzzles | Palettes | Shapes | Progression | Release, then Groups | Items, then Unassigned | Assigned | Scheduled | Published. Group lists filter by purpose (and shape and track for puzzles); puzzle items filter by shape and track, and the Assigned view by purpose and group; palette items filter by purpose and group.
+- ✅ Navigation: Puzzles | Palettes | Shapes | Progression | Release, then Groups | Individual, with a status filter (All | Unassigned | Assigned | Scheduled | Published) on individual lists. Group lists filter by purpose (and shape and track for puzzles; palette groups by status); individual puzzles filter by shape and track, then purpose and group; palettes by purpose and group. Headings show "X total" and selection bars "X selected".
 - ✅ Release tools (migrations `20261022020000`, `20261022030000`, `20261022040000`): `preview_release` and
   `apply_release` plan and run a release in one transaction; a shape's four core and bonus groups go out as a
   package from the **Release** section; daily, pack, and undecided groups and palette groups have buttons on
-  their cards; the Scheduled and Published item views list what has been released; cancelling returns unneeded
+  their cards; the Scheduled and Published filters list what has been released; cancelling returns unneeded
   palettes to draft. Hard rules are blockers (24 puzzles, 6 palettes, a reward palette, all four slots),
   the rest are warnings. See DECISIONS.md, Releases.
 - ✅ Release view polish: a summary table of core and bonus groups, other puzzle groups, palette groups (drafted, scheduled, live counts), and reward palettes ("N of M live"); a Font Awesome dot replaces the `·` separator across admin labels; status marks (green live, blue scheduled, orange blocked, yellow partly released reward palettes); reward palette groups are never released as groups; puzzle and palette group libraries list released groups read-only with an eye icon.
@@ -147,7 +147,7 @@ Rules:
 5. ✅ **Shapes section** (first pass): a workbench to try grid sizes (n) and piece mixes per recipe with a
    playable sample, locked for shapes that already have puzzles; nothing is saved, and chosen values are copied
    into code. Still open: splitting piece mixes per recipe in code, and any stored shape settings.
-6. ⬜ **Exceptional palette correction** for live palettes, keeping the revision and audit history.
+6. ✅ **Exceptional palette correction** for live palettes: unlock with confirmation, edit name and colors, keeping the revision and audit history.
 7. ⬜ **End-to-end admin check** in the hosted project.
 
 Moved to 2B: daily puzzle scheduling (part of B4) and pricing and merchandising
@@ -183,7 +183,8 @@ remaining pack palette groups wait for the 2B store.
 **A5: Access and progression**
 
 - ✅ One access layer for palettes, shapes, and puzzle sets in Zen and Puzzle Mode (`ui/content`); guests see only
-  released core content and Hexagon. Locked content is simply hidden for now.
+  released core content and Hexagon to play.
+- ✅ Earnable content is shown locked, as a preview: reward palettes, bonus sets, and sets of later shapes follow the earned ones, disabled, in greyscale, with a lock, and in color while hovered, focused, or pressed (migration `20261026010000`, `locked_set_previews()`). Pack and daily content, and locked shapes in Zen's shape picker, are not shown yet (phase 2B for packs).
 - ✅ Puzzle Mode teaches itself on first use, as does Zen (the Zen tutorial shows the first time Zen is opened, and Puzzle Mode teaches basic and rotation puzzles the first time each is used). The app opens on Home, from which either is one tap.
 - ✅ Player-side random puzzle generation is replaced by published puzzles.
 - The first introductory sequence is fixed. After that, every puzzle in an unlocked set is selectable (selectable today; the fixed sequence is not built).

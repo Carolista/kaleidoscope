@@ -210,10 +210,10 @@ the initial migration. Zen still uses its local array and is unchanged.
   is an unassigned draft (in no palette group and unreferenced). It confirms the
   names and deletes them in one all-or-nothing request; apply the
   [bulk palette deletion migration](#apply-bulk-palette-deletion) first.
-- Scheduled/live palettes are read-only here, but can be duplicated. Palettes are
+- Scheduled/live palettes open read-only and can be duplicated; an explicit unlock allows a
+  correction (see [Published palette corrections](#published-palette-corrections)). Palettes are
   released and returned to draft with the groups that use them (see
-  [Apply the release tools](#apply-the-release-tools)); exceptional published color
-  corrections are a separate later tool.
+  [Apply the release tools](#apply-the-release-tools)).
 
 Save returns to the palette library and refreshes it, along with the cached
 catalog used by puzzle authoring selectors and group previews; saved puzzle
@@ -258,6 +258,17 @@ validate names and exactly five ordered hex colors. The RPC never accepts releas
 metadata or a new revision from the client. It adds no player write permissions.
 The hosted migration and rollback-only assertions have been confirmed successful
 by the owner.
+
+## Published palette corrections
+
+Run [20261026020000_correct_published_palettes.sql](./migrations/20261026020000_correct_published_palettes.sql)
+once in the Dashboard SQL Editor, including its transaction. It adds `correct_published_palette`, the
+counterpart of `manage_palette_draft` for scheduled/live palettes only (drafts are rejected). It has caller
+RLS, an explicit admin check, READ COMMITTED isolation, and the shared catalog lock, and compares the loaded
+name, colors, and revision before updating; an identical retry confirms without incrementing `revision`
+again. The existing palettes trigger increments `revision` on a color change and records old/new colors,
+the revision, and the admin in `palette_corrections`; name-only changes are not logged. Release metadata
+still cannot change. Regenerate types after applying.
 
 ## Apply using the Dashboard
 
@@ -814,6 +825,20 @@ the released puzzles of core and reward groups that a player cannot play yet but
 the core and bonus groups of the one shape after the shapes they have. Packs and daily puzzles are never returned. The app asks for these once per content
 load for an account, so that a set finished offline can open what it earns; previews earn nothing, because recording a solve still requires `can_play_puzzle`.
 If the function is missing the app logs a warning and loads without previews.
+
+## Apply locked set previews
+
+After the puzzle previews:
+
+1. Run [20261026010000_locked_set_previews.sql](./migrations/20261026010000_locked_set_previews.sql) once in SQL Editor as `postgres`.
+2. Run [locked_set_previews.sql](./tests/locked_set_previews.sql) as `postgres`, without an automatic RLS wrapper. Expect **5 PASS results**; fixtures
+   roll back. Like the preview test, it inserts its own groups with the slot indexes and guard triggers set aside.
+
+No tables, columns, or policies change. Names, shapes, tracks, reward links, and palette colors of released groups were already readable by everyone; only the
+puzzles are withheld. The migration adds `public.locked_set_previews()`, a `security definer` function for guests and signed-in players that returns the first
+puzzle of each difficulty (the three a set's card shows) of released core and reward groups, leaving out puzzles the player can already play. The app uses them to show
+sets of shapes the player has not reached, locked and in greyscale until previewed. Packs, daily puzzles, and the rest of a set's puzzles are never returned, and
+previews earn nothing, because recording a solve still requires `can_play_puzzle`. If the function is missing the app logs a warning and shows no locked sets of later shapes.
 
 ## Player accounts and auth email
 
