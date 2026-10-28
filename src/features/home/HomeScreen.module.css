@@ -57,24 +57,36 @@
 	overflow: hidden;
 	border: 2px solid var(--accent);
 	border-radius: 12px;
-	background: var(--base);
-	color: inherit;
+	/* Fixed light caption: the artwork is the same in light and dark modes. */
+	background: #fff;
+	color: #222;
 	font: inherit;
 	text-align: left;
 	cursor: pointer;
 }
 
-/* The palette's colors as diagonal bands. Text sits on the caption below, never
-   on the colors, so it stays legible whichever palette is used. */
-.bands {
+/* Artwork above the caption. Text sits on the caption below, never on the
+   artwork, so it stays legible. The image fills whatever height the card gets. */
+.art {
+	position: relative;
 	flex: 1 1 auto;
-	min-height: 5rem;
+	min-height: 8rem;
 	width: 100%;
+	overflow: hidden;
+	background: #202020;
+}
+
+.image {
+	position: absolute;
+	inset: 0;
+	height: 100%;
+	width: 100%;
+	object-fit: cover;
 	transition: filter 200ms ease;
 }
 
-.card:hover .bands,
-.card:focus-visible .bands {
+.card:hover .image,
+.card:focus-visible .image {
 	filter: brightness(1.15) saturate(1.1);
 }
 
@@ -83,7 +95,7 @@
 	flex-direction: column;
 	gap: 0.5rem;
 	padding: 1rem 1.25rem 1.25rem;
-	border-top: 2px solid var(--accent);
+	border-top: 2px solid #222;
 }
 
 .titleRow {
@@ -99,7 +111,7 @@
 
 .title {
 	font-family: 'Righteous', sans-serif;
-	font-size: 2rem;
+	font-size: 1.7rem;
 	line-height: 1;
 	text-transform: uppercase;
 	letter-spacing: 0.03em;
@@ -111,7 +123,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.bands {
+	.image {
 		transition: none;
 	}
 }

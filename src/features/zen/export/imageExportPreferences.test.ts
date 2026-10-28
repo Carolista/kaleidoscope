@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
 	getIncludeGridLines,
+	getTransparentBackground,
 	saveIncludeGridLines,
+	saveTransparentBackground,
 } from './imageExportPreferences'
 
 describe('image export preferences', () => {
@@ -21,6 +23,14 @@ describe('image export preferences', () => {
 		saveIncludeGridLines(true)
 		localStorage.removeItem('kaleidoscope:design')
 		expect(getIncludeGridLines()).toBe(true)
+	})
+
+	it('defaults to an opaque background and remembers the choice', () => {
+		expect(getTransparentBackground()).toBe(false)
+		saveTransparentBackground(true)
+		expect(getTransparentBackground()).toBe(true)
+		saveTransparentBackground(false)
+		expect(getTransparentBackground()).toBe(false)
 	})
 
 	it.each(['getItem', 'setItem'] as const)(

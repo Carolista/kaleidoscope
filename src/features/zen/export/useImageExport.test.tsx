@@ -164,12 +164,20 @@ describe('useImageExport', () => {
 		expect(mockExportSvgAsPngBlob).toHaveBeenNthCalledWith(
 			1,
 			svgRef.current,
-			{ backgroundColor: '#fff', includeGridLines: true },
+			{
+				backgroundColor: '#fff',
+				transparent: false,
+				includeGridLines: true,
+			},
 		)
 		expect(mockExportSvgAsPngBlob).toHaveBeenNthCalledWith(
 			2,
 			svgRef.current,
-			{ backgroundColor: '#fff', includeGridLines: false },
+			{
+				backgroundColor: '#fff',
+				transparent: false,
+				includeGridLines: false,
+			},
 		)
 		for (const includeGridLines of [true, false, true, false]) {
 			rerender({ includeGridLines })
@@ -193,6 +201,49 @@ describe('useImageExport', () => {
 		expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:with-lines')
 		expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:without-lines')
 		expect(URL.revokeObjectURL).toHaveBeenCalledTimes(2)
+	})
+
+	it('caches a separate transparent variant and passes the transparent flag', async () => {
+		const transparentBlob = new Blob(['transparent'], {
+			type: 'image/png',
+		})
+		mockExportSvgAsPngBlob
+			.mockResolvedValueOnce(pngBlob)
+			.mockResolvedValueOnce(transparentBlob)
+		vi.mocked(URL.createObjectURL)
+			.mockReturnValueOnce('blob:opaque')
+			.mockReturnValueOnce('blob:transparent')
+		const svgRef = svgRefWith(createSvg())
+		const { result, rerender } = renderHook(
+			({ transparent }) =>
+				useImageExport(svgRef, true, '#fff', true, transparent),
+			{ initialProps: { transparent: false } },
+		)
+		await waitFor(() =>
+			expect(result.current.exportState).toMatchObject({
+				url: 'blob:opaque',
+			}),
+		)
+		rerender({ transparent: true })
+		await waitFor(() =>
+			expect(result.current.exportState).toMatchObject({
+				url: 'blob:transparent',
+			}),
+		)
+		expect(mockExportSvgAsPngBlob).toHaveBeenNthCalledWith(
+			2,
+			svgRef.current,
+			{
+				backgroundColor: '#fff',
+				transparent: true,
+				includeGridLines: true,
+			},
+		)
+		rerender({ transparent: false })
+		expect(result.current.exportState).toMatchObject({
+			url: 'blob:opaque',
+		})
+		expect(mockExportSvgAsPngBlob).toHaveBeenCalledTimes(2)
 	})
 
 	it('reuses in-flight generation and never shows a late result for the other variant', async () => {
@@ -283,7 +334,11 @@ describe('useImageExport', () => {
 		)
 		expect(mockExportSvgAsPngBlob).toHaveBeenLastCalledWith(
 			svgRef.current,
-			{ backgroundColor: '#222', includeGridLines: false },
+			{
+				backgroundColor: '#222',
+				transparent: false,
+				includeGridLines: false,
+			},
 		)
 		expect(mockExportSvgAsPngBlob).toHaveBeenCalledTimes(3)
 	})

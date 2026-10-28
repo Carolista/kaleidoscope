@@ -26,7 +26,7 @@ const mockUseIsTouchDevice = vi.mocked(useIsTouchDevice)
 // The app lands on Home; most of these tests are about Zen, so open it.
 function renderApp() {
 	const view = renderLanding()
-	fireEvent.click(screen.getByRole('button', { name: 'Zen' }))
+	fireEvent.click(screen.getByRole('button', { name: 'Zen Mode' }))
 	return view
 }
 
@@ -117,7 +117,7 @@ describe('App', () => {
 		expect(
 			screen.getByLabelText('Puzzle Mode', { selector: 'section' }),
 		).not.toBeVisible()
-		await user.click(screen.getByRole('button', { name: 'Zen' }))
+		await user.click(screen.getByRole('button', { name: 'Zen Mode' }))
 		expect(
 			screen.queryByRole('region', { name: 'Home' }),
 		).not.toBeInTheDocument()
@@ -130,7 +130,7 @@ describe('App', () => {
 		mockUseIsTouchDevice.mockReturnValue(false)
 		const user = userEvent.setup()
 		renderLanding()
-		await user.click(screen.getByRole('button', { name: 'Puzzle' }))
+		await user.click(screen.getByRole('button', { name: 'Puzzle Mode' }))
 		expect(
 			screen.getByRole('region', { name: 'Puzzle Mode' }),
 		).toBeVisible()

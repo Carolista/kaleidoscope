@@ -6,7 +6,9 @@ import { useImageExport } from './useImageExport'
 import { computeAspectRatioForShape } from '@/domain/shapes'
 import {
 	getIncludeGridLines,
+	getTransparentBackground,
 	saveIncludeGridLines,
+	saveTransparentBackground,
 } from './imageExportPreferences'
 import { Button, Checkbox, Loading, Modal, ModalHeader } from '@/ui/components'
 import styles from './SaveImageModal.module.css'
@@ -24,11 +26,18 @@ function SaveImageModal({ open, svgRef, onClose }: SaveImageModalProps) {
 	if (open && !previewOpen) setPreviewOpen(true)
 	const [includeGridLines, setIncludeGridLines] =
 		useState(getIncludeGridLines)
+	const [transparent, setTransparent] = useState(getTransparentBackground)
 	const { state } = useZenState()
 	const gridSize = state.gridSizes[state.gridShape]
 	const { base } = getThemeColors(state.darkMode)
 	const { exportState, canShare, handleDownload, handleShare } =
-		useImageExport(svgRef, open || previewOpen, base, includeGridLines)
+		useImageExport(
+			svgRef,
+			open || previewOpen,
+			base,
+			includeGridLines,
+			transparent,
+		)
 	// Reflects the current shape's fixed proportions, which the export
 	// service also rasterizes from, so the preview box is already sized
 	// correctly before the image exists.
@@ -62,8 +71,17 @@ function SaveImageModal({ open, svgRef, onClose }: SaveImageModalProps) {
 					saveIncludeGridLines(checked)
 				}}
 			/>
+			<Checkbox
+				className={styles.transparentToggle}
+				label="Transparent background"
+				checked={transparent}
+				onChange={checked => {
+					setTransparent(checked)
+					saveTransparentBackground(checked)
+				}}
+			/>
 			<div
-				className={styles.preview}
+				className={`${styles.preview} ${transparent ? styles.checkerboard : ''}`}
 				style={{ aspectRatio: previewAspectRatio }}
 			>
 				{exportState.status === 'generating' && (
