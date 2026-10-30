@@ -16,6 +16,7 @@
 		"test": "vitest run",
 		"test:coverage": "vitest run --coverage",
 		"test:watch": "vitest",
+		"test:sql": "node supabase/local/run-sql-tests.mjs",
 		"preview": "vite preview"
 	},
 	"dependencies": {
@@ -32,6 +33,7 @@
 		"react-dom": "^19.2.8"
 	},
 	"devDependencies": {
+		"@electric-sql/pglite": "^0.5.13",
 		"@eslint/js": "^10.0.1",
 		"@testing-library/jest-dom": "^6.9.1",
 		"@testing-library/react": "^16.3.3",

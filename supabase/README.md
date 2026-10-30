@@ -5,6 +5,22 @@ The player app reads released content (core palettes, core puzzle sets, shape or
 separate client that keeps no session; see CONTEXT.md, Player content. Guests cannot read `puzzle_authoring`.
 No image bucket or payment integration is included. A signed-in player records progress only through `record_puzzle_completions` (see "Apply player progress").
 
+## Run the SQL tests locally
+
+`npm run test:sql` applies every migration in order and runs the files in `tests/` against
+[PGlite](https://pglite.dev) (Postgres compiled to WebAssembly). It is a dev dependency of this repository, so there is
+nothing to install, no Docker, and no hosted project involved; **use it instead of installing Postgres or adding PGlite
+again.** Homebrew cannot build Postgres on this Mac.
+
+- `npm run test:sql -- beta_testing` runs one file (several names are allowed; `.sql` is optional).
+- Supabase's own parts (the `anon` and `authenticated` roles, `auth.users`, `auth.uid()`, a minimal `storage` schema) are
+  stood in for by [local/stubs.sql](./local/stubs.sql). Add to it if a new migration needs another Supabase piece. The runner is
+  [local/run-sql-tests.mjs](./local/run-sql-tests.mjs).
+- Each test file rolls back, so one run leaves nothing behind. A passing run is strong evidence, not proof: still run
+  the new migration and its test in the Dashboard SQL Editor as described below.
+- Tests for early migrations are a historical record and several fail against the current schema (for example they call
+  functions later migrations replaced). Run the files for the area you changed; the files for recent migrations pass.
+
 ## Connect admin sign-in
 
 1. Copy the root `.env.example` to `.env.local` (ignored by git).
