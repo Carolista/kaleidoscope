@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigationGuard } from '@/ui/navigation'
 
 const indexKey = 'kaleidoscopeRouteIndex'
@@ -17,16 +17,30 @@ function stamp(index: number) {
 		'',
 	)
 }
+export type AppRoute = 'admin' | 'beta' | 'player'
+
+function routeOf(url: string): AppRoute {
+	const { hash } = new URL(url)
+	if (hash === '#/admin') return 'admin'
+	// An invite link carries its token after the route: #/beta?invite=…
+	if (hash === '#/beta' || hash.startsWith('#/beta?')) return 'beta'
+	return 'player'
+}
 function isAdmin(url: string) {
-	return new URL(url).hash === '#/admin'
+	return routeOf(url) === 'admin'
 }
 
-export default function useAdminRoute() {
-	const [admin, setAdmin] = useState(() => isAdmin(window.location.href))
+// Which part of the app the address shows. Only leaving the admin portal can be held back
+// by unsaved work.
+export default function useAppRoute(): AppRoute {
+	const [route, setRoute] = useState(() => routeOf(window.location.href))
+	// The address the first render showed. A child's effect runs before this hook's, so it
+	// may change the address before there is a listener; that change must still count as a move.
+	const firstURL = useRef<string | null>(window.location.href)
 	const { isProtected, requestNavigation } = useNavigationGuard()
 	useEffect(() => {
 		let accepted = {
-			url: window.location.href,
+			url: firstURL.current ?? window.location.href,
 			index: historyIndex() ?? 0,
 			state: window.history.state,
 		}
@@ -40,9 +54,10 @@ export default function useAdminRoute() {
 			const index = historyIndex() ?? accepted.index + 1
 			stamp(index)
 			accepted = { url, index, state: window.history.state }
-			setAdmin(isAdmin(url))
+			setRoute(routeOf(url))
 		}
 		function update() {
+			firstURL.current = null
 			const destination = window.location.href
 			if (destination === accepted.url) {
 				restoringURL = null
@@ -139,5 +154,5 @@ export default function useAdminRoute() {
 			document.removeEventListener('click', click)
 		}
 	}, [isProtected, requestNavigation])
-	return admin
+	return route
 }
