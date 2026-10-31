@@ -89,7 +89,6 @@ export default function BetaApp() {
 									setAccountOpen(true)
 								}
 					}
-					showGameSettings={false}
 				/>
 				<AccountDialog
 					open={accountOpen}

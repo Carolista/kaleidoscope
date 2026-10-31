@@ -8,7 +8,7 @@ import {
 	isGridSize,
 	legacyGridSizes,
 } from '@/domain/shapes'
-import { createInitialZenState } from './zenReducer'
+import { createInitialZenState, zenReducer } from './zenReducer'
 
 const STORAGE_KEY = 'kaleidoscope:design'
 
@@ -196,7 +196,7 @@ function isPersistedDesign(data: unknown): data is PersistedDesign {
 // palette that is no longer available, or a shape the player has not unlocked.
 // Also swallows any storage access error (e.g. disabled localStorage in a
 // private-browsing mode) rather than crashing the app.
-export function loadInitialZenState(content: ZenContent): ZenState {
+function loadSavedZenState(content: ZenContent): ZenState {
 	const initial = () =>
 		createInitialZenState(content.palettes, content.unlockedShapes[0])
 	try {
@@ -223,9 +223,36 @@ export function hasPersistedDesign(): boolean {
 	}
 }
 
-// The saved theme alone, for the page frame before the design has loaded. Matches
-// the script in index.html: dark unless a saved design says otherwise.
+// The light or dark mode is kept on its own, apart from the design, so it can be chosen on any
+// page and does not depend on a design having been saved yet. Zen adopts it when it loads.
+const THEME_KEY = 'kaleidoscope:theme'
+
+// True for dark, false for light, null when none has been chosen.
+export function readThemePreference(): boolean | null {
+	try {
+		const saved = localStorage.getItem(THEME_KEY)
+		if (saved === 'dark') return true
+		if (saved === 'light') return false
+	} catch {
+		// No storage means no preference.
+	}
+	return null
+}
+
+export function saveThemePreference(dark: boolean): void {
+	try {
+		localStorage.setItem(THEME_KEY, dark ? 'dark' : 'light')
+	} catch {
+		// The mode then lasts only as long as the page.
+	}
+}
+
+// The saved theme alone, for a page frame before the design has loaded. The chosen mode if
+// there is one, else the saved design's (designs from before the mode had its own key), else
+// dark. Matches the script in index.html.
 export function readPersistedDarkMode(): boolean {
+	const preferred = readThemePreference()
+	if (preferred !== null) return preferred
 	try {
 		const parsed: unknown = JSON.parse(
 			localStorage.getItem(STORAGE_KEY) ?? 'null',
@@ -251,4 +278,14 @@ export function savePersistedState(state: ZenState): void {
 		// Storage can be unavailable or full; losing autosave isn't worth
 		// crashing the app over.
 	}
+}
+
+// The saved design, in the mode that was last chosen, which may have been on a page without
+// the design (see THEME_KEY). Switching mode here also carries painted neutrals across.
+export function loadInitialZenState(content: ZenContent): ZenState {
+	const state = loadSavedZenState(content)
+	const preferred = readThemePreference()
+	return preferred === null || preferred === state.darkMode
+		? state
+		: zenReducer(state, { type: 'TOGGLE_DARK_MODE' })
 }

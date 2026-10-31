@@ -4,6 +4,7 @@ import { ZenStateProvider } from '@/features/zen'
 import { Loading } from '@/ui/components'
 import { PlayerContentProvider } from '@/ui/content'
 import BetaApp from './BetaApp'
+import BetaTheme from './BetaTheme'
 import { readBetaInvite } from './betaInvite'
 import PlayerApp from './PlayerApp'
 import ProvisionalTheme from './ProvisionalTheme'
@@ -61,9 +62,9 @@ function Entry() {
 	return (
 		<AccountProvider>
 			{route === 'beta' ? (
-				<ProvisionalTheme>
+				<BetaTheme>
 					<BetaApp />
-				</ProvisionalTheme>
+				</BetaTheme>
 			) : (
 				<>
 					<BetaInviteForwarder />

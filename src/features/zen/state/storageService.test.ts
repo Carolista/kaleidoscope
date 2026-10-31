@@ -6,12 +6,15 @@ import {
 	legacyGridSizes,
 } from '@/domain/shapes'
 import type { ZenState } from './zenState'
+import { getThemeColors } from '@/domain/palettes'
 import { zenReducer } from './zenReducer'
 import {
 	loadInitialZenState as loadWithContent,
 	savePersistedState,
 	hasPersistedDesign,
 	readPersistedDarkMode,
+	readThemePreference,
+	saveThemePreference,
 } from './storageService'
 
 const loadInitialZenState = () => loadWithContent(testContent)
@@ -578,5 +581,77 @@ describe('storageService', () => {
 		expect(() => hasPersistedDesign()).not.toThrow()
 		expect(hasPersistedDesign()).toBe(false)
 		getItemSpy.mockRestore()
+	})
+
+	describe('the chosen mode', () => {
+		const THEME_KEY = 'kaleidoscope:theme'
+
+		it('is kept on its own, and read back', () => {
+			expect(readThemePreference()).toBeNull()
+			saveThemePreference(false)
+			expect(localStorage.getItem(THEME_KEY)).toBe('light')
+			expect(readThemePreference()).toBe(false)
+			saveThemePreference(true)
+			expect(localStorage.getItem(THEME_KEY)).toBe('dark')
+			expect(readThemePreference()).toBe(true)
+			localStorage.setItem(THEME_KEY, 'purple')
+			expect(readThemePreference()).toBeNull()
+		})
+
+		it('comes before the saved design when the page frame reads the mode', () => {
+			savePersistedState(baseState({ darkMode: false }))
+			expect(readPersistedDarkMode()).toBe(false)
+			saveThemePreference(true)
+			expect(readPersistedDarkMode()).toBe(true)
+			localStorage.clear()
+			saveThemePreference(false)
+			expect(readPersistedDarkMode()).toBe(false)
+		})
+
+		it('is adopted by a saved design on loading, painted neutrals included', () => {
+			const light = getThemeColors(false)
+			const state = baseState({
+				darkMode: false,
+				shapeGroupColors: {
+					'0': light.base,
+					'1': light.accent,
+					'2': palettes[0].colors[1],
+				},
+				savedBoards: {
+					'triangle:md': {
+						'0': light.accent,
+						'1': palettes[0].colors[2],
+					},
+				},
+			})
+			savePersistedState(state)
+			saveThemePreference(true)
+			expect(loadInitialZenState()).toEqual(
+				zenReducer(state, { type: 'TOGGLE_DARK_MODE' }),
+			)
+		})
+
+		it('is adopted by a first visit with no design as well', () => {
+			saveThemePreference(false)
+			expect(loadInitialZenState().darkMode).toBe(false)
+			localStorage.clear()
+			expect(loadInitialZenState().darkMode).toBe(true)
+		})
+
+		it('leaves a saved design alone when it already agrees, or nothing was chosen', () => {
+			const state = baseState({ darkMode: false })
+			savePersistedState(state)
+			expect(loadInitialZenState()).toEqual(state)
+			saveThemePreference(false)
+			expect(loadInitialZenState()).toEqual(state)
+		})
+
+		it('does not throw when storage is unavailable', () => {
+			vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+				throw new Error('storage full')
+			})
+			expect(() => saveThemePreference(true)).not.toThrow()
+			vi.restoreAllMocks()
+		})
 	})
 })

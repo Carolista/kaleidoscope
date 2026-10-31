@@ -1,6 +1,9 @@
 import { Heading } from '@/ui/components'
 import {
 	faArrowUpRightFromSquare,
+	faFlask,
+	faHandWave,
+	faMegaphone,
 	faThumbtack,
 } from '@fortawesome/pro-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -9,9 +12,9 @@ import type { BetaRound } from './betaApi'
 import type { ReportApi } from './betaReports'
 import { badgeTone, formatCountdown, roundPhase } from './countdown'
 import ReportPanel from './ReportPanel'
+import styles from './RoundView.module.css'
 import { surveyFor } from './survey'
 import SurveyPanel from './SurveyPanel'
-import styles from './RoundView.module.css'
 import useServerNow from './useServerNow'
 
 const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: 'short' })
@@ -112,6 +115,10 @@ export default function RoundView({
 					{round.welcome.trim() && (
 						<>
 							<Heading level={3} className={styles.heading}>
+								<FontAwesomeIcon
+									icon={faHandWave}
+									aria-hidden="true"
+								/>{' '}
 								Welcome!
 							</Heading>
 							<PlainText value={round.welcome} />
@@ -120,6 +127,10 @@ export default function RoundView({
 					{round.instructions.trim() && (
 						<>
 							<Heading level={3} className={styles.heading}>
+								<FontAwesomeIcon
+									icon={faFlask}
+									aria-hidden="true"
+								/>{' '}
 								How to test
 							</Heading>
 							<PlainText value={round.instructions} />
@@ -148,19 +159,23 @@ export default function RoundView({
 				{round.announcements.length > 0 && (
 					<section className={styles.panel}>
 						<Heading level={3} className={styles.heading}>
+							<FontAwesomeIcon
+								icon={faMegaphone}
+								aria-hidden="true"
+							/>{' '}
 							Announcements
 						</Heading>
 						<ul className={styles.announcements}>
 							{round.announcements.map(announcement => (
 								<li key={announcement.id}>
 									<h4 className={styles.announcementTitle}>
+										{announcement.title}
 										{announcement.pinned && (
 											<FontAwesomeIcon
 												icon={faThumbtack}
 												aria-label="Pinned"
 											/>
 										)}
-										{announcement.title}
 									</h4>
 									<p className={styles.dates}>
 										{dateFormat.format(

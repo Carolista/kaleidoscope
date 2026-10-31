@@ -1,5 +1,7 @@
-import { useId, useState } from 'react'
 import { Button, Heading, Modal, ModalHeader } from '@/ui/components'
+import { faPollPeople } from '@fortawesome/pro-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { useId, useState } from 'react'
 import type { ReportApi } from './betaReports'
 import type { Survey } from './survey'
 import SurveyForm from './SurveyForm'
@@ -26,7 +28,8 @@ export default function SurveyPanel({
 	return (
 		<section className={styles.panel} aria-label="Final survey">
 			<Heading level={3} className={styles.heading}>
-				Final Survey
+				<FontAwesomeIcon icon={faPollPeople} aria-hidden="true" /> Final
+				Survey
 			</Heading>
 			{sent ? (
 				<p className={styles.text} role="status">
