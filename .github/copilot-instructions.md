@@ -10,3 +10,4 @@
 - Do not use browser tools for small in-progress tweaks. 
 - After file moves or renames, restart the dev server before browser verification.
 - Update CONTEXT, DECISIONS, & README documents only after review, not while a decision is still changing.
+- To check SQL migrations and tests, run `npm run test:sql -- <test name>` (PGlite, already a dev dependency; see supabase/README.md "Run the SQL tests locally"). Do not install or remove Postgres or PGlite.

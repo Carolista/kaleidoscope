@@ -27,10 +27,14 @@ Hexagon and the released core palettes, and guests earn the Hexagon bonus sets a
 palettes locally by completing sets. Players can create an account, sign in, and reset a password
 and signed-in players' solves are saved to the account (which opens Triangle and later shapes), with an explicit guest import, and shared across devices. A signed-in player's earned shapes, bonus sets, and palettes open at once even offline, and Puzzle Mode resumes an unfinished puzzle on the same device. The page frame appears before content loads.
 
+The beta testers' side is built (#82): invited testers use a `#/beta` page for the round's welcome text, instructions, announcements, and deadline badge, send bug reports (with device
+details and screenshots) and suggestions, read the status of what they sent, and send a final survey. The page works from a signed-in account and has its own light/dark switch.
+
 **Next up, in order:**
 
 1. Finish the Puzzle Mode gameplay tweaks from the POC (in progress).
-2. A6: harden, verify, and prepare to launch Puzzle Mode.
+2. Beta testing, admin side (#83): rounds, announcements, and testers; invites by email; tester stats and device coverage; a reports inbox; survey results. See "Beta testing" under A6.
+3. A6: harden, verify, and prepare to launch Puzzle Mode.
 
 ---
 
@@ -204,7 +208,17 @@ remaining pack palette groups wait for the 2B store.
 - ✅ Zen offers Hexagon plus whatever has been unlocked, the released core palettes, and earned reward palettes. Saves on a locked shape or an unavailable palette simply start fresh. Settled: only a few early testers have older saves, so superseding them is fine.
 - Test RLS against forged requests, the critical player journeys, offline use and
   reconnecting (offline unlocks are built and unit-tested; try them on a device), and palette corrections.
-- Cover privacy, account deletion, monitoring, and a rollback plan.
+- Cover privacy, account deletion, monitoring, and a rollback plan. Account deletion must also clear a tester's screenshot files, which stay in storage when their rows go.
+
+**Beta testing (before launch)**
+
+- ✅ #82, tester side (migrations `20261030000000`, `20261030010000`, `20261031000000`): rounds, invites by single-use token, the `#/beta` page, feedback forms with screenshots, history, final survey,
+  device capture, and a light/dark switch (its own `kaleidoscope:theme` key). See CONTEXT.md and DECISIONS.md, Beta testing.
+- ⬜ #83, admin side, in this order: rounds and announcements (create, edit, duplicate, revoke testers, so the SQL Editor is no longer needed); invites (`create_beta_invite` exists; sending the email through Resend
+  from the database with `pg_net` and Vault is to be tried first, an Edge Function if it does not work); tester stats (signed up, first solve, returned on a second day, puzzles solved, latest shape,
+  reports); device coverage against a checklist; the reports inbox (status, reply, internal note, prefilled GitHub issue and pasted-back link); survey results (including the Sean Ellis tally).
+- ❓ Whether the device capture should also count the device where the game is played (it counts where the beta page is opened).
+- Before real invites go out: the CNAME and domain, and `beta_settings.site_url`.
 
 ## 2B work
 

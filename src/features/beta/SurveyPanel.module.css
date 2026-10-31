@@ -1,0 +1,29 @@
+.panel {
+	display: grid;
+	gap: 0.75rem;
+	padding: 1rem 1.25rem;
+	border: 2px solid var(--accent);
+	border-radius: 8px;
+	background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.heading {
+	margin: 0;
+	font-family: 'Righteous', sans-serif;
+	font-size: 1.25rem;
+	font-weight: 400;
+	letter-spacing: 0.03em;
+}
+
+.text {
+	margin: 0;
+	line-height: 1.45;
+}
+
+.buttons {
+	display: flex;
+}
+
+.dialog {
+	width: min(40rem, calc(100vw - 2rem));
+}

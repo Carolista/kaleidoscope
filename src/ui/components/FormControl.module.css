@@ -20,3 +20,18 @@
 	opacity: var(--control-disabled-opacity, 0.65);
 	cursor: default;
 }
+
+/* Several lines, so the single-line control's fixed height and padding do not apply. */
+.textarea {
+	box-sizing: border-box;
+	height: auto;
+	min-height: 5.5rem;
+	padding: 0.375rem 0.5rem;
+	resize: vertical;
+}
+
+/* The height follows the text (see Textarea), so there is nothing to scroll or drag. */
+.autoGrow {
+	overflow-y: hidden;
+	resize: none;
+}

@@ -32,6 +32,9 @@ drafts), and one-click randomization. Version-2 definitions use ordered palette
 slots, with private seed/generator/solution data kept separate. Playtests are
 memory-only, while named drafts save atomically to Supabase; a puzzle's purpose comes from its group.
 No player progress writes or Zen autosaves occur.
+
+Invited beta testers use a separate `#/beta` page: a dashboard with the round's welcome text and instructions, a
+deadline badge, announcements, feedback forms, the tester's own feedback history, and a final survey (see Beta testing).
 See [Supabase instructions](./supabase/README.md) for current scope.
 
 The shared New/Edit form uses two columns from 640px: palette refresh/picker on the
@@ -274,6 +277,7 @@ ESLint, Prettier, Node 24 LTS/npm (version set in `.nvmrc`, which CI also reads;
 | `npm run format` | Format files |
 | `npm run format:check` | Check formatting |
 | `npm test` | Run tests once |
+| `npm run test:sql` | Apply the migrations and run the SQL tests in `supabase/tests` against PGlite (WebAssembly Postgres, already a dev dependency); `npm run test:sql -- <name>` runs one file. See supabase/README.md |
 | `npm run test:coverage` | Run tests once with V8 coverage reports in `coverage/` |
 
 ### Font Awesome authentication
@@ -563,13 +567,14 @@ Test files and `src/test/` are exempt so tests can reach internals and mock exac
 
 | Location | Responsibility |
 | --- | --- |
-| [app/](./src/app/) | `AppEntry` (player/admin routing, navigation guard), `PlayerApp` (page, entrance animation, header, home/mode switching, footer; with a `gate` it shows only the frame while content loads), `ProvisionalTheme` (the saved light/dark mode before Zen's state exists), `entranceHandoff` (carries the opening animation from the loading frame to the real one), `useAdminRoute`, [layout/](./src/app/layout/) (Header, Footer, ModeDialog), [settings/](./src/app/settings/) (SettingsDialog, SettingsControl, the change email/password forms), global [index.css](./src/app/index.css) |
-| [features/account/](./src/features/account/) | Player accounts: `AccountProvider` (session, sign-up/in/out, password reset, reset and expired-link state; `useAccount`), `AccountDialog` (sign in, sign up, reset password, email links), `GuestImportDialog`. Change email and password are `AccountApi` actions used by Settings. Hosted by `PlayerApp`, not the header |
+| [app/](./src/app/) | `AppEntry` (player/admin/beta routing, navigation guard), `PlayerApp` (page, entrance animation, header, home/mode switching, footer; with a `gate` it shows only the frame while content loads), `ProvisionalTheme` (the saved light/dark mode before Zen's state exists, with no toggle), `BetaApp` (the beta page's frame: header, Settings with game settings, sign-in dialog, footer) and `BetaTheme` (the beta page's theme: the saved mode, with a toggle that saves it), `betaInvite.ts` (keeps an invite link's token on the device until the player is signed in), `usePageBackground`, `entranceHandoff` (carries the opening animation from the loading frame to the real one), `useAppRoute` (which part of the app the address shows: `#/admin`, `#/beta`, or the player app), [layout/](./src/app/layout/) (Header, Footer, ModeDialog), [settings/](./src/app/settings/) (SettingsDialog, SettingsControl, the change email/password forms), global [index.css](./src/app/index.css) |
+| [features/account/](./src/features/account/) | Player accounts: `AccountProvider` (session, sign-up/in/out, password reset, reset and expired-link state; `useAccount`), `AccountDialog` (sign in, sign up, reset password, email links), `GuestImportDialog`. Change email and password are `AccountApi` actions used by Settings. Hosted by `PlayerApp` and `BetaApp`, not the header |
+| [features/beta/](./src/features/beta/) | Lazy-loaded beta testers' page (see Beta testing): `BetaDashboard` (account states, joining by invite, the current round), `RoundView` (badge, welcome, announcements, panels), `ReportPanel` (three buttons opening the bug report, suggestion, and history dialogs), `BugReportForm`, `SuggestionForm`, `ScreenshotPicker`, `ReportHistory`, `SurveyPanel` and `SurveyForm` with the questions in `survey.ts`, `betaApi.ts` and `betaReports.ts` (Supabase calls behind `BetaApi` and `ReportApi`), `deviceInfo.ts`, `DeviceRecorder`, `countdown.ts`, `bands.ts` |
 | [features/home/](./src/features/home/) | `HomeScreen`: the greeting and one card per area (Puzzle, then Zen) |
 | [features/zen/](./src/features/zen/) | Zen Mode: `ZenMode`, [state/](./src/features/zen/state/) (reducer, history, Context, localStorage persistence, design randomization), [controls/](./src/features/zen/controls/) (toolbar, palette and shape pickers), [grid/](./src/features/zen/grid/) (shape adapters, `ShapeGrid`, `GridView`, cells), [export/](./src/features/zen/export/) (Save Image), [intro/](./src/features/zen/intro/) |
 | [features/puzzle/](./src/features/puzzle/) | Player Puzzle Mode: set list, difficulty grid of solved images, play session with the Congrats overlay and Next, the first-use tutorials (`intro/`), the announcement dialogs (`RewardModal`, `ShapeUnlockedModal`, `AccountPromptModal`, `SignInNudgeModal`), and the device's completed-tutorial record (`introProgress.ts`) and one-time prompt flags (`accountPrompt.ts`) |
 | [features/admin/](./src/features/admin/) | Lazy-loaded admin portal. `shell/` (portal, workspace, navigation), `catalog/` (session cache), `common/` (layout, icon button, form), `groups/` (shared group editing), one folder per content area (`puzzles/`, `puzzle-groups/`, `palettes/`, `palette-groups/`), `services/` (Supabase reads/writes), `testing/` |
-| [ui/components/](./src/ui/components/) | Shared controls: buttons, `Heading`, `DarkModeToggle` (a labelled button), `ui/text` (`toTitleCase`, `TextCaseContext`), palette-tinted `Checkbox`, native `Modal`, `ModalHeader`, `ConfirmDialog` and its dismissal preferences, form fields, loading, palette strips/choices |
+| [ui/components/](./src/ui/components/) | Shared controls: buttons, `Heading`, `DarkModeToggle` (a labelled button), `ui/text` (`toTitleCase`, `TextCaseContext`), palette-tinted `Checkbox`, native `Modal`, `ModalHeader`, `ConfirmDialog` and its dismissal preferences, form fields (`Input`, `Select`, and `Textarea`, which grows with its text unless `autoGrow={false}`), loading, palette strips/choices |
 | [ui/content/](./src/ui/content/) | Player content: `loadPlayerContent` (released core palettes, core and bonus puzzle sets, rewards, shape order, an account's unlocked shapes), `PlayerContentProvider` (loads before the app starts, for the guest or the signed-in player), `PlayerProgressProvider` (the player's solved puzzles on the device or account, `usePlayerProgress` with `markSolved` and `guestImport`, and `usePlayerContent` over what has been earned, via `rewards.ts`), `accountProgress.ts` (reads and records an account's solves), `solvedPuzzles.ts` (the guest save, the per-account cache with pending solves, and the import decision), and the offline content cache, `NewChoicesProvider` / `newChoices.ts` (which palettes and shapes the player has seen), and `PuzzleResumeProvider` / `puzzleResume.ts` (per-device unfinished puzzles) |
 | [ui/theme/](./src/ui/theme/) | `PlayerThemeContext` (dark mode, active palette, toggle), `useDuotoneIconTint`, and `DuotoneTintColorContext` (lets a mode, such as a puzzle session, tint icons from its own color) |
 | [ui/hooks/](./src/ui/hooks/) | `useModalState`, `useIsTouchDevice`, `usePressPreview` (the `data-previewing` state for a finger or pen held on locked content) |
@@ -713,6 +718,37 @@ The account also exposes `userId` and `returningGuest` (a guest on a device that
 `kaleidoscope:signed-out-here` in `sessionStorage` records a deliberate sign-out).
 Without Supabase configured the sign-in offer in Settings is hidden, and the rest of Settings still works. Auth emails use the templates in [supabase/email-templates/](./supabase/email-templates/), sent through custom SMTP (see supabase/README.md).
 
+### Beta testing
+
+A closed beta runs in **rounds** (`beta_rounds`: name, dates, welcome and instructions text, `survey_version`; rounds may not overlap). Testers are
+ordinary players **enrolled** in a round (`beta_testers`), not holders of a role, so nothing about their account changes and access ends with the round or
+when the admin revokes the enrollment. `beta_dashboard()` returns the rounds the player is in, with announcements, the survey status, and the server's clock;
+an admin sees every round as a read-only preview. Testers never write the `beta_*` tables: reports, surveys, devices, and joining go through `security definer`
+functions that check enrollment and that the round is open, and a tester reads only their own rows (the beta page filters reads by `user_id`, since an admin's
+session can read everyone's). Screenshots live in the private `beta-screenshots` bucket under `<user id>/<report id>/`.
+
+- **Route and frame.** `#/beta` is lazy-loaded inside the app's frame (`BetaApp`) but outside player content, so it neither waits for puzzles nor
+  creates a saved design (which would skip Zen's first-use tutorial). It is signed-in only; `BetaTheme` supplies the mode (see State and persistence).
+- **Joining.** An invite link is `#/beta?invite=TOKEN`. The token is kept in `localStorage` for up to 7 days, because the signup confirmation email returns to
+  the app root and may open another tab, and removed from the address. A signed-in player at the root with a kept token is sent to `#/beta`, which redeems it
+  (`redeem_beta_invite`, safe to repeat). A refusal (invalid, used, ended, revoked) is shown and the token dropped; a network failure keeps it for a retry.
+- **The page.** The countdown badge uses the server's clock, shows whole days until 72 hours remain, then days, hours, and minutes, and changes color with the
+  deadline: green, yellow under 7 days, orange under 3, red under 2, magenta under 24 hours (blue before the start, neutral after the end). Feedback and the
+  survey appear only while a round is open. Below the welcome panel the other panels pack into two columns on wide screens.
+- **Feedback.** Three buttons (their backgrounds are palette bands, loaded by palette ID) open dialogs for a bug report, a suggestion, and the tester's history. A
+  bug report asks what was expected, what happened, and the steps to reproduce, shows four device details (system, browser, viewport, touch screen) and takes up to
+  three screenshots (PNG, JPEG, or WebP, dropped or chosen; larger ones are scaled to 2000px and saved as JPEG; 5 MB bucket limit). The whole device record is stored.
+  Screenshots upload when the report is sent and the report goes only once they have arrived; sending again does not upload twice. The report id is chosen by the
+  app, so a repeat is harmless. Limits: 20 reports in 24 hours. A suggestion has a category and text. Forms stay mounted while their dialog is closed, so nothing
+  written is lost.
+- **History.** The tester sees their reports with a status (Received, Investigating, Resolved), the admin's short reply (`admin_note`), and what they sent.
+  The admin's internal note and GitHub link are in `beta_report_admin`, which testers cannot read. Issues are not created on GitHub automatically: the repository is
+  public, so the admin copies what is safe to share by hand.
+- **Survey.** One final survey per tester per round, in `survey.ts`, chosen by the round's `survey_version`. Answers are stored without the wording (question ids and
+  option values), so a question that changes meaning needs a new version. Required: the Sean Ellis question (`sean_ellis`) and the part used most (`most_used`).
+- **Device coverage.** `record_beta_device` notes the device when a tester opens the page during an open round: one row per tester, round, system, browser family,
+  and touch (`beta_tester_devices`), refreshed at most hourly. Only devices where the beta page is opened are counted.
+
 ### Grid sizes
 
 Each shape offers small, medium, and large grids. Size choices are remembered
@@ -770,6 +806,11 @@ symmetry engine. One representative per group is clickable.
   selected palette colors by position, preserving available and neutral selections.
 - Theme toggles do not remap historical snapshots, so undo across a toggle can
   restore older literal neutral colors without changing the current theme.
+- The light or dark mode is also saved alone, in `kaleidoscope:theme` (`dark` or `light`), so it can be chosen on
+  a page that has no design (the beta page) and before any design exists. Zen's provider writes it whenever the
+  mode changes, and `loadInitialZenState` adopts it: a design saved in the other mode is switched with the
+  reducer's own `TOGGLE_DARK_MODE`, so painted neutrals follow. The page frame (`readPersistedDarkMode`, and the
+  script in `index.html`) reads the key first, then the design's mode, which older saves still carry, then dark.
 - Autosave writes version 6 to `kaleidoscope:design` on state changes. It saves
   the palette ID (`paletteId`), selected color, dark mode, shape, per-shape sizes,
   editable-area preference, and all board paint maps in one record.
@@ -821,7 +862,7 @@ symmetry engine. One representative per group is clickable.
   or mutating view registers its own `{ dirty, pending }` through
   [useUnsavedDraft](./src/ui/navigation/useUnsavedDraft.ts); do not merge these
   into one parent dirty boolean or add `window.confirm` at new navigation sites.
-  [useAdminRoute](./src/app/useAdminRoute.ts) guards Home before changing the
+  [useAppRoute](./src/app/useAppRoute.ts) guards Home before changing the
   hash and reconciles already-triggered hashes. Indexed Back/Forward traversals
   return to the accepted entry while deciding, preserving their destination
   entries for retry; untracked hashes restore the accepted URL in place.
@@ -893,6 +934,7 @@ screens; only a condition that was never reached should fail. Assert on the resu
 Clear or seed storage and use deterministic state/randomness where needed.
 jsdom does not verify real layout, native focus trapping, or PNG rasterization.
 Browser checks are ad hoc; there is no maintained browser suite or coverage threshold.
+SQL migrations and their tests run locally with `npm run test:sql` (see supabase/README.md).
 
 Admin catalogs load asynchronously, and many actions render disabled until they
 finish; a click on a disabled button is silently ignored. Wait for a button to be

@@ -12,10 +12,15 @@
 		     be plain, un-bundled JS that runs before any module script. -->
 		<script>
 			try {
+				// The chosen mode, else the saved design's (from before the mode had a key).
+				var theme = localStorage.getItem('kaleidoscope:theme')
 				var design = JSON.parse(
 					localStorage.getItem('kaleidoscope:design'),
 				)
-				var dark = !design || design.darkMode !== false
+				var dark =
+					theme === 'dark' ||
+					(theme !== 'light' &&
+						(!design || design.darkMode !== false))
 				document.documentElement.style.backgroundColor = dark
 					? '#222222'
 					: '#ffffff'

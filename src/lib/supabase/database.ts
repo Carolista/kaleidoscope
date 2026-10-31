@@ -54,6 +54,309 @@ export type Database = {
 				}
 				Relationships: []
 			}
+			beta_announcements: {
+				Row: {
+					body: string
+					created_at: string
+					id: string
+					pinned: boolean
+					published_at: string | null
+					round_id: string
+					title: string
+				}
+				Insert: {
+					body?: string
+					created_at?: string
+					id?: string
+					pinned?: boolean
+					published_at?: string | null
+					round_id: string
+					title: string
+				}
+				Update: {
+					body?: string
+					created_at?: string
+					id?: string
+					pinned?: boolean
+					published_at?: string | null
+					round_id?: string
+					title?: string
+				}
+				Relationships: [
+					{
+						foreignKeyName: 'beta_announcements_round_id_fkey'
+						columns: ['round_id']
+						isOneToOne: false
+						referencedRelation: 'beta_rounds'
+						referencedColumns: ['id']
+					},
+				]
+			}
+			beta_invites: {
+				Row: {
+					created_at: string
+					email: string
+					id: string
+					name: string
+					redeemed_at: string | null
+					redeemed_by: string | null
+					round_id: string
+					token_hash: string
+				}
+				Insert: {
+					created_at?: string
+					email: string
+					id?: string
+					name: string
+					redeemed_at?: string | null
+					redeemed_by?: string | null
+					round_id: string
+					token_hash: string
+				}
+				Update: {
+					created_at?: string
+					email?: string
+					id?: string
+					name?: string
+					redeemed_at?: string | null
+					redeemed_by?: string | null
+					round_id?: string
+					token_hash?: string
+				}
+				Relationships: [
+					{
+						foreignKeyName: 'beta_invites_round_id_fkey'
+						columns: ['round_id']
+						isOneToOne: false
+						referencedRelation: 'beta_rounds'
+						referencedColumns: ['id']
+					},
+				]
+			}
+			beta_report_admin: {
+				Row: {
+					github_url: string | null
+					internal_note: string | null
+					report_id: string
+				}
+				Insert: {
+					github_url?: string | null
+					internal_note?: string | null
+					report_id: string
+				}
+				Update: {
+					github_url?: string | null
+					internal_note?: string | null
+					report_id?: string
+				}
+				Relationships: [
+					{
+						foreignKeyName: 'beta_report_admin_report_id_fkey'
+						columns: ['report_id']
+						isOneToOne: true
+						referencedRelation: 'beta_reports'
+						referencedColumns: ['id']
+					},
+				]
+			}
+			beta_report_images: {
+				Row: {
+					path: string
+					report_id: string
+				}
+				Insert: {
+					path: string
+					report_id: string
+				}
+				Update: {
+					path?: string
+					report_id?: string
+				}
+				Relationships: [
+					{
+						foreignKeyName: 'beta_report_images_report_id_fkey'
+						columns: ['report_id']
+						isOneToOne: false
+						referencedRelation: 'beta_reports'
+						referencedColumns: ['id']
+					},
+				]
+			}
+			beta_reports: {
+				Row: {
+					admin_note: string | null
+					steps: string | null
+					created_at: string
+					details: string | null
+					device: Json
+					expected: string | null
+					feature: string | null
+					happened: string | null
+					id: string
+					kind: string
+					round_id: string
+					status: string
+					user_id: string
+				}
+				Insert: {
+					admin_note?: string | null
+					steps?: string | null
+					created_at?: string
+					details?: string | null
+					device?: Json
+					expected?: string | null
+					feature?: string | null
+					happened?: string | null
+					id: string
+					kind: string
+					round_id: string
+					status?: string
+					user_id: string
+				}
+				Update: {
+					admin_note?: string | null
+					steps?: string | null
+					created_at?: string
+					details?: string | null
+					device?: Json
+					expected?: string | null
+					feature?: string | null
+					happened?: string | null
+					id?: string
+					kind?: string
+					round_id?: string
+					status?: string
+					user_id?: string
+				}
+				Relationships: [
+					{
+						foreignKeyName: 'beta_reports_round_id_fkey'
+						columns: ['round_id']
+						isOneToOne: false
+						referencedRelation: 'beta_rounds'
+						referencedColumns: ['id']
+					},
+				]
+			}
+			beta_rounds: {
+				Row: {
+					created_at: string
+					ends_at: string
+					id: string
+					instructions: string
+					name: string
+					starts_at: string
+					survey_version: number
+					welcome: string
+				}
+				Insert: {
+					created_at?: string
+					ends_at: string
+					id?: string
+					instructions?: string
+					name: string
+					starts_at: string
+					survey_version?: number
+					welcome?: string
+				}
+				Update: {
+					created_at?: string
+					ends_at?: string
+					id?: string
+					instructions?: string
+					name?: string
+					starts_at?: string
+					survey_version?: number
+					welcome?: string
+				}
+				Relationships: []
+			}
+			beta_settings: {
+				Row: {
+					singleton: boolean
+					site_url: string
+				}
+				Insert: {
+					singleton?: boolean
+					site_url: string
+				}
+				Update: {
+					singleton?: boolean
+					site_url?: string
+				}
+				Relationships: []
+			}
+			beta_surveys: {
+				Row: {
+					answers: Json
+					round_id: string
+					submitted_at: string
+					survey_version: number
+					user_id: string
+				}
+				Insert: {
+					answers: Json
+					round_id: string
+					submitted_at?: string
+					survey_version: number
+					user_id: string
+				}
+				Update: {
+					answers?: Json
+					round_id?: string
+					submitted_at?: string
+					survey_version?: number
+					user_id?: string
+				}
+				Relationships: [
+					{
+						foreignKeyName: 'beta_surveys_round_id_fkey'
+						columns: ['round_id']
+						isOneToOne: false
+						referencedRelation: 'beta_rounds'
+						referencedColumns: ['id']
+					},
+				]
+			}
+			beta_testers: {
+				Row: {
+					granted_at: string
+					invite_id: string | null
+					revoked_at: string | null
+					round_id: string
+					user_id: string
+				}
+				Insert: {
+					granted_at?: string
+					invite_id?: string | null
+					revoked_at?: string | null
+					round_id: string
+					user_id: string
+				}
+				Update: {
+					granted_at?: string
+					invite_id?: string | null
+					revoked_at?: string | null
+					round_id?: string
+					user_id?: string
+				}
+				Relationships: [
+					{
+						foreignKeyName: 'beta_testers_invite_id_fkey'
+						columns: ['invite_id']
+						isOneToOne: false
+						referencedRelation: 'beta_invites'
+						referencedColumns: ['id']
+					},
+					{
+						foreignKeyName: 'beta_testers_round_id_fkey'
+						columns: ['round_id']
+						isOneToOne: false
+						referencedRelation: 'beta_rounds'
+						referencedColumns: ['id']
+					},
+				]
+			}
 			daily_play_sessions: {
 				Row: {
 					closed_at: string | null
@@ -799,6 +1102,7 @@ export type Database = {
 				}
 				Returns: Json
 			}
+			beta_dashboard: { Args: never; Returns: Json }
 			bulk_delete_palette_drafts: {
 				Args: { p_ids: string[] }
 				Returns: string[]
@@ -822,6 +1126,10 @@ export type Database = {
 				}
 				Returns: string
 			}
+			create_beta_invite: {
+				Args: { p_email: string; p_name: string; p_round: string }
+				Returns: Json
+			}
 			delete_palette_draft: {
 				Args: {
 					p_expected_colors: string[]
@@ -835,6 +1143,27 @@ export type Database = {
 			edit_puzzle_draft: {
 				Args: { p_id: string; p_name: string; p_palette_id: string }
 				Returns: string
+			}
+			locked_set_previews: {
+				Args: never
+				Returns: {
+					board_size: string
+					definition: Json
+					difficulty: string
+					id: string
+					name: string
+					palette_id: string
+					published_at: string | null
+					release_at: string | null
+					rotation_allowed: boolean
+					shape_id: string
+				}[]
+				SetofOptions: {
+					from: '*'
+					to: 'puzzles'
+					isOneToOne: false
+					isSetofReturn: true
+				}
 			}
 			manage_palette_draft: {
 				Args: {
@@ -880,21 +1209,6 @@ export type Database = {
 				}
 				Returns: string
 			}
-			locked_set_previews: {
-				Args: never
-				Returns: {
-					board_size: string
-					definition: Json
-					difficulty: string
-					id: string
-					name: string
-					palette_id: string
-					published_at: string | null
-					release_at: string | null
-					rotation_allowed: boolean
-					shape_id: string
-				}[]
-			}
 			manage_shape_progression: {
 				Args: { p_shape_ids: string[] }
 				Returns: string[]
@@ -913,6 +1227,12 @@ export type Database = {
 					rotation_allowed: boolean
 					shape_id: string
 				}[]
+				SetofOptions: {
+					from: '*'
+					to: 'puzzles'
+					isOneToOne: false
+					isSetofReturn: true
+				}
 			}
 			preview_release: {
 				Args: {
@@ -923,10 +1243,15 @@ export type Database = {
 				}
 				Returns: Json
 			}
+			record_beta_device: {
+				Args: { p_device: Json; p_round: string }
+				Returns: undefined
+			}
 			record_puzzle_completions: {
 				Args: { p_puzzle_ids: string[] }
 				Returns: string[]
 			}
+			redeem_beta_invite: { Args: { p_token: string }; Returns: string }
 			replace_puzzle_draft: {
 				Args: {
 					p_board_size: string
@@ -958,6 +1283,25 @@ export type Database = {
 					p_shape_id: string
 				}
 				Returns: string
+			}
+			submit_beta_report: {
+				Args: {
+					p_details?: string
+					p_device?: Json
+					p_expected?: string
+					p_feature?: string
+					p_happened?: string
+					p_id: string
+					p_images?: string[]
+					p_kind: string
+					p_round: string
+					p_steps?: string
+				}
+				Returns: string
+			}
+			submit_beta_survey: {
+				Args: { p_answers: Json; p_round: string }
+				Returns: undefined
 			}
 		}
 		Enums: {

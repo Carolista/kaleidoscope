@@ -1,0 +1,81 @@
+.panel {
+	display: grid;
+	gap: 0.75rem;
+	padding: 1rem 1.25rem;
+	border: 2px solid var(--accent);
+	border-radius: 8px;
+	background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.heading {
+	margin: 0;
+	font-family: 'Righteous', sans-serif;
+	font-size: 1.25rem;
+	font-weight: 400;
+	letter-spacing: 0.03em;
+}
+
+.actions {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 0.5rem;
+}
+
+.action {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: flex-start;
+	gap: 0.5rem;
+	padding: 0.75rem 0.5rem;
+	border: 2px solid var(--accent);
+	border-radius: 8px;
+	background: transparent;
+	color: var(--accent);
+	font: inherit;
+	font-size: 0.9rem;
+	font-weight: 700;
+	line-height: 1.2;
+	text-align: center;
+	cursor: pointer;
+}
+
+.action:hover {
+	background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+/* The colors are pastels in any palette so far, so the text on them is dark in light and dark mode. */
+.action[data-banded] {
+	color: #222;
+}
+
+.action[data-banded]:hover {
+	filter: brightness(1.1) saturate(1.1);
+}
+
+.action:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 3px;
+}
+
+.dialog {
+	width: min(40rem, calc(100vw - 2rem));
+}
+
+.thanks {
+	display: grid;
+	justify-items: start;
+	gap: 1rem;
+	font-family: var(--font-body);
+}
+
+.thanks p {
+	margin: 0;
+	font-weight: 700;
+}
+
+.thanksButtons {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}

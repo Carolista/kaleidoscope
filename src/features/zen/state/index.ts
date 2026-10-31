@@ -5,5 +5,6 @@ export {
 	hasPersistedDesign,
 	readPersistedDarkMode,
 	savePersistedState,
+	saveThemePreference,
 } from './storageService'
 export { useZenState } from './useZenState'

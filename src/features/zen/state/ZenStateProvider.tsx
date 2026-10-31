@@ -3,7 +3,11 @@ import type { ReactNode } from 'react'
 import type { PlayerPalette } from '@/domain/palettes'
 import type { GridShapeId, GridSize } from '@/domain/shapes'
 import { createInitialHistoryState, historyReducer } from './historyReducer'
-import { loadInitialZenState, savePersistedState } from './storageService'
+import {
+	loadInitialZenState,
+	savePersistedState,
+	saveThemePreference,
+} from './storageService'
 import { usePlayerContent } from '@/ui/content'
 import { PlayerThemeContext } from '@/ui/theme'
 import { ZenStateContext } from './zenStateContext'
@@ -22,6 +26,10 @@ export function ZenStateProvider({
 	useEffect(() => {
 		savePersistedState(state)
 	}, [state])
+	// Kept apart from the design, so any page can read it (see storageService).
+	useEffect(() => {
+		saveThemePreference(state.darkMode)
+	}, [state.darkMode])
 
 	const selectPalette = useCallback(
 		(palette: PlayerPalette) =>

@@ -3,7 +3,23 @@
 The admin sign-in entry point uses Supabase Auth and the generated database types.
 The player app reads released content (core palettes, core puzzle sets, shape order) as a guest through a
 separate client that keeps no session; see CONTEXT.md, Player content. Guests cannot read `puzzle_authoring`.
-No image bucket or payment integration is included. A signed-in player records progress only through `record_puzzle_completions` (see "Apply player progress").
+No payment integration is included. A signed-in player records progress only through `record_puzzle_completions` (see "Apply player progress"). The one image bucket, `beta-screenshots`, belongs to beta testing (see "Apply beta testing").
+
+## Run the SQL tests locally
+
+`npm run test:sql` applies every migration in order and runs the files in `tests/` against
+[PGlite](https://pglite.dev) (Postgres compiled to WebAssembly). It is a dev dependency of this repository, so there is
+nothing to install, no Docker, and no hosted project involved; **use it instead of installing Postgres or adding PGlite
+again.** Homebrew cannot build Postgres on this Mac.
+
+- `npm run test:sql -- beta_testing` runs one file (several names are allowed; `.sql` is optional).
+- Supabase's own parts (the `anon` and `authenticated` roles, `auth.users`, `auth.uid()`, a minimal `storage` schema) are
+  stood in for by [local/stubs.sql](./local/stubs.sql). Add to it if a new migration needs another Supabase piece. The runner is
+  [local/run-sql-tests.mjs](./local/run-sql-tests.mjs).
+- Each test file rolls back, so one run leaves nothing behind. A passing run is strong evidence, not proof: still run
+  the new migration and its test in the Dashboard SQL Editor as described below.
+- Tests for early migrations are a historical record and several fail against the current schema (for example they call
+  functions later migrations replaced). Run the files for the area you changed; the files for recent migrations pass.
 
 ## Connect admin sign-in
 
@@ -839,6 +855,31 @@ puzzles are withheld. The migration adds `public.locked_set_previews()`, a `secu
 puzzle of each difficulty (the three a set's card shows) of released core and reward groups, leaving out puzzles the player can already play. The app uses them to show
 sets of shapes the player has not reached, locked and in greyscale until previewed. Packs, daily puzzles, and the rest of a set's puzzles are never returned, and
 previews earn nothing, because recording a solve still requires `can_play_puzzle`. If the function is missing the app logs a warning and shows no locked sets of later shapes.
+
+## Apply beta testing
+
+After the locked set previews, run these in order, each once in SQL Editor as `postgres`:
+
+1. [20261030000000_beta_testing.sql](./migrations/20261030000000_beta_testing.sql): the `beta_*` tables, the private `beta-screenshots` bucket with its policies, and the
+   functions `create_beta_invite`, `redeem_beta_invite`, `beta_dashboard`, `submit_beta_report`, and `submit_beta_survey`.
+2. [20261030010000_beta_report_steps.sql](./migrations/20261030010000_beta_report_steps.sql): renames the report column `attempted` to `steps` and replaces `submit_beta_report` so every field after
+   the kind is optional.
+3. [20261031000000_beta_tester_devices.sql](./migrations/20261031000000_beta_tester_devices.sql): `beta_tester_devices` and `record_beta_device`.
+4. Run [beta_testing.sql](./tests/beta_testing.sql) as `postgres`, without an automatic RLS wrapper. Expect **52 PASS results**; everything rolls back. It sets aside any beta rounds, reports, and devices the
+   project already has, inside its transaction, and counts only its own screenshots, so it is safe to run with real beta data.
+5. Regenerate the database types (`src/lib/supabase/database.ts`), then deploy the app. The previously deployed app does not use these tables.
+
+Testers never write the tables: only the functions above change them, each checking enrollment and that the round is open. The admin has full access through `admin_crud`, and a tester reads only their own
+reports, report images, and survey. `beta_settings` holds the site URL (initially `https://www.kaleidoscopepuzzle.com`) for invite links. Rounds cannot overlap (an exclusion constraint). `create_beta_invite`
+returns the link's token once, and stores only its hash; sending the invite email is not built yet. Until it is, create a round and enroll a tester by hand:
+
+```sql
+insert into public.beta_rounds (name, starts_at, ends_at, welcome, instructions)
+values ('Test Round', now(), now() + interval '14 days', 'Welcome text', 'Instructions');
+```
+
+The Storage limits (5 MB; PNG, JPEG, or WebP) are set on the bucket by the first migration. Deleting a user removes their reports, survey, and device rows, but not their screenshot files; account deletion
+will need to clear those.
 
 ## Player accounts and auth email
 

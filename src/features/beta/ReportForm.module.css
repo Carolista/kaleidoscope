@@ -1,0 +1,69 @@
+.form {
+	display: grid;
+	gap: 1rem;
+	text-align: start;
+}
+
+.device {
+	padding: 0.75rem 1rem;
+	border: 1px solid var(--accent);
+	border-radius: 8px;
+}
+
+.deviceList {
+	display: grid;
+	grid-template-columns: repeat(4, max-content);
+	justify-content: space-between;
+	gap: 0.5rem 1rem;
+	margin: 0;
+}
+
+.deviceItem {
+	display: grid;
+	justify-items: center;
+	gap: 0.125rem;
+	min-width: 0;
+}
+
+.device dt {
+	font-size: 0.8125rem;
+	font-weight: 700;
+}
+
+.device dd {
+	margin: 0;
+	overflow-wrap: anywhere;
+}
+
+.screenshots {
+	display: grid;
+	gap: 0.5rem;
+	min-width: 0;
+	margin: 0;
+	padding: 0;
+	border: none;
+}
+
+.screenshots legend {
+	padding: 0;
+	margin-bottom: 0.5rem;
+}
+
+.error {
+	margin: 0;
+	font-size: 0.875rem;
+	line-height: 1.4;
+	color: var(--control-danger, #ce4141);
+	overflow-wrap: anywhere;
+}
+
+.buttons {
+	display: flex;
+	justify-content: flex-end;
+}
+
+@media (max-width: 479px) {
+	.deviceList {
+		grid-template-columns: repeat(2, 1fr);
+	}
+}

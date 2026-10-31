@@ -1,0 +1,96 @@
+.list {
+	display: grid;
+	gap: 0.75rem;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	font-family: var(--font-body);
+}
+
+.item {
+	display: grid;
+	gap: 0.5rem;
+	padding: 0.75rem 1rem;
+	border: 1px solid var(--accent);
+	border-radius: 8px;
+}
+
+.row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.25rem 0.75rem;
+}
+
+.date {
+	margin-right: auto;
+	opacity: 0.85;
+}
+
+.status {
+	padding: 0.125rem 0.625rem;
+	border-radius: 999px;
+	font-size: 0.8125rem;
+	font-weight: 700;
+	color: #fff;
+	background: var(--blue);
+}
+
+.status[data-status='investigating'] {
+	background: var(--yellow);
+	color: #222;
+}
+
+.status[data-status='resolved'] {
+	background: var(--green);
+	color: #222;
+}
+
+.reply {
+	margin: 0;
+	padding: 0.5rem 0.75rem;
+	border-left: 4px solid var(--blue);
+	background: color-mix(in srgb, var(--accent) 8%, transparent);
+	line-height: 1.4;
+	overflow-wrap: anywhere;
+	white-space: pre-line;
+}
+
+.sent summary {
+	cursor: pointer;
+}
+
+.fields {
+	display: grid;
+	gap: 0.5rem;
+	margin: 0.5rem 0 0;
+}
+
+.fields dt {
+	font-size: 0.8125rem;
+	font-weight: 700;
+}
+
+.fields dd {
+	margin: 0;
+	line-height: 1.4;
+	overflow-wrap: anywhere;
+	white-space: pre-line;
+}
+
+.screenshots {
+	margin: 0.5rem 0 0;
+	font-size: 0.875rem;
+}
+
+.message {
+	display: grid;
+	justify-items: start;
+	gap: 0.75rem;
+	margin: 0;
+	font-family: var(--font-body);
+}
+
+.message p {
+	margin: 0;
+}
