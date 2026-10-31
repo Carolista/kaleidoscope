@@ -643,6 +643,40 @@ Results from requests finished after it was closed are ignored. A timed-out requ
 **Modal scroll areas pad out focus outlines.** The shared Modal's scroller clips overflow, which cut off focus outlines at its edges (seen in the account dialog and the admin
 progression modal). It has 6px of padding cancelled by an equal negative margin, so layout is unchanged.
 
+### Beta testing
+
+**The beta runs in rounds, not from settings.** A round is a row (dates, welcome and instructions text, survey version), and announcements, invites, enrollments, reports,
+surveys, and devices all belong to one. A second round is a new row, with the same page and the same questions; past rounds and their numbers stay apart. Rounds may not
+overlap, so "the current round" is never ambiguous. Hardcoding the dates and text would have meant a deploy for every change.
+
+**A tester is an enrollment, not a role.** Supabase Auth roles would have changed the account itself and needed undoing. An enrollment is a row that ends with the round or
+when it is revoked, and the player simply stops seeing the page. A returning tester needs a fresh invite; they keep read access to their own earlier reports.
+
+**An invite is a single-use token in the link, redeemed after sign-in.** Matching on the invited email address would fail for anyone who signs up with another address or
+already has an account. Only a hash of the token is stored, and sending again replaces it. The token is kept on the device (up to 7 days) because the confirmation email returns
+to the app root and drops the hash. The admin does not join as a tester: an admin previews the page, with nothing sent and nothing recorded, in keeping with "admin is not a player".
+
+**Testers write only through functions.** Reports, surveys, devices, and joining each have a `security definer` function that checks enrollment and that the round is open; the tables
+have no insert or update access for players. That is where the limits live (20 reports a day, 3 screenshots, one survey), and it means a forged request gets the same answer as the
+app. Screenshots are the exception that needs storage policies: a private bucket where a tester can write and read only their own folder while a round is open for them.
+
+**Feedback goes through a form with fixed questions, and the admin decides what leaves the database.** A bug report asks for what was expected, what happened, and the steps to reproduce, in that order,
+because it is easier to say what went wrong than to write steps first. The tester sees the status and a short reply; internal notes and the GitHub link are in a table they cannot read. Issues are not
+created on GitHub by a script: the repository is public, so anything copied there (screenshots, device details, a tester's words) is the admin's decision each time.
+
+**Device details are shown briefly and recorded fully.** The tester is shown four details (system, browser, viewport, touch screen) because anything more is noise; all of it is stored with a bug report.
+Coverage across testers needs more than bug reports, which only some testers file, so each tester's device is also noted when they open the beta page: one row per system, browser family, and kind of input.
+The cost is that it counts only where the page is opened, not where the game is played. Changing that would mean tracking inside the game.
+
+**The survey's questions live in code, versioned by the round.** The questions rarely change and are better reviewed like code than edited as data, but an answer is stored without its wording, so a question that
+changes meaning gets a new version and the old one stays for as long as its answers are read. Each tester sends it once, and it is final, so it asks for little: two required questions and a few optional ones.
+
+**The beta page stays out of the player's content.** It needs only the account, so it neither waits for puzzles to load nor creates a saved design, which would make the next visit to Zen skip its tutorial.
+Its dialogs keep their forms mounted while closed, so closing one by accident loses nothing; the history reads again each time it opens.
+
+**The deadline is shown from the server's clock and warms as it nears.** A device with the wrong time must not show the wrong deadline, so the page uses the server's time at load and keeps it moving. Whole days until 72 hours
+remain, then hours and minutes. The badge goes from green through yellow, orange, and red to magenta in the last day, so the urgency does not depend on reading the number.
+
 ### Puzzle tutorials
 
 **Each track teaches itself the first time a player meets it.** Basic puzzles at the first Puzzle
@@ -869,6 +903,10 @@ the narrow `PlayerThemeContext` in `ui/theme`, which Zen's provider supplies. On
 Zen depends on that context, not the other way around. When accounts arrive,
 the theme and palette can become player preferences with their own provider
 without changing those consumers.
+
+**The light or dark mode is saved on its own as well.** The beta page has no design to change and must not create one, so the mode is also kept in `kaleidoscope:theme`, which any page can write and
+read. Zen writes it on every change and, on loading, brings a saved design into the chosen mode with its own toggle, so painted neutrals follow. The alternative, editing the saved design from outside Zen,
+could not work on a device that has not saved one yet. The key is read first and the design's own mode second, so players who saved a design before the key existed lose nothing.
 
 ### Design edits versus tool choices
 

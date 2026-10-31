@@ -71,7 +71,7 @@ This project has been a chance to build both a creative user experience and the 
 
 The database foundation and Dashboard setup instructions are documented
 in [supabase/README.md](./supabase/README.md). Admin sign-in is available at
-`#/admin` after local configuration. The player app reads released content from the same
+`#/admin` after local configuration. Invited beta testers use `#/beta`. The player app reads released content from the same
 project as a guest (palettes, puzzle sets, and shape order). Players can also create an account and sign in
 (see [Player accounts and auth email](./supabase/README.md#player-accounts-and-auth-email)); a signed-in player's solved puzzles are saved to the account, which is what opens later shapes, and a guest's progress on a device can be imported on request.
 
