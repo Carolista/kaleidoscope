@@ -1,4 +1,4 @@
-import { useId, useState, type ReactNode } from 'react'
+import { useEffect, useId, useState, type ReactNode } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core'
 import {
@@ -7,6 +7,7 @@ import {
 	faLightbulbOn,
 } from '@fortawesome/pro-solid-svg-icons'
 import { Button, Heading, Modal, ModalHeader } from '@/ui/components'
+import { bands } from './bands'
 import type { ReportApi } from './betaReports'
 import BugReportForm from './BugReportForm'
 import ReportHistory from './ReportHistory'
@@ -19,11 +20,32 @@ const ACTIONS: readonly {
 	readonly dialog: Dialog
 	readonly label: string
 	readonly icon: IconDefinition
+	// The palette whose colors fill the button.
+	readonly paletteId: string
+	readonly reversed?: boolean
 }[] = [
-	{ dialog: 'bug', label: 'Report a Bug', icon: faBug },
-	{ dialog: 'suggestion', label: 'Make a Suggestion', icon: faLightbulbOn },
-	{ dialog: 'history', label: 'View History', icon: faClockRotateLeft },
+	{
+		dialog: 'bug',
+		label: 'Report a Bug',
+		icon: faBug,
+		paletteId: '060d8a6b-d371-4dd8-a88e-0e767b6156d6',
+		// This palette runs dark to light; the others run light to dark.
+		reversed: true,
+	},
+	{
+		dialog: 'suggestion',
+		label: 'Make a Suggestion',
+		icon: faLightbulbOn,
+		paletteId: '3e91c233-0e39-41fe-b9e7-ac4e25815568',
+	},
+	{
+		dialog: 'history',
+		label: 'View History',
+		icon: faClockRotateLeft,
+		paletteId: 'a948fcf6-e4ab-43c2-811e-c2de43ca732d',
+	},
 ]
+const PALETTE_IDS = ACTIONS.map(action => action.paletteId)
 
 // A form's dialog shows its form, or a thank-you once it has been sent. The form is kept
 // while the dialog is closed, so closing it by accident does not lose what was written.
@@ -103,6 +125,22 @@ export default function ReportPanel({
 	const [open, setOpen] = useState<Dialog | null>(null)
 	// Counts the openings of the history, which reads again each time.
 	const [historyOpenings, setHistoryOpenings] = useState(0)
+	// Only decoration, so the buttons are plain until the colors arrive, or if they never do.
+	const [palettes, setPalettes] = useState<Record<string, readonly string[]>>(
+		{},
+	)
+	useEffect(() => {
+		let cancelled = false
+		api.loadPalettes(PALETTE_IDS).then(
+			loaded => {
+				if (!cancelled) setPalettes(loaded)
+			},
+			() => undefined,
+		)
+		return () => {
+			cancelled = true
+		}
+	}, [api])
 	const close = () => setOpen(null)
 
 	return (
@@ -111,26 +149,41 @@ export default function ReportPanel({
 				Submit Feedback
 			</Heading>
 			<div className={styles.actions}>
-				{ACTIONS.map(action => (
-					<button
-						key={action.dialog}
-						type="button"
-						className={styles.action}
-						aria-haspopup="dialog"
-						onClick={() => {
-							if (action.dialog === 'history')
-								setHistoryOpenings(count => count + 1)
-							setOpen(action.dialog)
-						}}
-					>
-						<FontAwesomeIcon
-							icon={action.icon}
-							size="xl"
-							aria-hidden="true"
-						/>
-						<span>{action.label}</span>
-					</button>
-				))}
+				{ACTIONS.map(action => {
+					const colors = palettes[action.paletteId]
+					return (
+						<button
+							key={action.dialog}
+							type="button"
+							className={styles.action}
+							style={
+								colors
+									? {
+											background: bands(
+												action.reversed
+													? [...colors].reverse()
+													: colors,
+											),
+										}
+									: undefined
+							}
+							data-banded={colors ? '' : undefined}
+							aria-haspopup="dialog"
+							onClick={() => {
+								if (action.dialog === 'history')
+									setHistoryOpenings(count => count + 1)
+								setOpen(action.dialog)
+							}}
+						>
+							<FontAwesomeIcon
+								icon={action.icon}
+								size="xl"
+								aria-hidden="true"
+							/>
+							<span>{action.label}</span>
+						</button>
+					)
+				})}
 			</div>
 			<FormDialog
 				open={open === 'bug'}

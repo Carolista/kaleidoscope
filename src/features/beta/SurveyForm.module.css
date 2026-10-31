@@ -1,0 +1,59 @@
+.form {
+	display: grid;
+	gap: 1.25rem;
+	text-align: start;
+}
+
+.intro {
+	margin: 0;
+	line-height: 1.45;
+}
+
+.choices {
+	display: grid;
+	gap: 0.5rem;
+	min-width: 0;
+	margin: 0;
+	padding: 0;
+	border: none;
+}
+
+.choices legend {
+	margin-bottom: 0.5rem;
+	padding: 0;
+}
+
+.choice {
+	display: flex;
+	align-items: center;
+	gap: 0.625rem;
+	min-height: 2rem;
+	cursor: pointer;
+}
+
+.choice input {
+	flex: none;
+	width: 1.125rem;
+	height: 1.125rem;
+	margin: 0;
+	accent-color: var(--accent);
+}
+
+.optional,
+.required {
+	font-size: 0.875rem;
+	opacity: 0.8;
+}
+
+.error {
+	margin: 0;
+	font-size: 0.875rem;
+	line-height: 1.4;
+	color: var(--control-danger, #ce4141);
+	overflow-wrap: anywhere;
+}
+
+.buttons {
+	display: flex;
+	justify-content: flex-end;
+}

@@ -26,8 +26,9 @@ function fakeClient({
 	history?: { data: unknown; error: { message: string } | null }
 } = {}) {
 	const order = vi.fn().mockResolvedValue(history)
+	const inIds = vi.fn().mockResolvedValue(history)
 	const eq = vi.fn(() => ({ order }))
-	const select = vi.fn(() => ({ eq }))
+	const select = vi.fn(() => ({ eq, in: inIds }))
 	const fromTable = vi.fn(() => ({ select }))
 	const upload = vi.fn().mockResolvedValue({ error: uploadError })
 	const remove = vi.fn().mockResolvedValue({ error: null })
@@ -39,6 +40,8 @@ function fakeClient({
 		from,
 		rpc,
 		fromTable,
+		inIds,
+		select,
 		eq,
 		order,
 		client: {
@@ -131,6 +134,82 @@ describe('supabaseReportApi', () => {
 				images: [],
 			}),
 		).rejects.toThrow('That is a lot of reports for one day.')
+	})
+
+	it('sends the survey answers for the round', async () => {
+		const { client, rpc } = fakeClient()
+		await supabaseReportApi(client).submitSurvey('round', {
+			sean_ellis: 'very_disappointed',
+		})
+		expect(rpc).toHaveBeenCalledWith('submit_beta_survey', {
+			p_round: 'round',
+			p_answers: { sean_ellis: 'very_disappointed' },
+		})
+	})
+
+	it("passes on the database's message when the survey is refused", async () => {
+		const { client } = fakeClient({
+			rpcError: { message: 'You have already sent the survey.' },
+		})
+		await expect(
+			supabaseReportApi(client).submitSurvey('round', {}),
+		).rejects.toThrow('You have already sent the survey.')
+	})
+
+	describe('loadPalettes', () => {
+		it('reads the colors of the named palettes', async () => {
+			const { client, fromTable, select, inIds } = fakeClient({
+				history: {
+					data: [
+						{ id: 'p1', colors: ['#111111', '#222222'] },
+						{ id: 'p2', colors: ['#333333'] },
+					],
+					error: null,
+				},
+			})
+			const palettes = await supabaseReportApi(client).loadPalettes([
+				'p1',
+				'p2',
+			])
+			expect(fromTable).toHaveBeenCalledWith('palettes')
+			expect(select).toHaveBeenCalledWith('id, colors')
+			expect(inIds).toHaveBeenCalledWith('id', ['p1', 'p2'])
+			expect(palettes).toEqual({
+				p1: ['#111111', '#222222'],
+				p2: ['#333333'],
+			})
+		})
+
+		it('leaves out a palette without usable colors', async () => {
+			const { client } = fakeClient({
+				history: {
+					data: [
+						{ id: 'p1', colors: ['#111111'] },
+						{ id: 'p2', colors: [] },
+						{ id: 'p3', colors: [1, 2] },
+						{ id: 'p4', colors: null },
+					],
+					error: null,
+				},
+			})
+			await expect(
+				supabaseReportApi(client).loadPalettes([
+					'p1',
+					'p2',
+					'p3',
+					'p4',
+				]),
+			).resolves.toEqual({ p1: ['#111111'] })
+		})
+
+		it('fails when the palettes cannot be read', async () => {
+			const { client } = fakeClient({
+				history: { data: null, error: { message: 'down' } },
+			})
+			await expect(
+				supabaseReportApi(client).loadPalettes(['p1']),
+			).rejects.toThrow('down')
+		})
 	})
 
 	describe('loadHistory', () => {

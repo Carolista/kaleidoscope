@@ -124,3 +124,35 @@ describe('supabaseBetaApi', () => {
 		await expect(failure).rejects.not.toBeInstanceOf(BetaInviteRefused)
 	})
 })
+
+describe('recordDevice', () => {
+	const device = {
+		browser: 'Safari 17',
+		os: 'iOS 17.4',
+		viewport: '390x664',
+		screen: '390x844',
+		pixelRatio: 3,
+		touch: true,
+		installed: false,
+		language: 'en-US',
+		userAgent: 'agent',
+	}
+
+	it('sends the device with the round', async () => {
+		const { rpc, client } = clientReturning({ data: null })
+		await supabaseBetaApi(client).recordDevice('round-1', device)
+		expect(rpc).toHaveBeenCalledWith('record_beta_device', {
+			p_round: 'round-1',
+			p_device: device,
+		})
+	})
+
+	it('fails when the database refuses it', async () => {
+		const { client } = clientReturning({
+			error: { message: 'not open', code: '22023' },
+		})
+		await expect(
+			supabaseBetaApi(client).recordDevice('round-1', device),
+		).rejects.toThrow('not open')
+	})
+})

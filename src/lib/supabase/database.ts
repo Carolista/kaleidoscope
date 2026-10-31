@@ -1243,6 +1243,10 @@ export type Database = {
 				}
 				Returns: Json
 			}
+			record_beta_device: {
+				Args: { p_device: Json; p_round: string }
+				Returns: undefined
+			}
 			record_puzzle_completions: {
 				Args: { p_puzzle_ids: string[] }
 				Returns: string[]

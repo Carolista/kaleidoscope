@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase'
 import type { DeviceInfo } from './deviceInfo'
+import type { SurveyAnswers } from './survey'
 import { optionalText, rows, text, time } from './readRow'
 
 const BUCKET = 'beta-screenshots'
@@ -53,6 +54,15 @@ export interface ReportApi {
 	// Clears away uploads that will not be sent. Failing to is not worth reporting.
 	readonly remove: (paths: readonly string[]) => Promise<void>
 	readonly submit: (report: NewReport) => Promise<void>
+	// The final survey, which a tester can send once in a round.
+	readonly submitSurvey: (
+		roundId: string,
+		answers: SurveyAnswers,
+	) => Promise<void>
+	// Colors of palettes by id, for decoration; ids that cannot be read are left out.
+	readonly loadPalettes: (
+		ids: readonly string[],
+	) => Promise<Record<string, readonly string[]>>
 	// The tester's own reports, newest first.
 	readonly loadHistory: (userId: string) => Promise<ReportRecord[]>
 }
@@ -116,6 +126,31 @@ export function supabaseReportApi(client: SupabaseClient<Database>): ReportApi {
 			)
 			// The database's messages are written to be read by the tester.
 			if (error) throw new Error(error.message)
+		},
+		async submitSurvey(roundId, answers) {
+			const { error } = await client.rpc('submit_beta_survey', {
+				p_round: roundId,
+				p_answers: { ...answers },
+			})
+			if (error) throw new Error(error.message)
+		},
+		async loadPalettes(ids) {
+			const { data, error } = await client
+				.from('palettes')
+				.select('id, colors')
+				.in('id', [...ids])
+			if (error) throw new Error(error.message)
+			const palettes: Record<string, readonly string[]> = {}
+			for (const row of rows(data)) {
+				const colors = row.colors
+				if (
+					Array.isArray(colors) &&
+					colors.length > 0 &&
+					colors.every(color => typeof color === 'string')
+				)
+					palettes[text(row, 'id')] = colors
+			}
+			return palettes
 		},
 		async loadHistory(userId) {
 			// Named, because an admin's session can read every tester's reports.

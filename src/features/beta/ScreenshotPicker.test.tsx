@@ -71,7 +71,7 @@ describe('ScreenshotPicker', () => {
 		])
 		expect(attached()).toEqual(['1.png', '2.png', '3.png'])
 		expect(screen.getByRole('alert')).toHaveTextContent(
-			'up to 3 screenshots',
+			'only 3 screenshots',
 		)
 		expect(screen.getByLabelText(/most you can attach/)).toBeDisabled()
 	})

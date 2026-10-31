@@ -9,6 +9,8 @@ import type { BetaRound } from './betaApi'
 import type { ReportApi } from './betaReports'
 import { badgeTone, formatCountdown, roundPhase } from './countdown'
 import ReportPanel from './ReportPanel'
+import { surveyFor } from './survey'
+import SurveyPanel from './SurveyPanel'
 import styles from './RoundView.module.css'
 import useServerNow from './useServerNow'
 
@@ -64,6 +66,8 @@ export default function RoundView({
 }) {
 	const titleId = useId()
 	const now = useServerNow(serverNow, localAt)
+	// A round whose questions this version of the app does not have has no survey to offer.
+	const survey = surveyFor(round.surveyVersion)
 	return (
 		<article className={styles.round} aria-labelledby={titleId}>
 			<header className={styles.header}>
@@ -130,6 +134,17 @@ export default function RoundView({
 						prepare={prepareScreenshot}
 					/>
 				)}
+				{reportApi &&
+					survey &&
+					!preview &&
+					roundPhase(round, now) === 'open' && (
+						<SurveyPanel
+							survey={survey}
+							roundId={round.id}
+							api={reportApi}
+							alreadySent={round.surveySubmitted}
+						/>
+					)}
 				{round.announcements.length > 0 && (
 					<section className={styles.panel}>
 						<Heading level={3} className={styles.heading}>

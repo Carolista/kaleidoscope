@@ -52,6 +52,7 @@ delete from public.beta_surveys;
 delete from public.beta_report_images;
 delete from public.beta_report_admin;
 delete from public.beta_reports;
+delete from public.beta_tester_devices;
 delete from public.beta_testers;
 delete from public.beta_invites;
 delete from public.beta_announcements;
@@ -440,7 +441,10 @@ select pg_temp.assert_true(
 ) as test;
 select pg_temp.assert_true(
 	(select count(*) from public.beta_reports) >= 4
-	and (select count(*) from storage.objects where bucket_id = 'beta-screenshots') = 1,
+	-- The bucket may hold real screenshots too, so only this test's own folder is counted.
+	and (select count(*) from storage.objects
+		where bucket_id = 'beta-screenshots' and name like pg_temp.id(2)::text || '/%') = 1
+	and (select count(*) from storage.objects where bucket_id = 'beta-screenshots') >= 1,
 	'the admin sees every report and screenshot'
 ) as test;
 reset role;
@@ -536,6 +540,97 @@ select pg_temp.assert_true(
 		'42501'
 	),
 	'a revoked tester cannot upload'
+) as test;
+reset role;
+
+-- Devices.
+select pg_temp.as_user(4);
+set local role authenticated;
+select public.record_beta_device(
+	pg_temp.id(11),
+	'{"os":"macOS","browser":"Chrome 126","touch":false,"viewport":"1280x720"}'
+);
+select public.record_beta_device(
+	pg_temp.id(11),
+	'{"os":"macOS","browser":"Chrome 127","touch":false,"viewport":"1000x700"}'
+);
+select public.record_beta_device(
+	pg_temp.id(11),
+	'{"os":"iOS 17.4","browser":"Safari 17","touch":true,"viewport":"390x664"}'
+);
+select pg_temp.assert_true(
+	pg_temp.raises(
+		format('select public.record_beta_device(%L, ''{"os":"macOS"}'')', pg_temp.id(11)), '22023'
+	)
+	and pg_temp.raises(
+		format('select public.record_beta_device(%L, ''[1]'')', pg_temp.id(11)), '22023'
+	)
+	and pg_temp.raises(
+		format('select public.record_beta_device(%L, ''{"os":"macOS","browser":"Chrome 1"}'')', pg_temp.id(12)),
+		'42501'
+	),
+	'malformed details, and a round the tester is not in, are refused'
+) as test;
+select pg_temp.assert_true(
+	(select count(*) from public.beta_tester_devices) = 0,
+	'a tester cannot read the recorded devices'
+) as test;
+reset role;
+select pg_temp.assert_true(
+	(select count(*) from public.beta_tester_devices where user_id = pg_temp.id(4)) = 2
+	and (select count(*) from public.beta_tester_devices
+		where user_id = pg_temp.id(4) and device_key = 'macOS|Chrome|no touch') = 1
+	and (select count(*) from public.beta_tester_devices
+		where user_id = pg_temp.id(4) and device_key = 'iOS 17.4|Safari|touch') = 1,
+	'a device is recorded once per system, browser family, and kind of input'
+) as test;
+select pg_temp.assert_true(
+	(select device ->> 'browser' from public.beta_tester_devices
+		where user_id = pg_temp.id(4) and device_key = 'macOS|Chrome|no touch') = 'Chrome 126',
+	'opening the page again within the hour leaves the record as it was'
+) as test;
+update public.beta_tester_devices set last_seen_at = now() - interval '2 hours';
+select pg_temp.as_user(4);
+set local role authenticated;
+select public.record_beta_device(
+	pg_temp.id(11),
+	'{"os":"macOS","browser":"Chrome 127","touch":false,"viewport":"1000x700"}'
+);
+reset role;
+select pg_temp.assert_true(
+	(select device ->> 'browser' from public.beta_tester_devices
+		where user_id = pg_temp.id(4) and device_key = 'macOS|Chrome|no touch') = 'Chrome 127'
+	and (select count(*) from public.beta_tester_devices where user_id = pg_temp.id(4)) = 2,
+	'a later visit refreshes the record without adding another'
+) as test;
+select pg_temp.as_user(1);
+set local role authenticated;
+select pg_temp.assert_true(
+	(select count(*) from public.beta_tester_devices) = 2,
+	'the admin sees every recorded device'
+) as test;
+reset role;
+select pg_temp.as_user(3);
+set local role authenticated;
+select pg_temp.assert_true(
+	pg_temp.raises(
+		format('select public.record_beta_device(%L, ''{"os":"macOS","browser":"Chrome 1"}'')', pg_temp.id(11)),
+		'42501'
+	),
+	'a player who is not a tester cannot record a device'
+) as test;
+reset role;
+-- A round that has ended takes no more.
+update public.beta_testers set revoked_at = null where user_id = pg_temp.id(2);
+insert into public.beta_testers(round_id, user_id) values (pg_temp.id(10), pg_temp.id(4));
+select pg_temp.as_user(4);
+set local role authenticated;
+select pg_temp.assert_true(
+	pg_temp.raises(
+		format('select public.record_beta_device(%L, ''{"os":"macOS","browser":"Chrome 1"}'')', pg_temp.id(10)),
+		'22023'
+	),
+	'an ended round takes no more devices'
 ) as test;
 reset role;
 

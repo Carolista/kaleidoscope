@@ -48,6 +48,7 @@ function fakeApi(
 				: Promise.resolve(dashboard),
 		),
 		redeemInvite: vi.fn(redeem),
+		recordDevice: vi.fn(() => Promise.resolve()),
 	}
 	return api
 }
@@ -84,6 +85,8 @@ const reportApi: ReportApi = {
 	remove: vi.fn(() => Promise.resolve()),
 	submit: vi.fn(() => Promise.resolve()),
 	loadHistory: vi.fn(() => Promise.resolve([])),
+	submitSurvey: vi.fn(() => Promise.resolve()),
+	loadPalettes: vi.fn(() => Promise.resolve({})),
 }
 
 describe('BetaDashboard', () => {
@@ -308,6 +311,46 @@ describe('BetaDashboard', () => {
 			expect(await screen.findByRole('button', tab)).toBeInTheDocument()
 		})
 
+		it('offer the final survey alongside, or a thank-you once it is sent', async () => {
+			const { unmount } = render(
+				<BetaDashboard
+					account={signedIn}
+					invite={null}
+					onInviteHandled={vi.fn()}
+					gameUrl="/"
+					api={fakeApi(data([round()]))}
+					reportApi={reportApi}
+				/>,
+			)
+			expect(
+				await screen.findByRole('button', { name: 'Take the Survey' }),
+			).toBeInTheDocument()
+			unmount()
+			renderDashboard({
+				api: fakeApi(data([round({ surveySubmitted: true })])),
+				reportApi,
+			})
+			expect(
+				await screen.findByText('Thank you! Your survey was sent.'),
+			).toBeInTheDocument()
+			expect(
+				screen.queryByRole('button', { name: 'Take the Survey' }),
+			).not.toBeInTheDocument()
+		})
+
+		it('leave out the survey when the round uses questions the app does not have', async () => {
+			renderDashboard({
+				api: fakeApi(data([round({ surveyVersion: 99 })])),
+				reportApi,
+			})
+			expect(
+				await screen.findByRole('button', { name: 'Report a Bug' }),
+			).toBeInTheDocument()
+			expect(
+				screen.queryByRole('button', { name: 'Take the Survey' }),
+			).not.toBeInTheDocument()
+		})
+
 		it('are left out of an admin preview, an unstarted or ended round, and without somewhere to send them', async () => {
 			const cases = [
 				fakeApi(data([round()], { preview: true })),
@@ -362,6 +405,53 @@ describe('BetaDashboard', () => {
 			} finally {
 				vi.useRealTimers()
 			}
+		})
+	})
+
+	describe('device coverage', () => {
+		it('notes the tester’s device once while the round is open', async () => {
+			const api = fakeApi(data([round()]))
+			renderDashboard({ api })
+			await screen.findByRole('heading', { name: 'Fall Beta' })
+			expect(api.recordDevice).toHaveBeenCalledExactlyOnceWith(
+				'round-1',
+				expect.objectContaining({
+					browser: expect.any(String),
+					os: expect.any(String),
+				}),
+			)
+		})
+
+		it('does not note an admin preview, a round not yet started, or one that has ended', async () => {
+			const cases = [
+				data([round()], { preview: true }),
+				data([round({ startsAt: NOW + DAY, endsAt: NOW + 5 * DAY })]),
+				data([round({ startsAt: NOW - 5 * DAY, endsAt: NOW - DAY })]),
+			]
+			for (const dashboard of cases) {
+				const api = fakeApi(dashboard)
+				const { unmount } = render(
+					<BetaDashboard
+						account={signedIn}
+						invite={null}
+						onInviteHandled={vi.fn()}
+						gameUrl="/"
+						api={api}
+					/>,
+				)
+				await screen.findByRole('article')
+				expect(api.recordDevice).not.toHaveBeenCalled()
+				unmount()
+			}
+		})
+
+		it('still shows the page when the device cannot be noted', async () => {
+			const api = fakeApi(data([round()]))
+			vi.mocked(api.recordDevice).mockRejectedValue(new Error('offline'))
+			renderDashboard({ api })
+			expect(
+				await screen.findByRole('heading', { name: 'Fall Beta' }),
+			).toBeInTheDocument()
 		})
 	})
 

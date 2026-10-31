@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase'
+import type { DeviceInfo } from './deviceInfo'
 import { isRow, rows, text, time, type Row } from './readRow'
 
 export interface BetaAnnouncement {
@@ -39,6 +40,11 @@ export class BetaInviteRefused extends Error {}
 export interface BetaApi {
 	readonly loadDashboard: () => Promise<BetaDashboardData>
 	readonly redeemInvite: (token: string) => Promise<void>
+	// Notes the device a tester has opened the page on, for the admin's coverage of devices.
+	readonly recordDevice: (
+		roundId: string,
+		device: DeviceInfo,
+	) => Promise<void>
 }
 
 function parseAnnouncement(row: Row): BetaAnnouncement {
@@ -86,6 +92,13 @@ export function supabaseBetaApi(client: SupabaseClient<Database>): BetaApi {
 			const { data, error } = await client.rpc('beta_dashboard')
 			if (error) throw new Error(error.message)
 			return parseDashboard(data)
+		},
+		async recordDevice(roundId, device) {
+			const { error } = await client.rpc('record_beta_device', {
+				p_round: roundId,
+				p_device: device,
+			})
+			if (error) throw new Error(error.message)
 		},
 		async redeemInvite(token) {
 			const { error } = await client.rpc('redeem_beta_invite', {

@@ -10,6 +10,8 @@ function fakeApi(overrides: Partial<ReportApi> = {}) {
 		remove: vi.fn(() => Promise.resolve()),
 		submit: vi.fn(() => Promise.resolve()),
 		loadHistory: vi.fn(() => Promise.resolve([])),
+		submitSurvey: vi.fn(() => Promise.resolve()),
+		loadPalettes: vi.fn(() => Promise.resolve({})),
 		...overrides,
 	}
 	return api
@@ -92,6 +94,64 @@ describe('ReportPanel', () => {
 		await waitFor(() =>
 			expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
 		)
+	})
+
+	it('fills each button with the colors of its palette', async () => {
+		const api = fakeApi({
+			loadPalettes: vi.fn(() =>
+				Promise.resolve({
+					'060d8a6b-d371-4dd8-a88e-0e767b6156d6': [
+						'#111111',
+						'#222222',
+					],
+					'a948fcf6-e4ab-43c2-811e-c2de43ca732d': [
+						'#333333',
+						'#444444',
+					],
+				}),
+			),
+		})
+		renderPanel(api)
+		const bug = screen.getByRole('button', { name: 'Report a Bug' })
+		await waitFor(() => expect(bug).toHaveAttribute('data-banded'))
+		expect(api.loadPalettes).toHaveBeenCalledExactlyOnceWith([
+			'060d8a6b-d371-4dd8-a88e-0e767b6156d6',
+			'3e91c233-0e39-41fe-b9e7-ac4e25815568',
+			'a948fcf6-e4ab-43c2-811e-c2de43ca732d',
+		])
+		// The bug button's palette is shown in reverse; the others as they come. The
+		// browser's stylesheet engine writes the colors as rgb().
+		expect(bug.style.background).toContain('linear-gradient(120deg')
+		expect(bug.style.background.indexOf('rgb(34, 34, 34)')).toBeLessThan(
+			bug.style.background.indexOf('rgb(17, 17, 17)'),
+		)
+		const history = screen.getByRole('button', { name: 'View History' })
+		expect(
+			history.style.background.indexOf('rgb(51, 51, 51)'),
+		).toBeLessThan(history.style.background.indexOf('rgb(68, 68, 68)'))
+		expect(
+			screen.getByRole('button', { name: 'View History' }),
+		).toHaveAttribute('data-banded')
+		// A palette that could not be read leaves its button plain.
+		const suggestion = screen.getByRole('button', {
+			name: 'Make a Suggestion',
+		})
+		expect(suggestion).not.toHaveAttribute('data-banded')
+		expect(suggestion.style.background).toBe('')
+	})
+
+	it('stays plain, and works, when the colors cannot be loaded', async () => {
+		const api = fakeApi({
+			loadPalettes: vi.fn(() => Promise.reject(new Error('offline'))),
+		})
+		renderPanel(api)
+		await waitFor(() => expect(api.loadPalettes).toHaveBeenCalled())
+		const bug = screen.getByRole('button', { name: 'Report a Bug' })
+		expect(bug).not.toHaveAttribute('data-banded')
+		await userEvent.click(bug)
+		expect(
+			screen.getByRole('dialog', { name: 'Report a Bug' }),
+		).toBeInTheDocument()
 	})
 
 	it('keeps what was typed when a dialog is closed and opened again', async () => {

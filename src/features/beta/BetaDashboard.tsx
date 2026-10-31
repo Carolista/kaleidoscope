@@ -3,6 +3,8 @@ import { getPlayerClient } from '@/lib/supabase'
 import { Button, Heading, Loading } from '@/ui/components'
 import { supabaseBetaApi, type BetaApi, type BetaRound } from './betaApi'
 import { supabaseReportApi, type ReportApi } from './betaReports'
+import { roundPhase } from './countdown'
+import DeviceRecorder from './DeviceRecorder'
 import RoundView from './RoundView'
 import useBetaDashboard from './useBetaDashboard'
 import styles from './BetaDashboard.module.css'
@@ -91,6 +93,11 @@ function SignedIn({
 					{notice}
 				</p>
 			)}
+			{round &&
+				!data.preview &&
+				roundPhase(round, data.serverNow) === 'open' && (
+					<DeviceRecorder api={api} roundId={round.id} />
+				)}
 			{round ? (
 				<RoundView
 					round={round}
