@@ -1,14 +1,16 @@
-import { useId } from 'react'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Heading } from '@/ui/components'
 import {
 	faArrowUpRightFromSquare,
 	faThumbtack,
 } from '@fortawesome/pro-solid-svg-icons'
-import { Heading } from '@/ui/components'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { useId } from 'react'
 import type { BetaRound } from './betaApi'
+import type { ReportApi } from './betaReports'
 import { formatCountdown, roundPhase } from './countdown'
-import useServerNow from './useServerNow'
+import ReportPanel from './ReportPanel'
 import styles from './RoundView.module.css'
+import useServerNow from './useServerNow'
 
 const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: 'short' })
 
@@ -45,6 +47,9 @@ export default function RoundView({
 	localAt,
 	preview,
 	gameUrl,
+	userId,
+	reportApi,
+	prepareScreenshot,
 }: {
 	readonly round: BetaRound
 	readonly serverNow: number
@@ -52,33 +57,26 @@ export default function RoundView({
 	readonly preview: boolean
 	// The game itself, which opens in another tab so this page stays at hand.
 	readonly gameUrl: string
+	readonly userId: string
+	// Without it there is nowhere to send feedback, so the panel is left out.
+	readonly reportApi?: ReportApi
+	readonly prepareScreenshot?: (file: Blob) => Promise<Blob>
 }) {
 	const titleId = useId()
 	const now = useServerNow(serverNow, localAt)
 	return (
 		<article className={styles.round} aria-labelledby={titleId}>
 			<header className={styles.header}>
-				<h2 id={titleId} className={styles.name}>
-					{round.name}
-				</h2>
-				<p className={styles.dates}>
-					{dateFormat.format(round.startsAt)} -{' '}
-					{dateFormat.format(round.endsAt)}
-				</p>
-			</header>
-			{preview && (
-				<p className={styles.preview} role="note">
-					You are previewing as the admin. You are not a tester, so
-					nothing here is recorded.
-				</p>
-			)}
-			{round.welcome.trim() && (
-				<section className={styles.panel} aria-label="Welcome">
-					<PlainText value={round.welcome} />
-				</section>
-			)}
-			<div className={styles.masonry}>
-				<section className={styles.status} aria-label="Beta status">
+				<div className={styles.headerText}>
+					<h2 id={titleId} className={styles.name}>
+						{round.name}
+					</h2>
+					<p className={styles.dates}>
+						{dateFormat.format(round.startsAt)} -{' '}
+						{dateFormat.format(round.endsAt)}
+					</p>
+				</div>
+				<div className={styles.headerBlocks}>
 					<p className={styles.countdown}>{statusLine(round, now)}</p>
 					<a
 						className={styles.gameLink}
@@ -92,7 +90,41 @@ export default function RoundView({
 							aria-hidden="true"
 						/>
 					</a>
+				</div>
+			</header>
+			{preview && (
+				<p className={styles.preview} role="note">
+					You are previewing as the admin. You are not a tester, so
+					nothing here is recorded.
+				</p>
+			)}
+			<div className={styles.masonry}>
+				<section className={styles.panel} aria-label="Welcome">
+					{round.welcome.trim() && (
+						<>
+							<Heading level={3} className={styles.heading}>
+								Welcome!
+							</Heading>
+							<PlainText value={round.welcome} />
+						</>
+					)}
+					{round.instructions.trim() && (
+						<>
+							<Heading level={3} className={styles.heading}>
+								How to test
+							</Heading>
+							<PlainText value={round.instructions} />
+						</>
+					)}
 				</section>
+				{reportApi && !preview && roundPhase(round, now) === 'open' && (
+					<ReportPanel
+						roundId={round.id}
+						userId={userId}
+						api={reportApi}
+						prepare={prepareScreenshot}
+					/>
+				)}
 				{round.announcements.length > 0 && (
 					<section className={styles.panel}>
 						<Heading level={3} className={styles.heading}>
@@ -119,14 +151,6 @@ export default function RoundView({
 								</li>
 							))}
 						</ul>
-					</section>
-				)}
-				{round.instructions.trim() && (
-					<section className={styles.panel}>
-						<Heading level={3} className={styles.heading}>
-							How to test
-						</Heading>
-						<PlainText value={round.instructions} />
 					</section>
 				)}
 			</div>

@@ -1,5 +1,5 @@
-import { useId, useRef, useState, type SubmitEvent } from 'react'
 import { Button, FormField, Input, Modal, ModalHeader } from '@/ui/components'
+import { useId, useRef, useState, type SubmitEvent } from 'react'
 import { useAccount } from './AccountContext'
 import styles from './AccountDialog.module.css'
 
@@ -26,7 +26,7 @@ const TITLES: Record<View | 'account', string> = {
 const SUBMIT_LABELS: Partial<Record<View, readonly [string, string]>> = {
 	signIn: ['Sign in', 'Signing in…'],
 	signUp: ['Create account', 'Creating account…'],
-	forgot: ['Send reset link', 'Sending…'],
+	forgot: ['Send reset link', 'Submitting…'],
 	newPassword: ['Save new password', 'Saving…'],
 }
 

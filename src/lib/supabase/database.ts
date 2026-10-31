@@ -185,7 +185,7 @@ export type Database = {
 			beta_reports: {
 				Row: {
 					admin_note: string | null
-					attempted: string | null
+					steps: string | null
 					created_at: string
 					details: string | null
 					device: Json
@@ -200,7 +200,7 @@ export type Database = {
 				}
 				Insert: {
 					admin_note?: string | null
-					attempted?: string | null
+					steps?: string | null
 					created_at?: string
 					details?: string | null
 					device?: Json
@@ -215,7 +215,7 @@ export type Database = {
 				}
 				Update: {
 					admin_note?: string | null
-					attempted?: string | null
+					steps?: string | null
 					created_at?: string
 					details?: string | null
 					device?: Json
@@ -1282,16 +1282,16 @@ export type Database = {
 			}
 			submit_beta_report: {
 				Args: {
-					p_attempted: string
-					p_details: string
-					p_device: Json
-					p_expected: string
-					p_feature: string
-					p_happened: string
+					p_details?: string
+					p_device?: Json
+					p_expected?: string
+					p_feature?: string
+					p_happened?: string
 					p_id: string
-					p_images: string[]
+					p_images?: string[]
 					p_kind: string
 					p_round: string
+					p_steps?: string
 				}
 				Returns: string
 			}

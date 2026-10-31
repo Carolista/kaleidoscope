@@ -9,6 +9,7 @@ import {
 	type BetaRound,
 } from './betaApi'
 import BetaDashboard, { type BetaAccount } from './BetaDashboard'
+import type { ReportApi } from './betaReports'
 
 const NOW = Date.parse('2026-11-10T12:00:00Z')
 const DAY = 24 * 60 * 60 * 1000
@@ -77,6 +78,12 @@ beforeEach(() => {
 	vi.spyOn(Date, 'now').mockReturnValue(NOW)
 })
 afterEach(() => vi.restoreAllMocks())
+
+const reportApi: ReportApi = {
+	upload: vi.fn(() => Promise.resolve()),
+	remove: vi.fn(() => Promise.resolve()),
+	submit: vi.fn(() => Promise.resolve()),
+}
 
 describe('BetaDashboard', () => {
 	it('waits for the account, then asks a guest to sign in', async () => {
@@ -280,6 +287,65 @@ describe('BetaDashboard', () => {
 		expect(
 			await screen.findByRole('heading', { name: 'Fall Beta' }),
 		).toBeInTheDocument()
+	})
+
+	describe('feedback forms', () => {
+		const tab = { name: 'Report a Bug' }
+
+		it('are offered to a tester while the round is open', async () => {
+			renderDashboard({ api: fakeApi(data([round()])), reportApi })
+			expect(await screen.findByRole('tab', tab)).toBeInTheDocument()
+		})
+
+		it('are left out of an admin preview, an unstarted or ended round, and without somewhere to send them', async () => {
+			const cases = [
+				fakeApi(data([round()], { preview: true })),
+				fakeApi(
+					data([
+						round({ startsAt: NOW + DAY, endsAt: NOW + 5 * DAY }),
+					]),
+				),
+				fakeApi(
+					data([
+						round({ startsAt: NOW - 5 * DAY, endsAt: NOW - DAY }),
+					]),
+				),
+			]
+			for (const api of cases) {
+				const { unmount } = render(
+					<BetaDashboard
+						account={signedIn}
+						invite={null}
+						onInviteHandled={vi.fn()}
+						gameUrl="/"
+						api={api}
+						reportApi={reportApi}
+					/>,
+				)
+				await screen.findByRole('article')
+				expect(screen.queryByRole('tab', tab)).not.toBeInTheDocument()
+				unmount()
+			}
+			renderDashboard({ api: fakeApi(data([round()])) })
+			await screen.findByRole('article')
+			expect(screen.queryByRole('tab', tab)).not.toBeInTheDocument()
+		})
+
+		it('go away when the round ends while the page is open', async () => {
+			vi.useFakeTimers({ shouldAdvanceTime: true })
+			try {
+				vi.setSystemTime(NOW)
+				renderDashboard({
+					api: fakeApi(data([round({ endsAt: NOW + 60 * 1000 })])),
+					reportApi,
+				})
+				expect(await screen.findByRole('tab', tab)).toBeInTheDocument()
+				await act(() => vi.advanceTimersByTimeAsync(2 * 60 * 1000))
+				expect(screen.queryByRole('tab', tab)).not.toBeInTheDocument()
+			} finally {
+				vi.useRealTimers()
+			}
+		})
 	})
 
 	describe('with an invite link', () => {

@@ -2,6 +2,7 @@ import { useMemo, type ReactNode } from 'react'
 import { getPlayerClient } from '@/lib/supabase'
 import { Button, Heading, Loading } from '@/ui/components'
 import { supabaseBetaApi, type BetaApi, type BetaRound } from './betaApi'
+import { supabaseReportApi, type ReportApi } from './betaReports'
 import RoundView from './RoundView'
 import useBetaDashboard from './useBetaDashboard'
 import styles from './BetaDashboard.module.css'
@@ -44,12 +45,16 @@ function Message({
 
 function SignedIn({
 	api,
+	reportApi,
+	prepareScreenshot,
 	userId,
 	invite,
 	onInviteHandled,
 	gameUrl,
 }: {
 	readonly api: BetaApi
+	readonly reportApi?: ReportApi
+	readonly prepareScreenshot?: (file: Blob) => Promise<Blob>
 	readonly userId: string
 	readonly invite: string | null
 	readonly onInviteHandled: () => void
@@ -93,6 +98,9 @@ function SignedIn({
 					localAt={localAt}
 					preview={data.preview}
 					gameUrl={gameUrl}
+					userId={userId}
+					reportApi={reportApi}
+					prepareScreenshot={prepareScreenshot}
 				/>
 			) : (
 				<Message title="Beta Testing">
@@ -117,6 +125,8 @@ export default function BetaDashboard({
 	onInviteHandled,
 	gameUrl,
 	api: providedApi,
+	reportApi: providedReportApi,
+	prepareScreenshot,
 }: {
 	readonly account: BetaAccount
 	// Set where accounts can be created.
@@ -125,18 +135,23 @@ export default function BetaDashboard({
 	readonly invite: string | null
 	readonly onInviteHandled: () => void
 	readonly gameUrl: string
-	// For tests; the signed-in player's own connection otherwise.
+	// For tests; the signed-in player's own connection otherwise. Supplying `api` alone
+	// leaves out the feedback forms.
 	readonly api?: BetaApi
+	readonly reportApi?: ReportApi
+	readonly prepareScreenshot?: (file: Blob) => Promise<Blob>
 }) {
 	const { status, userId } = account
-	const api = useMemo(
-		() =>
-			providedApi ??
-			(status === 'signedIn'
-				? supabaseBetaApi(getPlayerClient())
-				: undefined),
-		[providedApi, status],
-	)
+	const services = useMemo(() => {
+		if (providedApi)
+			return { api: providedApi, reportApi: providedReportApi }
+		if (status !== 'signedIn') return null
+		const client = getPlayerClient()
+		return {
+			api: supabaseBetaApi(client),
+			reportApi: supabaseReportApi(client),
+		}
+	}, [providedApi, providedReportApi, status])
 
 	return (
 		<div className={styles.dashboard}>
@@ -164,10 +179,12 @@ export default function BetaDashboard({
 					)}
 				</Message>
 			)}
-			{status === 'signedIn' && userId && api && (
+			{status === 'signedIn' && userId && services && (
 				<SignedIn
 					key={userId}
-					api={api}
+					api={services.api}
+					reportApi={services.reportApi}
+					prepareScreenshot={prepareScreenshot}
 					userId={userId}
 					invite={invite}
 					onInviteHandled={onInviteHandled}

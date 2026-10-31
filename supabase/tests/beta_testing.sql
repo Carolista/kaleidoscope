@@ -46,6 +46,16 @@ $$;
 insert into auth.users(id) values
 	(pg_temp.id(1)), (pg_temp.id(2)), (pg_temp.id(3)), (pg_temp.id(4)), (pg_temp.id(5));
 delete from public.admin_account;
+-- Rounds cannot overlap and the checks below count rows, so whatever beta data the project
+-- already has is set aside inside this transaction. All of it rolls back.
+delete from public.beta_surveys;
+delete from public.beta_report_images;
+delete from public.beta_report_admin;
+delete from public.beta_reports;
+delete from public.beta_testers;
+delete from public.beta_invites;
+delete from public.beta_announcements;
+delete from public.beta_rounds;
 insert into public.admin_account(user_id) values (pg_temp.id(1));
 -- 10: ended, 11: open now, 12: starts later.
 insert into public.beta_rounds(id, name, starts_at, ends_at, survey_version) values
@@ -238,11 +248,11 @@ select public.submit_beta_report(
 	'Zen mode: Palettes', 'More colors', '{}', null
 );
 select public.submit_beta_report(
-	pg_temp.id(22), pg_temp.id(11), 'other', null, null, null, null, 'Love it', '{}', '{}'
+	p_id => pg_temp.id(22), p_round => pg_temp.id(11), p_kind => 'other', p_details => 'Love it'
 );
 select pg_temp.assert_true(
 	(select count(*) from public.beta_reports where user_id = pg_temp.id(2)) = 3
-	and (select attempted from public.beta_reports where id = pg_temp.id(20)) = 'Solving a puzzle'
+	and (select steps from public.beta_reports where id = pg_temp.id(20)) = 'Solving a puzzle'
 	and (select status from public.beta_reports where id = pg_temp.id(20)) = 'new',
 	'a bug, a suggestion, and other feedback can be sent, trimmed, starting as new'
 ) as test;
@@ -274,7 +284,7 @@ select pg_temp.assert_true(
 	public.submit_beta_report(
 		pg_temp.id(20), pg_temp.id(11), 'bug', 'Changed', 'Changed', 'Changed', null, null, '{}', '{}'
 	) = pg_temp.id(20)
-	and (select attempted from public.beta_reports where id = pg_temp.id(20)) = 'Solving a puzzle'
+	and (select steps from public.beta_reports where id = pg_temp.id(20)) = 'Solving a puzzle'
 	and (select count(*) from public.beta_reports where user_id = pg_temp.id(2)) = 3,
 	'sending the same report id again changes nothing'
 ) as test;

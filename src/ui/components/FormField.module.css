@@ -5,7 +5,8 @@
 }
 
 .field input,
-.field select {
+.field select,
+.field textarea {
 	width: 100%;
 	min-width: 0;
 	box-sizing: border-box;
