@@ -1,31 +1,93 @@
-import { Button, Heading } from '@/ui/components'
-import { useId, useRef, useState, type KeyboardEvent } from 'react'
+import { useId, useState, type ReactNode } from 'react'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import type { IconDefinition } from '@fortawesome/fontawesome-svg-core'
+import {
+	faBug,
+	faClockRotateLeft,
+	faLightbulbOn,
+} from '@fortawesome/pro-solid-svg-icons'
+import { Button, Heading, Modal, ModalHeader } from '@/ui/components'
 import type { ReportApi } from './betaReports'
 import BugReportForm from './BugReportForm'
-import styles from './ReportPanel.module.css'
+import ReportHistory from './ReportHistory'
 import SuggestionForm from './SuggestionForm'
+import styles from './ReportPanel.module.css'
 
-type Kind = 'bug' | 'suggestion'
+type Dialog = 'bug' | 'suggestion' | 'history'
 
-const TABS: readonly {
-	readonly kind: Kind
+const ACTIONS: readonly {
+	readonly dialog: Dialog
 	readonly label: string
-	readonly thanks: string
+	readonly icon: IconDefinition
 }[] = [
-	{
-		kind: 'bug',
-		label: 'Report a Bug',
-		thanks: 'Thank you! Your bug report was sent.',
-	},
-	{
-		kind: 'suggestion',
-		label: 'Make a Suggestion',
-		thanks: 'Thank you! Your suggestion was sent.',
-	},
+	{ dialog: 'bug', label: 'Report a Bug', icon: faBug },
+	{ dialog: 'suggestion', label: 'Make a Suggestion', icon: faLightbulbOn },
+	{ dialog: 'history', label: 'View History', icon: faClockRotateLeft },
 ]
 
-// Where a tester sends feedback: a bug report or a suggestion, one tab each. Both forms stay
-// in place while the other tab is showing, so nothing typed is lost by looking at the other.
+// A form's dialog shows its form, or a thank-you once it has been sent. The form is kept
+// while the dialog is closed, so closing it by accident does not lose what was written.
+function FormDialog({
+	open,
+	onClose,
+	title,
+	thanks,
+	another,
+	children,
+}: {
+	readonly open: boolean
+	readonly onClose: () => void
+	readonly title: string
+	readonly thanks: string
+	readonly another: string
+	// Given what to do once the form is sent.
+	readonly children: (onSent: () => void) => ReactNode
+}) {
+	const titleId = useId()
+	const [sent, setSent] = useState(false)
+	// A form that has been sent comes back empty, as a new one.
+	const [fresh, setFresh] = useState(0)
+	return (
+		<Modal
+			open={open}
+			onClose={onClose}
+			labelledBy={titleId}
+			className={styles.dialog}
+			header={
+				<ModalHeader
+					title={title}
+					titleId={titleId}
+					closeLabel={`Close ${title}`}
+					onClose={onClose}
+				/>
+			}
+		>
+			{sent ? (
+				<div className={styles.thanks}>
+					<p role="status">{thanks}</p>
+					<div className={styles.thanksButtons}>
+						<Button
+							onClick={() => {
+								setSent(false)
+								setFresh(count => count + 1)
+							}}
+						>
+							{another}
+						</Button>
+						<Button variant="primary" onClick={onClose}>
+							Close
+						</Button>
+					</div>
+				</div>
+			) : (
+				<div key={fresh}>{children(() => setSent(true))}</div>
+			)}
+		</Modal>
+	)
+}
+
+// Where a tester sends feedback: three buttons, each opening a dialog for a bug report, a
+// suggestion, or the history of what they have sent.
 export default function ReportPanel({
 	roundId,
 	userId,
@@ -37,124 +99,93 @@ export default function ReportPanel({
 	readonly api: ReportApi
 	readonly prepare?: (file: Blob) => Promise<Blob>
 }) {
-	const idPrefix = useId()
-	const tabRefs = useRef<Record<Kind, HTMLButtonElement | null>>({
-		bug: null,
-		suggestion: null,
-	})
-	const [active, setActive] = useState<Kind>('bug')
-	const [sent, setSent] = useState<Record<Kind, boolean>>({
-		bug: false,
-		suggestion: false,
-	})
-	// A form that has been sent comes back empty, as a new one.
-	const [fresh, setFresh] = useState<Record<Kind, number>>({
-		bug: 0,
-		suggestion: 0,
-	})
-
-	function moveTab(event: KeyboardEvent<HTMLButtonElement>) {
-		const current = TABS.findIndex(tab => tab.kind === active)
-		const step: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1 }
-		let next: number
-		if (event.key in step)
-			next = (current + step[event.key] + TABS.length) % TABS.length
-		else if (event.key === 'Home') next = 0
-		else if (event.key === 'End') next = TABS.length - 1
-		else return
-		event.preventDefault()
-		setActive(TABS[next].kind)
-		tabRefs.current[TABS[next].kind]?.focus()
-	}
+	const historyTitleId = useId()
+	const [open, setOpen] = useState<Dialog | null>(null)
+	// Counts the openings of the history, which reads again each time.
+	const [historyOpenings, setHistoryOpenings] = useState(0)
+	const close = () => setOpen(null)
 
 	return (
-		<section className={styles.panel} aria-label="Send feedback">
+		<section className={styles.panel} aria-label="Submit feedback">
 			<Heading level={3} className={styles.heading}>
 				Submit Feedback
 			</Heading>
-			<div
-				className={styles.tabs}
-				role="tablist"
-				aria-label="Kind of feedback"
-			>
-				{TABS.map(tab => (
+			<div className={styles.actions}>
+				{ACTIONS.map(action => (
 					<button
-						key={tab.kind}
-						ref={element => {
-							tabRefs.current[tab.kind] = element
-						}}
+						key={action.dialog}
 						type="button"
-						role="tab"
-						id={`${idPrefix}-${tab.kind}-tab`}
-						aria-selected={active === tab.kind}
-						aria-controls={`${idPrefix}-${tab.kind}-panel`}
-						tabIndex={active === tab.kind ? 0 : -1}
-						className={styles.tab}
-						onClick={() => setActive(tab.kind)}
-						onKeyDown={moveTab}
+						className={styles.action}
+						aria-haspopup="dialog"
+						onClick={() => {
+							if (action.dialog === 'history')
+								setHistoryOpenings(count => count + 1)
+							setOpen(action.dialog)
+						}}
 					>
-						{tab.label}
+						<FontAwesomeIcon
+							icon={action.icon}
+							size="xl"
+							aria-hidden="true"
+						/>
+						<span>{action.label}</span>
 					</button>
 				))}
 			</div>
-			{TABS.map(tab => (
-				<div
-					key={tab.kind}
-					role="tabpanel"
-					id={`${idPrefix}-${tab.kind}-panel`}
-					aria-labelledby={`${idPrefix}-${tab.kind}-tab`}
-					hidden={active !== tab.kind}
-					className={styles.tabPanel}
-				>
-					{sent[tab.kind] ? (
-						<div className={styles.thanks}>
-							<p role="status">{tab.thanks}</p>
-							<Button
-								onClick={() => {
-									setSent(previous => ({
-										...previous,
-										[tab.kind]: false,
-									}))
-									setFresh(previous => ({
-										...previous,
-										[tab.kind]: previous[tab.kind] + 1,
-									}))
-								}}
-							>
-								{tab.kind === 'bug'
-									? 'Report Another Bug'
-									: 'Make Another Suggestion'}
-							</Button>
-						</div>
-					) : tab.kind === 'bug' ? (
-						<BugReportForm
-							key={fresh.bug}
-							roundId={roundId}
-							userId={userId}
-							api={api}
-							prepare={prepare}
-							onSent={() =>
-								setSent(previous => ({
-									...previous,
-									bug: true,
-								}))
-							}
-						/>
-					) : (
-						<SuggestionForm
-							key={fresh.suggestion}
-							roundId={roundId}
-							api={api}
-							onSent={() =>
-								setSent(previous => ({
-									...previous,
-									suggestion: true,
-								}))
-							}
-						/>
-					)}
-				</div>
-			))}
+			<FormDialog
+				open={open === 'bug'}
+				onClose={close}
+				title="Report a Bug"
+				thanks="Thank you! Your bug report was sent."
+				another="Report Another Bug"
+			>
+				{onSent => (
+					<BugReportForm
+						roundId={roundId}
+						userId={userId}
+						api={api}
+						prepare={prepare}
+						onSent={onSent}
+					/>
+				)}
+			</FormDialog>
+			<FormDialog
+				open={open === 'suggestion'}
+				onClose={close}
+				title="Make a Suggestion"
+				thanks="Thank you! Your suggestion was sent."
+				another="Make Another Suggestion"
+			>
+				{onSent => (
+					<SuggestionForm
+						roundId={roundId}
+						api={api}
+						onSent={onSent}
+					/>
+				)}
+			</FormDialog>
+			<Modal
+				open={open === 'history'}
+				onClose={close}
+				labelledBy={historyTitleId}
+				className={styles.dialog}
+				header={
+					<ModalHeader
+						title="View History"
+						titleId={historyTitleId}
+						closeLabel="Close View History"
+						onClose={close}
+					/>
+				}
+			>
+				{historyOpenings > 0 && (
+					<ReportHistory
+						key={historyOpenings}
+						api={api}
+						userId={userId}
+					/>
+				)}
+			</Modal>
 		</section>
 	)
 }

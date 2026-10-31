@@ -19,10 +19,16 @@ const device: DeviceInfo = {
 function fakeClient({
 	rpcError = null,
 	uploadError = null,
+	history = { data: [], error: null },
 }: {
 	rpcError?: { message: string } | null
 	uploadError?: object | null
+	history?: { data: unknown; error: { message: string } | null }
 } = {}) {
+	const order = vi.fn().mockResolvedValue(history)
+	const eq = vi.fn(() => ({ order }))
+	const select = vi.fn(() => ({ eq }))
+	const fromTable = vi.fn(() => ({ select }))
 	const upload = vi.fn().mockResolvedValue({ error: uploadError })
 	const remove = vi.fn().mockResolvedValue({ error: null })
 	const from = vi.fn(() => ({ upload, remove }))
@@ -32,8 +38,12 @@ function fakeClient({
 		remove,
 		from,
 		rpc,
+		fromTable,
+		eq,
+		order,
 		client: {
 			rpc,
+			from: fromTable,
 			storage: { from },
 		} as unknown as SupabaseClient<Database>,
 	}
@@ -121,5 +131,70 @@ describe('supabaseReportApi', () => {
 				images: [],
 			}),
 		).rejects.toThrow('That is a lot of reports for one day.')
+	})
+
+	describe('loadHistory', () => {
+		const row = {
+			id: 'r1',
+			kind: 'bug',
+			status: 'investigating',
+			admin_note: 'Looking into it',
+			created_at: '2026-10-31T12:00:00Z',
+			steps: 's',
+			expected: 'e',
+			happened: 'h',
+			feature: null,
+			details: null,
+			beta_report_images: [{ path: 'a' }, { path: 'b' }],
+		}
+
+		it('reads only the named tester’s reports, newest first', async () => {
+			const { client, fromTable, eq, order } = fakeClient({
+				history: { data: [row], error: null },
+			})
+			const [report] =
+				await supabaseReportApi(client).loadHistory('user-1')
+			expect(fromTable).toHaveBeenCalledWith('beta_reports')
+			expect(eq).toHaveBeenCalledWith('user_id', 'user-1')
+			expect(order).toHaveBeenCalledWith('created_at', {
+				ascending: false,
+			})
+			expect(report).toEqual({
+				id: 'r1',
+				kind: 'bug',
+				status: 'investigating',
+				adminNote: 'Looking into it',
+				createdAt: Date.parse('2026-10-31T12:00:00Z'),
+				steps: 's',
+				expected: 'e',
+				happened: 'h',
+				feature: null,
+				details: null,
+				screenshotCount: 2,
+			})
+		})
+
+		it('fails when the reports cannot be read', async () => {
+			const { client } = fakeClient({
+				history: { data: null, error: { message: 'down' } },
+			})
+			await expect(
+				supabaseReportApi(client).loadHistory('u'),
+			).rejects.toThrow('down')
+		})
+
+		it.each([
+			['an unknown kind', { ...row, kind: 'praise' }],
+			['an unknown status', { ...row, status: 'closed' }],
+			['a bad time', { ...row, created_at: 'soon' }],
+			['no list of screenshots', { ...row, beta_report_images: null }],
+		])('refuses a report with %s', async (_label, bad) => {
+			const { client } = fakeClient({
+				history: { data: [bad], error: null },
+			})
+			await expect(
+				supabaseReportApi(client).loadHistory('u'),
+			).rejects.toThrow()
+		})
 	})
 })

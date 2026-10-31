@@ -83,6 +83,7 @@ const reportApi: ReportApi = {
 	upload: vi.fn(() => Promise.resolve()),
 	remove: vi.fn(() => Promise.resolve()),
 	submit: vi.fn(() => Promise.resolve()),
+	loadHistory: vi.fn(() => Promise.resolve([])),
 }
 
 describe('BetaDashboard', () => {
@@ -177,6 +178,16 @@ describe('BetaDashboard', () => {
 		expect(link).toHaveAttribute('target', '_blank')
 		expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'))
 		expect(api.redeemInvite).not.toHaveBeenCalled()
+	})
+
+	it('colors the countdown by how close the deadline is', async () => {
+		renderDashboard({
+			api: fakeApi(data([round({ endsAt: NOW + 5 * DAY })])),
+		})
+		expect(await screen.findByText('5 days left')).toHaveAttribute(
+			'data-tone',
+			'yellow',
+		)
 	})
 
 	it('counts down in hours and minutes in the last 72 hours, using the server clock', async () => {
@@ -294,7 +305,7 @@ describe('BetaDashboard', () => {
 
 		it('are offered to a tester while the round is open', async () => {
 			renderDashboard({ api: fakeApi(data([round()])), reportApi })
-			expect(await screen.findByRole('tab', tab)).toBeInTheDocument()
+			expect(await screen.findByRole('button', tab)).toBeInTheDocument()
 		})
 
 		it('are left out of an admin preview, an unstarted or ended round, and without somewhere to send them', async () => {
@@ -323,12 +334,14 @@ describe('BetaDashboard', () => {
 					/>,
 				)
 				await screen.findByRole('article')
-				expect(screen.queryByRole('tab', tab)).not.toBeInTheDocument()
+				expect(
+					screen.queryByRole('button', tab),
+				).not.toBeInTheDocument()
 				unmount()
 			}
 			renderDashboard({ api: fakeApi(data([round()])) })
 			await screen.findByRole('article')
-			expect(screen.queryByRole('tab', tab)).not.toBeInTheDocument()
+			expect(screen.queryByRole('button', tab)).not.toBeInTheDocument()
 		})
 
 		it('go away when the round ends while the page is open', async () => {
@@ -339,9 +352,13 @@ describe('BetaDashboard', () => {
 					api: fakeApi(data([round({ endsAt: NOW + 60 * 1000 })])),
 					reportApi,
 				})
-				expect(await screen.findByRole('tab', tab)).toBeInTheDocument()
+				expect(
+					await screen.findByRole('button', tab),
+				).toBeInTheDocument()
 				await act(() => vi.advanceTimersByTimeAsync(2 * 60 * 1000))
-				expect(screen.queryByRole('tab', tab)).not.toBeInTheDocument()
+				expect(
+					screen.queryByRole('button', tab),
+				).not.toBeInTheDocument()
 			} finally {
 				vi.useRealTimers()
 			}

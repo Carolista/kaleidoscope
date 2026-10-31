@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase'
+import { isRow, rows, text, time, type Row } from './readRow'
 
 export interface BetaAnnouncement {
 	readonly id: string
@@ -38,27 +39,6 @@ export class BetaInviteRefused extends Error {}
 export interface BetaApi {
 	readonly loadDashboard: () => Promise<BetaDashboardData>
 	readonly redeemInvite: (token: string) => Promise<void>
-}
-
-type Row = Record<string, unknown>
-
-function isRow(value: unknown): value is Row {
-	return !!value && typeof value === 'object' && !Array.isArray(value)
-}
-function text(row: Row, key: string): string {
-	const value = row[key]
-	if (typeof value !== 'string') throw new Error(`Missing ${key}.`)
-	return value
-}
-function time(row: Row, key: string): number {
-	const value = Date.parse(text(row, key))
-	if (Number.isNaN(value)) throw new Error(`Bad time in ${key}.`)
-	return value
-}
-function rows(value: unknown): Row[] {
-	if (!Array.isArray(value) || !value.every(isRow))
-		throw new Error('Unexpected beta data.')
-	return value
 }
 
 function parseAnnouncement(row: Row): BetaAnnouncement {

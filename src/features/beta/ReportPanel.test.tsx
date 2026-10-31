@@ -9,6 +9,7 @@ function fakeApi(overrides: Partial<ReportApi> = {}) {
 		upload: vi.fn(() => Promise.resolve()),
 		remove: vi.fn(() => Promise.resolve()),
 		submit: vi.fn(() => Promise.resolve()),
+		loadHistory: vi.fn(() => Promise.resolve([])),
 		...overrides,
 	}
 	return api
@@ -57,55 +58,87 @@ function png(name: string) {
 	return new File(['x'], name, { type: 'image/png' })
 }
 
-describe('ReportPanel tabs', () => {
-	it('opens on the bug report, with both tabs in title case', () => {
+async function renderBug(api: ReportApi = fakeApi()) {
+	renderPanel(api)
+	await userEvent.click(screen.getByRole('button', { name: 'Report a Bug' }))
+	return api
+}
+
+describe('ReportPanel', () => {
+	it('offers three buttons, with the dialogs closed', () => {
 		renderPanel()
 		expect(
-			screen.getByRole('tab', { name: 'Report a Bug' }),
-		).toHaveAttribute('aria-selected', 'true')
-		expect(
-			screen.getByRole('tab', { name: 'Make a Suggestion' }),
-		).toHaveAttribute('aria-selected', 'false')
-		expect(
-			screen.getByRole('form', { name: 'Report a bug' }),
-		).toBeInTheDocument()
-		expect(
-			screen.queryByRole('form', { name: 'Make a suggestion' }),
-		).not.toBeInTheDocument()
+			screen
+				.getAllByRole('button', { name: /./ })
+				.map(button => button.textContent),
+		).toEqual(['Report a Bug', 'Make a Suggestion', 'View History'])
+		expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 	})
 
-	it('switches by click and by arrow keys, and keeps what was typed', async () => {
+	it('opens each dialog from its button, and closes it again', async () => {
 		renderPanel()
+		await userEvent.click(
+			screen.getByRole('button', { name: 'Make a Suggestion' }),
+		)
+		expect(
+			screen.getByRole('dialog', { name: 'Make a Suggestion' }),
+		).toBeInTheDocument()
+		expect(
+			screen.queryByRole('dialog', { name: 'Report a Bug' }),
+		).not.toBeInTheDocument()
+		await userEvent.click(
+			screen.getByRole('button', { name: 'Close Make a Suggestion' }),
+		)
+		await waitFor(() =>
+			expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+		)
+	})
+
+	it('keeps what was typed when a dialog is closed and opened again', async () => {
+		await renderBug()
 		await userEvent.type(
 			screen.getByLabelText('What happened instead?'),
 			'It froze',
 		)
 		await userEvent.click(
-			screen.getByRole('tab', { name: 'Make a Suggestion' }),
+			screen.getByRole('button', { name: 'Close Report a Bug' }),
 		)
-		expect(
-			screen.getByRole('form', { name: 'Make a suggestion' }),
-		).toBeInTheDocument()
-		expect(
-			screen.queryByRole('form', { name: 'Report a Bug' }),
-		).not.toBeInTheDocument()
-		await userEvent.keyboard('{ArrowLeft}')
-		expect(screen.getByRole('tab', { name: 'Report a Bug' })).toHaveFocus()
+		await waitFor(() =>
+			expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+		)
+		await userEvent.click(
+			screen.getByRole('button', { name: 'Report a Bug' }),
+		)
 		expect(screen.getByLabelText('What happened instead?')).toHaveValue(
 			'It froze',
 		)
-		await userEvent.keyboard('{End}')
+	})
+
+	it('reads the history each time it is opened', async () => {
+		const api = renderPanel()
+		await userEvent.click(
+			screen.getByRole('button', { name: 'View History' }),
+		)
 		expect(
-			screen.getByRole('tab', { name: 'Make a Suggestion' }),
-		).toHaveFocus()
-		await userEvent.keyboard('{ArrowRight}')
-		expect(screen.getByRole('tab', { name: 'Report a Bug' })).toHaveFocus()
+			await screen.findByText(/You have not sent any feedback yet/),
+		).toBeInTheDocument()
+		expect(api.loadHistory).toHaveBeenCalledWith('user-1')
+		await userEvent.click(
+			screen.getByRole('button', { name: 'Close View History' }),
+		)
+		await waitFor(() =>
+			expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+		)
+		await userEvent.click(
+			screen.getByRole('button', { name: 'View History' }),
+		)
+		await waitFor(() => expect(api.loadHistory).toHaveBeenCalledTimes(2))
 	})
 })
 
 describe('bug report', () => {
-	it('shows four device details after the questions and before the screenshots', () => {
-		renderPanel()
+	it('shows four device details after the questions and before the screenshots', async () => {
+		await renderBug()
 		const device = screen.getByRole('region', { name: 'Your device' })
 		expect(
 			within(device)
@@ -127,7 +160,7 @@ describe('bug report', () => {
 	})
 
 	it('sends the answers and the device details, then thanks the tester', async () => {
-		const api = renderPanel()
+		const api = await renderBug()
 		await fillBug()
 		await userEvent.click(screen.getByRole('button', { name: 'Submit' }))
 		expect(await screen.findByRole('status')).toHaveTextContent(
@@ -148,7 +181,7 @@ describe('bug report', () => {
 	})
 
 	it('starts a fresh report after another is asked for', async () => {
-		const api = renderPanel()
+		const api = await renderBug()
 		await fillBug()
 		await userEvent.click(screen.getByRole('button', { name: 'Submit' }))
 		await userEvent.click(
@@ -165,7 +198,7 @@ describe('bug report', () => {
 	})
 
 	it('does not send an answer that is only spaces', async () => {
-		const api = renderPanel()
+		const api = await renderBug()
 		await fillBug('   ')
 		await userEvent.click(screen.getByRole('button', { name: 'Submit' }))
 		expect(screen.getByRole('alert')).toHaveTextContent('answer each')
@@ -182,6 +215,9 @@ describe('bug report', () => {
 				api={api}
 				prepare={prepare}
 			/>,
+		)
+		await userEvent.click(
+			screen.getByRole('button', { name: 'Report a Bug' }),
 		)
 		await fillBug()
 		await userEvent.upload(screen.getByLabelText(/Drag screenshots here/), [
@@ -206,7 +242,7 @@ describe('bug report', () => {
 			.fn<ReportApi['submit']>()
 			.mockRejectedValueOnce(new Error('Please try again tomorrow.'))
 			.mockResolvedValue(undefined)
-		const api = renderPanel(fakeApi({ submit }))
+		const api = await renderBug(fakeApi({ submit }))
 		await fillBug()
 		await userEvent.upload(screen.getByLabelText(/Drag screenshots here/), [
 			png('a.png'),
@@ -229,7 +265,7 @@ describe('bug report', () => {
 		const upload = vi
 			.fn<ReportApi['upload']>()
 			.mockRejectedValue(new Error('A screenshot could not be uploaded.'))
-		const api = renderPanel(fakeApi({ upload }))
+		const api = await renderBug(fakeApi({ upload }))
 		await fillBug()
 		await userEvent.upload(screen.getByLabelText(/Drag screenshots here/), [
 			png('a.png'),
@@ -246,7 +282,7 @@ describe('bug report', () => {
 			.fn<ReportApi['submit']>()
 			.mockRejectedValueOnce(new Error('Try again.'))
 			.mockResolvedValue(undefined)
-		const api = renderPanel(fakeApi({ submit }))
+		const api = await renderBug(fakeApi({ submit }))
 		await fillBug()
 		await userEvent.upload(screen.getByLabelText(/Drag screenshots here/), [
 			png('a.png'),
@@ -266,7 +302,7 @@ describe('bug report', () => {
 
 	it('cannot be sent twice while it is sending', async () => {
 		let finish: () => void = () => undefined
-		const api = renderPanel(
+		const api = await renderBug(
 			fakeApi({
 				submit: vi.fn(
 					() =>
@@ -290,7 +326,7 @@ describe('bug report', () => {
 describe('suggestion', () => {
 	async function openSuggestion() {
 		await userEvent.click(
-			screen.getByRole('tab', { name: 'Make a Suggestion' }),
+			screen.getByRole('button', { name: 'Make a Suggestion' }),
 		)
 	}
 

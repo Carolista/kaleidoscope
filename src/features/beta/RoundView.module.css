@@ -67,8 +67,38 @@
 }
 
 .countdown {
-	background-color: var(--orange);
 	padding: 0.6rem 0.8rem;
+	background-color: var(--green);
+	color: #222;
+}
+
+/* Text colors are chosen for contrast on each background. */
+.countdown[data-tone='yellow'] {
+	background-color: var(--yellow);
+}
+
+.countdown[data-tone='orange'] {
+	background-color: var(--orange);
+}
+
+.countdown[data-tone='red'] {
+	background-color: var(--red);
+	color: #fff;
+}
+
+.countdown[data-tone='magenta'] {
+	background-color: var(--magenta);
+	color: #fff;
+}
+
+.countdown[data-tone='blue'] {
+	background-color: var(--blue);
+	color: #fff;
+}
+
+.countdown[data-tone='neutral'] {
+	background-color: color-mix(in srgb, var(--accent) 15%, transparent);
+	color: var(--accent);
 }
 
 .gameLink {

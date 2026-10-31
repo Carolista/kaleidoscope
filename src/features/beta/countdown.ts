@@ -36,3 +36,20 @@ export function formatCountdown(remainingMs: number): string {
 		.map((part, index) => unit(part, names[first + index]))
 		.join(', ')
 }
+
+export type BadgeTone =
+	'green' | 'yellow' | 'orange' | 'red' | 'magenta' | 'blue' | 'neutral'
+
+// The badge's color follows the deadline: calm while there is time, then warmer, up to
+// magenta in the last 24 hours. A round yet to start is blue and one that has ended is neutral.
+export function badgeTone(round: BetaRound, now: number): BadgeTone {
+	const phase = roundPhase(round, now)
+	if (phase === 'upcoming') return 'blue'
+	if (phase === 'closed') return 'neutral'
+	const remaining = round.endsAt - now
+	if (remaining < DAY) return 'magenta'
+	if (remaining < 2 * DAY) return 'red'
+	if (remaining < 3 * DAY) return 'orange'
+	if (remaining < 7 * DAY) return 'yellow'
+	return 'green'
+}

@@ -7,7 +7,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useId } from 'react'
 import type { BetaRound } from './betaApi'
 import type { ReportApi } from './betaReports'
-import { formatCountdown, roundPhase } from './countdown'
+import { badgeTone, formatCountdown, roundPhase } from './countdown'
 import ReportPanel from './ReportPanel'
 import styles from './RoundView.module.css'
 import useServerNow from './useServerNow'
@@ -77,7 +77,12 @@ export default function RoundView({
 					</p>
 				</div>
 				<div className={styles.headerBlocks}>
-					<p className={styles.countdown}>{statusLine(round, now)}</p>
+					<p
+						className={styles.countdown}
+						data-tone={badgeTone(round, now)}
+					>
+						{statusLine(round, now)}
+					</p>
 					<a
 						className={styles.gameLink}
 						href={gameUrl}

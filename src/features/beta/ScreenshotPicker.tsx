@@ -75,7 +75,7 @@ export default function ScreenshotPicker({
 			notes.push('Only PNG, JPEG, and WebP images can be attached.')
 		if (images.length > accepted.length)
 			notes.push(
-				`You can attach up to ${MAX_SCREENSHOTS} screenshots, so some were left out.`,
+				`You can attach only ${MAX_SCREENSHOTS} screenshots, so some were left out.`,
 			)
 		setMessage(notes.join(' '))
 		if (accepted.length > 0)
